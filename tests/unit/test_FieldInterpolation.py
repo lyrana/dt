@@ -21,7 +21,7 @@ class TestFieldInterpolation(unittest.TestCase):
         # initializations for each test go here...
 
         # Create mesh from a file
-        mesh2DCI = Mesh_C(meshFile="quarter_circle_mesh.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+        mesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
 
 #        df_M.plot(self.mesh, title='cylindrical mesh', axes=True)
 #        df_M.interactive()
@@ -34,7 +34,7 @@ class TestFieldInterpolation(unittest.TestCase):
                                       field_type='scalar')
 
         # Read the solution
-        file = df_M.File("phi2D.xml")
+        file = df_M.File("phi2D_crossed.xml")
         file >> self.phi.function
 
         # Plot phi
@@ -57,7 +57,7 @@ class TestFieldInterpolation(unittest.TestCase):
 
         # Set the electric field values to those read in above
 
-        file = df_M.File("negE2D.xml")
+        file = df_M.File("negE2D_crossed.xml")
         file >> self.neg_electric_field.function
 
 

@@ -76,7 +76,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         # The is needed to construct the function space for E
 
         # Create mesh from a file
-        mesh2DCI = Mesh_C(meshFile="quarter_circle_mesh.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+        mesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
 
         # The following value should correspond to the element degree
         # used in the potential from which negE was obtained
@@ -98,7 +98,7 @@ class TestParticleNonuniformE(unittest.TestCase):
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')
 
-        file = df_M.File("negE2D.xml")
+        file = df_M.File("negE2D_crossed.xml")
         file >> self.neg_electric_field.function
 
         # Get the initial cell index of each particle.
