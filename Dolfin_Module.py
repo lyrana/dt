@@ -77,7 +77,6 @@ class Mesh_C(object):
             if computeDictionaries == True:
                 self.compute_cell_dict()
                 self.compute_cell_entity_index_dict('vertex') # Get vertex indices from a cell index
-                self.mesh.init(self.entity_dimension['facet'])
                 self.compute_cell_entity_index_dict('facet') # Get facet indices from a cell index
                 self.compute_vertex_cell_dict() # Get cell indices from a vertex index
 
@@ -85,6 +84,7 @@ class Mesh_C(object):
                 self.compute_cell_neighbor_dict() # Get neighbor cell indices from a cell index
 
         return
+#    def __init__(self, Mesh=None, meshFile=None, computeDictionaries=False, computeTree=False, plotFlag=False):ENDDEF
 
 
  # Compute the search tree for this mesh
@@ -129,19 +129,26 @@ class Mesh_C(object):
     def compute_cell_entity_index_dict(self, entity_name):
         """
            Make a dictionary giving a list of the cell entity indices, indexed by
-           the cell index.  E.g., vertex indices can be used, e.g., to
-           obtain the x, y, z coordinates of the vertices of a cell.
+           the cell index.
+
+           Vertex indices can be used, e.g., to obtain the x, y, z
+           coordinates of the vertices of a cell.
 
            :param entity_name: The name of the entity: 'vertex', 'edge', 'facet'
            :type entity_name: string
 
         """
 
+        tdim = self.tdim
         d = self.entity_dimension[entity_name]
 
-        # For each cell, get a list of the vertices in it
+        # Initialize the necessary connectivity
+        self.mesh.init(d, tdim)
+
+        # For each cell, get a list of the entities in it
         # (cell.entities(d) returns a list of indices).
         # A vertex has topological dimension 0.
+        # A facet has topological codimension d-1.
 
         self.cell_entity_index_dict[entity_name] = dict((cell.index(), cell.entities(d)) for cell in df_M.cells(self.mesh))
 
@@ -156,6 +163,7 @@ class Mesh_C(object):
         #         print "\t", vertex, coordinates[vertex]
 
         return
+#    def compute_cell_entity_index_dict(self, entity_name):ENDDEF
 
 #class Mesh_C(object):
     def compute_cell_vertex_dict(self):
@@ -178,10 +186,16 @@ class Mesh_C(object):
         #         print "\t", vertex, coordinates[vertex]
 
         return
+#    def compute_cell_vertex_dict(self):ENDDEF
 
 #class Mesh_C(object):
     def compute_cell_neighbor_dict(self):
+        """Make a dictionary that gives the indices of cells that
+           share a common facet.
 
+           The dictionary is indexed by cell index.
+        
+        """
         tdim = self.tdim
 
         # Generate facet-cell connectivity data
@@ -231,7 +245,7 @@ class Mesh_C(object):
             # Use a 32-bit int for the cell indices.
             neighbor_cells = np_M.empty(n_facets, np_M.int32)
 
-            fi = 0
+            fi = 0 # fi ranges from 0 to n_facets-1
             for facet in df_M.facets(cell):
                 # Obtain the indices of cells attached to this facet
                 attached_cell_indices = filter(lambda ci: ci != cell.index(), facet.entities(tdim))
@@ -307,8 +321,7 @@ class Mesh_C(object):
 #        self.cell_facet_normals = dict((cell.index(), [cell.normal(fi) for fi in range(self.tdim+1)]) for cell in df_M.cells(self.mesh))
 
         return
-
-
+#    def compute_cell_facet_normals_dict(self):ENDDEF
 
 #
 #  Functions of arbitrary point positions
@@ -589,7 +602,6 @@ class Mesh_C(object):
                 print fncname, "!!! path_fraction > 1.0:", path_fraction
                 sys.exit()
             return facet, path_fraction
-
 #    def find_facet(self, r0, dr, cell_index):ENDDEF
 
 #class Mesh_C(object):END
