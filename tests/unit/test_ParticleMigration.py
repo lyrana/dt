@@ -108,9 +108,9 @@ class TestParticleMigration(unittest.TestCase):
         mi1DCI.pmax = df_M.Point(10.0)
         mi1DCI.cells_on_side = (4)
         # Create mesh
-        self.mesh1DCI = UserMesh_C(mi1DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
-#        self.mesh1DCI.compute_cell_vertex_dict()
-#        self.mesh1DCI.compute_cell_dict()
+        self.pmesh1DCI = UserMesh_C(mi1DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+#        self.pmesh1DCI.compute_cell_vertex_dict()
+#        self.pmesh1DCI.compute_cell_dict()
 
         # 2D mesh input
         mi2DCI = DTmeshInput_C()
@@ -118,9 +118,9 @@ class TestParticleMigration(unittest.TestCase):
         mi2DCI.pmax = df_M.Point(10.0, 10.0)
         mi2DCI.cells_on_side = (4, 2)
         # Create mesh
-        self.mesh2DCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
-#        self.mesh2DCI.compute_cell_vertex_dict()
-#        self.mesh2DCI.compute_cell_dict()
+        self.pmesh2DCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+#        self.pmesh2DCI.compute_cell_vertex_dict()
+#        self.pmesh2DCI.compute_cell_dict()
 
         # 3D mesh input
         mi3DCI = DTmeshInput_C()
@@ -128,12 +128,12 @@ class TestParticleMigration(unittest.TestCase):
         mi3DCI.pmax = df_M.Point(10.0, 10.0, 10.0)
         mi3DCI.cells_on_side = (4, 4, 4)
         # Create mesh
-        self.mesh3DCI = UserMesh_C(mi3DCI, computeTree=True, plotFlag=plotFlag)
+        self.pmesh3DCI = UserMesh_C(mi3DCI, computeTree=True, plotFlag=plotFlag)
         # Explicitly compute dictionaries needed
-        self.mesh3DCI.compute_cell_entity_index_dict('vertex')
-        self.mesh3DCI.compute_cell_dict()
-        self.mesh3DCI.compute_cell_facet_normals_dict()
-        self.mesh3DCI.compute_cell_neighbor_dict()
+        self.pmesh3DCI.compute_cell_entity_index_dict('vertex')
+        self.pmesh3DCI.compute_cell_dict()
+        self.pmesh3DCI.compute_cell_facet_normals_dict()
+        self.pmesh3DCI.compute_cell_neighbor_dict()
 
         # pmesh is the owner of the compute_index function?
 
@@ -158,7 +158,7 @@ class TestParticleMigration(unittest.TestCase):
 
         # Run for 1, 2, and 3D meshes
 
-        meshCI = self.mesh1DCI
+        pmeshCI = self.pmesh1DCI
 
         # Initialize or reinitialize the particles
 #        for sp in self.particleCI.species_names:
@@ -168,7 +168,7 @@ class TestParticleMigration(unittest.TestCase):
 #                self.particleCI.create_from_list(sp, printFlag=False)
 
         # Get the initial cell index of each particle.
-        self.particleCI.compute_mesh_cell_indices(meshCI)
+        self.particleCI.compute_mesh_cell_indices(pmeshCI)
 
 
         # The expected results
@@ -200,7 +200,7 @@ class TestParticleMigration(unittest.TestCase):
         # Integrate for nsteps
         for istep in xrange(ctrlCI.nsteps):
 #            self.particleCI.move_particles_without_fields(ctrlCI.dt, meshCI=meshCI)
-            self.particleCI.move_neutral_particles(ctrlCI.dt, meshCI)
+            self.particleCI.move_neutral_particles(ctrlCI.dt, pmeshCI)
 
         # Check the results
         ncoords = self.particleCI.dimension # number of particle coordinates to check
@@ -233,10 +233,10 @@ class TestParticleMigration(unittest.TestCase):
 
         # Run for 2D mesh
 
-        meshCI = self.mesh2DCI
+        pmeshCI = self.pmesh2DCI
 
         # Get the initial cell index of each particle.
-        self.particleCI.compute_mesh_cell_indices(meshCI)
+        self.particleCI.compute_mesh_cell_indices(pmeshCI)
 
         # Save the initial conditions (p_ic) for plotting
         p_ic = []
@@ -277,10 +277,10 @@ class TestParticleMigration(unittest.TestCase):
         # Integrate for nsteps
         for istep in xrange(ctrlCI.nsteps):
 #            self.particleCI.move_particles_without_fields(ctrlCI.dt, meshCI=meshCI)
-            self.particleCI.move_neutral_particles(ctrlCI.dt, meshCI)
+            self.particleCI.move_neutral_particles(ctrlCI.dt, pmeshCI)
 
         # Create a mesh plotter to display the trajectory
-        plotter=df_M.plot(meshCI.mesh, title="Mesh")
+        plotter=df_M.plot(pmeshCI.mesh, title="Particle mesh")
 
         # Check the results
         ncoords = self.particleCI.dimension # number of particle coordinates to check
@@ -319,10 +319,10 @@ class TestParticleMigration(unittest.TestCase):
 
         # Run for 3D mesh
 
-        meshCI = self.mesh3DCI
+        pmeshCI = self.pmesh3DCI
 
         # Get the initial cell index of each particle.
-        self.particleCI.compute_mesh_cell_indices(meshCI)
+        self.particleCI.compute_mesh_cell_indices(pmeshCI)
 
         # Save the initial conditions (p_ic) for plotting
         p_ic = []
@@ -360,10 +360,10 @@ class TestParticleMigration(unittest.TestCase):
         # Integrate for nsteps
         for istep in xrange(ctrlCI.nsteps):
 #            self.particleCI.move_particles_without_fields(ctrlCI.dt, meshCI=meshCI)
-            self.particleCI.move_neutral_particles(ctrlCI.dt, meshCI)
+            self.particleCI.move_neutral_particles(ctrlCI.dt, pmeshCI)
 
         # Create a plotter to display the trajectory.
-        plotter=df_M.plot(meshCI.mesh, title="Mesh")
+        plotter=df_M.plot(pmeshCI.mesh, title="Particle mesh")
 
         # Check the results
         ncoords = self.particleCI.dimension # number of particle coordinates to check

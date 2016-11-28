@@ -115,7 +115,7 @@ class TestParticleCellIndex(unittest.TestCase):
         mi1DCI.pmax = df_M.Point(10.0)
         mi1DCI.cells_on_side = (4)
         # Create mesh
-        self.mesh1DCI = UserMesh_C(mi1DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+        self.pmesh1DCI = UserMesh_C(mi1DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
 
         # 2D mesh input
         mi2DCI = DTmeshInput_C()
@@ -123,7 +123,7 @@ class TestParticleCellIndex(unittest.TestCase):
         mi2DCI.pmax = df_M.Point(0.03, 0.03)
         mi2DCI.cells_on_side = (4, 4)
         # Create mesh
-        self.mesh2DCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+        self.pmesh2DCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
 #        self.mesh2DCI.compute_cell_vertex_dict()
 #        self.mesh2DCI.compute_cell_dict()
 
@@ -133,9 +133,9 @@ class TestParticleCellIndex(unittest.TestCase):
         mi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
         mi3DCI.cells_on_side = (4, 4, 4)
         # Create mesh
-        self.mesh3DCI = UserMesh_C(mi3DCI, computeTree=True, plotFlag=plotFlag)
-        self.mesh3DCI.compute_cell_entity_index_dict('vertex')
-        self.mesh3DCI.compute_cell_dict()
+        self.pmesh3DCI = UserMesh_C(mi3DCI, computeTree=True, plotFlag=plotFlag)
+        self.pmesh3DCI.compute_cell_entity_index_dict('vertex')
+        self.pmesh3DCI.compute_cell_dict()
 
         # pmesh is the owner of the compute_index function?
 
@@ -163,22 +163,22 @@ class TestParticleCellIndex(unittest.TestCase):
         # 1D mesh
 
         # Test vertex dictionary for vertex 3
-#        print 'vertex 3 is in cells', self.mesh1DCI.vertex_cell_dict[3]
-        self.assertEqual([2, 3], self.mesh1DCI.vertex_cell_dict[3], msg = "cell list for vertex 3 is not correct")
+#        print 'vertex 3 is in cells', self.pmesh1DCI.vertex_cell_dict[3]
+        self.assertEqual([2, 3], self.pmesh1DCI.vertex_cell_dict[3], msg = "cell list for vertex 3 is not correct")
 
         # Compute a cell index by locating the cell that contains
         # the cell midpoint using the BB tree.  Compare that to the
         # index value stored in the cell object.
         # Make a particle-like point from the midpoint
         print "1D test"
-        for cell in df_M.cells(self.mesh1DCI.mesh):
+        for cell in df_M.cells(self.pmesh1DCI.mesh):
             midpt = cell.midpoint()
             # Have to convert the Point to a 1-element pseg-type array
             # in order to call compute_cell_index()
             p1_dtype = {'names' : ['x'], 'formats': [np_M.float64]}
             p1 = np_M.array([(midpt.x(),)], dtype=p1_dtype)
 
-            cell_index = self.mesh1DCI.compute_cell_index(p1[0])
+            cell_index = self.pmesh1DCI.compute_cell_index(p1[0])
 #            print "cell midpoint:", midpt.x()
 #            print "cell index:", cell.index(), "computed index:", cell_index
             self.assertEqual(cell_index, cell.index(), msg = "1D cell index is not correct")
@@ -186,24 +186,24 @@ class TestParticleCellIndex(unittest.TestCase):
         # 2D mesh
 
         # Test vertex dictionary for vertex 8 and vertex 20
-#        print 'vertex 20 is in cells', self.mesh2DCI.vertex_cell_dict[20]
-        self.assertEqual([25], self.mesh2DCI.vertex_cell_dict[20], msg = "cell list for vertex 20 is not correct")
-#        print 'vertex 8 is in cells', self.mesh2DCI.vertex_cell_dict[8]
-        self.assertEqual([4, 5, 7, 12, 14, 15], self.mesh2DCI.vertex_cell_dict[8], msg = "cell list for vertex 8 is not correct")
+#        print 'vertex 20 is in cells', self.pmesh2DCI.vertex_cell_dict[20]
+        self.assertEqual([25], self.pmesh2DCI.vertex_cell_dict[20], msg = "cell list for vertex 20 is not correct")
+#        print 'vertex 8 is in cells', self.pmesh2DCI.vertex_cell_dict[8]
+        self.assertEqual([4, 5, 7, 12, 14, 15], self.pmesh2DCI.vertex_cell_dict[8], msg = "cell list for vertex 8 is not correct")
 
         # Compute a cell index by locating the cell that contains
         # the cell midpoint using the BB tree.  Compare that to the
         # index value stored in the cell object.
         # Make a particle-like point from the midpoint
         print "2D test"
-        for cell in df_M.cells(self.mesh2DCI.mesh):
+        for cell in df_M.cells(self.pmesh2DCI.mesh):
             midpt = cell.midpoint()
             # Have to convert the Point to a 1-element pseg-type array
             # in order to call compute_cell_index()
             p2_dtype = {'names' : ['x', 'y'], 'formats': [np_M.float64]*2}
             p2 = np_M.array([(midpt.x(), midpt.y())], dtype=p2_dtype)
 
-            cell_index = self.mesh2DCI.compute_cell_index(p2[0])
+            cell_index = self.pmesh2DCI.compute_cell_index(p2[0])
 #            print "cell midpoint:", midpt.x(), midpt.y()
 #            print "cell index:", cell.index(), "computed index:", cell_index
             self.assertEqual(cell_index, cell.index(), msg = "2D cell index is not correct")
@@ -211,12 +211,12 @@ class TestParticleCellIndex(unittest.TestCase):
         # 3D mesh
         print "3D test"
         # Make a particle-like point from the midpoint
-        for cell in df_M.cells(self.mesh3DCI.mesh):
+        for cell in df_M.cells(self.pmesh3DCI.mesh):
             midpt = cell.midpoint()
             p3_dtype = {'names' : ['x', 'y', 'z'], 'formats': [np_M.float64]*3}
             p3 = np_M.array([(midpt.x(), midpt.y(), midpt.z())], dtype=p3_dtype)
 
-            cell_index = self.mesh3DCI.compute_cell_index(p3[0])
+            cell_index = self.pmesh3DCI.compute_cell_index(p3[0])
 #            print "cell midpoint:", midpt.x(), midpt.y(), midpt.z()
 #            print "cell index:", cell.index(), "computed index:", cell_index
             self.assertEqual(cell_index, cell.index(), msg = "3D cell index is not correct")
@@ -264,30 +264,30 @@ class TestParticleCellIndex(unittest.TestCase):
                     # Compute and store the cell index
                     for dim in range(1,4):
                         if dim == 1:
-                            meshCI = self.mesh1DCI
+                            pmeshCI = self.pmesh1DCI
 #                        spatial_components = spatial_coordinates[0:dim]
 #                        p = np_M.array([pseg[ip][comp] for comp in spatial_components])
                         if dim == 2:
-                            meshCI = self.mesh2DCI
+                            pmeshCI = self.pmesh2DCI
                         elif dim == 3:
-                            meshCI = self.mesh3DCI
+                            pmeshCI = self.pmesh3DCI
 # Put a particle outside the mesh to see what cell index is returned:
 #                            p[0] = p[0] + 100.0
-#                            pseg[ip]['cell_index'] = self.mesh2DCI.compute_cell_index(df_M.Point(p))
+#                            pseg[ip]['cell_index'] = self.pmesh2DCI.compute_cell_index(df_M.Point(p))
                         # Compute the cell index containing the particle, and save it.
-                        pseg[ip]['cell_index'] = meshCI.compute_cell_index(pseg[ip])
+                        pseg[ip]['cell_index'] = pmeshCI.compute_cell_index(pseg[ip])
                         # print "Coordinates", p, "are in cell", pseg[ip]['cell_index']
                         if pseg[ip]['cell_index'] != Mesh_C.NO_CELL:
-#                            cell_vertices = meshCI.cell_entity_index_dict['vertex'][pseg[ip]['cell_index']]
+#                            cell_vertices = pmeshCI.cell_entity_index_dict['vertex'][pseg[ip]['cell_index']]
                             # Look up the cell index in the particle datalist
-                            c = meshCI.cell_dict[pseg[ip]['cell_index']]
+                            c = pmeshCI.cell_dict[pseg[ip]['cell_index']]
                         else:
                             c = None
 
                         if c is not None:
 #                            self.assertTrue(c.contains(df_M.Point(p)), msg = "The computed cell does not contain the particle")
                             # Verify that this cell does actually contain the particle.
-                            self.assertTrue(meshCI.is_inside(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")
+                            self.assertTrue(pmeshCI.is_inside(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")
                         else:
                             self.assertTrue(False, msg = "A particle is outside the mesh")
 

@@ -97,11 +97,11 @@ class TestParticleTrajectory(unittest.TestCase):
 #
         # Make the mesh & fields from saved files
 
-        # Create mesh object
+        # Create the particle mesh object
 # 'crossed' diagonals
-        self.mesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+        self.pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
 # 'left' diagonal
-#        self.mesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_left.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+#        self.pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_left.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
 
         # The following value should correspond to the element degree
         # used in the potential from which negE was obtained
@@ -115,8 +115,8 @@ class TestParticleTrajectory(unittest.TestCase):
         else:
             electric_field_element_type = "Lagrange"
 
-#        self.neg_electric_field = Field_C(mesh=mesh,
-        self.neg_electric_field = Field_C(meshCI=self.mesh2DCI,
+        # Create the negative electric field directly on the particle mesh
+        self.neg_electric_field = Field_C(meshCI=self.pmesh2DCI,
                                           element_type=electric_field_element_type,
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')
@@ -180,7 +180,7 @@ class TestParticleTrajectory(unittest.TestCase):
         pCI.create_from_list('trajelectrons', printFlag=True)
 
         # Get the initial cell index of each particle.
-        pCI.compute_mesh_cell_indices(self.mesh2DCI)
+        pCI.compute_mesh_cell_indices(self.pmesh2DCI)
 
         dt = self.ctrlCI.dt
 
@@ -245,7 +245,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Plot the trajectory
 
-        pCI.trajCI.plot_trajectories_on_mesh(self.mesh2DCI.mesh) # Plots trajectory spatial coordinates on top of the mesh
+        pCI.trajCI.plot_trajectories_on_mesh(self.pmesh2DCI.mesh) # Plots trajectory spatial coordinates on top of the particle mesh
 
         plotFlag = False
         if os.environ.get('DISPLAY') is not None and plotFlag is True:
@@ -268,7 +268,7 @@ class TestParticleTrajectory(unittest.TestCase):
         pCI.create_from_list('trajelectrons', printFlag=True)
 
         # Get the initial cell index of each particle.
-        pCI.compute_mesh_cell_indices(self.mesh2DCI)
+        pCI.compute_mesh_cell_indices(self.pmesh2DCI)
 
         self.ctrlCI.nsteps = 13 # Dies if this is 14, as particle goes out-of-bounds
         dt = self.ctrlCI.dt
