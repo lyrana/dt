@@ -66,7 +66,7 @@ class TestFieldInterpolation(unittest.TestCase):
     def test_1_interpolate_vectorField_to_points(self):
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
         
         # 1st point
         x0 = 1.0; y0 = 0.0; z0 = 0.0

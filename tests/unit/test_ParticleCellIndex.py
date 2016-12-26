@@ -158,7 +158,7 @@ class TestParticleCellIndex(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname
+        print '\ntest:', fncname, '('+__file__+')'
 
         # 1D mesh
 
@@ -235,7 +235,7 @@ class TestParticleCellIndex(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname
+        print '\ntest:', fncname, '('+__file__+')'
 
         # List all the possible spatial coordinates
         spatial_coordinates = ('x','y','z')

@@ -28,6 +28,11 @@ class TestUserMesh_y_Fields(unittest.TestCase):
         miCI.nr = 10 # Number of divisions in r direction
         miCI.stretch = 1.3 # Stretch parameter
 
+        # Name the Dirichlet boundaries. Integers will be assigned to
+        # them in UserMesh_C.
+        boundaryNames = ['rmin', 'rmax']
+        miCI.boundary_names = boundaryNames
+
         # theta, starts at 0
         miCI.tmax = math.pi/2 # quarter-circle
         miCI.nt = 20  # Number of divisions in theta direction
@@ -43,7 +48,7 @@ class TestUserMesh_y_Fields(unittest.TestCase):
     def test_quarter_circle_plot_false(self):
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         meshCI = UserMesh_C(meshInputCI=self.miCI, plotFlag=False)
 
@@ -56,7 +61,7 @@ class TestUserMesh_y_Fields(unittest.TestCase):
     def test_quarter_circle_plot_true(self):
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         if os.environ.get('DISPLAY') is None:
             plotFlag=False
@@ -71,13 +76,17 @@ class TestUserMesh_y_Fields(unittest.TestCase):
 #        yesno = raw_input("Looks OK [Y/n]?")
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
 
-        # Write mesh to file:
+        # Write the mesh to a file:
         mesh_file = df_M.File("quarter_circle_mesh_crossed.xml") # Could use if-test on the value of 'diagonal'
         mesh_file << meshCI.mesh
         # Read back in:
         mesh_file >> meshCI.mesh
 
-
+        # Write the boundary marker function to a file:
+        boundary_marker_file = df_M.File("quarter_circle_mesh_crossed_bm.xml") # Could use if-test on the value of 'diagonal'
+        boundary_marker_file << meshCI.boundary_marker
+        # Read back in:
+        boundary_marker_file >> meshCI.boundary_marker
 
 if __name__ == '__main__':
     unittest.main()

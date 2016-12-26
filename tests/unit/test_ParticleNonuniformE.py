@@ -113,7 +113,7 @@ class TestParticleNonuniformE(unittest.TestCase):
             sample particles for 1 step.
         """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         ctrlCI = DTcontrol_C()
 
@@ -202,7 +202,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         """ Check the number of particles in each species.
         """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
         pass
 
         return

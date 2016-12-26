@@ -136,7 +136,7 @@ class TestParticleDeletion(unittest.TestCase):
         """Delete some particles in the 'out' array"""
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         ctrlCI = DT_M.DTcontrol_C()
 

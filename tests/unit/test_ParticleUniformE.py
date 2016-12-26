@@ -100,7 +100,7 @@ class TestParticleUniformE(unittest.TestCase):
             sample particles for 1 step.
         """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         ctrlCI = DT_M.DTcontrol_C()
 
@@ -154,7 +154,7 @@ class TestParticleUniformE(unittest.TestCase):
             sample particles for 10 steps.
         """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         ctrlCI = DT_M.DTcontrol_C()
 
@@ -222,7 +222,7 @@ class TestParticleUniformE(unittest.TestCase):
             2. 
         """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
         pass
 
         return
@@ -231,7 +231,7 @@ class TestParticleUniformE(unittest.TestCase):
         """ Check the number of particles in each species.
         """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
         pass
 
         return

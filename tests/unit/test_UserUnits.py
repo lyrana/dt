@@ -20,7 +20,7 @@ class TestUserUnits(unittest.TestCase):
     def test_eV(self):
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         # The temperature value input by the user:
         input_temp_eV = 3.0

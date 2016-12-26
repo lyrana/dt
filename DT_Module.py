@@ -318,6 +318,10 @@ class DTmeshInput_C(object):
         # Options: 'left, 'right', 'left/right', 'crossed'
         self.diagonal = None
 
+        # User-assigned names of boundaries where Dirichlet values are
+        # set.
+        self.boundary_names = []
+
 # May want things like this in order to call DT from a loop?
 # or spawn off many runs?
 # maybe don't need all of these:
@@ -350,10 +354,8 @@ class DTpoissonSolveInput_C(object):
         self.linear_solver = None
         self.preconditioner = None
 
-# Dirichlet BCs
-# Define the functions that produce the desired values of u on the boundary
-        self.phi_rmin = None
-        self.phi_rmax = None
+        # Dirichlet BC object
+        self.phi_BCs = None
 
         self.computeEflag = None
 

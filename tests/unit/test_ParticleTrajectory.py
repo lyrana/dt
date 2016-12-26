@@ -133,7 +133,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         # if os.environ.get('DISPLAY') is None:
         #     plotFlag=False
@@ -172,7 +172,7 @@ class TestParticleTrajectory(unittest.TestCase):
             Note: Does not check that the trajectory is correct.
         """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         pCI = self.particleCI
 
@@ -260,7 +260,7 @@ class TestParticleTrajectory(unittest.TestCase):
             Note: Does not check that the trajectory is correct.
         """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         pCI = self.particleCI
 

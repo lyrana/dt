@@ -82,7 +82,7 @@ class TestParticleInitialization(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname
+        print '\ntest:', fncname, '('+__file__+')'
 
         particle_species = self.pinCI.particle_species
         # Check the names of the species
@@ -96,7 +96,7 @@ class TestParticleInitialization(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname
+        print '\ntest:', fncname, '('+__file__+')'
 
         user_particles_class = self.pinCI.user_particles_class
 
@@ -136,7 +136,7 @@ class TestParticleInitialization(unittest.TestCase):
         """ Check the number of particles in each species.
         """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname
+        print '\ntest:', fncname, '('+__file__+')'
 
 if __name__ == '__main__':
     unittest.main()
