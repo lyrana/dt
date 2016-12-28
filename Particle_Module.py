@@ -380,13 +380,6 @@ class Particle_C(object):
 
 #    def get_total_particle_count(self, printFlag = False):ENDDEF
 
-# REMOVE: This is now done in Field_Particle_Module
-    def get_fields_at_particles(self, field_data):
-        """Compute the electric and magnetic field at the particles.
-        """
-# See Probe.cpp in FEniCS
-        pass
-
 #class Particle_C(object):
     def compute_mesh_cell_indices(self, meshCI):
         """Compute the cell index for each particle.

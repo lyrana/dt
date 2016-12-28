@@ -54,7 +54,7 @@ class TestSegmentedArray(unittest.TestCase):
         """ Test segment count at initialization. """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         for iSA in (0, 1):
             nSeg = self.seg_array_obj.nSeg[iSA]
@@ -65,7 +65,7 @@ class TestSegmentedArray(unittest.TestCase):
         """ Test field names. """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
 #        names = self.seg_array_obj.SegList[0].dtype.names
         for iSA in (0, 1):
@@ -77,7 +77,7 @@ class TestSegmentedArray(unittest.TestCase):
         """ Test putting particle data into the array using 'put'. """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         x=0.0; y=1.0; z=2.0; px=3.0; py=4; pz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
@@ -99,7 +99,7 @@ class TestSegmentedArray(unittest.TestCase):
         """ Test putting particle data into the array using a subscript. """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         x=0.0; y=1.0; z=2.0; px=3.0; py=4; pz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
@@ -120,7 +120,7 @@ class TestSegmentedArray(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         x=0.0; y=1.0; z=2.0; px=3.0; py=4; pz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
@@ -148,7 +148,7 @@ class TestSegmentedArray(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         x=0.0; y=1.0; z=2.0; px=3.0; py=4; pz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0

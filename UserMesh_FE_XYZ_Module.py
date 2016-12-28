@@ -9,9 +9,11 @@
 
 import sys
 import os
-import dolfin as df_M
 import numpy as np_M
 import math
+# !!! Direct invocation of dolfin. OK because UserMesh_C is a
+# sub-class of Mesh_C !!!
+import dolfin as df_M
 
 from Dolfin_Module import Mesh_C
 
@@ -20,7 +22,6 @@ import UserUnits_Module as U_M
 # User exposes whatever mesh parameters are useful in __init__ and
 # these can be set in __main__
 
-#ClassClassClassClassClassClassClassClassclass
 class UserMesh_C(Mesh_C):
     """UserMesh_C is derived from Mesh_C.  It is to be edited by the user to specify the simulation
        mesh.  The units are MKS by default (i.e., if no conversion
@@ -86,4 +87,6 @@ class UserMesh_C(Mesh_C):
                 self.mesh = df_M.BoxMesh(miCI.pmin[0], miCI.pmin[1], miCI.pmin[2], miCI.pmax[0], miCI.pmax[1], miCI.pmax[2], nx, ny, nz)
 
         return
+#    def create_mesh(self, miCI):ENDDEF
 
+#class UserMesh_C(Mesh_C):ENDCLASS

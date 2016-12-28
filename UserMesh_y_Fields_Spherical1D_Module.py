@@ -13,9 +13,11 @@
 
 import sys
 import os
-import dolfin as df_M
 import numpy as np_M
 import math
+# !!! Direct invocation of dolfin. OK because UserMesh_C is a
+# sub-class of Mesh_C !!!
+import dolfin as df_M
 
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import PoissonSolve_C
@@ -59,7 +61,13 @@ class UserMesh_C(Mesh_C):
 # Select the unit system to be used for input parameters.
     Convert = U_M.MyPlasmaUnits_C
 
-    def __init__(self, meshInputCI=None, mesh=None, boundaryMarker=None, computeDictionaries=False, computeTree=False, plotFlag=False):
+# Mesh_C constructor:
+#    def __init__(self, Mesh=None, meshToCopy=None, meshFile=None, computeDictionaries=False, computeTree=False, plotFlag=False):
+
+#    def __init__(self, meshInputCI=None, Mesh=None, meshToCopy=None, boundaryMarker=None, computeDictionaries=False, computeTree=False, plotFlag=False):
+
+# Examine the need for the Mesh and meshToCopy args:
+    def __init__(self, meshInputCI=None, Mesh=None, meshToCopy=None, computeDictionaries=False, computeTree=False, plotFlag=False):
         """
             The class UserMesh_C contains these attributes:
                 1. A mesh.
@@ -79,12 +87,18 @@ class UserMesh_C(Mesh_C):
 
         return
 
+# Inherited from Mesh_C:
+#    def copy(self):
+#        return copy.deepcopy(self)
+
     def create_mesh(self, miCI, plotFlag):
         """
            Create a mesh according to the user's specifications.
         """
         rmin = miCI.rmin
         rmax = miCI.rmax
+        boundaryNames = miCI.boundary_names
+
         stretch = miCI.stretch
         nr = miCI.nr
 
@@ -106,18 +120,31 @@ class UserMesh_C(Mesh_C):
 
 #        print 'dim =', mesh.topology().dim()
 
-        # Initialize all the facets with a default value of 2.
+        # Initialize all the facets with a default value of 0.
         # Then overwrite boundary facets that have Dirichlet BCs.
-        boundaryMarker.set_all(2)
+        boundaryMarker.set_all(0)
 
         # Create mesh subdomains Gamma_nnn that are the boundaries
         # (Could also do this later when the mesh has been stretched)
-        Gamma_rmin = XBoundary(0) # Gamma_rmin is the lower radial boundary
-        Gamma_rmax = XBoundary(1) # Gamma_rmax is the upper radial boundary
+        # We used UnitInterval to create the mesh, so the boundaries
+        # are at 0.0 and 1.0.
+        Gamma_rmin = XBoundary(0.0) # Gamma_rmin is the lower radial boundary
+        Gamma_rmax = XBoundary(1.0) # Gamma_rmax is the upper radial boundary
 
-        # Apply the  boundaryMarker function to these subdomains.
-        Gamma_rmin.mark(boundaryMarker, 0) # Mark the lower radial boundary with a 0
-        Gamma_rmax.mark(boundaryMarker, 1) # Mark the upper radial boundary with a 1
+        # Assign integer IDs to the boundaries with Dirichlet
+        # conditions.  Create a FacetFunction to store these values.
+        rmin_indx = 1
+        rmax_indx = 2
+        # Save these indices for the field solve
+        boundaryInts = {boundaryNames[0]: rmin_indx,
+                        boundaryNames[1]: rmax_indx}
+
+        Gamma_rmin.mark(boundaryMarker, rmin_indx) # Mark the lower
+                                                   # radial boundary
+                                                   # with rmin_indx
+        Gamma_rmax.mark(boundaryMarker, rmax_indx) # Mark the upper
+                                                   # radial boundary
+                                                   # with rmax_indx
 #
 # Now transform the unit interval mesh to its desired shape
 #
@@ -129,7 +156,7 @@ class UserMesh_C(Mesh_C):
 
         # Function to stretch the mesh as r increases from rmin to rmax
         def map_coordinate(x):
-            """Maps the [0, 1] interval to [rmin, rmax] with a stretch factor.
+            """Maps the [0.0, 1.0] interval to [rmin, rmax] with a stretch factor.
             """
             return rmin + (rmax-rmin)*x**stretch
 
@@ -145,11 +172,14 @@ class UserMesh_C(Mesh_C):
             df_M.plot(mesh, title='radial mesh', axes=True)
             df_M.interactive()
 
-        self.boundary_marker = boundaryMarker
         self.mesh = mesh
+        self.boundary_marker = boundaryMarker
+        self.boundary_ints = boundaryInts
 
         return
+#    def __init__(self, meshInputCI=None, Mesh=None, meshToCopy=None, computeDictionaries=False, computeTree=False, plotFlag=False):ENDDEF
 
+#class UserMesh_C(Mesh_C):ENDCLASS
 
 # The field-solve class could be in a different module file.  Here,
 # the connection between the field mesh and the field solve is close, so
@@ -158,7 +188,6 @@ class UserMesh_C(Mesh_C):
 #
 # Solve the equations for the fields
 #
-#ClassClassClassClassClassClassClassClassclass
 class UserPoissonSolve_C(PoissonSolve_C):
     """UserPoissonSolve_C solves equations to obtain physical fields from
        sources.  It can be edited by the user to specify the field
@@ -171,12 +200,17 @@ class UserPoissonSolve_C(PoissonSolve_C):
 # Select the unit system to be used for input parameters.
     Convert = U_M.MyPlasmaUnits_C
 
-    def __init__(self, phi, linear_solver, preconditioner, boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):
+#    def __init__(self, phi, linear_solver, preconditioner, boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):
+    def __init__(self, phi, linear_solver, preconditioner, boundary_marker, phi_BCs, chargeDensity=None, negElectricField=None):
         """mesh argument is only needed if, e.g., using a SpatialCoordinate in the equations.
         """
 
         self.u = phi.function
         V = phi.function_space
+
+        # Get the Dirichlet boundary values
+        (rmin_indx, phi_rmin) = phi_BCs['rmin']
+        (rmax_indx, phi_rmax) = phi_BCs['rmax']
 
         u_rmin = df_M.Constant(phi_rmin)
         u_rmax = df_M.Constant(phi_rmax)
@@ -191,9 +225,13 @@ class UserPoissonSolve_C(PoissonSolve_C):
         if preconditioner is not None:
             self.solver_parameters['preconditioner'] = preconditioner
 
-        # Create the Dirichlet boundary-condition list for the Laplace PDE
+        # Create the Dirichlet boundary-condition list for the Laplace
+        # PDE.  The indices rmin_indx and rmax_indx identify the
+        # facets in boundary_marker where boundary values are to be
+        # set.
         #       args: DirichletBC(FunctionSpace, GenericFunction, MeshFunction, int, method="topological")
-        self.bcs = [df_M.DirichletBC(V, u_rmin, boundary_marker, 0), df_M.DirichletBC(V, u_rmax, boundary_marker, 1)]
+
+        self.bcs = [df_M.DirichletBC(V, u_rmin, boundary_marker, rmin_indx), df_M.DirichletBC(V, u_rmax, boundary_marker, rmax_indx)]
 
         # Define the variational problem
         w = df_M.TrialFunction(V)
@@ -212,3 +250,6 @@ class UserPoissonSolve_C(PoissonSolve_C):
 #        self.negE = None
 
         return
+#    def __init__(self, phi, linear_solver, preconditioner, boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):ENDDEF
+
+#class UserPoissonSolve_C(PoissonSolve_C):ENDCLASS

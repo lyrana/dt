@@ -104,7 +104,7 @@ class TestFacetCrossing(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname
+        print '\ntest:', fncname, '('+__file__+')'
 
         # 1D mesh
 
@@ -206,7 +206,7 @@ class TestFacetCrossing(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname
+        print '\ntest:', fncname, '('+__file__+')'
 
         #
         # 1D: Initial point = center of cell, move = cell length

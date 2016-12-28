@@ -31,12 +31,17 @@ class Mesh_C(object):
     NO_FACET = -1
 
     # Constructor
-    def __init__(self, Mesh=None, meshFile=None, computeDictionaries=False, computeTree=False, plotFlag=False):
 
-        # Get the mesh from the arg list
+# Examine the need for the Mesh and meshToCopy args:
+    def __init__(self, Mesh=None, meshToCopy=None, meshFile=None, computeDictionaries=False, computeTree=False, plotFlag=False):
+
+        # Get a ref to the mesh from the arglist,
         if Mesh is not None:
             self.mesh = Mesh
-        # or read the mesh from a file
+        # or make a copy of the arglist mesh,
+        elif meshToCopy is not None:
+            self.mesh = df_M.Mesh(meshToCopy)
+        # or read the mesh from a file.
         elif meshFile is not None:
             self.mesh = df_M.Mesh(meshFile)
 
@@ -109,7 +114,11 @@ class Mesh_C(object):
 
 #   unsigned int cell_index = tree.compute_first_entity_collision(point, mesh);
 
+    def copy(self):
+        """ The 'copy constructor'.
+        """
 
+        return copy.deepcopy(self)
 
 #class Mesh_C(object):
     def compute_cell_dict(self):

@@ -28,12 +28,13 @@ class TestPoissonSolve(unittest.TestCase):
 
         return
 
+#class TestPoissonSolve(unittest.TestCase):
     def test_1D_poisson_solver(self):
         """Test a 1D Laplace equation in spherical coordinates.
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         # Plotting
         if os.environ.get('DISPLAY') is None:
@@ -48,6 +49,13 @@ class TestPoissonSolve(unittest.TestCase):
         miCI.rmin, miCI.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
         miCI.nr = 10 # Number of divisions in r direction
         miCI.stretch = 1.3 # Stretch parameter
+
+        # Name the Dirichlet boundaries. Integers will be assigned to
+        # them in UserMesh_C.
+        boundaryNames = ['rmin', 'rmax']
+        miCI.boundary_names = boundaryNames
+        
+#        print 'miCI.boundary_names =', miCI.boundary_names
 
         from UserMesh_y_Fields_Spherical1D_Module import UserMesh_C
         meshCI = UserMesh_C(meshInputCI=miCI, computeTree=False, plotFlag=True)
@@ -87,19 +95,23 @@ class TestPoissonSolve(unittest.TestCase):
         linear_solver = 'lu'
         preconditioner = None
 
-        # Boundary conditions are marked with a boundary marker mesh function
-        boundary_marker = meshCI.boundary_marker
-
-        # Boundary values on the potential
-        phi_rmin = 0.0
-        phi_rmax = -1.5
+        # Dirichlet boundaries are marked with a boundary marker mesh function
+        boundaryMarker = meshCI.boundary_marker
+        boundaryInts = meshCI.boundary_ints
+       
+        # Boundary values of the potential
+        phi_vals = {boundaryNames[0]:  0.0,
+                    boundaryNames[1]: -1.5,
+                    }
+        phi_BCs = dict( (bnd, [boundaryInts[bnd], phi_vals[bnd]]) for bnd in boundaryNames)
 
         # Compute the electrostatic field from phi
         from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve_C
         # Have to pass "mesh" because a SpatialCoordinate is used in Poisson's equation.
         poissonsolveCI = UserPoissonSolve_C(phi,
                                             linear_solver, preconditioner,
-                                            boundary_marker, phi_rmin, phi_rmax,
+#                                            boundary_marker, phi_rmin, phi_rmax,
+                                            boundaryMarker, phi_BCs,
                                             negElectricField=neg_electric_field)
 
         # Solve for the potential
@@ -168,13 +180,15 @@ class TestPoissonSolve(unittest.TestCase):
                 self.assertAlmostEqual(negEget[ic], negEexp[ic], msg="Expected and stored values of negE are not the same")
 
         return
+#    def test_1D_poisson_solver(self):ENDDEF
 
+#class TestPoissonSolve(unittest.TestCase):
     def test_2D_poisson_solver(self):
         """Test a 2D Laplace equation in cylindrical coordinates.
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname
+        print '\ntest: ', fncname, '('+__file__+')'
 
         # Plotting
         if os.environ.get('DISPLAY') is None:
@@ -189,6 +203,11 @@ class TestPoissonSolve(unittest.TestCase):
         miCI.rmin, miCI.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
         miCI.nr = 10 # Number of divisions in r direction
         miCI.stretch = 1.3 # Stretch parameter
+
+        # Name the Dirichlet boundaries. Integers will be assigned to
+        # them in UserMesh_C.
+        boundaryNames = ['rmin', 'rmax']
+        miCI.boundary_names = boundaryNames
 
         # theta, starts at 0
         miCI.tmax = math.pi/2 # quarter-circle
@@ -238,17 +257,24 @@ class TestPoissonSolve(unittest.TestCase):
 #        linear_solver = 'cg'
 #        preconditioner = 'ilu'
 
-        boundary_marker = meshCI.boundary_marker
-        phi_rmin = 0.0
-        phi_rmax = -1.5
+        # Dirichlet Boundaries are marked with a boundary marker mesh
+        # function
+        boundaryMarker = meshCI.boundary_marker
+        boundaryInts = meshCI.boundary_ints
+       
+        # Boundary values of the potential
+        phi_vals = {boundaryNames[0]:  0.0,
+                    boundaryNames[1]: -1.5,
+                    }
 
+        phi_BCs = dict( (bnd, [boundaryInts[bnd], phi_vals[bnd]]) for bnd in boundaryNames)
         computeEflag = True
 
         from UserMesh_y_Fields_FE2D_Module import UserPoissonSolve_C
 
         poissonsolveCI = UserPoissonSolve_C(phi,
                                             linear_solver, preconditioner,
-                                            boundary_marker, phi_rmin, phi_rmax,
+                                            boundaryMarker, phi_BCs,
                                             negElectricField=neg_electric_field)
 
         poissonsolveCI.solve_for_phi(plotFlag=plot_flag)
@@ -270,6 +296,9 @@ class TestPoissonSolve(unittest.TestCase):
             file << neg_electric_field.function
 
         return
+#    def test_2D_poisson_solver(self):ENDDEF
+
+#class TestPoissonSolve(unittest.TestCase):ENDCLASS
 
 if __name__ == '__main__':
     unittest.main()

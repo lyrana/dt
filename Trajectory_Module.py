@@ -9,6 +9,7 @@ __all__ = ['',
 import sys
 import numpy as np_M
 
+# !!! Direct invocation of dolfin for trajectory plots!!!
 import dolfin as df_M
 
 class Trajectory_C(object):
@@ -138,6 +139,7 @@ class Trajectory_C(object):
         """
 
         # Create a plotter to display the trajectory.
+        # !!! Direct call to dolfin !!!
         plotter=df_M.plot(mesh, title="Trajectory plot")
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
