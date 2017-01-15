@@ -4,12 +4,12 @@
 #__author__ = 'Copyright (C) 2016 L. D. Hughes'
 #__all__ = []
 
-"""UserFields defines the mesh, field boundary conditions (BCs), and
-   the field solvers.  The type of mesh may be FE or FD.  In this case,
-   it's easiest to apply the BCs while the mesh is being created,
-   since at first, the boundaries are Cartesian coordinate lines that
-   are easy to specify.  The mesh is then stretched and transformed to
-   a cylindrical shape.
+"""UserMesh_y_Fields defines the mesh, marks boundaries for field and
+   particle boundary-conditions (BCs), and creates the field solvers.
+   The type of mesh may be FE or FD.  In this case, it's easiest to
+   apply the BCs while the mesh is being created, since at first, the
+   boundaries are Cartesian coordinate lines that are easy to specify.
+   The mesh is then stretched and transformed to a cylindrical shape.
 """
 
 import sys
@@ -51,6 +51,21 @@ class XBoundary(df_M.SubDomain):
         tol = 1.0e-10
         return on_boundary and abs(x[0]-self.x_boundary_value) < tol
 
+class YBoundary(df_M.SubDomain):
+    """The YBoundary class is a specialized SubDomain
+    """
+    # Set the X value of the boundary in the constructor
+    def __init__(self, y_boundary_value, map_tol=1.0e-10):
+        self.y_boundary_value=y_boundary_value
+        # Pass the map_tol argument on to the base class
+        super(self.__class__, self).__init__(map_tol=1.0e-10)
+
+    # Return true for points inside the subdomain
+    def inside(self, x, on_boundary):
+        """x[0|1|2] contains the x, y, z coordinates of a point.
+        """
+        tol = 1.0e-10
+        return on_boundary and abs(x[1]-self.y_boundary_value) < tol
 
 # User exposes whatever mesh parameters are useful in __init__ and
 # these can be set in __main__
@@ -70,61 +85,68 @@ class UserMesh_C(Mesh_C):
 
 #    def __init__(self, meshInputCI=None, Mesh=None, boundaryMarker=None, computeDictionaries=False, computeTree=False, plotFlag=False):
 
-# Examine the need for the Mesh and meshToCopy args:
-    def __init__(self, meshInputCI=None, Mesh=None, meshFile=None, computeDictionaries=False, computeTree=False, plotFlag=False):
+    def __init__(self, meshInputCI=None, computeDictionaries=False, computeTree=False, plotFlag=False):
         """
             The class UserMesh_C contains these attributes:
                 1. A mesh.
-                2. A MeshFunction that marks mesh boundaries for boundary conditions.
+                2. A fieldBoundaryMarker (MeshFunction) that marks
+                   mesh boundaries for field boundary-conditions.
+                3. A particleBoundaryMarker (MeshFunction) that marks
+                   mesh boundaries for particle boundary-conditions.
         """
 
-        if meshInputCI is not None:
+        if meshInputCI.mesh_file is None:
             self.create_mesh(meshInputCI, plotFlag)
             # don't need another mesh plot
             plotFlag = False
-        elif Mesh is not None:
-            self.mesh = Mesh
-#            self.boundary_marker = boundaryMarker
-        # or read the mesh from a file.
-        elif meshFile is not None:
-            pass # Pass to parent class
-        else:
-            error_msg = "UserMesh_C: no mesh specified"
-            sys.exit(error_msg)
 
-#        self.gdim = self.mesh.geometry().dim()
-#        self.tdim = self.mesh.topology().dim()
         # Call the parent constructor to complete setting class variables.
+        meshFile = meshInputCI.mesh_file
         super(self.__class__, self).__init__(meshFile=meshFile, computeDictionaries=computeDictionaries, computeTree=computeTree, plotFlag=plotFlag)
+        
+        self.field_boundary_dict = meshInputCI.field_boundary_dict
+        self.particle_boundary_dict = meshInputCI.particle_boundary_dict
+
+        # Read boundary markers from file, if provided
+        fieldBoundaryFile = meshInputCI.field_boundary_file
+        particleBoundaryFile = meshInputCI.particle_boundary_file
+        if meshInputCI.field_boundary_file is not None:
+            fieldBoundaryMarker = df_M.MeshFunction("size_t", self.mesh, fieldBoundaryFile)
+            self.field_boundary_marker = fieldBoundaryMarker
+        if particleBoundaryFile is not None:
+            particleBoundaryMarker = df_M.MeshFunction("size_t", self.mesh, particleBoundaryFile)
+# or equivalently:       particleBoundaryMarker = df_M.MeshFunctionSizet(self.mesh, "Pbcs_quarter_circle_mesh_crossed.xml")
+            self.particle_boundary_marker = particleBoundaryMarker
 
         return  
-#    def __init__(self, meshInputCI=None, Mesh=None, computeDictionaries=False, computeTree=False, plotFlag=False):ENDDEF
+#    def __init__(self, meshInputCI=None, computeDictionaries=False, computeTree=False, plotFlag=False):ENDDEF
+
+# Inherited from Mesh_C:
+#    def copy(self):
+#        return copy.deepcopy(self)
 
 #class UserMesh_C(Mesh_C):
-    def create_mesh(self, miCI, plotFlag):
+    def create_mesh(self, meshInputCI, plotFlag):
+        """Create a mesh and mark subdomains (e.g., Dirichlet
+           boundaries and particle boundaries) according to the user's
+           specifications.
         """
-           Create a mesh and mark subdomains (e.g., Dirichlet
-           boundaries) according to the user's specifications.
-        """
-        rmin = miCI.rmin
-        rmax = miCI.rmax
-        boundaryNames = miCI.boundary_names
+        rmin = meshInputCI.rmin
+        rmax = meshInputCI.rmax
 
-#       print 'miCI.boundary_names =', miCI.boundary_names
+        fieldBoundaryDict = meshInputCI.field_boundary_dict
+        particleBoundaryDict = meshInputCI.particle_boundary_dict
 
-        stretch = miCI.stretch
-        nr = miCI.nr
+        stretch = meshInputCI.stretch
+        nr = meshInputCI.nr
 
-        tmax = miCI.tmax
-        nt = miCI.nt
+        # The final mesh will go from 0 to tmax:
+        tmax = meshInputCI.tmax
+        nt = meshInputCI.nt
 
         # Options: 'left, 'right', 'left/right', 'crossed'
-        diagonal = miCI.diagonal
+        diagonal = meshInputCI.diagonal
         
-# The final mesh will go from 0 to tmax:
-#    Theta = math.pi/2 # theta extent of the mesh
-        Theta = tmax # theta extent of the mesh
-
 # First, make a rectangular mesh
 
 #       args: RectangleMesh(x0, y0, x1, y1, nx, ny, diagonal="right")
@@ -139,48 +161,82 @@ class UserMesh_C(Mesh_C):
 
 #V = df.FunctionSpace(mesh, 'Lagrange', 1)
 
-        #
-        # Set the Dirichlet boundary conditions on the Rectangle,
-        # before transforming it, since it's a simple rectangle then.
-        #
+        # Field boundary conditions
 
-        # Create a MeshFunction object that contains the mesh, and is
-        # defined on mesh facets.  The function has a (size_t) value
-        # of 0, 1, or 2, to identify the boundary-condition applied.
-        # The function values are set later.
+        if fieldBoundaryDict is not None:
+            # Set the Dirichlet boundary-conditions on the Rectangle,
+            # before transforming it, since it's a simple rectangle then.
 
-        # A boundary has dimension 1 less than the domain:
-        boundaryMarker = df_M.MeshFunction("size_t", mesh, mesh.topology().dim()-1)
+            # Create a MeshFunction object that contains the mesh, and is
+            # defined on mesh facets.  The function has a (size_t) value
+            # of 0, 1, or 2, to identify the boundary-condition applied.
+            # The function values are set later.
 
-        # Initialize all mesh facets with a default value of 0
-        # Then overwrite boundary facets that have Dirichlet BCs.
-        boundaryMarker.set_all(0)
+            # A boundary has dimension 1 less than the domain:
+    # equivalent:       fieldBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
+            fieldBoundaryMarker = df_M.FacetFunction('size_t', mesh)
 
-        # Create mesh subdomains to apply boundary-conditions
-        Gamma_rmin = XBoundary(rmin) # Gamma_rmin is the lower radial boundary
-        Gamma_rmax = XBoundary(rmax) # Gamma_rmax is the upper radial boundary
+            # Initialize all mesh facets with a default value of 0
+            # Then overwrite boundary facets that have Dirichlet BCs.
+            fieldBoundaryMarker.set_all(0)
 
-        # Mark these subdomains (boundaries) with non-zero integers
-        rmin_indx = 1
-        rmax_indx = 2
-        Gamma_rmin.mark(boundaryMarker, rmin_indx) # Mark the lower radial
-                                                   # boundary with rmin_indx
-        Gamma_rmax.mark(boundaryMarker, rmax_indx) # Mark the upper radial
-                                                   # boundary with rmax_indx
+            # Create mesh subdomains to apply boundary-conditions
+            Gamma_rmin = XBoundary(rmin) # Gamma_rmin is the lower radial boundary
+            Gamma_rmax = XBoundary(rmax) # Gamma_rmax is the upper radial boundary
 
-        # Save these indices for the field solve
-#        boundaryNames = [[str(rmin_indx), "rmin"],
-#                         [str(rmax_indx), "rmax"],
-#                         ]
-#        boundaryInts = [rmin_indx, rmax_indx]
+            # Mark these subdomains (boundaries) with non-zero integers
+            rmin_indx = fieldBoundaryDict['rmin']
+            rmax_indx = fieldBoundaryDict['rmax']
+            Gamma_rmin.mark(fieldBoundaryMarker, rmin_indx) # Mark the lower radial
+                                                       # boundary with rmin_indx
+            Gamma_rmax.mark(fieldBoundaryMarker, rmax_indx) # Mark the upper radial
+                                                       # boundary with rmax_indx
 
-#        boundaryInts = {"rmin": rmin_indx,
-#                       "rmax": rmax_indx}
-        boundaryInts = {boundaryNames[0]: rmin_indx,
-                        boundaryNames[1]: rmax_indx}
-#
+            self.field_boundary_marker = fieldBoundaryMarker
+        else:
+            self.field_boundary_marker = None
+
+        # Particle boundary conditions
+
+        if particleBoundaryDict is not None:
+            # Create a MeshFunction object that contains the mesh, and is
+            # defined on mesh facets.  The function has a (size_t) value
+            # of 0, 1, or 2, to identify the boundary-condition applied.
+            # The function values are set later.
+
+            # A boundary has dimension 1 less than the domain:
+            particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
+
+            # Initialize all mesh facets with a default value of 0
+            # Then overwrite boundary facets that have callback functions.
+            particleBoundaryMarker.set_all(0)
+
+            # Create mesh subdomains to apply boundary-conditions
+            Gamma_rmin = XBoundary(rmin)  # Gamma_rmin is the lower radial boundary
+            Gamma_rmax = XBoundary(rmax)  # Gamma_rmax is the upper radial boundary
+            # At this point, y goes from 0 to 1
+            Gamma_thmin = YBoundary(0.0)  # Gamma_thmin is the lower theta boundary
+            Gamma_thmax = YBoundary(1.0) # Gamma_thmax is the upper theta boundary
+
+            # Mark these subdomains (boundaries) with non-zero integers
+            rmin_indx = particleBoundaryDict['rmin']
+            rmax_indx = particleBoundaryDict['rmax']
+            thmin_indx = particleBoundaryDict['thmin']
+            thmax_indx = particleBoundaryDict['thmax']
+
+            Gamma_rmin.mark(particleBoundaryMarker, rmin_indx) # Mark the lower radial
+                                                               # boundary with rmin_indx
+            Gamma_rmax.mark(particleBoundaryMarker, rmax_indx) # Mark the upper radial
+                                                               # boundary with rmax_indx
+            Gamma_thmin.mark(particleBoundaryMarker, thmin_indx) # Mark the lower theta
+                                                                 # boundary with thmin_indx
+            Gamma_thmax.mark(particleBoundaryMarker, thmax_indx) # Mark the lower theta
+                                                                 # boundary with thmax_indx
+            self.particle_boundary_marker = particleBoundaryMarker
+        else:
+            self.particle_boundary_marker = None
+
 # Now transform the rectangular mesh to its desired shape
-#
 
         # Pull out the x, y coordinates of the rectangle
         x = mesh.coordinates()[:,0]
@@ -220,36 +276,18 @@ class UserMesh_C(Mesh_C):
         # boundaries
         if (plotFlag):
             df_M.plot(mesh, title='cylindrical mesh', axes=True)
-            df_M.plot(boundaryMarker, title='boundary marks', axes=True)
+            df_M.plot(fieldBoundaryMarker, title='field boundary marks', axes=True)
+            df_M.plot(particleBoundaryMarker, title='particle boundary marks', axes=True)
             df_M.interactive()
 #raw_input('C: Press <ENTER> to continue')
 
         self.mesh = mesh
-        self.boundary_marker = boundaryMarker
-        self.boundary_ints = boundaryInts
-#        self.mesh = mesh_type
 
 #A copy of a mesh may be created as follows:
-
 #mesh_copy = Mesh(mesh)
 
-# Compute the search tree. Needed if there are field probes,
-# etc. where fields need to be evaluated at arbitrary positions within
-# the mesh.
-
-# The particle mesh needs a tree to compute the forces on the
-# particles.
-
-        # compute_tree = True
-
-        # if (compute_tree):
-        #     self.mesh_tree = self.mesh.bounding_box_tree()
-
-            # endif
-
-
         return
-#    def create_mesh(self, miCI, plotFlag):ENDDEF
+#    def create_mesh(self, meshInputCI, plotFlag):ENDDEF
 
 #class UserMesh_C(Mesh_C): ENDCLASS
 
@@ -272,7 +310,7 @@ class UserPoissonSolve_C(PoissonSolve_C):
 # Select the unit system to be used for input parameters.
     Convert = U_M.MyPlasmaUnits_C
 
-    def __init__(self, phi, linear_solver, preconditioner, boundaryMarker, phi_BCs, chargeDensity=None, negElectricField=None):
+    def __init__(self, phi, linear_solver, preconditioner, fieldBoundaryMarker, phi_BCs, chargeDensity=None, negElectricField=None):
 #    def __init__(self, phi, linear_solver, preconditioner, boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):
 #    def __init__(self, function_space, linear_solver, preconditioner, boundary_marker, phi_rmin, phi_rmax, computeEflag, mesh=None):
         """Constructor for a Poisson solver written by the user.
@@ -308,7 +346,7 @@ class UserPoissonSolve_C(PoissonSolve_C):
         u_rmin = df_M.Constant(phi_rmin)
         u_rmax = df_M.Constant(phi_rmax)
 
-        self.bcs = [df_M.DirichletBC(V, u_rmin, boundaryMarker, rmin_indx), df_M.DirichletBC(V, u_rmax, boundaryMarker, rmax_indx)]
+        self.bcs = [df_M.DirichletBC(V, u_rmin, fieldBoundaryMarker, rmin_indx), df_M.DirichletBC(V, u_rmax, fieldBoundaryMarker, rmax_indx)]
 
 # Define the variational problem
         w = df_M.TrialFunction(V)
@@ -323,6 +361,6 @@ class UserPoissonSolve_C(PoissonSolve_C):
 #        self.phi = None
 #        self.negE = None
         return
-#    def __init__(self, phi, linear_solver, preconditioner, boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):ENDDEF
+#    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):ENDDEF
 
 #class UserPoissonSolve_C(PoissonSolve_C):ENDCLASS

@@ -5,7 +5,7 @@ These are static (like global) functions. No SELF variable!
 """
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-__all__ = ['ParticleDistributions_C.drifting_Hplus',
+__all__ = ['UserParticleDistributions_C.drifting_Hplus',
            ]
 
 import sys
@@ -14,6 +14,7 @@ import numpy as np_M
 
 from Dolfin_Module import Mesh_C
 from Particle_Module import Particle_C
+#from Particle_Module import ParticleMeshBoundaryConditions_C
 import UserUnits_Module as U_M
 
 #
@@ -27,8 +28,8 @@ import UserUnits_Module as U_M
 # Select the unit system to be used for input parameters.
 Convert = U_M.MyPlasmaUnits_C
 
-class ParticleDistributions_C(object):
-    """ParticleDistributions_C is to be edited by the user to
+class UserParticleDistributions_C(object):
+    """UserParticleDistributions_C is to be edited by the user to
        specify initial particle distributions.  The units are MKS by
        default (i.e., if no conversion factor is applied), but any
        units can be used provided the conversion to MKS is available
@@ -89,4 +90,48 @@ class ParticleDistributions_C(object):
         return np, particle_list
 #    def neutral_H(type):ENDDEF
 
-#class ParticleDistributions_C(object):ENDCLASS
+#class UserParticleDistributions_C(object):ENDCLASS
+
+# Rename to UserParticleBoundaryFunctions ?
+# Does this need to descend from ParticleBoundaryConditions_C?  It just has static functions
+#class UserParticleBoundaryConditions_C(ParticleBoundaryConditions_C):
+class UserParticleBoundaryConditions_C(object):
+    """UserParticleBoundaryConditions_C implements callback functions
+       (boundary conditions) for kinetic particles crossing marked
+       mesh facets.
+
+       See Particle_Module::ParticleBoundaryConditions_C for naming
+       scheme.
+    """
+
+#    @staticmethod
+    def default_bc(self, p, facet_index):
+        """Global default boundary condition for all species.
+        """
+
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print "Called", fncname
+
+        return
+
+#    @staticmethod
+    def default_bc_at_rmin(self, p, facet_index):
+        """Default boundary condition particles incident on rmin.
+        """
+
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print "Called", fncname
+
+        return
+    
+#    @staticmethod
+    def bc_at_rmin_for_testelectrons(self, p, facet_index):
+        """Boundary condition for testelectrons incident on rmin.
+        """
+
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print "Called", fncname
+
+        return
+
+#class UserParticleBoundaryConditions_C(object):ENDCLASS

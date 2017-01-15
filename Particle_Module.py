@@ -43,8 +43,9 @@ class Particle_C(object):
     SEGMENT_LENGTH = 100
 #    SEGMENT_LENGTH = 5
     # Bitmasks are static class variables
-    DELETE_FLAG = 0b01 # the lowest bit is 1
-    TRAJECTORY_FLAG = 0b10 # the second lowest bit is 1
+    DELETE_FLAG = 0b1 # the lowest bit is 1
+#    TRAJECTORY_FLAG = 0b10 # the second lowest bit is 1
+    TRAJECTORY_FLAG = 0b1 << 1 # the second lowest bit is 1
 
 #    def __init__(self, species_input, phase_coordinates, precision, segment_length, user_particles_class, echoFlag):
 
@@ -59,9 +60,8 @@ class Particle_C(object):
         user_particles_class = particleInputCI.user_particles_class
         particle_species = particleInputCI.particle_species
 
+        # The spatial coordinates of a particle
         self.position_coordinates = particleInputCI.position_coordinates
-#        moved this out of ParticleDistributions_C:
-#        self.position_coordinates = user_particles_class.position_coordinates
         self.dimension = len(self.position_coordinates)
 
         # These are the position coordinates at the start of a push
@@ -72,9 +72,15 @@ class Particle_C(object):
 #        phase_coordinates = particleInputCI.position_coordinates + velocity_coordinates
 
         phase_coordinates = self.position_coordinates + initial_position_coordinates + velocity_coordinates
-
 #        print 'particle_c... phase_coords = ', phase_coordinates
+
+        # The particle mesh
+        self.pmeshCI = particleInputCI.pmeshCI
         
+        # This is for a reference to a ParticleMeshBoundaryConditions_C
+        # object that handles particle boundary conditions.
+        self.pbcCI = None
+
         # Count the species
         self.number_of_species = len(particle_species)
         if printFlag: print 'Particle_C: there are:', self.number_of_species, ' species'
@@ -118,11 +124,11 @@ class Particle_C(object):
             # Process user input for initial particle distribution functions
             # key: 'initial_distribution_type'
             init_dist_type = sp_dict['initial_distribution_type']
-            if init_dist_type:
-                # Check for an 'attribute' in the
-                # UserParticle/ParticleDistributions class that has
-                # the same name as the species; that's the
-                # user-specified initial distribution
+            if init_dist_type is not None:
+                # Look in user_particles_class for a function
+                # ('attribute') that has the same name as the particle
+                # species; that's the user-specified initial
+                # distribution.
 #                if hasattr(UPD_M.UserParticleDistributions, init_dist):
                 if hasattr(user_particles_class, species_name):
                     # store the name of the distribution function
@@ -130,7 +136,7 @@ class Particle_C(object):
                     if printFlag: print 'Particle_C: Initial distribution for', species_name, ' is the function of that name in ', user_particles_class
                 # Write error message and exit if no distribution function exists
                 else:
-                    error_msg = "Particle_C: Need to define a particle distribution function %s in UserParticle.py for species %s " % (species_name, species_name)                                                                                                                                                                                                                                                                                                                       
+                    error_msg = "Particle_C: Need to define a particle distribution function %s in UserParticle.py for species %s " % (species_name, species_name)
                     sys.exit(error_msg)
             else:
                 # There are no initial particles for this species
@@ -198,7 +204,10 @@ class Particle_C(object):
             # Initialize particle count for each species
             self.particle_count[species_name] = 0
 
-        # May have particle trajectories
+        # This is for a reference to a Trajectory_C object to handle
+        # particles that have the TRAJECTORY_FLAG bit turned on.  It
+        # needs to have that object before such particles are
+        # encountered.
         self.trajCI = None
 
         # An scratch ndarray for one particle is used for trajectories
@@ -229,6 +238,8 @@ class Particle_C(object):
         """
 #    pCI = runCI.particles # abbrev for particle Class Instance
 
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
         for sp in self.species_names:
             init_dist_type = self.initial_distribution_type[sp]
             if init_dist_type == 'listed':
@@ -247,7 +258,8 @@ class Particle_C(object):
     def create_from_list(self, species_name, printFlag=False):
         """Generates particles for a species from a list provided by the user.
         """
-        fncname = sys._getframe().f_code.co_name + '():'
+
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         pseg_arrCI = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
         
@@ -275,7 +287,7 @@ class Particle_C(object):
 #        print self.particle_dtype['names']
 #        print 'index = ', self.particle_dtype['names'].index('bitflags')
 
-        # put dynamics type here
+        # The dynamics type determines what trajectory variables are available
         if self.trajCI is not None:
             if species_name in self.trajCI.explicit_species:
                 dynamics_type = 'explicit'
@@ -298,6 +310,9 @@ class Particle_C(object):
 #                    print 'pindex for trajectory = ', pindex
                     self.trajCI.ParticleIdList[species_name].append(pindex)
                     self.trajCI.create_trajectory(species_name, dynamics_type)
+                else:
+# Instead of printing this message, a trajCI object could be created here.
+                    print fncname, "*** DT Warning: A trajectory flag is on, but no trajectory object has been created yet. ***"
 
 #        if (printFlag): print fncname, "weight for ", species_name, " is ", weight
 #        if (printFlag): print fncname, "bitflags for ", species_name, " is ", bitflags
@@ -309,7 +324,7 @@ class Particle_C(object):
     def create_from_functions(self, species_name, printFlag = False):
         """Generates particles for a species from a list provided by the user.
         """
-        fncname = sys._getframe().f_code.co_name + '():'
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         pseg_arrCI = self.pseg_arrCI[species_name] # storage array for this species
 
@@ -352,7 +367,7 @@ class Particle_C(object):
     def get_species_particle_count(self, species_name, printFlag = False):
         """Counts the particles for a given species.
         """
-        fncname = sys._getframe().f_code.co_name + '():'
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         pseg_arrCI = self.pseg_arr[species_name] # storage array for this species
         number_of_particles = pseg_arrCI.get_number_of_items()
@@ -367,7 +382,8 @@ class Particle_C(object):
     def get_total_particle_count(self, printFlag = False):
         """Counts all the particles.
         """
-        fncname = sys._getframe().f_code.co_name + '():'
+
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         psum = 0
         for sn in self.species_names:
@@ -381,10 +397,8 @@ class Particle_C(object):
 #    def get_total_particle_count(self, printFlag = False):ENDDEF
 
 #class Particle_C(object):
-    def compute_mesh_cell_indices(self, meshCI):
+    def compute_mesh_cell_indices(self):
         """Compute the cell index for each particle.
-
-           :param meshCI: A Mesh_C object containing the mesh attributes.
 
            :returns: None
 
@@ -398,12 +412,12 @@ class Particle_C(object):
             while isinstance(pseg, np_M.ndarray):
 #                for ip in xrange(pseg.size):
                 for ip in xrange(np_seg):
-                    pseg[ip]['cell_index'] = meshCI.compute_cell_index(pseg[ip])
+                    pseg[ip]['cell_index'] = self.pmeshCI.compute_cell_index(pseg[ip])
 #                    print 'ip, index =', ip, pseg[ip]['cell_index']
                 (np_seg, pseg) = psaCI.get_next_segment('out')
 
         return
-#    def compute_mesh_cell_indices(self, meshCI):ENDDEF
+#    def compute_mesh_cell_indices(self):ENDDEF
 
 #class Particle_C(object):
     def move_particles_in_electrostatic_field(self, dt, neg_electric_field):
@@ -418,9 +432,10 @@ class Particle_C(object):
 
         """
 
-        fncname = sys._getframe().f_code.co_name + '():'
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
-        meshCI = neg_electric_field.meshCI
+#        meshCI = neg_electric_field.meshCI
+        pmeshCI = self.pmeshCI
 
         # Scratch space
         pcoords = self.pcoords # x,y,z, x0,y0,z0 (or subset)
@@ -565,8 +580,8 @@ class Particle_C(object):
 
 #                    print 'ip, index =', ip, pseg[ip]['cell_index']
                     p_cell_index = pseg_out[ip_out]['cell_index']
-#                    print fncname, ": ip, pindex", ip, p_cell_index, "cell index:", meshCI.compute_cell_index(pseg[ip])
-                    if meshCI.is_inside(pseg_out[ip_out], p_cell_index):
+#                    print fncname, ": ip, pindex", ip, p_cell_index, "cell index:", pmeshCI.compute_cell_index(pseg[ip])
+                    if pmeshCI.is_inside(pseg_out[ip_out], p_cell_index):
                         pass
                     else:
                         # The particle has left this cell.  We may
@@ -610,13 +625,13 @@ class Particle_C(object):
 
                         found_facet = False
 
-#                        facet = meshCI.find_facet(pcoords, pcoords[dim+1:2*dim)
-                        facet = meshCI.find_facet(pcoords, dx, p_cell_index)
+#                        facet = pmeshCI.find_facet(pcoords, pcoords[dim+1:2*dim)
+                        facet = pmeshCI.find_facet(pcoords, dx, p_cell_index)
 
 # See save10/Particle_Module.py for a different search
 
 #                        if found_cell != True: print "Particle is not in nearby cells; using BB search"
-#                        ci = meshCI.compute_cell_index(pseg[ip])
+#                        ci = pmeshCI.compute_cell_index(pseg[ip])
 #                        print "Found particle is in cell", ci        
 #                        pseg[ip]['cell_index'] = ci
 
@@ -650,7 +665,7 @@ class Particle_C(object):
 #    def move_particles_in_electrostatic_field(self, dt, neg_electric_field):ENDDEF
 
 #class Particle_C(object):
-    def move_neutral_particles(self, dt, meshCI):
+    def move_neutral_particles(self, dt):
         """Move neutral particles on a mesh.
            
            Compute change in position in time dt. Use an explicit
@@ -659,17 +674,16 @@ class Particle_C(object):
            Arguments:
                dt: time interval.
 
-               meshCI: a Mesh_C object
-
         """
 
-        fncname = sys._getframe().f_code.co_name + '():'
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         # Scratch space
         pcoords = self.pcoords # x,y,z, x0,y0,z0 (or subset)
         dx = self.dx # dx is the distance moved in one step.
 #        p_arr = self.one_particle_arr[0]
 
+        pmeshCI = self.pmeshCI
         dim = self.dimension
 
         for sn in self.neutral_species:
@@ -717,14 +731,17 @@ class Particle_C(object):
 
 #                    print 'ip, index =', ip, pseg[ip]['cell_index']
                     p_cell_index = pseg_out[ip_out]['cell_index']
-#                    print fncname, ": ip, pindex", ip, p_cell_index, "cell index:", meshCI.compute_cell_index(pseg[ip])
-                    if meshCI.is_inside(pseg_out[ip_out], p_cell_index):
-                        pass
-                    else:
-                        # The particle has left this cell.  We may
+#                    print fncname, ": ip, pindex", ip, p_cell_index, "cell index:", pmeshCI.compute_cell_index(pseg[ip])
+
+                    # Loop until the particle is in the current cell
+                    while not pmeshCI.is_inside(pseg_out[ip_out], p_cell_index):
+                        # The particle has left this cell.  We
                         # need to track it across each facet in case
                         # there's a boundary-condition on that facet.
 #                        print fncname, "particle has migrated"
+
+                        # Compute dx[], the move vector that starts in
+                        # the current cell
                         i=0
                         for coord in self.position_coordinates:
                             pcoords[i] = pseg_out[ip_out][coord]
@@ -734,17 +751,38 @@ class Particle_C(object):
 #                        pcoords[:] = pseg_out[ip_out] # Alias to the position coordinates
                         dx = pcoords[0:dim] - pcoords[dim:2*dim] # Move vector
 
-#                        facet = meshCI.find_facet(pcoords, pcoords[dim+1:2*dim)
+#                        facet = pmeshCI.find_facet(pcoords, pcoords[dim+1:2*dim)
 #                        print fncname, "pcoords=", pcoords, "dx=", dx, "p_cell_index=", p_cell_index
 
-                        (facet, path_fraction) = meshCI.find_facet(pcoords, dx, p_cell_index)
-                        if facet != meshCI.NO_FACET:
+# could return the crossing-point in pcoords[]
+                        (facet, path_fraction) = pmeshCI.find_facet(pcoords, dx, p_cell_index)
+                        if facet != pmeshCI.NO_FACET:
+ #                           print "facet crossed is", facet
+
+                            # Look up the mesh-level index of this facet...
+                            fac_indx = pmeshCI.cell_entity_index_dict['facet'][p_cell_index][facet]
+                            # ...and get the value of the facet marker.
+# fac_indx is a numpy.uint32, but the FacetFunction wants an int argument.
+#                            print "type is:", type(fac_indx)
+                            fac_value = pmeshCI.particle_boundary_marker[fac_indx]
+                            # Check if this facet has a non-zero marker
+                            if fac_value != 0:
+                                # Look up the name of this boundary...
+                                bdy = pmeshCI.particle_boundary_dict[fac_value]
+                                # ...and call the handler
+
+# Maybe this needs the whole particle object?  It could be the end-of-the line for the particle.
+# Need to check what needs to be in the following arg list:
+                                self.pbcCI.bcFunctionDict[bdy][sn](pcoords, fac_indx)
+                            else:
                             # Update the cell index to the new cell
-# NB: This may not be the final cell. FIXME, with a while loop???
-                            pseg_out[ip_out]['cell_index'] = meshCI.cell_neighbor_dict[p_cell_index][facet]
-#                            print "cell_index updated to", pseg_out[ip_out]['cell_index']
+                                p_cell_index = pmeshCI.cell_neighbor_dict[p_cell_index][facet]
+                                pseg_out[ip_out]['cell_index'] = p_cell_index
+#                                print "cell_index updated to", pseg_out[ip_out]['cell_index']
                         else:
                             print "facet crossed is", facet
+#                       END:if facet != pmeshCI.NO_FACET:
+#                   END:while not pmeshCI.is_inside(pseg_out[ip_out], p_cell_index)
 
                     # Don't need this since we just look up the cell
                     # index when computing negE above
@@ -1039,3 +1077,99 @@ class Particle_C(object):
 #    def compute_charge_density(self, fCI):ENDDEF
 
 #class Particle_C(object):ENDCLASS
+
+class ParticleMeshBoundaryConditions_C(object):
+    """ParticleMeshBoundaryConditions_C sets up a 2D dictionary
+       (bcFunctionDict, indexed by boundary and species) to treat
+       kinetic particles incident on a mesh boundary.
+
+       The functions themselves are provided by the user in a
+       UserParticleMeshBoundaryConditions_C object.
+    """
+
+    # Static class variables
+
+    # Particle boundary-conditions are labeled by non-zero bits:
+    ABSORB  = 0b1
+    REFLECT = 0b1 << 1
+    NUMBER_OF_STANDARD_BCs = 2
+
+#    ISEE    = 0b1 << 2        # Ion-stimulated electron emission
+#    SEE     = 0b1 << 3        # Secondary-electron emission
+
+
+# Look for specific boundary conditions
+
+    def __init__(self, particleInputCI, particleCI, printFlag = False):
+        """Initialize particle callback functions (boundary conditions).
+
+           The following function naming-scheme is used:
+
+           default_bc(): The global default function.
+           default_bc_at_name(): The default called for all species at
+                                 the boundary 'name'.
+           bc_at_name_for_species: The function called for 'species'
+                                   crossing 'name'.
+
+           The most specific function found for a given boundary and
+           species is used.
+
+        """
+        # Set local variables from passed parameters
+        userParticleBoundaryClass = particleInputCI.user_particle_bcs_class
+
+# or get names from the mesh.
+        particleBoundaryNames = particleInputCI.pmeshCI.particle_boundary_dict.keys()
+
+        speciesNames = particleCI.species_names
+        
+        # Initialize a dictionary for the boundary function for each (boundary, species) pair:
+        bcFunctionDict = dict((bdy, dict((sp, None) for sp in speciesNames)) for bdy in particleBoundaryNames)
+
+        # Get the global default boundary function, if there is one.
+        bcFunctionName = 'default_bc'
+        if hasattr(userParticleBoundaryClass, bcFunctionName):
+            bcGlobalDefaultFunction = getattr(userParticleBoundaryClass, bcFunctionName)
+        else:
+            bcGlobalDefaultFunction = None
+
+        # Loop on particle boundary names and on particle species
+        # names to find the most specific BC.
+
+        # Overwrite the global default function with a function specific to
+        # each boundary, if there is one.
+        for bdy in particleBoundaryNames:
+            bcFunctionName = 'default_bc_at_' + bdy
+            if hasattr(userParticleBoundaryClass, bcFunctionName):
+                bcBoundaryDefaultFunction = getattr(userParticleBoundaryClass, bcFunctionName)
+            else:
+                bcBoundaryDefaultFunction = bcGlobalDefaultFunction
+            for sp in speciesNames:
+                # Overwrite the default for this boundary with a
+                # function specific to this boundary and species, if
+                # there is one.
+                bcFunctionName = 'bc_at_' + bdy + '_for_' + sp
+                if hasattr(userParticleBoundaryClass, bcFunctionName):
+                    bcFunction = getattr(userParticleBoundaryClass, bcFunctionName)
+                else:
+                    bcFunction = bcBoundaryDefaultFunction
+                if bcFunction is None:
+                    print "ParticleMeshBoundaryConditions_C: No boundary condition specified for", bdy, "/", sp
+                elif printFlag:
+                    print "ParticleMeshBoundaryConditions_C: Boundary condition for", bdy, "/", sp, "is", bcFunction
+                bcFunctionDict[bdy][sp] = bcFunction
+
+        return
+#    def __init__(self, particleInputCI, particleCI, printFlag = False):ENDDEF
+
+    def absorb(self):
+        return
+
+#    def absorb(self):ENDDEF
+
+    def reflect(self):
+        return
+
+#    def reflect(self):ENDDEF
+
+#class ParticleMeshBoundaryConditions_C(object):ENDCLASS

@@ -27,7 +27,7 @@ class TestChargeDensity(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')', '('+__file__+')'
+        print '\ntest: ', fncname, '('+__file__+')'
         
         # Create a 1D mesh
         mesh = df_M.IntervalMesh(2, -0.5, 0.5)

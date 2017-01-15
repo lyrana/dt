@@ -40,9 +40,13 @@ class DTcontrol_C(object):
         # Diagnostics
 
         return
+#    def __init__(self, use_mpi = False):ENDDEF
 
+#class DTcontrol_C(object):
     def write_variables():
          pass
+
+#class DTcontrol_C(object):ENDCLASS
 
 class DTsystem_C(object):
     """The physical system of interacting fields and particles.
@@ -64,6 +68,7 @@ class DTsystem_C(object):
         # the particle mesh is a copy of the field mesh
 #        self.pmesh = df_M.Mesh(mesh)
         
+#class DTsystem_C(object):
     def time_integrate_in_uniform_fields(self, ctrlCI):
         """Integrate the equations for the system forward in time, in
            fields that are uniform in space and time.
@@ -94,7 +99,9 @@ class DTsystem_C(object):
                     pseg = psa.get_next_segment()
 
         return
+#    def time_integrate_in_uniform_fields(self, ctrlCI):ENDDEF
 
+#class DTsystem_C(object):
     def time_integrate_in_electrostatic_field(self, ctrlCI):
         """Integrate the equations for the system forward in time in
            an electrostatic field.
@@ -196,7 +203,9 @@ class DTsystem_C(object):
 
 
  #       return
+#    def time_integrate_in_electrostatic_field(self, ctrlCI):ENDDEF
 
+#class DTsystem_C(object):
 # just calls through to Particle_Module
     def step_particles_electrostatic_explicit(self, species_name):
         """Apply the standard explicit particle push in an
@@ -218,7 +227,10 @@ class DTsystem_C(object):
             fCI.compute_electrostatic_potential()
 
         return
+#    def step_particles_electrostatic_explicit(self, species_name):ENDDEF
 
+
+#class DTsystem_C(object):
     def iterate_implicit_electrostatic_particles(dt, implicit_species):
 #    def step_particles_electrostatic_implicit(self, species_name):
         """The implicit push has a predictor/corrector
@@ -241,6 +253,9 @@ class DTsystem_C(object):
             fCI.compute_electrostatic_potential()
 
         return
+#    def iterate_implicit_electrostatic_particles(dt, implicit_species):ENDDEF
+
+#class DTsystem_C(object):ENDCLASS
 
 class DTparticleInput_C(object):
     """Particle input class.
@@ -255,9 +270,8 @@ class DTparticleInput_C(object):
 
     def __init__(self):
 
-#        self.particles = None
-
         # Usually set from ctrlCI.precision
+        # Example: numpy.float64
         self.precision = None
 
         # Force components acting on the particles
@@ -265,12 +279,14 @@ class DTparticleInput_C(object):
         self.force_components = None
 
         # Usually set from ctrlCI.precision
+        # Example: numpy.float64
         self.force_precision = None
 
-        # values: 'loop-on-particles', 'loop-on-cells'
-        self.particle_integration = None
+        # Values: 'loop-on-particles', 'loop-on-cells'
+        self.particle_integration_loop = None
 
-#        self.phase_coords = None
+        # Determines the particle-storage dimensions
+        # Example: ['x', 'y',]
         self.position_coordinates = None
 
 # May want things like this in order to call DT from a loop?
@@ -278,16 +294,21 @@ class DTparticleInput_C(object):
 # maybe don't need all of these:
         self.particle_species = None
 
-        self.particles = None
-
-        self.particles_mesh = None
-
-        self.user_particles_module = None
-
-        # the particle mesh is a copy of the field mesh
+        # The initial particle mesh is a copy of the field mesh
 #        self.pmesh = df_M.Mesh(mesh)
-        
+        self.pmeshCI = None
+
+        # Module containing user-supplied particle distributions and
+        # boundary-conditions.
+        self.user_particles_module = None
+        # The class containing distribution functions
+        self.user_particles_class = None
+        # The class containing particle boundary conditions
+        self.user_particle_bcs_class = None
+
         return
+
+#class DTparticleInput_C(object):ENDCLASS
 
 class DTmeshInput_C(object):
     """Input for the field mesh
@@ -300,6 +321,8 @@ class DTmeshInput_C(object):
         """
 #        self.mesh_type_options = ['FE', 'Cartesian']
 #        self.mesh_type = None
+
+        self.mesh_file = None
 
         self.user_mesh_input = None
         self.user_mesh_class = None
@@ -318,21 +341,29 @@ class DTmeshInput_C(object):
         # Options: 'left, 'right', 'left/right', 'crossed'
         self.diagonal = None
 
-        # User-assigned names of boundaries where Dirichlet values are
+        self.field_boundary_file = None
+        # User-assigned names of mesh boundaries where Dirichlet values are
         # set.
-        self.boundary_names = []
+        self.field_boundary_dict = None
+
+        self.particle_boundary_file = None
+        # User-assigned names of mesh boundaries where particle BCs are
+        # set.
+        self.particle_boundary_dict = None
 
 # May want things like this in order to call DT from a loop?
 # or spawn off many runs?
 # maybe don't need all of these:
-        self.mesh = None
-        self.particles_mesh = None
+        self.meshCI = None
+        self.pmeshCI = None
 
         # the particle mesh is a copy of the field mesh
-#        self.pmesh = df_M.Mesh(mesh)
+#        self.pmeshCI = df_M.Mesh(meshCI)
 
         return
         
+#class DTmeshInput_C(object):ENDCLASS
+
 class DTpoissonSolveInput_C(object):
     """Input for the field solver(s).
        The user can modify this for different field solvers.
@@ -361,6 +392,7 @@ class DTpoissonSolveInput_C(object):
 
         return
 
+#class DTpoissonSolveInput_C(object):ENDCLASS
 
 class DTtrajectoryInput_C(object):
     """Parameters that specify particle trajectory
@@ -379,6 +411,8 @@ class DTtrajectoryInput_C(object):
 
         return
 
+#class DTtrajectoryInput_C(object):ENDCLASS
+
 class DToutput_C(object):
     """Output specifications
     """
@@ -392,3 +426,5 @@ class DToutput_C(object):
         self.plot
 
         return
+
+#class DToutput_C(object):ENDCLASS

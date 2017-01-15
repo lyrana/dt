@@ -68,7 +68,7 @@ class TestParticleInitialization(unittest.TestCase):
         pinCI.user_particles_module = "UserParticles_H_He_e"
 #        print "setUp: UserParticle module is", pinCI.user_particles_module
         UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_C = UPrt_M.ParticleDistributions_C
+        pinCI.user_particles_class = UPrt_C = UPrt_M.UserParticleDistributions_C
 
         self.pinCI = pinCI
 

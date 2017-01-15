@@ -59,7 +59,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         # Provide the particle distributions (lists of particles, functions, etc.)
         pinCI.user_particles_module = "UserParticles_2D_e"
         UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_C = UPrt_M.ParticleDistributions_C
+        pinCI.user_particles_class = UPrt_C = UPrt_M.UserParticleDistributions_C
 
         self.pinCI = pinCI
 
@@ -67,6 +67,8 @@ class TestParticleNonuniformE(unittest.TestCase):
         self.particleCI = Particle_C(pinCI, printFlag=False)
 
         # Store the particles
+# Why not call particleCI.initialize_distributions() instead?
+
         for sp in self.particleCI.species_names:
             if self.particleCI.initial_distribution_type[sp] == 'listed':
                 # Put user-listed particles into the storage array
@@ -77,6 +79,8 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         # Create mesh from a file
         pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+
+        self.particleCI.pmeshCI = pmesh2DCI
 
         # The following value should correspond to the element degree
         # used in the potential from which negE was obtained
@@ -103,7 +107,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         file >> self.neg_electric_field.function
 
         # Get the initial cell index of each particle.
-        self.particleCI.compute_mesh_cell_indices(pmesh2DCI)
+        self.particleCI.compute_mesh_cell_indices()
 
         return
 #    def setUp(self):ENDDEF

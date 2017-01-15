@@ -60,31 +60,49 @@ class UserMesh_C(Mesh_C):
         return
 
     # Methods
-    def create_mesh(self, miCI):
+
+#class UserMesh_C(Mesh_C):
+    def create_mesh(self, meshInputCI):
         """
            Create a mesh according to the user's specifications.
         """
         fncname = sys._getframe().f_code.co_name
 
+        miCI = meshInputCI
+
         if miCI.pmin.y() == miCI.pmax.y() and miCI.pmin.z() == miCI.pmax.z():
             (nx) = miCI.cells_on_side
-            self.mesh = df_M.IntervalMesh(nx, miCI.pmin.x(), miCI.pmax.x())
+            mesh = df_M.IntervalMesh(nx, miCI.pmin.x(), miCI.pmax.x())
         elif miCI.pmin.z() == miCI.pmax.z():
             (nx, ny) = miCI.cells_on_side
 # v > 1.5:
             if df_M.DOLFIN_VERSION_STRING > "1.5.0":
-                self.mesh = df_M.RectangleMesh(miCI.pmin, miCI.pmax, nx, ny)
+                mesh = df_M.RectangleMesh(miCI.pmin, miCI.pmax, nx, ny)
             else:
 # v = 1.5:
-                self.mesh = df_M.RectangleMesh(miCI.pmin[0], miCI.pmin[1], miCI.pmax[0], miCI.pmax[1], nx, ny)
+                mesh = df_M.RectangleMesh(miCI.pmin[0], miCI.pmin[1], miCI.pmax[0], miCI.pmax[1], nx, ny)
         else:
             (nx, ny, nz) = miCI.cells_on_side
 # v > 1.5
             if df_M.DOLFIN_VERSION_STRING > "1.5.0":
-                self.mesh = df_M.BoxMesh(miCI.pmin, miCI.pmax, nx, ny, nz)
+                mesh = df_M.BoxMesh(miCI.pmin, miCI.pmax, nx, ny, nz)
             else:
 # v = 1.5:
-                self.mesh = df_M.BoxMesh(miCI.pmin[0], miCI.pmin[1], miCI.pmin[2], miCI.pmax[0], miCI.pmax[1], miCI.pmax[2], nx, ny, nz)
+                mesh = df_M.BoxMesh(miCI.pmin[0], miCI.pmin[1], miCI.pmin[2], miCI.pmax[0], miCI.pmax[1], miCI.pmax[2], nx, ny, nz)
+
+        # Create a MeshFunction object that contains the mesh, and is
+        # defined on mesh facets.  The function has a default (size_t) value
+        # of 0, meaning 'no action needed'
+
+        # A boundary has dimension 1 less than the domain:
+        particleBoundaryMarker = df_M.MeshFunction("size_t", mesh, mesh.topology().dim()-1)
+
+        # Initialize all mesh facets with a default value of 0.
+        particleBoundaryMarker.set_all(0)
+
+        self.mesh = mesh
+        self.particle_boundary_marker = particleBoundaryMarker
+
 
         return
 #    def create_mesh(self, miCI):ENDDEF

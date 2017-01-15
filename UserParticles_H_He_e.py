@@ -5,10 +5,10 @@ These are static (like global) functions. No SELF variable!
 """
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-__all__ = ['ParticleDistributions_C.initial_electrons',
-           'ParticleDistributions_C.initial_ions',
-           'ParticleDistributions_C.few_initial_electrons',
-           'ParticleDistributions_C.few_initial_ions',
+__all__ = ['UserParticleDistributions_C.initial_electrons',
+           'UserParticleDistributions_C.initial_ions',
+           'UserParticleDistributions_C.few_initial_electrons',
+           'UserParticleDistributions_C.few_initial_ions',
            ]
 
 import sys
@@ -27,9 +27,8 @@ import UserUnits_Module as U_M
 # Select the unit system to be used for input parameters.
 Convert = U_M.MyPlasmaUnits_C
 
-#class ParticleDistributions_C(object):
-class ParticleDistributions_C(object):
-    """ParticleDistributions_C is to be edited by the user to
+class UserParticleDistributions_C(object):
+    """UserParticleDistributions_C is to be edited by the user to
        specify initial particle distributions.  The units are MKS by
        default (i.e., if no conversion factor is applied), but any
        units can be used provided the conversion to MKS is available
@@ -192,4 +191,31 @@ class ParticleDistributions_C(object):
 # Convert velocity to p/m?
         return density, velocity, temperature
 
+#class UserParticleDistributions_C(object):ENDCLASS
 
+#from Particle_Module import ParticleBoundaryConditions_C as PBC_C
+
+#class UserParticleBoundaryConditions_C(ParticleBoundaryConditions_C):
+class UserParticleBoundaryConditions_C(object):
+    """UserParticleBoundaryConditions_C is to be edited by the user to
+       provide less commonly-used treatments of particles incident on a mesh boundary.
+    """
+
+    # Static class variables
+
+    # Particle boundary-conditions are invoked by turning on bits.
+    # Continue from the number of standard boundary-conditions.
+#    bitOffset = ParticleBoundaryConditions_C.NUMBER_OF_STANDARD_BCs # Is the classname needed?
+#    ISEE = 0b1 << bitOffset        # Ion-stimulated electron emission
+#    SEE  = 0b1 << 1 + bitOffset    # Secondary-electron emission
+
+    # The spatial coordinates of all particles
+# Moved this to DTparticleInput_C:
+#    position_coordinates = ['x', 'y', 'z']
+
+# These distributions are constant-density in space
+#    @staticmethod
+#    def initial_electrons(p):
+#        density = 2.0e10*Convert.number_per_m3
+
+#class UserParticleBoundaryConditions_C(object):ENDCLASS

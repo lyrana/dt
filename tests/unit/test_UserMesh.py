@@ -28,11 +28,6 @@ class TestUserMesh_y_Fields(unittest.TestCase):
         miCI.nr = 10 # Number of divisions in r direction
         miCI.stretch = 1.3 # Stretch parameter
 
-        # Name the Dirichlet boundaries. Integers will be assigned to
-        # them in UserMesh_C.
-        boundaryNames = ['rmin', 'rmax']
-        miCI.boundary_names = boundaryNames
-
         # theta, starts at 0
         miCI.tmax = math.pi/2 # quarter-circle
         miCI.nt = 20  # Number of divisions in theta direction
@@ -40,6 +35,33 @@ class TestUserMesh_y_Fields(unittest.TestCase):
         # The diagonal that makes the triangular mesh
         # Options: 'left, 'right', 'left/right', 'crossed'
         miCI.diagonal = 'crossed'
+
+        # Name the Dirichlet boundaries and assign integers to them.
+        # These are the boundary-name -> int pairs used to mark mesh
+        # facets:
+        rmin_indx = 1
+        rmax_indx = 2
+        fieldBoundaryDict = {'rmin': rmin_indx,
+                             'rmax': rmax_indx,
+                             }
+
+        miCI.field_boundary_dict = fieldBoundaryDict
+
+        # Name the boundaries used to apply particle
+        # boundary-conditions and assign integers to them.  These are
+        # the boundary-name -> int pairs used to mark particle-mesh
+        # facets:
+        rmin_indx = 1
+        rmax_indx = 2
+        thmin_indx = 4
+        thmax_indx = 8
+        particleBoundaryDict = {'rmin': rmin_indx,
+                                'rmax': rmax_indx,
+                                'thmin': thmin_indx,
+                                'thmax': thmax_indx,
+                                }
+
+        miCI.particle_boundary_dict = particleBoundaryDict
 
         self.miCI = miCI
 
@@ -77,16 +99,21 @@ class TestUserMesh_y_Fields(unittest.TestCase):
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
 
         # Write the mesh to a file:
-        mesh_file = df_M.File("quarter_circle_mesh_crossed.xml") # Could use if-test on the value of 'diagonal'
+        mesh_file = df_M.File('quarter_circle_mesh_crossed.xml') # Could use if-test on the value of 'diagonal'
         mesh_file << meshCI.mesh
         # Read back in:
         mesh_file >> meshCI.mesh
 
         # Write the boundary marker function to a file:
-        boundary_marker_file = df_M.File("quarter_circle_mesh_crossed_bm.xml") # Could use if-test on the value of 'diagonal'
-        boundary_marker_file << meshCI.boundary_marker
+        field_boundary_marker_file = df_M.File('Fbcs_quarter_circle_mesh_crossed.xml') # Could use if-test on the value of 'diagonal'
+        field_boundary_marker_file << meshCI.field_boundary_marker
         # Read back in:
-        boundary_marker_file >> meshCI.boundary_marker
+        field_boundary_marker_file >> meshCI.field_boundary_marker
+
+        particle_boundary_marker_file = df_M.File('Pbcs_quarter_circle_mesh_crossed.xml') # Could use if-test on the value of 'diagonal'
+        particle_boundary_marker_file << meshCI.particle_boundary_marker
+        # Read back in:
+        particle_boundary_marker_file >> meshCI.particle_boundary_marker
 
 if __name__ == '__main__':
     unittest.main()

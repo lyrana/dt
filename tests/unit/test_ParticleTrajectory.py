@@ -42,7 +42,6 @@ class TestParticleTrajectory(unittest.TestCase):
 #
 # Particle species input
 #
-
         # Create an instance of the DTparticleInput class
         pinCI = DTparticleInput_C()
         # Initialize particles
@@ -67,7 +66,7 @@ class TestParticleTrajectory(unittest.TestCase):
         # Provide the particle distributions for the above
         pinCI.user_particles_module = "UserParticles_2D_e"
         UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_M.ParticleDistributions_C
+        pinCI.user_particles_class = UPrt_M.UserParticleDistributions_C
 
         self.pinCI = pinCI
 
@@ -75,9 +74,8 @@ class TestParticleTrajectory(unittest.TestCase):
         self.particleCI = Particle_C(pinCI, printFlag=False)
 
 #
-# Particle trajectory input
+# Input for the particle trajectory object
 #
-
         # Create input object for trajectories
         self.trajinCI = DTtrajectoryInput_C()
 
@@ -89,8 +87,11 @@ class TestParticleTrajectory(unittest.TestCase):
         self.trajinCI.implicitDict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
         self.trajinCI.neutralDict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
 
+        # Create the trajectory object and attach it to the particle
+        # object. No trajectory storage is created until particles
+        # with TRAJECTORY_FLAG are encountered.
         pCI = self.particleCI
-        self.particleCI.trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
+        pCI.trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
 
 #
 #  Mesh and Fields input
@@ -141,6 +142,8 @@ class TestParticleTrajectory(unittest.TestCase):
         #     plotFlag=True
 
         # Create particles that are selected for trajectories.
+# Could call particleCI.initialize_distributions() instead?
+
         self.particleCI.create_from_list('trajelectrons', printFlag=True)
 
         # Check the results
@@ -176,11 +179,13 @@ class TestParticleTrajectory(unittest.TestCase):
 
         pCI = self.particleCI
 
+        pCI.pmeshCI = self.pmesh2DCI
+
         # Create particles that are selected for trajectories.
         pCI.create_from_list('trajelectrons', printFlag=True)
 
         # Get the initial cell index of each particle.
-        pCI.compute_mesh_cell_indices(self.pmesh2DCI)
+        pCI.compute_mesh_cell_indices()
 
         dt = self.ctrlCI.dt
 
@@ -264,11 +269,13 @@ class TestParticleTrajectory(unittest.TestCase):
 
         pCI = self.particleCI
 
+        pCI.pmeshCI = self.pmesh2DCI
+
         # Create particles that are selected for trajectories.
         pCI.create_from_list('trajelectrons', printFlag=True)
 
         # Get the initial cell index of each particle.
-        pCI.compute_mesh_cell_indices(self.pmesh2DCI)
+        pCI.compute_mesh_cell_indices()
 
         self.ctrlCI.nsteps = 13 # Dies if this is 14, as particle goes out-of-bounds
         dt = self.ctrlCI.dt

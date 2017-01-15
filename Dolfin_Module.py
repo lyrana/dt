@@ -13,7 +13,8 @@ import dolfin as df_M
 import numpy as np_M
 
 class Mesh_C(object):
-    """Mesh_C defines the mesh. UserMesh_C is a subclass.
+    """Mesh_C defines the mesh. UserMesh_C is a subclass that adds
+       boundary-conditions, etc.
     
        :param Mesh: a Dolfin Mesh object
        :param meshFile: The name of a file containing an XML mesh
@@ -159,7 +160,9 @@ class Mesh_C(object):
         # A vertex has topological dimension 0.
         # A facet has topological codimension d-1.
 
-        self.cell_entity_index_dict[entity_name] = dict((cell.index(), cell.entities(d)) for cell in df_M.cells(self.mesh))
+        # Type issue: Had to convert numpy.uint32 to long (using tolist()) and then to int (using map()).
+        # This is because a FacetFunction wants the facet index as an int.
+        self.cell_entity_index_dict[entity_name] = dict((cell.index(), map(int, cell.entities(d).tolist())) for cell in df_M.cells(self.mesh))
 
         # E.g., use the dictionary to print the vertex coordinates:
 
@@ -207,7 +210,7 @@ class Mesh_C(object):
         """
         tdim = self.tdim
 
-        # Generate facet-cell connectivity data
+        # Generate facet-to-cell connectivity data
         self.mesh.init(tdim - 1, tdim)
 
         # For every cell, build a list of cells that are connected to its facets
@@ -240,9 +243,11 @@ class Mesh_C(object):
 
 # Used "tdim" for quantities independent of geometry, like indices.
 
-# The following line creates a correct dictionary, but if a cell is at a boundary it
-# skips that facet.  That doesn't work because we need to use the
-# local facet number as an index for the list of neighbor cells.
+# The following commented line creates a correct dictionary, but if a
+# cell is at a boundary it skips that facet.  That doesn't work for
+# our purpose because we need to use the local facet number as an
+# index for the list of neighbor cells.
+
 #        self.cell_neighbor_dict = {cell.index(): sum((filter(lambda ci: ci != cell.index(), facet.entities(tdim)) for facet in df_M.facets(cell)), []) for cell in df_M.cells(self.mesh)}
 
         n_facets = tdim + 1
@@ -250,6 +255,7 @@ class Mesh_C(object):
 
         for cell in df_M.cells(self.mesh):
 
+            # Make a numpy array to hold the indices of the neighbor cells.
             # A cell has n_facets, and each facet can have at most 1 neighbor-cell attached.
             # Use a 32-bit int for the cell indices.
             neighbor_cells = np_M.empty(n_facets, np_M.int32)
@@ -423,6 +429,10 @@ class Mesh_C(object):
         """Compute the cell facet crossed in traveling along a
            displacement vector dr from position r0.
 
+           The facet crossed is the one with the smallest value of the
+           fraction (normal distance to facet plane)/(total distance
+           traveled normal to facet plane)
+
            :param r0: initial position, as a tuple of coordinates (x),
                       (x,y), or (x, y, z) with field names 'x', 'y',
                       'z'
@@ -446,7 +456,7 @@ class Mesh_C(object):
         dx = self.dx
         x0 = self.x0
         dx[:] = dr[0:dim] # Convert displacement vector to a vector with
-                   # dimension equal to the number of mesh dimensions.
+                          # dimension equal to the number of mesh dimensions.
         x0[:] = r0[0:dim]
 
         facet = Mesh_C.NO_FACET
@@ -459,7 +469,8 @@ class Mesh_C(object):
 
         cell = self.cell_dict[cell_index]
 
-        # The coordinates of this cell's vertices, in (x, y, z) tuple form
+        # The coordinates of all the vertices in this cell, in (x, y,
+        # z) tuple form
         vertex_coords = cell.get_vertex_coordinates().reshape((-1, dim))
 
 #        print "find_facet(): vertex_coords=", vertex_coords
@@ -531,7 +542,8 @@ class Mesh_C(object):
 
             # 2D mesh: There are 3 facets, and the normal vector is 2D.
 
-            # Test if the plane of facet 0 is crossed:
+            # Test if the plane of facet 0 is crossed.
+            # Distance traveled normal to facet 0:
             n0_dot_dx = np_M.dot(facet_normal_vectors[0], dx)
 #            print "find_facet(): facet_normal_vectors[0] = ", facet_normal_vectors[0], "dx=", dx, "n0_dot_dx=", n0_dot_dx
             if n0_dot_dx > 0:
@@ -542,10 +554,12 @@ class Mesh_C(object):
 #                print "f0 find_facet(): vec_to_facet=", vec_to_facet, "distance_to_facet=", distance_to_facet
                 if distance_to_facet < path_fraction*n0_dot_dx:
                     facet = 0
+                    # Compute fraction of the path to this facet in this cell:
                     path_fraction = distance_to_facet/n0_dot_dx
 #                    print "f0 find_facet(): facet=", facet, "path_fraction=", path_fraction
 
-            # Next, test if the plane of facet 1 is crossed:
+            # Next, test if the plane of facet 1 is crossed.
+            # Distance traveled normal to facet 0:
             n1_dot_dx = np_M.dot(facet_normal_vectors[1], dx)
 #            print "find_facet(): n1_dot_dx=", n1_dot_dx
             if n1_dot_dx > 0:
@@ -553,11 +567,15 @@ class Mesh_C(object):
                 vec_to_facet = np_M.subtract(vertex_coords[2], x0)
                 # The normal distance to the facet plane
                 distance_to_facet = np_M.dot(facet_normal_vectors[1], vec_to_facet)
+                # If the path-fraction to this facet's plane is
+                # smaller than for facet 0, this may be the one crossed.
                 if distance_to_facet < path_fraction*n1_dot_dx:
                     facet = 1
+                    # Compute fraction of the path to this facet in this cell:
                     path_fraction = distance_to_facet/n1_dot_dx
 
-            # Next, test if the plane of facet 2 is crossed:
+            # Next, test if the plane of facet 2 is crossed.
+            # Distance traveled normal to facet 2:
             n2_dot_dx = np_M.dot(facet_normal_vectors[2], dx)
 #            print "find_facet(): n2_dot_dx=", n2_dot_dx
             if n2_dot_dx > 0:
@@ -565,6 +583,8 @@ class Mesh_C(object):
                 vec_to_facet = np_M.subtract(vertex_coords[0], x0)
                 # The normal distance to the facet plane
                 distance_to_facet = np_M.dot(facet_normal_vectors[2], vec_to_facet)
+                # If the path-fraction to this facet's plane is
+                # smaller than for facet 0 and 1, this is the one crossed.
                 if distance_to_facet < path_fraction*n2_dot_dx:
                     facet = 2
                     path_fraction = distance_to_facet/n2_dot_dx

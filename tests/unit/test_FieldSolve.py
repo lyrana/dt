@@ -50,12 +50,16 @@ class TestPoissonSolve(unittest.TestCase):
         miCI.nr = 10 # Number of divisions in r direction
         miCI.stretch = 1.3 # Stretch parameter
 
-        # Name the Dirichlet boundaries. Integers will be assigned to
-        # them in UserMesh_C.
-        boundaryNames = ['rmin', 'rmax']
-        miCI.boundary_names = boundaryNames
-        
-#        print 'miCI.boundary_names =', miCI.boundary_names
+        # Name the Dirichlet boundaries and assign integers to them.
+        # These are the boundary-name -> int pairs used to mark mesh
+        # facets:
+        rmin_indx = 1
+        rmax_indx = 2
+        fieldBoundaryDict = {'rmin': rmin_indx,
+                             'rmax': rmax_indx,
+                             }
+
+        miCI.field_boundary_dict = fieldBoundaryDict
 
         from UserMesh_y_Fields_Spherical1D_Module import UserMesh_C
         meshCI = UserMesh_C(meshInputCI=miCI, computeTree=False, plotFlag=True)
@@ -79,9 +83,9 @@ class TestPoissonSolve(unittest.TestCase):
             # For linear elements, grad(phi) is discontinuous across
             # elements. To represent this field, we need Discontinuous Galerkin
             # elements.
-            electric_field_element_type = "DG"
+            electric_field_element_type = 'DG'
         else:
-            electric_field_element_type = "Lagrange"
+            electric_field_element_type = 'Lagrange'
 
         neg_electric_field = fI_M.Field_C(meshCI=meshCI,
                                       element_type=electric_field_element_type,
@@ -96,14 +100,14 @@ class TestPoissonSolve(unittest.TestCase):
         preconditioner = None
 
         # Dirichlet boundaries are marked with a boundary marker mesh function
-        boundaryMarker = meshCI.boundary_marker
-        boundaryInts = meshCI.boundary_ints
+        fieldBoundaryMarker = meshCI.field_boundary_marker
        
         # Boundary values of the potential
-        phi_vals = {boundaryNames[0]:  0.0,
-                    boundaryNames[1]: -1.5,
+        phi_vals = {'rmin':  0.0,
+                    'rmax': -1.5,
                     }
-        phi_BCs = dict( (bnd, [boundaryInts[bnd], phi_vals[bnd]]) for bnd in boundaryNames)
+
+        phi_BCs = dict( (bnd, [fieldBoundaryDict[bnd], phi_vals[bnd]]) for bnd in fieldBoundaryDict.keys())
 
         # Compute the electrostatic field from phi
         from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve_C
@@ -111,7 +115,7 @@ class TestPoissonSolve(unittest.TestCase):
         poissonsolveCI = UserPoissonSolve_C(phi,
                                             linear_solver, preconditioner,
 #                                            boundary_marker, phi_rmin, phi_rmax,
-                                            boundaryMarker, phi_BCs,
+                                            fieldBoundaryMarker, phi_BCs,
                                             negElectricField=neg_electric_field)
 
         # Solve for the potential
@@ -121,16 +125,16 @@ class TestPoissonSolve(unittest.TestCase):
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
 
         # Write the potential to a file in VTK and XML formats
-        file = df_M.File("phi1D.pvd")
+        file = df_M.File('phi1D.pvd')
         file << phi.function
-        file = df_M.File("phi1D.xml")
+        file = df_M.File('phi1D.xml')
         file << phi.function
         
         # Write -E to a file in VTK and XML formats
         # if (fsiCI.computeEflag == True):
-        #     file = df_M.File("negE1D.pvd")
+        #     file = df_M.File('negE1D.pvd')
         #     file << fieldsolveCI.negE
-        #     file = df_M.File("negE1D.xml")
+        #     file = df_M.File('negE1D.xml')
         #     file << fieldsolveCI.negE
         # Doesn't work for a 1D vector field!
 
@@ -204,10 +208,16 @@ class TestPoissonSolve(unittest.TestCase):
         miCI.nr = 10 # Number of divisions in r direction
         miCI.stretch = 1.3 # Stretch parameter
 
-        # Name the Dirichlet boundaries. Integers will be assigned to
-        # them in UserMesh_C.
-        boundaryNames = ['rmin', 'rmax']
-        miCI.boundary_names = boundaryNames
+        # Name the Dirichlet boundaries and assign integers to them.
+        # These are the boundary-name -> int pairs used to mark mesh
+        # facets:
+        rmin_indx = 1
+        rmax_indx = 2
+        fieldBoundaryDict = {'rmin': rmin_indx,
+                             'rmax': rmax_indx,
+                             }
+
+        miCI.field_boundary_dict = fieldBoundaryDict
 
         # theta, starts at 0
         miCI.tmax = math.pi/2 # quarter-circle
@@ -259,22 +269,23 @@ class TestPoissonSolve(unittest.TestCase):
 
         # Dirichlet Boundaries are marked with a boundary marker mesh
         # function
-        boundaryMarker = meshCI.boundary_marker
-        boundaryInts = meshCI.boundary_ints
+        fieldBoundaryMarker = meshCI.field_boundary_marker
        
-        # Boundary values of the potential
-        phi_vals = {boundaryNames[0]:  0.0,
-                    boundaryNames[1]: -1.5,
+        # Boundary values of the potential.  These names have to be
+        # the same as those assigned to the boundaries above.
+        phi_vals = {'rmin':  0.0,
+                    'rmax': -1.5,
                     }
 
-        phi_BCs = dict( (bnd, [boundaryInts[bnd], phi_vals[bnd]]) for bnd in boundaryNames)
+        phi_BCs = dict( (bnd, [fieldBoundaryDict[bnd], phi_vals[bnd]]) for bnd in fieldBoundaryDict.keys())
+
         computeEflag = True
 
         from UserMesh_y_Fields_FE2D_Module import UserPoissonSolve_C
 
         poissonsolveCI = UserPoissonSolve_C(phi,
                                             linear_solver, preconditioner,
-                                            boundaryMarker, phi_BCs,
+                                            fieldBoundaryMarker, phi_BCs,
                                             negElectricField=neg_electric_field)
 
         poissonsolveCI.solve_for_phi(plotFlag=plot_flag)

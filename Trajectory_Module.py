@@ -13,7 +13,11 @@ import numpy as np_M
 import dolfin as df_M
 
 class Trajectory_C(object):
-    """Trajectory_C has a collection of particle trajectories for one species.
+    """Trajectory_C has a collection of particle trajectories indexed
+       by species name.
+
+       No trajectory storage is created until particles with the
+        TRAJECTORY_FLAG turned on are encountered.
     """
 
     def __init__(self, trajinCI, ctrlCI, explicit_species, implicit_species, neutral_species):
@@ -57,7 +61,7 @@ class Trajectory_C(object):
         self.ParticleIdList = {}
         self.DataList = {}
 
-        for sp in self.explicit_species + self.implicit_species:
+        for sp in self.explicit_species + self.implicit_species + self.neutral_species:
             self.ParticleIdList[sp] = []
             self.DataList[sp] = []
 
@@ -66,6 +70,7 @@ class Trajectory_C(object):
 #            self.implicit_1particle_arr = np_M.empty(1, dtype=self.implicitDict))
 
         return
+#    def __init__(self, trajinCI, ctrlCI, explicit_species, implicit_species, neutral_species):ENDDEF
 
     def create_trajectory(self, species_name, dynamics_type):
         """Add storage for another particle trajectory.
@@ -83,6 +88,7 @@ class Trajectory_C(object):
             sys.exit(error_msg)
 
         return
+#    def create_trajectory(self, species_name, dynamics_type):ENDDEF
 
 #class Trajectory_C(object):
     def plot_trajectories(self):

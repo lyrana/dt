@@ -17,6 +17,7 @@ from DT_Module import DTparticleInput_C
 from UserUnits_Module import MyPlasmaUnits_C
 from Particle_Module import Particle_C
 
+# Here's the mesh definition for this test
 from UserMesh_FE_XYZ_Module import UserMesh_C
 
 class DTmeshInput_C(object):
@@ -80,7 +81,7 @@ class TestParticleMigration(unittest.TestCase):
         pinCI.user_particles_module = "UserParticles_3D"
 #        print "setUp: UserParticle module is", pinCI.user_particles_module
         UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_C = UPrt_M.ParticleDistributions_C
+        pinCI.user_particles_class = UPrt_C = UPrt_M.UserParticleDistributions_C
 
         self.pinCI = pinCI
 
@@ -127,10 +128,12 @@ class TestParticleMigration(unittest.TestCase):
         mi3DCI.pmin = df_M.Point(-10.0, -10.0, -10.0)
         mi3DCI.pmax = df_M.Point(10.0, 10.0, 10.0)
         mi3DCI.cells_on_side = (4, 4, 4)
+
         # Create a 3D particle mesh
         self.pmesh3DCI = UserMesh_C(mi3DCI, computeTree=True, plotFlag=plotFlag)
         # Explicitly compute dictionaries needed
         self.pmesh3DCI.compute_cell_entity_index_dict('vertex')
+        self.pmesh3DCI.compute_cell_entity_index_dict('facet')
         self.pmesh3DCI.compute_cell_dict()
         self.pmesh3DCI.compute_cell_facet_normals_dict()
         self.pmesh3DCI.compute_cell_neighbor_dict()
@@ -146,7 +149,7 @@ class TestParticleMigration(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name + '():'
-        print '\ntest: ', fncname, '('+__file__+')', '('+__file__+')'
+        print '\ntest: ', fncname, '('+__file__+')'
 
         # List all the possible spatial coordinates
 #        spatial_coordinates = ('x','y','z')
@@ -158,7 +161,7 @@ class TestParticleMigration(unittest.TestCase):
 
         # Run for 1, 2, and 3D meshes
 
-        pmeshCI = self.pmesh1DCI
+        self.particleCI.pmeshCI = self.pmesh1DCI
 
         # Initialize or reinitialize the particles
 #        for sp in self.particleCI.species_names:
@@ -168,7 +171,7 @@ class TestParticleMigration(unittest.TestCase):
 #                self.particleCI.create_from_list(sp, printFlag=False)
 
         # Get the initial cell index of each particle.
-        self.particleCI.compute_mesh_cell_indices(pmeshCI)
+        self.particleCI.compute_mesh_cell_indices()
 
 
         # The expected results
@@ -199,8 +202,7 @@ class TestParticleMigration(unittest.TestCase):
 
         # Integrate for nsteps
         for istep in xrange(ctrlCI.nsteps):
-#            self.particleCI.move_particles_without_fields(ctrlCI.dt, meshCI=meshCI)
-            self.particleCI.move_neutral_particles(ctrlCI.dt, pmeshCI)
+            self.particleCI.move_neutral_particles(ctrlCI.dt)
 
         # Check the results
         ncoords = self.particleCI.dimension # number of particle coordinates to check
@@ -224,7 +226,7 @@ class TestParticleMigration(unittest.TestCase):
         """
 
         fncname = sys._getframe().f_code.co_name + '():'
-        print '\ntest: ', fncname, '('+__file__+')', '('+__file__+')'
+        print '\ntest: ', fncname, '('+__file__+')'
 
         ctrlCI = DTcontrol_C()
 
@@ -233,10 +235,10 @@ class TestParticleMigration(unittest.TestCase):
 
         # Run for 2D mesh
 
-        pmeshCI = self.pmesh2DCI
+        self.particleCI.pmeshCI = self.pmesh2DCI
 
         # Get the initial cell index of each particle.
-        self.particleCI.compute_mesh_cell_indices(pmeshCI)
+        self.particleCI.compute_mesh_cell_indices()
 
         # Save the initial conditions (p_ic) for plotting
         p_ic = []
@@ -276,11 +278,10 @@ class TestParticleMigration(unittest.TestCase):
 
         # Integrate for nsteps
         for istep in xrange(ctrlCI.nsteps):
-#            self.particleCI.move_particles_without_fields(ctrlCI.dt, meshCI=meshCI)
-            self.particleCI.move_neutral_particles(ctrlCI.dt, pmeshCI)
+            self.particleCI.move_neutral_particles(ctrlCI.dt)
 
         # Create a mesh plotter to display the trajectory
-        plotter=df_M.plot(pmeshCI.mesh, title="Particle mesh")
+        plotter=df_M.plot(self.particleCI.pmeshCI.mesh, title="First & last positions")
 
         # Check the results
         ncoords = self.particleCI.dimension # number of particle coordinates to check
@@ -319,10 +320,10 @@ class TestParticleMigration(unittest.TestCase):
 
         # Run for 3D mesh
 
-        pmeshCI = self.pmesh3DCI
+        self.particleCI.pmeshCI = self.pmesh3DCI
 
         # Get the initial cell index of each particle.
-        self.particleCI.compute_mesh_cell_indices(pmeshCI)
+        self.particleCI.compute_mesh_cell_indices()
 
         # Save the initial conditions (p_ic) for plotting
         p_ic = []
@@ -359,11 +360,11 @@ class TestParticleMigration(unittest.TestCase):
 
         # Integrate for nsteps
         for istep in xrange(ctrlCI.nsteps):
-#            self.particleCI.move_particles_without_fields(ctrlCI.dt, meshCI=meshCI)
-            self.particleCI.move_neutral_particles(ctrlCI.dt, pmeshCI)
+            self.particleCI.move_neutral_particles(ctrlCI.dt)
 
-        # Create a plotter to display the trajectory.
-        plotter=df_M.plot(pmeshCI.mesh, title="Particle mesh")
+        # Create a mesh plotter to display the trajectory (just the
+        # first and last positions)
+        plotter=df_M.plot(self.particleCI.pmeshCI.mesh, title="First & last positions")
 
         # Check the results
         ncoords = self.particleCI.dimension # number of particle coordinates to check
@@ -377,7 +378,9 @@ class TestParticleMigration(unittest.TestCase):
 
                 for ic in range(ncoords):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
-                # The cell index is in last position: [-1]
+                # The index of the cell containing the particle is in the
+                # last position of the stored particle attributes,
+                # i.e., at location [-1]
 #                print fncname, "expected cell =", p_expected[ip][-1], "computed cell =", getparticle[-1]
                 self.assertEqual(p_expected[ip][-1], getparticle[-1], msg="Particle is not in correct cell")
 

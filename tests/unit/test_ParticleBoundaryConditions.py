@@ -12,6 +12,7 @@ import unittest
 
 import dolfin as df_M
 
+from DT_Module import DTmeshInput_C
 from DT_Module import DTparticleInput_C
 from DT_Module import DTcontrol_C
 from DT_Module import DTtrajectoryInput_C
@@ -21,6 +22,7 @@ from Dolfin_Module import Field_C
 
 from SegmentedArrayPair_Module import SegmentedArray_C
 from Particle_Module import Particle_C
+from Particle_Module import ParticleMeshBoundaryConditions_C
 from Trajectory_Module import Trajectory_C
 
 from UserMesh_y_Fields_FE2D_Module import UserMesh_C
@@ -81,30 +83,54 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                              ),
                             )
 
-        # Provide the particle distributions for the above
-        pinCI.user_particles_module = "UserParticles_2D_e"
+        # Provide the particle distributions for the above species
+        pinCI.user_particles_module = 'UserParticles_2D_e'
         UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_M.ParticleDistributions_C
+        pinCI.user_particles_class = UPrt_M.UserParticleDistributions_C
 
-        self.pinCI = pinCI
+        # Particle boundary-conditions
 
-        # Make the particle storage array
-        self.particleCI = Particle_C(pinCI, printFlag=False)
-
+# Add a ref to a ParticleBoundaryConditions_C object to particleCI
+        pinCI.user_particle_bcs_class = UPrt_M.UserParticleBoundaryConditions_C
 #
 #  Mesh and Fields input for the particle mesh.
 #
-        # Make the mesh & fields from saved files
-
-        # Create the particle mesh object
+        # Make the mesh, boundary-conditions markers & fields from saved files
 # 'crossed' diagonals
-
-#        self.pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+#        self.pmesh2DCI = Mesh_C(meshFile='quarter_circle_mesh_crossed.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
 # Replace with UserMesh_C because this includes a boundary_marker.
-        self.pmesh2DCI = UserMesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+#        self.pmesh2DCI = UserMesh_C(meshFile='quarter_circle_mesh_crossed.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
 
 # 'left' diagonal
-#        self.pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_left.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+#        self.pmesh2DCI = Mesh_C(meshFile='quarter_circle_mesh_left.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
+
+        # Get the mesh from an existing file
+
+        miCI = DTmeshInput_C()
+        miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
+        miCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
+        # These are the boundary-name -> int pairs used to mark mesh facets:
+        rmin_indx = 1
+        rmax_indx = 2
+        thmin_indx = 4
+        thmax_indx = 8
+        particleBoundaryDict = {'rmin': rmin_indx,
+                                'rmax': rmax_indx,
+                                'thmin': thmin_indx,
+                                'thmax': thmax_indx,
+                                }
+
+        miCI.particle_boundary_dict = particleBoundaryDict
+
+
+#        particleCI.pmeshCI.particle_boundary_dict = particleBoundaryDict
+
+        # Add particle mesh to pinCI
+#        pinCI.pmeshCI = UserMesh_C(meshFile='quarter_circle_mesh_crossed.xml', particleBoundaryFile='Pbcs_quarter_circle_mesh_crossed.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
+        pinCI.pmeshCI = UserMesh_C(miCI, computeDictionaries=True, computeTree=True, plotFlag=False)
+
+        # Make the particle object from pinCI
+        particleCI = Particle_C(pinCI, printFlag=False)
 
         # The following value should correspond to the element degree
         # used in the potential from which negE was obtained
@@ -114,26 +140,32 @@ class TestParticleBoundaryConditions(unittest.TestCase):
             # For linear elements, grad(phi) is discontinuous across
             # elements. To represent this field, we need Discontinuous Galerkin
             # elements.
-            electric_field_element_type = "DG"
+            electric_field_element_type = 'DG'
         else:
-            electric_field_element_type = "Lagrange"
+            electric_field_element_type = 'Lagrange'
 
         # Create the negative electric field directly on the particle mesh
-        self.neg_electric_field = Field_C(meshCI=self.pmesh2DCI,
+        self.neg_electric_field = Field_C(meshCI=particleCI.pmeshCI,
                                           element_type=electric_field_element_type,
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')
 
-        file = df_M.File("negE2D_crossed.xml")
+        file = df_M.File('negE2D_crossed.xml')
         file >> self.neg_electric_field.function
 
-#
-# Particle boundary conditions
-#
+        # Mark these subdomains (boundaries) with non-zero integers
+        # Name the boundaries used to apply particle
+        # boundary-conditions. Integers will be assigned to them in
+        # UserMesh_C.
+#        particleBoundaryNames = ['rmin', 'rmax', 'thmin', 'thmax']
+#        pinCI.particle_boundary_names = ['rmin', 'rmax', 'thmin', 'thmax']
 
-#
-# Particle trajectory input
-#
+        # Make the particle boundary-conditions object and add it to the particle object
+
+        pmbcCI = ParticleMeshBoundaryConditions_C(pinCI, particleCI, printFlag=False)
+        particleCI.pbcCI = pmbcCI
+
+# Add a ref to a Trajectory_C object to particleCI
 
         # Create input object for trajectories
         self.trajinCI = DTtrajectoryInput_C()
@@ -146,8 +178,9 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         self.trajinCI.implicitDict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
         self.trajinCI.neutralDict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
 
-        pCI = self.particleCI
-        self.particleCI.trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
+        # Add reference to particleCI
+        pCI = particleCI
+        pCI.trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
 
 
 #    def test_2D_absorbing_boundary(self):ENDDEF

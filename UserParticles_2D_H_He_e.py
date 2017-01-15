@@ -5,10 +5,10 @@ These are static (like global) functions. No SELF variable!
 """
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-__all__ = ['ParticleDistributions_C.initial_electrons',
-           'ParticleDistributions_C.initial_ions',
-           'ParticleDistributions_C.few_initial_electrons',
-           'ParticleDistributions_C.few_initial_ions',
+__all__ = ['UserParticleDistributions_C.initial_electrons',
+           'UserParticleDistributions_C.initial_ions',
+           'UserParticleDistributions_C.few_initial_electrons',
+           'UserParticleDistributions_C.few_initial_ions',
            ]
 
 import sys
@@ -26,9 +26,8 @@ import UserUnits_Module as U_M
 # Select the unit system to be used for input parameters.
 Convert = U_M.MyPlasmaUnits_C
 
-#ClassClassClassClassClassClassClassClassclass
-class ParticleDistributions_C(object):
-    """ParticleDistributions_C is to be edited by the user to
+class UserParticleDistributions_C(object):
+    """UserParticleDistributions_C is to be edited by the user to
        specify initial particle distributions.  The units are MKS by
        default (i.e., if no conversion factor is applied), but any
        units can be used provided the conversion to MKS is available
@@ -81,4 +80,44 @@ class ParticleDistributions_C(object):
 # Unit conversion                       
 #        velocity = [v*Convert.m_per_s for v in velocity]
         return np, particle_list
+#    def testelectrons(type):ENDDEF
 
+#class UserParticleDistributions_C(object):ENDCLASS
+
+class UserParticleBoundaryConditions_C(object):
+    """UserParticleBoundaryConditions_C implements commonly-used boundary
+       conditions for kinetic particles incident on a mesh boundary.
+    """
+
+    # Static class variables
+
+    # Particle boundary-conditions are labeled by non-zero bits:
+    ABSORB  = 0b1
+    REFLECT = 0b1 << 1
+    NUMBER_OF_STANDARD_BCs = 2
+# Moved to ParticleBoundaryConditions_C
+#    ISEE    = 0b1 << 2        # Ion-stimulated electron emission
+#    SEE     = 0b1 << 3        # Secondary-electron emission
+
+    if hasattr(user_particles_class, species_name):
+        # store the name of the distribution function
+        self.initial_distribution_function[species_name] = getattr(user_particles_class, species_name)
+        if printFlag: print 'Particle_C: Initial distribution for', species_name, ' is the function of that name in ', user_particles_class
+    # Write error message and exit if no distribution function exists
+    else:
+        error_msg = "Particle_C: Need to define a particle distribution function %s in UserParticle.py for species %s " % (species_name, species_name)
+        sys.exit(error_msg)
+
+    def absorb(self):
+
+#    def absorb(self):ENDDEF
+
+    def reflect(self):
+
+#    def reflect(self):ENDDEF
+
+    def default_for_all_boundaries(self):
+
+        return
+
+#class UserParticleBoundaryConditions_C(object):ENDCLASS
