@@ -32,6 +32,11 @@ class DTmeshInput_C(object):
         self.pmax = None
         self.cells_on_side = None
 
+        self.field_boundary_dict = None
+        self.particle_boundary_dict = None
+
+        return
+
 #class DTmeshInput_C(object): ENDCLASS
 
 
@@ -85,6 +90,7 @@ class TestParticleMigration(unittest.TestCase):
 
         self.pinCI = pinCI
 
+        # Make the particle object using pinCI
         self.particleCI = Particle_C(pinCI, printFlag=False)
 
         # Store the particles
@@ -174,7 +180,7 @@ class TestParticleMigration(unittest.TestCase):
         self.particleCI.compute_mesh_cell_indices()
 
 
-        # The expected results
+        # Put the expected ending results into the p_expected tuple
 
         # First particle
 
@@ -201,6 +207,7 @@ class TestParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for nsteps
+        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "timesteps"
         for istep in xrange(ctrlCI.nsteps):
             self.particleCI.move_neutral_particles(ctrlCI.dt)
 
@@ -244,7 +251,7 @@ class TestParticleMigration(unittest.TestCase):
         p_ic = []
         sp = self.particleCI.neutral_species[0]
         for ip in [0, 1]:
-            p = self.particleCI.pseg_arr[sp].get(ip).copy() # Have to make a copy!
+            p = self.particleCI.pseg_arr[sp].get(ip).copy() # Have to make a copy! Otherwise you overwrite the only copy of the particle
 #            p_ic.append(self.particleCI.pseg_arr[sp].get(ip)) # Don't do this: it's a reference.
             p_ic.append(p)
 #            print 'ip =', ip, 'p_ic =', p_ic[ip]
@@ -277,6 +284,7 @@ class TestParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for nsteps
+        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "timesteps"
         for istep in xrange(ctrlCI.nsteps):
             self.particleCI.move_neutral_particles(ctrlCI.dt)
 
@@ -359,6 +367,7 @@ class TestParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for nsteps
+        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "steps"
         for istep in xrange(ctrlCI.nsteps):
             self.particleCI.move_neutral_particles(ctrlCI.dt)
 

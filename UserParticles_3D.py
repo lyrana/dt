@@ -92,11 +92,10 @@ class UserParticleDistributions_C(object):
 
 #class UserParticleDistributions_C(object):ENDCLASS
 
-# Rename to UserParticleBoundaryFunctions ?
 # Does this need to descend from ParticleBoundaryConditions_C?  It just has static functions
-#class UserParticleBoundaryConditions_C(ParticleBoundaryConditions_C):
-class UserParticleBoundaryConditions_C(object):
-    """UserParticleBoundaryConditions_C implements callback functions
+#class UserParticleMeshBoundaryConditions_C(ParticleBoundaryConditions_C):
+class UserParticleMeshBoundaryConditions_C(object):
+    """UserParticleMeshBoundaryConditions_C implements callback functions
        (boundary conditions) for kinetic particles crossing marked
        mesh facets.
 
@@ -104,7 +103,7 @@ class UserParticleBoundaryConditions_C(object):
        scheme.
     """
 
-#    @staticmethod
+    @staticmethod
     def default_bc(self, p, facet_index):
         """Global default boundary condition for all species.
         """
@@ -114,8 +113,30 @@ class UserParticleBoundaryConditions_C(object):
 
         return
 
-#    @staticmethod
-    def default_bc_at_rmin(self, p, facet_index):
+    @staticmethod
+    def default_bc_at_xmin(p, species_name, facet_index):
+#    def default_bc_at_xmin(self, p, facet_index):
+        """Default boundary condition particles incident on rmin.
+
+           :param p: the record of the particle that crossed xmin.
+           :param species_name: the species that particle p belongs to.
+           :param facet_index: the facet crossed by particle p.
+        """
+
+#        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+        print fncname, "invoked by particle", p, "of species", species_name
+
+        # Set the delete flag
+        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
+
+        # Count the number/charge/energy of deleted particles
+
+        return
+#    def default_bc_at_xmin(p, facet_index):ENDDEF
+    
+    @staticmethod
+    def default_bc_at_xmax(self, p, facet_index):
         """Default boundary condition particles incident on rmin.
         """
 
@@ -124,8 +145,28 @@ class UserParticleBoundaryConditions_C(object):
 
         return
     
-#    @staticmethod
-    def bc_at_rmin_for_testelectrons(self, p, facet_index):
+    @staticmethod
+    def default_bc_at_ymin(self, p, facet_index):
+        """Default boundary condition particles incident on rmin.
+        """
+
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print "Called", fncname
+
+        return
+    
+    @staticmethod
+    def default_bc_at_ymax(self, p, facet_index):
+        """Default boundary condition particles incident on rmin.
+        """
+
+        fncname = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print "Called", fncname
+
+        return
+    
+    @staticmethod
+    def bc_at_xmin_for_testelectrons(self, p, facet_index):
         """Boundary condition for testelectrons incident on rmin.
         """
 
@@ -134,4 +175,4 @@ class UserParticleBoundaryConditions_C(object):
 
         return
 
-#class UserParticleBoundaryConditions_C(object):ENDCLASS
+#class UserParticleMeshBoundaryConditions_C(object):ENDCLASS

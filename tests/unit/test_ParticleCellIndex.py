@@ -31,7 +31,12 @@ class DTmeshInput_C(object):
         self.pmax = None
         self.cells_on_side = None
 
-#class DTmeshInput_C(object):END
+        self.field_boundary_dict = None
+        self.particle_boundary_dict = None
+
+        return
+
+#class DTmeshInput_C(object):ENDCLASS
 
 class TestParticleCellIndex(unittest.TestCase):
     """Test cell functions Particle_Module"""
@@ -107,7 +112,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # else:
         #     plotFlag=True
 
-        # Create 2D and 3D meshes that the particles can be tested against
+        # Create meshes that the particles can be tested against
 
         # 1d mesh input
         mi1DCI = DTmeshInput_C()

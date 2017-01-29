@@ -31,6 +31,12 @@ class DTmeshInput_C(object):
         self.pmax = None
         self.cells_on_side = None
 
+        self.field_boundary_dict = None
+        self.particle_boundary_dict = None
+
+        return
+
+# class DTmeshInput_C(object):ENDCLASS
 
 class TestFacetCrossing(unittest.TestCase):
     """Test of finding the facet crossed and desination cell due to a

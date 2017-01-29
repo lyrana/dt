@@ -83,8 +83,6 @@ class UserMesh_C(Mesh_C):
     # Select the unit system to be used for input parameters.
     Convert = U_M.MyPlasmaUnits_C
 
-#    def __init__(self, meshInputCI=None, Mesh=None, boundaryMarker=None, computeDictionaries=False, computeTree=False, plotFlag=False):
-
     def __init__(self, meshInputCI=None, computeDictionaries=False, computeTree=False, plotFlag=False):
         """
             The class UserMesh_C contains these attributes:
@@ -131,11 +129,10 @@ class UserMesh_C(Mesh_C):
            boundaries and particle boundaries) according to the user's
            specifications.
         """
+
+        # Radial limits of mesh
         rmin = meshInputCI.rmin
         rmax = meshInputCI.rmax
-
-        fieldBoundaryDict = meshInputCI.field_boundary_dict
-        particleBoundaryDict = meshInputCI.particle_boundary_dict
 
         stretch = meshInputCI.stretch
         nr = meshInputCI.nr
@@ -146,7 +143,11 @@ class UserMesh_C(Mesh_C):
 
         # Options: 'left, 'right', 'left/right', 'crossed'
         diagonal = meshInputCI.diagonal
-        
+
+        # Boundary conditions for fields and particles
+        fieldBoundaryDict = meshInputCI.field_boundary_dict
+        particleBoundaryDict = meshInputCI.particle_boundary_dict
+
 # First, make a rectangular mesh
 
 #       args: RectangleMesh(x0, y0, x1, y1, nx, ny, diagonal="right")
@@ -191,26 +192,24 @@ class UserMesh_C(Mesh_C):
                                                        # boundary with rmin_indx
             Gamma_rmax.mark(fieldBoundaryMarker, rmax_indx) # Mark the upper radial
                                                        # boundary with rmax_indx
-
-            self.field_boundary_marker = fieldBoundaryMarker
         else:
-            self.field_boundary_marker = None
+            fieldBoundaryMarker = None
 
         # Particle boundary conditions
 
+        # Create a MeshFunction object that contains the mesh, and is
+        # defined on mesh facets.  The function has a (size_t) value
+        # of 0, 1, or 2, to identify the boundary-condition applied.
+        # The function values are set later.
+
+        # A boundary has dimension 1 less than the domain:
+        particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
+
+        # Initialize all mesh facets with a default value of 0
+        # Then overwrite boundary facets that have callback functions.
+        particleBoundaryMarker.set_all(0)
+
         if particleBoundaryDict is not None:
-            # Create a MeshFunction object that contains the mesh, and is
-            # defined on mesh facets.  The function has a (size_t) value
-            # of 0, 1, or 2, to identify the boundary-condition applied.
-            # The function values are set later.
-
-            # A boundary has dimension 1 less than the domain:
-            particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
-
-            # Initialize all mesh facets with a default value of 0
-            # Then overwrite boundary facets that have callback functions.
-            particleBoundaryMarker.set_all(0)
-
             # Create mesh subdomains to apply boundary-conditions
             Gamma_rmin = XBoundary(rmin)  # Gamma_rmin is the lower radial boundary
             Gamma_rmax = XBoundary(rmax)  # Gamma_rmax is the upper radial boundary
@@ -223,7 +222,6 @@ class UserMesh_C(Mesh_C):
             rmax_indx = particleBoundaryDict['rmax']
             thmin_indx = particleBoundaryDict['thmin']
             thmax_indx = particleBoundaryDict['thmax']
-
             Gamma_rmin.mark(particleBoundaryMarker, rmin_indx) # Mark the lower radial
                                                                # boundary with rmin_indx
             Gamma_rmax.mark(particleBoundaryMarker, rmax_indx) # Mark the upper radial
@@ -232,9 +230,6 @@ class UserMesh_C(Mesh_C):
                                                                  # boundary with thmin_indx
             Gamma_thmax.mark(particleBoundaryMarker, thmax_indx) # Mark the lower theta
                                                                  # boundary with thmax_indx
-            self.particle_boundary_marker = particleBoundaryMarker
-        else:
-            self.particle_boundary_marker = None
 
 # Now transform the rectangular mesh to its desired shape
 
@@ -281,7 +276,10 @@ class UserMesh_C(Mesh_C):
             df_M.interactive()
 #raw_input('C: Press <ENTER> to continue')
 
+        # Save the class attributes
         self.mesh = mesh
+        self.field_boundary_marker = fieldBoundaryMarker
+        self.particle_boundary_marker = particleBoundaryMarker
 
 #A copy of a mesh may be created as follows:
 #mesh_copy = Mesh(mesh)

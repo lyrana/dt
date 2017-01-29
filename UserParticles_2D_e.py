@@ -171,9 +171,9 @@ class UserParticleDistributions_C(object):
 
 #class UserParticleDistributions_C(object):ENDCLASS
 
-#class UserParticleBoundaryConditions_C(ParticleBoundaryConditions_C):
-class UserParticleBoundaryConditions_C(object):
-    """UserParticleBoundaryConditions_C implements callback functions
+#class UserParticleMeshBoundaryConditions_C(ParticleBoundaryConditions_C):
+class UserParticleMeshBoundaryConditions_C(object):
+    """UserParticleMeshBoundaryConditions_C implements callback functions
        (boundary conditions) for kinetic particles crossing marked
        mesh facets.
 
@@ -211,4 +211,4 @@ class UserParticleBoundaryConditions_C(object):
 
         return
 
-#class UserParticleBoundaryConditions_C(object):ENDCLASS
+#class UserParticleMeshBoundaryConditions_C(object):ENDCLASS

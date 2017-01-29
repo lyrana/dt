@@ -189,6 +189,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         dt = self.ctrlCI.dt
 
+        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.nsteps, "timesteps"
         for istep in xrange(self.ctrlCI.nsteps):
             # needs dt; doesn't need nsteps
 
@@ -280,6 +281,7 @@ class TestParticleTrajectory(unittest.TestCase):
         self.ctrlCI.nsteps = 13 # Dies if this is 14, as particle goes out-of-bounds
         dt = self.ctrlCI.dt
 
+        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.nsteps, "timesteps"
         for istep in xrange(self.ctrlCI.nsteps):
             # needs dt; doesn't need nsteps
 

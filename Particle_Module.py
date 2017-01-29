@@ -699,7 +699,8 @@ class Particle_C(object):
 #           Move all the particles in this species
             (np_seg, pseg_in) = psaCI.init_inout_loop()
             particle_count = 0
-            # ip_out counts through the 'out' array
+            # ip_out counts particles being written to the current
+            # 'out' segment.
             ip_out = 0
             while isinstance(pseg_in, np_M.ndarray):
                 for ip_in in xrange(np_seg):
@@ -713,7 +714,16 @@ class Particle_C(object):
                     # Only gets the next 'out' segment if there are more 'in' particles to do
                     if ip_out == 0: pseg_out = psaCI.get_next_out_segment()
 
-                    pseg_out[ip_out] = pseg_in[ip_in] # This copies everything over, to ensure weights, flags, etc. get copied.
+# Check if the following copies, or resets the reference. Ans: it COPIES.
+                    pseg_out[ip_out] = pseg_in[ip_in]
+# Also, check if the following copies, or resets the reference. Ans: it COPIES.
+#                    p_out = pseg_out[ip_out]
+# To get a REFERENCE, need to use SLICING syntax:
+#                    p_out = pseg_in[ip_in][:] # This copies everything over, to ensure weights, flags, etc. get copied.
+# But you can't get a reference to a single element of pseg_in[]. See:
+# http://stackoverflow.com/questions/23654088/reference-of-a-single-numpy-array-element
+# See also HPL p. 137. b=a[1,:], but b is still an array.
+# What about getting a ref to one particle returned from a function? That's possible because it uses the stack?
 
                     # Move the particle
                     # NON-RELATIVISTIC: v and u are the same
@@ -727,11 +737,21 @@ class Particle_C(object):
 #                    print "x0=", pseg_out[ip_out]['x0'],"x=", pseg_out[ip_out]['x']
 #                    print "pseg_out", pseg_out[ip_out]
 
-                    # Check if the particle is still on the meshed region
+                    # Check if the particle has crossed into a
+                    # different cell. If it has, then:
+                    #   1. Find out which facet it crossed
+                    #   2. Check for a boundary-condition on that facet.
+                    #      a. If none (facet marker is 0), go to 3.
+                    #      b. If there is one, call the BC handler. If
+                    #      the BC allows this particle to continue,
+                    #      goto 3. If it doesn't, the particle is
+                    #      deleted.
+                    #
+                    #   3. Set the x0,y0,z0 coords to the crossing point.
 
-#                    print 'ip, index =', ip, pseg[ip]['cell_index']
+#                    print 'ip, index =', ip_out, pseg_out[ip_out]['cell_index']
                     p_cell_index = pseg_out[ip_out]['cell_index']
-#                    print fncname, ": ip, pindex", ip, p_cell_index, "cell index:", pmeshCI.compute_cell_index(pseg[ip])
+#                    print fncname, ": ip, pindex", ip_out, p_cell_index, "cell index:", pmeshCI.compute_cell_index(pseg_out[ip_out])
 
                     # Loop until the particle is in the current cell
                     while not pmeshCI.is_inside(pseg_out[ip_out], p_cell_index):
@@ -751,13 +771,10 @@ class Particle_C(object):
 #                        pcoords[:] = pseg_out[ip_out] # Alias to the position coordinates
                         dx = pcoords[0:dim] - pcoords[dim:2*dim] # Move vector
 
-#                        facet = pmeshCI.find_facet(pcoords, pcoords[dim+1:2*dim)
-#                        print fncname, "pcoords=", pcoords, "dx=", dx, "p_cell_index=", p_cell_index
-
 # could return the crossing-point in pcoords[]
                         (facet, path_fraction) = pmeshCI.find_facet(pcoords, dx, p_cell_index)
                         if facet != pmeshCI.NO_FACET:
- #                           print "facet crossed is", facet
+#                            print "facet crossed is", facet
 
                             # Look up the mesh-level index of this facet...
                             fac_indx = pmeshCI.cell_entity_index_dict['facet'][p_cell_index][facet]
@@ -767,20 +784,31 @@ class Particle_C(object):
                             fac_value = pmeshCI.particle_boundary_marker[fac_indx]
                             # Check if this facet has a non-zero marker
                             if fac_value != 0:
-                                # Look up the name of this boundary...
-                                bdy = pmeshCI.particle_boundary_dict[fac_value]
-                                # ...and call the handler
+                                # Convert the int marker to its string value...
+                                bFlag = str(fac_value)
+#                                print "bFlag is", bFlag
+                                # ...and call the function associated with this value.
 
 # Maybe this needs the whole particle object?  It could be the end-of-the line for the particle.
 # Need to check what needs to be in the following arg list:
-                                self.pbcCI.bcFunctionDict[bdy][sn](pcoords, fac_indx)
-                            else:
-                            # Update the cell index to the new cell
-                                p_cell_index = pmeshCI.cell_neighbor_dict[p_cell_index][facet]
-                                pseg_out[ip_out]['cell_index'] = p_cell_index
+                                self.pbcCI.bcFunctionDict[bFlag][sn](pseg_out[ip_out], sn, fac_indx)
+#                                self.pbcCI.bcFunctionDict[bFlag][sn](pcoords, fac_indx)
+
+# Not sure if this else is needed:                            else:
+
+#                            # Update the cell index to the new cell
+#                                p_cell_index = pmeshCI.cell_neighbor_dict[p_cell_index][facet]
+#                                pseg_out[ip_out]['cell_index'] = p_cell_index
 #                                print "cell_index updated to", pseg_out[ip_out]['cell_index']
+                            # Update the cell index to the new cell
+                            p_cell_index = pmeshCI.cell_neighbor_dict[p_cell_index][facet]
+                            pseg_out[ip_out]['cell_index'] = p_cell_index
+                            # If the particle has left the grid, exit this 'while' loop.
+                            if p_cell_index == pmeshCI.NO_CELL: break
+                                
                         else:
-                            print "facet crossed is", facet
+                            error_msg = "%s Mesh index of facet crossed is %d. This should not happen!" % (fncname, facet)
+                            sys.exit(error_msg)
 #                       END:if facet != pmeshCI.NO_FACET:
 #                   END:while not pmeshCI.is_inside(pseg_out[ip_out], p_cell_index)
 
@@ -788,13 +816,19 @@ class Particle_C(object):
                     # index when computing negE above
                     # pseg[ip]['cell_index'] = compute_cell_index(Point(p))
 
-                    ip_out += 1
+                    # Check that this particle has not been deleted before
+                    # incrementing the counter
+                    if pseg_out[ip_out]['bitflags'] & self.DELETE_FLAG == 0:
+                        ip_out += 1
+                    else:
+                        print "Particle", ip_in, "of species", sn, "has been deleted."
+
                     # Check if we've reached the end of this segment.  If
                     # so, we need to start writing on a new segment.
                     if (ip_out == self.SEGMENT_LENGTH):
-                        particle_count += ip_out
+                        particle_count += self.SEGMENT_LENGTH
                         ip_out = 0 # This will cause get_next_out_segment() to be called
-                                   # above if there are more 'in' particles to be processed.
+                                   # above, if there are more 'in' particles to be processed.
 
                 # Done with this segment.
                 # Get the next one, if it exists.
@@ -1118,13 +1152,16 @@ class ParticleMeshBoundaryConditions_C(object):
         # Set local variables from passed parameters
         userParticleBoundaryClass = particleInputCI.user_particle_bcs_class
 
-# or get names from the mesh.
-        particleBoundaryNames = particleInputCI.pmeshCI.particle_boundary_dict.keys()
+        pBDict = particleInputCI.pmeshCI.particle_boundary_dict
+        particleBoundaryFlags = pBDict.keys()
 
         speciesNames = particleCI.species_names
         
-        # Initialize a dictionary for the boundary function for each (boundary, species) pair:
-        bcFunctionDict = dict((bdy, dict((sp, None) for sp in speciesNames)) for bdy in particleBoundaryNames)
+        # Initialize a dictionary for the boundary function for each
+        # (boundary, species) pair.
+        # The first index is the string value of the integer that
+        # marks the boundary facets.
+        self.bcFunctionDict = dict((bFlag, dict((sp, None) for sp in speciesNames)) for bFlag in particleBoundaryFlags)
 
         # Get the global default boundary function, if there is one.
         bcFunctionName = 'default_bc'
@@ -1138,8 +1175,8 @@ class ParticleMeshBoundaryConditions_C(object):
 
         # Overwrite the global default function with a function specific to
         # each boundary, if there is one.
-        for bdy in particleBoundaryNames:
-            bcFunctionName = 'default_bc_at_' + bdy
+        for bFlag in particleBoundaryFlags:
+            bcFunctionName = 'default_bc_at_' + pBDict[bFlag]
             if hasattr(userParticleBoundaryClass, bcFunctionName):
                 bcBoundaryDefaultFunction = getattr(userParticleBoundaryClass, bcFunctionName)
             else:
@@ -1148,16 +1185,16 @@ class ParticleMeshBoundaryConditions_C(object):
                 # Overwrite the default for this boundary with a
                 # function specific to this boundary and species, if
                 # there is one.
-                bcFunctionName = 'bc_at_' + bdy + '_for_' + sp
+                bcFunctionName = 'bc_at_' + pBDict[bFlag] + '_for_' + sp
                 if hasattr(userParticleBoundaryClass, bcFunctionName):
                     bcFunction = getattr(userParticleBoundaryClass, bcFunctionName)
                 else:
                     bcFunction = bcBoundaryDefaultFunction
                 if bcFunction is None:
-                    print "ParticleMeshBoundaryConditions_C: No boundary condition specified for", bdy, "/", sp
+                    print "ParticleMeshBoundaryConditions_C: No boundary condition specified for", pBDict[bFlag], "/", sp
                 elif printFlag:
-                    print "ParticleMeshBoundaryConditions_C: Boundary condition for", bdy, "/", sp, "is", bcFunction
-                bcFunctionDict[bdy][sp] = bcFunction
+                    print "ParticleMeshBoundaryConditions_C: Boundary condition for", pBDict[bFlag], "/", sp, "is", bcFunction
+                self.bcFunctionDict[bFlag][sp] = bcFunction
 
         return
 #    def __init__(self, particleInputCI, particleCI, printFlag = False):ENDDEF

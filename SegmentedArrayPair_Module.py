@@ -48,7 +48,6 @@ class SegmentedArray_C(object):
         # Make a pair of empty list of segments
         self.SegListPair = [ [], [] ]
 
-
         # Segment number and offset for the first available opening
         self.FirstNotFullSegment = [0, 0]
         self.FirstAvailableOffset = [0, 0]
@@ -131,6 +130,7 @@ class SegmentedArray_C(object):
         self.FirstAvailableOffset[outSA] += 1
 
         return vec[self.FirstAvailableOffset[outSA]-1], full_index
+#    def put(self, item_input):ENDDEF
 
 #class SegmentedArray_C(object):
     def get(self, i):
@@ -146,6 +146,7 @@ class SegmentedArray_C(object):
 
         (seg, offset) = divmod(i, self.SEGMENTLENGTH)
         return self.SegListPair[outSA][seg][offset]
+#    def get(self, i):ENDDEF
 
 #class SegmentedArray_C(object):
     def __getitem__(self, i):
@@ -235,7 +236,7 @@ class SegmentedArray_C(object):
             # ===> This should cause the caller to break out of its loop over segments <===
             # If it's not empty, we return the non-empty items further
             # down.
-            if lastItem == 0: return (0, None, None)
+            if lastItem == 0: return (0, None)
         else:
             lastItem = self.SEGMENTLENGTH
 
@@ -286,7 +287,7 @@ class SegmentedArray_C(object):
             # ===> This should cause the caller to break out of its loop over segments <===
             # If it's not empty, we return the non-empty items further
             # down.
-            if lastItem == 0: return (0, None, None)
+            if lastItem == 0: return (0, None)
         else:
             lastItem = self.SEGMENTLENGTH
 

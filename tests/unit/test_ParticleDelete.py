@@ -201,6 +201,7 @@ class TestParticleDeletion(unittest.TestCase):
 
         ncoords = self.particleCI.dimension # number of particle coordinates to check
 #        isp = 0
+        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "timesteps"
         for sp in self.particleCI.species_names:
             if self.particleCI.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
             self.particleCI.move_particles_in_uniform_fields(sp, ctrlCI)

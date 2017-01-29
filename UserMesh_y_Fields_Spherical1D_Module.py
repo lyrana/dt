@@ -94,6 +94,7 @@ class UserMesh_C(Mesh_C):
 # or:       particleBoundaryMarker = df_M.MeshFunctionSizet(self.mesh, "Pbcs_quarter_circle_mesh_crossed.xml")
 
         return
+#    def __init__(self, meshInputCI=None, computeDictionaries=False, computeTree=False, plotFlag=False):ENDDEF
 
 # Inherited from Mesh_C:
 #    def copy(self):
@@ -155,13 +156,22 @@ class UserMesh_C(Mesh_C):
             Gamma_rmax.mark(fieldBoundaryMarker, rmax_indx) # Mark the upper
                                                             # radial boundary
                                                             # with rmax_indx
-            self.field_boundary_marker = fieldBoundaryMarker
         else:
-            self.field_boundary_marker = None
+            fieldBoundaryMarker = None
         #   END:if fieldBoundaryDict is not None:
 
 
         # Particle boundary conditions are set similarly
+
+        # Mark the facets for particle boundary conditions
+        # Create a MeshFunction object defined on the facets of this
+        # mesh.  The function has a default (size_t) value of 0,
+        # meaning 'no action needed'
+
+        # A boundary has dimension 1 less than the domain:
+        particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
+        # Initialize all mesh facets with a default value of 0.
+        particleBoundaryMarker.set_all(0)
 
         if particleBoundaryDict is not None:
             particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
@@ -173,9 +183,6 @@ class UserMesh_C(Mesh_C):
             rmax_indx = particleBoundaryDict['rmax']
             Gamma_rmin.mark(particleBoundaryMarker, rmin_indx)
             Gamma_rmax.mark(particleBoundaryMarker, rmax_indx)
-
-        else:
-            self.particle_boundary_marker = None
         #END:if particleBoundaryDict is not None:
 
 # Now transform the unit interval mesh to its desired shape
@@ -204,7 +211,10 @@ class UserMesh_C(Mesh_C):
             df_M.plot(mesh, title='radial mesh', axes=True)
             df_M.interactive()
 
+        # Save the class attributes
         self.mesh = mesh
+        self.field_boundary_marker = fieldBoundaryMarker
+        self.particle_boundary_marker = particleBoundaryMarker
 
         return
 #    def __init__(self, meshInputCI=None, Mesh=None, meshToCopy=None, computeDictionaries=False, computeTree=False, plotFlag=False):ENDDEF

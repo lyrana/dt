@@ -153,8 +153,8 @@ class TestParticleNonuniformE(unittest.TestCase):
 #        print '2nd electron:', getparticle
 
         # Advance the particles one timestep
+        print "Moving", self.particleCI.get_total_particle_count(), "particles for one timestep"
         self.particleCI.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
-
 
         # Check the results
         ncoords = self.particleCI.dimension # number of particle coordinates to check

@@ -258,8 +258,8 @@ if ctrlCI.use_particles == True:
 
 # ??Generate the initial particle distributions
     rpCI = systemCI.particleCI # abbrev for particle Class Instance
-    printFlags = {};
-    for sp in rpCI.names: printFlag[sp] = False
+    printFlags = {}
+    for sp in rpCI.names: printFlags[sp] = False
     # Turn plotting on for some species
     printFlags['plasmaelectrons'] = True
 
