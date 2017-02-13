@@ -11,6 +11,7 @@ import unittest
 
 import dolfin as df_M
 
+from DT_Module import DTmeshInput_C
 from DT_Module import DTparticleInput_C
 from DT_Module import DTcontrol_C
 
@@ -20,6 +21,7 @@ from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 
 from Particle_Module import Particle_C
+from Particle_Module import ParticleMeshBoundaryConditions_C
 
 from SegmentedArrayPair_Module import SegmentedArray_C
 
@@ -77,10 +79,46 @@ class TestParticleNonuniformE(unittest.TestCase):
         # Make the mesh & fields from saved files
         # The is needed to construct the function space for E
 
+# Mesh creation
+
+        miCI = DTmeshInput_C()
+
+        # Make the mesh & fields from saved files
+        miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
+
         # Create mesh from a file
-        pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+        miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
+        miCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
+
+        # These are the (int boundary-name) pairs used to mark mesh
+        # facets. The string value of the int is used as the index.
+        rmin_indx = '1'
+        rmax_indx = '2'
+        thmin_indx = '4'
+        thmax_indx = '8'
+        # Note the order, which is reversed from the fieldBoundaryDict
+        # order.
+        particleBoundaryDict = {rmin_indx:'rmin',
+                                rmax_indx:'rmax',
+                                thmin_indx:'thmin',
+                                thmax_indx:'thmax',
+                                }
+
+        miCI.particle_boundary_dict = particleBoundaryDict
+
+        pmesh2DCI = UserMesh_C(miCI, computeDictionaries=True, computeTree=True, plotFlag=False)
 
         self.particleCI.pmeshCI = pmesh2DCI
+
+# Particle boundary-conditions
+
+        # UserParticleMeshFunctions_C is where the facet-crossing callback
+        # functions are defined.
+        userPMeshFnsClass = UPrt_M.UserParticleMeshFunctions_C # abbreviation
+
+        spNames = self.particleCI.species_names
+        pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmesh2DCI, userPMeshFnsClass, printFlag=False)
+        self.particleCI.pmesh_bcCI = pmeshBCCI
 
         # The following value should correspond to the element degree
         # used in the potential from which negE was obtained
@@ -157,7 +195,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         self.particleCI.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
 
         # Check the results
-        ncoords = self.particleCI.dimension # number of particle coordinates to check
+        ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
         isp = 0
         for sp in self.particleCI.species_names:
 #            print 'species count = ', self.particleCI.get_species_particle_count(sp)

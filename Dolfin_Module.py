@@ -208,6 +208,8 @@ class Mesh_C(object):
            The dictionary is indexed by cell index.
         
         """
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
         tdim = self.tdim
 
         # Generate facet-to-cell connectivity data
@@ -268,7 +270,7 @@ class Mesh_C(object):
                 if len(attached_cell_indices) > 0:
                     neighbor_cells[fi] = attached_cell_indices[0]
                 else:
-#                    if tdim ==2: print "find_facet(): tdim=", tdim, "cell_index=", cell.index(), "facet=", fi, "attached_cell_indices=", attached_cell_indices
+#                    if tdim ==2: print fncName, tdim, "cell_index=", cell.index(), "facet=", fi, "attached_cell_indices=", attached_cell_indices
 #                    neighbor_cells[fi] = -1
                     neighbor_cells[fi] = Mesh_C.NO_CELL
                 fi += 1
@@ -365,14 +367,14 @@ class Mesh_C(object):
 #        first = self.bbtree.compute_first_entity_collision(df_M.Point(p)) # not compute_first_collision()
         first = self.bbtree.compute_first_entity_collision(p) # not compute_first_collision()
 
-        fncname = sys._getframe().f_code.co_name + '():'
-#        print fncname, "cell index =", first
+        fncName = sys._getframe().f_code.co_name + '():'
+#        print fncName, "cell index =", first
 
         # The maximum value of a 32-bit int is 0xFFFFFFFF (-1)
         # (eight Fs and F = 1111)
 #        if first == 0xFFFFFFFF:
         if first == Mesh_C.NO_CELL:
-            print "fncname: particle is out of bounds"
+            print "fncName: particle is out of bounds"
             sys.exit()
 
         return first
@@ -386,7 +388,7 @@ class Mesh_C(object):
            Args: point is of dolfin type Point.
         """
 
-        fncname = sys._getframe().f_code.co_name + '():'
+        fncName = sys._getframe().f_code.co_name + '():'
 
         for ip in xrange(points.shape[0]):
         # pseg[i] is a 'record' containing the 'x', 'y', 'z', 'vx', 'vy',... values of ith ithem
@@ -397,7 +399,7 @@ class Mesh_C(object):
             compute_cell_index(ploc)
 
         first = self.bbtree.compute_first_entity_collision(point)
-        print fncname, "cell index =", first
+        print fncName, "cell index =", first
 
         return
         
@@ -433,13 +435,24 @@ class Mesh_C(object):
            fraction (normal distance to facet plane)/(total distance
            traveled normal to facet plane)
 
+           1. Compute the distance a particle moves in the directions
+           of a facet (Lf).
+
+           2. If it moved closer to it, compute the distance to the
+           facet (Df).
+
+           3. If Df < Lf, the particle crossed the plane that the
+           facet is in.
+
+           4. If the particle crosses more than one facet plane, the
+           facet crossed is the one with the smallest ratio Df/Lf,
+           since it reached that facet first.
+
            :param r0: initial position, as a tuple of coordinates (x),
-                      (x,y), or (x, y, z) with field names 'x', 'y',
-                      'z'
+                      (x,y), or (x, y, z)
 
            :param dr: move vector, as a tuple of coordinates (x),
-                      (x,y), or (x, y, z) with field names 'x', 'y',
-                      'z'
+                      (x,y), or (x, y, z)
            
            :param cell_index: the (global?) index of the cell that the
                               particle started in.
@@ -448,99 +461,116 @@ class Mesh_C(object):
                   fraction of the path that's in this cell.
         :rtype: int, float
         """
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
-        fncname = sys._getframe().f_code.co_name + '():'
-
-        dim = self.gdim
+        gDim = self.gdim # The geometric dimenion of the mesh
 
         dx = self.dx
         x0 = self.x0
-        dx[:] = dr[0:dim] # Convert displacement vector to a vector with
+        dx[:] = dr[0:gDim] # Convert displacement vector to a vector with
                           # dimension equal to the number of mesh dimensions.
-        x0[:] = r0[0:dim]
+        x0[:] = r0[0:gDim]
+#        x0[:] = r0[gDim:2*gDim]
 
         facet = Mesh_C.NO_FACET
 
-        path_fraction = 1.0
-        distance_to_facet = 0.0
+        pathFraction = 1.0
+        distanceToFacet = 0.0
 
         if np_M.dot(dx,dx) == 0.0:
-            return facet, path_fraction
+            return facet, pathFraction
 
         cell = self.cell_dict[cell_index]
 
         # The coordinates of all the vertices in this cell, in (x, y,
         # z) tuple form
-        vertex_coords = cell.get_vertex_coordinates().reshape((-1, dim))
+        vertex_coords = cell.get_vertex_coordinates().reshape((-1, gDim))
 
 #        print "find_facet(): vertex_coords=", vertex_coords
 
         # The facet-normals of this cell:
         facet_normal_vectors = self.cell_facet_normals_dict[cell_index]        
 
-        if dim == 3:
+        if gDim == 3:
 
-            # 3D mesh: There are 4 facets, and the normal vector is 3D.
+            # 3D mesh: There are 4 facets indexed 0,1,2,3, and the normal vector is 3D.
 
             # Test if the plane of facet 0 is crossed:
             n0_dot_dx = np_M.dot(facet_normal_vectors[0], dx)
 #            print "find_facet(): facet_normal_vectors[0] = ", facet_normal_vectors[0], "dx=", dx, "n0_dot_dx=", n0_dot_dx
             if n0_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vec_to_facet = np_M.subtract(vertex_coords[1], x0)
+                vecToFacet = np_M.subtract(vertex_coords[1], x0)
                 # The normal distance to the facet plane
-                distance_to_facet = np_M.dot(facet_normal_vectors[0], vec_to_facet)
-#                print "f0 find_facet(): vec_to_facet=", vec_to_facet, "distance_to_facet=", distance_to_facet
-                if distance_to_facet < path_fraction*n0_dot_dx:
+                distanceToFacet = np_M.dot(facet_normal_vectors[0], vecToFacet)
+#                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
+                if distanceToFacet < 0.0:
+                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    # Assume this is round-off error and flip the sign
+                    distanceToFacet = -distanceToFacet
+                if distanceToFacet < pathFraction*n0_dot_dx:
                     facet = 0
-                    path_fraction = distance_to_facet/n0_dot_dx
-#                    print "f0 find_facet(): facet=", facet, "path_fraction=", path_fraction
+                    pathFraction = distanceToFacet/n0_dot_dx
+#                    print "f0 find_facet(): facet=", facet, "pathFraction=", pathFraction
 
             # Next, test if the plane of facet 1 is crossed:
             n1_dot_dx = np_M.dot(facet_normal_vectors[1], dx)
 #            print "find_facet(): n1_dot_dx=", n1_dot_dx
             if n1_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vec_to_facet = np_M.subtract(vertex_coords[2], x0)
+                vecToFacet = np_M.subtract(vertex_coords[2], x0)
                 # The normal distance to the facet plane
-                distance_to_facet = np_M.dot(facet_normal_vectors[1], vec_to_facet)
-                if distance_to_facet < path_fraction*n1_dot_dx:
+                distanceToFacet = np_M.dot(facet_normal_vectors[1], vecToFacet)
+                if distanceToFacet < 0.0:
+                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    # Assume this is round-off error and flip the sign
+                    distanceToFacet = -distanceToFacet
+                if distanceToFacet < pathFraction*n1_dot_dx:
                     facet = 1
-                    path_fraction = distance_to_facet/n1_dot_dx
+                    pathFraction = distanceToFacet/n1_dot_dx
 
             # Next, test if the plane of facet 2 is crossed:
             n2_dot_dx = np_M.dot(facet_normal_vectors[2], dx)
 #            print "find_facet(): n2_dot_dx=", n2_dot_dx
             if n2_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vec_to_facet = np_M.subtract(vertex_coords[3], x0)
+                vecToFacet = np_M.subtract(vertex_coords[3], x0)
                 # The normal distance to the facet plane
-                distance_to_facet = np_M.dot(facet_normal_vectors[2], vec_to_facet)
-                if distance_to_facet < path_fraction*n2_dot_dx:
+                distanceToFacet = np_M.dot(facet_normal_vectors[2], vecToFacet)
+                if distanceToFacet < 0.0:
+                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    # Assume this is round-off error and flip the sign
+                    distanceToFacet = -distanceToFacet
+                if distanceToFacet < pathFraction*n2_dot_dx:
                     facet = 2
-                    path_fraction = distance_to_facet/n2_dot_dx
+                    pathFraction = distanceToFacet/n2_dot_dx
 
             # Next, test if the plane of facet 3 is crossed:
             n3_dot_dx = np_M.dot(facet_normal_vectors[3], dx)
 #            print "find_facet(): n3_dot_dx=", n3_dot_dx
             if n3_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vec_to_facet = np_M.subtract(vertex_coords[0], x0)
+                vecToFacet = np_M.subtract(vertex_coords[0], x0)
                 # The normal distance to the facet plane
-                distance_to_facet = np_M.dot(facet_normal_vectors[3], vec_to_facet)
-                if distance_to_facet < path_fraction*n3_dot_dx:
+                distanceToFacet = np_M.dot(facet_normal_vectors[3], vecToFacet)
+                if distanceToFacet < 0.0:
+                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    # Assume this is round-off error and flip the sign
+                    distanceToFacet = -distanceToFacet
+                if distanceToFacet < pathFraction*n3_dot_dx:
                     facet = 3
-                    path_fraction = distance_to_facet/n3_dot_dx
+                    pathFraction = distanceToFacet/n3_dot_dx
 
-            if path_fraction > 1.0:
-                facet = Mesh_C.NO_FACET
-                print fncname, "!!! path_fraction > 1.0:", path_fraction
+            if pathFraction > 1.0 or pathFraction < 0.0:
+                print fncName, "!!! Bad value for pathFraction:", pathFraction
                 sys.exit()
-            return facet, path_fraction
+            return facet, pathFraction
 
-        elif dim == 2:
+        elif gDim == 2:
 
-            # 2D mesh: There are 3 facets, and the normal vector is 2D.
+            # 2D mesh: There are 3 facets indexed 0,1,2, (opposite the
+            # vertices with these same indices) and the normal vector is
+            # 2D.
 
             # Test if the plane of facet 0 is crossed.
             # Distance traveled normal to facet 0:
@@ -548,15 +578,19 @@ class Mesh_C(object):
 #            print "find_facet(): facet_normal_vectors[0] = ", facet_normal_vectors[0], "dx=", dx, "n0_dot_dx=", n0_dot_dx
             if n0_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vec_to_facet = np_M.subtract(vertex_coords[1], x0)
+                vecToFacet = np_M.subtract(vertex_coords[1], x0)
                 # The normal distance to the facet plane
-                distance_to_facet = np_M.dot(facet_normal_vectors[0], vec_to_facet)
-#                print "f0 find_facet(): vec_to_facet=", vec_to_facet, "distance_to_facet=", distance_to_facet
-                if distance_to_facet < path_fraction*n0_dot_dx:
+                distanceToFacet = np_M.dot(facet_normal_vectors[0], vecToFacet)
+                if distanceToFacet < 0.0:
+                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    # Assume this is round-off error and flip the sign
+                    distanceToFacet = -distanceToFacet
+#                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
+                if distanceToFacet < pathFraction*n0_dot_dx:
                     facet = 0
                     # Compute fraction of the path to this facet in this cell:
-                    path_fraction = distance_to_facet/n0_dot_dx
-#                    print "f0 find_facet(): facet=", facet, "path_fraction=", path_fraction
+                    pathFraction = distanceToFacet/n0_dot_dx
+#                    print "f0 find_facet(): facet=", facet, "pathFraction=", pathFraction
 
             # Next, test if the plane of facet 1 is crossed.
             # Distance traveled normal to facet 0:
@@ -564,15 +598,19 @@ class Mesh_C(object):
 #            print "find_facet(): n1_dot_dx=", n1_dot_dx
             if n1_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vec_to_facet = np_M.subtract(vertex_coords[2], x0)
+                vecToFacet = np_M.subtract(vertex_coords[2], x0)
                 # The normal distance to the facet plane
-                distance_to_facet = np_M.dot(facet_normal_vectors[1], vec_to_facet)
+                distanceToFacet = np_M.dot(facet_normal_vectors[1], vecToFacet)
                 # If the path-fraction to this facet's plane is
                 # smaller than for facet 0, this may be the one crossed.
-                if distance_to_facet < path_fraction*n1_dot_dx:
+                if distanceToFacet < 0.0:
+                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    # Assume this is round-off error and flip the sign
+                    distanceToFacet = -distanceToFacet
+                if distanceToFacet < pathFraction*n1_dot_dx:
                     facet = 1
                     # Compute fraction of the path to this facet in this cell:
-                    path_fraction = distance_to_facet/n1_dot_dx
+                    pathFraction = distanceToFacet/n1_dot_dx
 
             # Next, test if the plane of facet 2 is crossed.
             # Distance traveled normal to facet 2:
@@ -580,57 +618,71 @@ class Mesh_C(object):
 #            print "find_facet(): n2_dot_dx=", n2_dot_dx
             if n2_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vec_to_facet = np_M.subtract(vertex_coords[0], x0)
+                vecToFacet = np_M.subtract(vertex_coords[0], x0)
                 # The normal distance to the facet plane
-                distance_to_facet = np_M.dot(facet_normal_vectors[2], vec_to_facet)
+                distanceToFacet = np_M.dot(facet_normal_vectors[2], vecToFacet)
+                if distanceToFacet < 0.0:
+                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    # Assume this is round-off error and flip the sign
+                    distanceToFacet = -distanceToFacet
                 # If the path-fraction to this facet's plane is
                 # smaller than for facet 0 and 1, this is the one crossed.
-                if distance_to_facet < path_fraction*n2_dot_dx:
+                if distanceToFacet < pathFraction*n2_dot_dx:
                     facet = 2
-                    path_fraction = distance_to_facet/n2_dot_dx
+                    pathFraction = distanceToFacet/n2_dot_dx
 
-            if path_fraction > 1.0:
-                facet = Mesh_C.NO_FACET
-                print fncname, "!!! path_fraction > 1.0:", path_fraction
+            if pathFraction > 1.0 or pathFraction < 0.0:
+                print fncName, "!!! Bad value for pathFraction:", pathFraction, "!!!"
                 sys.exit()
-            return facet, path_fraction
+#                if abs(pathFraction) < TINY_PATH_FRACTION:
+#                    pathFraction = 0.0 # this will trigger a check on the cell index?
+#                else:
+#                    sys.exit()
+            return facet, pathFraction
         else:
 
-            # 1D mesh: There are 2 facets, and the normal vector is 1D.
+            # 1D mesh: There are 2 facets indexed 0 1, and the normal vector is 1D.
 
             # Test if facet 0 is crossed:
             n0_dot_dx = facet_normal_vectors[0]*dx[0]
 #            print "find_facet()", "n0_dot_dx=", n0_dot_dx
             if n0_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vec_to_facet = vertex_coords[0] - x0[0]
+                vecToFacet = vertex_coords[0] - x0[0]
                 # The normal distance to the facet plane
-                distance_to_facet = facet_normal_vectors[0]*vec_to_facet
-                if distance_to_facet < path_fraction*n0_dot_dx:
+                distanceToFacet = facet_normal_vectors[0]*vecToFacet
+                if distanceToFacet < 0.0:
+                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    # Assume this is round-off error and flip the sign
+                    distanceToFacet = -distanceToFacet
+                if distanceToFacet < pathFraction*n0_dot_dx:
                     facet=0
-                    path_fraction = distance_to_facet/n0_dot_dx
-                    return facet, path_fraction
+                    pathFraction = distanceToFacet/n0_dot_dx
+                    return facet, pathFraction
 
             # Next, test if facet 1 is crossed:
             n1_dot_dx = facet_normal_vectors[1]*dx[0]
 #            print "find_facet()", "n1_dot_dx=", n1_dot_dx
             if n1_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vec_to_facet = vertex_coords[1] - x0[0]
+                vecToFacet = vertex_coords[1] - x0[0]
                 # The normal distance to the facet plane
-                distance_to_facet = facet_normal_vectors[1]*vec_to_facet
-#                print "find_facet()", "distance_to_facet:", distance_to_facet, "vec_to_facet:", vec_to_facet, "facet_normal_vectors[1]:", facet_normal_vectors[1]
-                if distance_to_facet < path_fraction*n1_dot_dx:
+                distanceToFacet = facet_normal_vectors[1]*vecToFacet
+                if distanceToFacet < 0.0:
+                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    # Assume this is round-off error and flip the sign
+                    distanceToFacet = -distanceToFacet
+#                print "find_facet()", "distanceToFacet:", distanceToFacet, "vecToFacet:", vecToFacet, "facet_normal_vectors[1]:", facet_normal_vectors[1]
+                if distanceToFacet < pathFraction*n1_dot_dx:
                     facet=1
-                    path_fraction = distance_to_facet/n1_dot_dx
-#                    print "find_facet", "n1_dot_dx=", n1_dot_dx, "vec_to_facet=", vec_to_facet, "distance_to_facet=", distance_to_facet
-                    return facet, path_fraction
+                    pathFraction = distanceToFacet/n1_dot_dx
+#                    print "find_facet", "n1_dot_dx=", n1_dot_dx, "vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
+                    return facet, pathFraction
 
-            if path_fraction > 1.0:
-                facet = Mesh_C.NO_FACET
-                print fncname, "!!! path_fraction > 1.0:", path_fraction
+            if pathFraction > 1.0 or pathFraction < 0.0:
+                print fncName, "!!! Bad value for pathFraction:", pathFraction
                 sys.exit()
-            return facet, path_fraction
+            return facet, pathFraction
 #    def find_facet(self, r0, dr, cell_index):ENDDEF
 
 #class Mesh_C(object):END

@@ -146,8 +146,8 @@ class TestParticleDeletion(unittest.TestCase):
         # Set constant fields
         E0 = (1.0e-4, 2.0e-4, 3.0e-4)
 #        B0 = (0.0, 0.0, 0.0)
-        ctrlCI.E0 = Vec_C(self.particleCI.dimension, E0)
-#        ctrlCI.B0 = Vec_C(self.particleCI.dimension, B0)
+        ctrlCI.E0 = Vec_C(self.particleCI.particle_dimension, E0)
+#        ctrlCI.B0 = Vec_C(self.particleCI.particle_dimension, B0)
 
         # Create more particles to test deletion. Copy the particle
         # that's already stored to make 3 full and one partially
@@ -199,7 +199,7 @@ class TestParticleDeletion(unittest.TestCase):
         # particles from 'in' to the 'out' array.  Don't care about
         # the actual motion
 
-        ncoords = self.particleCI.dimension # number of particle coordinates to check
+        ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
 #        isp = 0
         print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "timesteps"
         for sp in self.particleCI.species_names:

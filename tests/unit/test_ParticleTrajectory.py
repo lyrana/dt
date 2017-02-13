@@ -12,17 +12,22 @@ import unittest
 
 import dolfin as df_M
 
+from DT_Module import DTmeshInput_C
 from DT_Module import DTparticleInput_C
 from DT_Module import DTcontrol_C
 from DT_Module import DTtrajectoryInput_C
 
-from Dolfin_Module import Mesh_C
+#from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 
 from Particle_Module import Particle_C
+from Particle_Module import ParticleMeshBoundaryConditions_C
+
 from Trajectory_Module import Trajectory_C
 
 from SegmentedArrayPair_Module import SegmentedArray_C
+
+from UserMesh_y_Fields_FE2D_Module import UserMesh_C
 
 from UserUnits_Module import MyPlasmaUnits_C
 
@@ -39,9 +44,9 @@ class TestParticleTrajectory(unittest.TestCase):
         self.ctrlCI.dt = 1.0e-6
         self.ctrlCI.nsteps = 13
 
-#
+
 # Particle species input
-#
+
         # Create an instance of the DTparticleInput class
         pinCI = DTparticleInput_C()
         # Initialize particles
@@ -63,15 +68,75 @@ class TestParticleTrajectory(unittest.TestCase):
                              ),
                             )
 
-        # Provide the particle distributions for the above
+        # Provide the particle distributions for the above species
         pinCI.user_particles_module = "UserParticles_2D_e"
         UPrt_M = im_M.import_module(pinCI.user_particles_module)
         pinCI.user_particles_class = UPrt_M.UserParticleDistributions_C
 
-        self.pinCI = pinCI
-
-        # Make the particle storage array
+        # Make the particle object from pinCI
         self.particleCI = Particle_C(pinCI, printFlag=False)
+
+#  Mesh creation
+
+        miCI = DTmeshInput_C()
+
+        # Make the mesh & fields from saved files
+        miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
+        miCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
+
+        # Create the particle mesh object
+# 'crossed' diagonals
+#        self.pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+# 'left' diagonal
+#        self.pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_left.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+
+        # These are the (int boundary-name) pairs used to mark mesh
+        # facets. The string value of the int is used as the index.
+        rmin_indx = '1'
+        rmax_indx = '2'
+        thmin_indx = '4'
+        thmax_indx = '8'
+        # Note the order, which is reversed from the fieldBoundaryDict
+        # order.
+        particleBoundaryDict = {rmin_indx:'rmin',
+                                rmax_indx:'rmax',
+                                thmin_indx:'thmin',
+                                thmax_indx:'thmax',
+                                }
+
+        miCI.particle_boundary_dict = particleBoundaryDict
+
+        # Create the mesh
+
+#        pinCI.pmeshCI = UserMesh_C(meshFile='quarter_circle_mesh_crossed.xml', particleBoundaryFile='Pbcs_quarter_circle_mesh_crossed.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
+
+# Can this be attached to Particle_C after Particle_C construction? YES
+        pmeshCI = UserMesh_C(miCI, computeDictionaries=True, computeTree=True, plotFlag=False)
+
+        self.particleCI.pmeshCI = pmeshCI
+
+# Create the electric field from existing files
+
+        # The following value should correspond to the element degree
+        # used in the potential from which negE was obtained
+        phi_element_degree = 1
+
+        if phi_element_degree == 1:
+            # For linear elements, grad(phi) is discontinuous across
+            # elements. To represent this field, we need Discontinuous Galerkin
+            # elements.
+            electric_field_element_type = "DG"
+        else:
+            electric_field_element_type = "Lagrange"
+
+        # Create the negative electric field directly on the particle mesh
+        self.neg_electric_field = Field_C(meshCI=pmeshCI,
+                                          element_type=electric_field_element_type,
+                                          element_degree=phi_element_degree-1,
+                                          field_type='vector')
+
+        file = df_M.File("negE2D_crossed.xml")
+        file >> self.neg_electric_field.function
 
 #
 # Input for the particle trajectory object
@@ -90,40 +155,9 @@ class TestParticleTrajectory(unittest.TestCase):
         # Create the trajectory object and attach it to the particle
         # object. No trajectory storage is created until particles
         # with TRAJECTORY_FLAG are encountered.
-        pCI = self.particleCI
-        pCI.trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
-
-#
-#  Mesh and Fields input
-#
-        # Make the mesh & fields from saved files
-
-        # Create the particle mesh object
-# 'crossed' diagonals
-        self.pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
-# 'left' diagonal
-#        self.pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_left.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
-
-        # The following value should correspond to the element degree
-        # used in the potential from which negE was obtained
-        phi_element_degree = 1
-
-        if phi_element_degree == 1:
-            # For linear elements, grad(phi) is discontinuous across
-            # elements. To represent this field, we need Discontinuous Galerkin
-            # elements.
-            electric_field_element_type = "DG"
-        else:
-            electric_field_element_type = "Lagrange"
-
-        # Create the negative electric field directly on the particle mesh
-        self.neg_electric_field = Field_C(meshCI=self.pmesh2DCI,
-                                          element_type=electric_field_element_type,
-                                          element_degree=phi_element_degree-1,
-                                          field_type='vector')
-
-        file = df_M.File("negE2D_crossed.xml")
-        file >> self.neg_electric_field.function
+        pCI = self.particleCI # abbreviation
+        trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
+        self.particleCI.trajCI = trajCI
 
         return
 
@@ -133,8 +167,12 @@ class TestParticleTrajectory(unittest.TestCase):
             the trajectory DataList.
 
         """
+
         fncname = sys._getframe().f_code.co_name
         print '\ntest: ', fncname, '('+__file__+')'
+
+        # Abbreviations
+        pCI = self.particleCI
 
         # if os.environ.get('DISPLAY') is None:
         #     plotFlag=False
@@ -144,25 +182,25 @@ class TestParticleTrajectory(unittest.TestCase):
         # Create particles that are selected for trajectories.
 # Could call particleCI.initialize_distributions() instead?
 
-        self.particleCI.create_from_list('trajelectrons', printFlag=True)
+        pCI.create_from_list('trajelectrons', printFlag=True)
 
         # Check the results
 
-#        print "The explicit species with trajectory particles are", self.particleCI.trajCI.explicit_species
+#        print "The explicit species with trajectory particles are", pCI.trajCI.explicit_species
         expectedList = self.trajinCI.explicitDict['names']
-        for sp in self.particleCI.trajCI.explicit_species:
-#            print "  with particle indices", self.particleCI.trajCI.ParticleIdList[sp]
-#            print "  and values", self.particleCI.trajCI.DataList[sp][0].dtype.names
-            gotList = self.particleCI.trajCI.DataList[sp][0].dtype.names
+        for sp in pCI.trajCI.explicit_species:
+#            print "  with particle indices", pCI.trajCI.ParticleIdList[sp]
+#            print "  and values", pCI.trajCI.DataList[sp][0].dtype.names
+            gotList = pCI.trajCI.DataList[sp][0].dtype.names
             for i in range(len(expectedList)):
                 self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for and explicit particle")
 
-#        print "The implicit species are", self.particleCI.trajCI.implicit_species
+#        print "The implicit species are", pCI.trajCI.implicit_species
         expectedList = self.trajinCI.implicitDict['names']
-        for sp in self.particleCI.trajCI.implicit_species:
-#            print "  with indices", self.particleCI.trajCI.ParticleIdList[sp]
-#            print "  and values", self.particleCI.trajCI.DataList[sp][0].dtype.names
-            gotList = self.particleCI.trajCI.DataList[sp][0].dtype.names
+        for sp in pCI.trajCI.implicit_species:
+#            print "  with indices", pCI.trajCI.ParticleIdList[sp]
+#            print "  and values", pCI.trajCI.DataList[sp][0].dtype.names
+            gotList = pCI.trajCI.DataList[sp][0].dtype.names
             for i in range(len(expectedList)):
                 self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an implicit particle")
 #                self.assertAlmostEqual(getparticle[ix], p_expected[isp][ix], msg="Particle is not in correct position")
@@ -179,7 +217,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         pCI = self.particleCI
 
-        pCI.pmeshCI = self.pmesh2DCI
+#        pCI.pmeshCI = self.pmesh2DCI
 
         # Create particles that are selected for trajectories.
         pCI.create_from_list('trajelectrons', printFlag=True)
@@ -231,7 +269,7 @@ class TestParticleTrajectory(unittest.TestCase):
         p_expected = (p1, p2)
 
         # Check the results
-        ncoords = pCI.dimension # number of particle coordinates to check
+        ncoords = pCI.particle_dimension # number of particle coordinates to check
         isp = 0
         for sp in pCI.species_names:
 #            print 'pCI.get_species_particle_count(sp)', pCI.get_species_particle_count(sp)
@@ -249,9 +287,11 @@ class TestParticleTrajectory(unittest.TestCase):
 #                    print "ic", ic, "is OK"
             isp += 1
 
-        # Plot the trajectory
+        # Plot the trajectory onto the particle mesh
 
-        pCI.trajCI.plot_trajectories_on_mesh(self.pmesh2DCI.mesh) # Plots trajectory spatial coordinates on top of the particle mesh
+        mesh = pCI.pmeshCI.mesh
+        holdPlot = False # Set to True to stop the plot from disappearing.
+        pCI.trajCI.plot_trajectories_on_mesh(mesh, holdPlot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         plotFlag = False
         if os.environ.get('DISPLAY') is not None and plotFlag is True:
@@ -269,8 +309,6 @@ class TestParticleTrajectory(unittest.TestCase):
         print '\ntest: ', fncname, '('+__file__+')'
 
         pCI = self.particleCI
-
-        pCI.pmeshCI = self.pmesh2DCI
 
         # Create particles that are selected for trajectories.
         pCI.create_from_list('trajelectrons', printFlag=True)
@@ -323,7 +361,7 @@ class TestParticleTrajectory(unittest.TestCase):
         p_expected = (p1, p2)
 
         # Check the results
-        ncoords = pCI.dimension # number of particle coordinates to check
+        ncoords = pCI.particle_dimension # number of particle coordinates to check
         isp = 0
         for sp in pCI.species_names:
             if pCI.get_species_particle_count(sp) == 0: continue

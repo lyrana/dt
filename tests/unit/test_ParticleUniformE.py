@@ -110,8 +110,8 @@ class TestParticleUniformE(unittest.TestCase):
         # Set constant fields
         E0 = (1.0e-4, 2.0e-4, 3.0e-4)
 #        B0 = (0.0, 0.0, 0.0)
-        ctrlCI.E0 = Vec_C(self.particleCI.dimension, E0)
-#        ctrlCI.B0 = Vec_C(self.particleCI.dimension, B0)
+        ctrlCI.E0 = Vec_C(self.particleCI.particle_dimension, E0)
+#        ctrlCI.B0 = Vec_C(self.particleCI.particle_dimension, B0)
 
         # The EXPECTED results, from ParticleUniformE.ods, one for each species:
         		
@@ -132,7 +132,7 @@ class TestParticleUniformE(unittest.TestCase):
 
         # Loop on the species, moving the particles one timestep, and
         # then checking the particle end positions
-        ncoords = self.particleCI.dimension # number of particle coordinates to check
+        ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
         isp = 0
 
         print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "timesteps"
@@ -166,8 +166,8 @@ class TestParticleUniformE(unittest.TestCase):
         # Set constant fields
         E0 = (1.0e-4, 2.0e-4, 3.0e-4)
 #        B0 = (0.0, 0.0, 0.0)
-        ctrlCI.E0 = Vec_C(self.particleCI.dimension, E0)
-#        ctrlCI.B0 = Vec_C(self.particleCI.dimension, B0)
+        ctrlCI.E0 = Vec_C(self.particleCI.particle_dimension, E0)
+#        ctrlCI.B0 = Vec_C(self.particleCI.particle_dimension, B0)
 
         # The expected results, from test-results.ods, one for each species:
         		
@@ -204,7 +204,7 @@ class TestParticleUniformE(unittest.TestCase):
                 self.particleCI.move_particles_in_uniform_fields(sp, ctrlCI)
 
         # check the final position of the first particle of each species
-        ncoords = self.particleCI.dimension # number of particle coordinates to check
+        ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
         isp = 0
         for sp in self.particleCI.species_names:
             if self.particleCI.get_species_particle_count(sp) == 0: continue

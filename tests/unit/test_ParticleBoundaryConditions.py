@@ -92,16 +92,18 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         UPrt_M = im_M.import_module(pinCI.user_particles_module)
         pinCI.user_particles_class = UPrt_M.UserParticleDistributions_C
 
-        # Particle boundary-conditions
+        # Make the particle object using pinCI input
+        particleCI = Particle_C(pinCI, printFlag=False)
 
-        # Add a ref to a ParticleBoundaryConditions_C object to
-        # particleCI.  This is where the facet-crossing callback
-        # functions are defined.
-        pinCI.user_particle_bcs_class = UPrt_M.UserParticleMeshBoundaryConditions_C
+        # Initialize the particles
+        printFlags = {}
+        for sp in particleCI.species_names: printFlags[sp] = False
+        particleCI.initialize_distributions(printFlags)
 
-#  Mesh input for the particle mesh.
+#  Mesh input for the particle mesh, including particle boundary conditions.
 
-        # Create a mesh to push the particles on.
+        # Create a 2D mesh to use for advancing the particles.  The particles
+        # themselves are given 3D coordinates.
 
         mi2DCI = DTmeshInput_C()
 
@@ -133,30 +135,27 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         mi2DCI.particle_boundary_dict = particleBoundaryDict
 
-        # Make the mesh and point pinCI.pmeshCI to it.
-        pinCI.pmeshCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=False)
+        pmeshCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=False)
+        # Add this to the particle object:
+        particleCI.pmeshCI = pmeshCI
 
-        # Make the particle object using pinCI input
-        # (The pmeshCI ref gets copied from pinCI to particleCI)
-        particleCI = Particle_C(pinCI, printFlag=False)
+# Particle boundary-conditions
 
-        # Initialize the particles
-        printFlags = {}
-        for sp in particleCI.species_names: printFlags[sp] = False
-        particleCI.initialize_distributions(printFlags)
-        # Get the initial cell index of each particle.
-        particleCI.compute_mesh_cell_indices()
-
+        # UserParticleMeshFunctions_C is where the facet-crossing callback
+        # functions are defined.
+#        user_particle_bcs_class = UPrt_M.UserParticleMeshBoundaryConditions_C
+        userPMeshFnsClass = UPrt_M.UserParticleMeshFunctions_C # abbreviation
 
         # Make the particle-mesh boundary-conditions object and add it
         # to the particle object.  The user has to supply the
         # facet-crossing callback functions in the
         # UserParticleMeshBoundaryConditions_C object above.
 
-        pmbcCI = ParticleMeshBoundaryConditions_C(pinCI, particleCI, printFlag=False)
-        particleCI.pbcCI = pmbcCI
+        spNames = particleCI.species_names
+        pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmeshCI, userPMeshFnsClass, printFlag=False)
+        particleCI.pmesh_bcCI = pmeshBCCI
 
-# Add a ref to a Trajectory_C object to particleCI
+# Create a trajectory object and add it to particleCI
 
         # Create input object for trajectories
         trajinCI = DTtrajectoryInput_C()
@@ -169,12 +168,20 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         trajinCI.implicitDict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
         trajinCI.neutralDict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
 
-        # Add reference to particleCI
-        pCI = particleCI
+        # Add a trajCI reference to the particle object
+        pCI = particleCI # abbreviation
         pCI.trajCI = Trajectory_C(trajinCI, ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
 
 
-        # Now advance the particles for nsteps
+# Get the initial cell index of each particle.
+
+# Should this be something the pmesh computes?  No: pmesh computes the
+# index of a single particle.  It doesn't know the particle storage
+# infrastructure.
+        particleCI.compute_mesh_cell_indices()
+
+# Advance the particles for nsteps
+
         print "Moving", pCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "timesteps"
         for istep in xrange(ctrlCI.nsteps):
             particleCI.move_neutral_particles(ctrlCI.dt)

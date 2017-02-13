@@ -212,7 +212,7 @@ class TestParticleMigration(unittest.TestCase):
             self.particleCI.move_neutral_particles(ctrlCI.dt)
 
         # Check the results
-        ncoords = self.particleCI.dimension # number of particle coordinates to check
+        ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
         for sp in self.particleCI.neutral_species:
             for ip in [0, 1]:
                 getparticle = self.particleCI.pseg_arr[sp].get(ip)
@@ -292,7 +292,7 @@ class TestParticleMigration(unittest.TestCase):
         plotter=df_M.plot(self.particleCI.pmeshCI.mesh, title="First & last positions")
 
         # Check the results
-        ncoords = self.particleCI.dimension # number of particle coordinates to check
+        ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
         for sp in self.particleCI.neutral_species:
             for ip in [0, 1]:
                 getparticle = self.particleCI.pseg_arr[sp].get(ip)
@@ -376,7 +376,7 @@ class TestParticleMigration(unittest.TestCase):
         plotter=df_M.plot(self.particleCI.pmeshCI.mesh, title="First & last positions")
 
         # Check the results
-        ncoords = self.particleCI.dimension # number of particle coordinates to check
+        ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
         for sp in self.particleCI.neutral_species:
             for ip in [0, 1]:
                 getparticle = self.particleCI.pseg_arr[sp].get(ip)

@@ -140,12 +140,12 @@ class Trajectory_C(object):
 #    def plot_trajectories(self):ENDDEF
 
 #class Trajectory_C(object):
-    def plot_trajectories_on_mesh(self, mesh):
+    def plot_trajectories_on_mesh(self, mesh, holdPlot=False):
         """Plot the trajectories on top of a mesh plot
         """
 
         # Create a plotter to display the trajectory.
-        # !!! Direct call to dolfin !!!
+        # !!! Direct call to dolfin!!!
         plotter=df_M.plot(mesh, title="Trajectory plot")
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
@@ -164,7 +164,7 @@ class Trajectory_C(object):
                         plotter.add_polygon(path)
 
         plotter.plot()
-#        df_M.interactive() # Stops the plot from disappearing
+        if holdPlot is True: df_M.interactive() # Stops the plot from disappearing
                 
         return
 #    def plot_trajectories_on_mesh(self):ENDDEF

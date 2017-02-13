@@ -131,7 +131,7 @@ class UserParticleDistributions_C(object):
 #        (ux0, uy0, uz0) = (3000.0, 2000.0, 1000.0)
         (ux0, uy0, uz0) = (0.0, 0.0, 1000.0)
         weight0 = 1.0 # number of electrons per macroparticle
-        bitflags0 = 0b00 # bit flags variable
+        bitflags0 = 0b00 # bit flags variable is all zeroes
         # Turn on trajectory flag.
         bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG
         cell_index = Mesh_C.NO_CELL
@@ -172,16 +172,16 @@ class UserParticleDistributions_C(object):
 #class UserParticleDistributions_C(object):ENDCLASS
 
 #class UserParticleMeshBoundaryConditions_C(ParticleBoundaryConditions_C):
-class UserParticleMeshBoundaryConditions_C(object):
-    """UserParticleMeshBoundaryConditions_C implements callback functions
+class UserParticleMeshFunctions_C(object):
+    """UserParticleMeshFunctions_C implements callback functions
        (boundary conditions) for kinetic particles crossing marked
        mesh facets.
 
-       See Particle_Module::ParticleBoundaryConditions_C for naming
+       See Particle_Module::ParticleMeshBoundaryConditions_C for naming
        scheme.
     """
 
-#    @staticmethod
+    @staticmethod
     def default_bc(self, p, facet_index):
         """Global default boundary condition for all species.
         """
@@ -191,7 +191,7 @@ class UserParticleMeshBoundaryConditions_C(object):
 
         return
 
-#    @staticmethod
+    @staticmethod
     def default_bc_at_rmin(self, p, facet_index):
         """Default boundary condition particles incident on rmin.
         """
@@ -201,7 +201,7 @@ class UserParticleMeshBoundaryConditions_C(object):
 
         return
     
-#    @staticmethod
+    @staticmethod
     def bc_at_rmin_for_testelectrons(self, p, facet_index):
         """Boundary condition for testelectrons incident on rmin.
         """
@@ -211,4 +211,4 @@ class UserParticleMeshBoundaryConditions_C(object):
 
         return
 
-#class UserParticleMeshBoundaryConditions_C(object):ENDCLASS
+#class UserParticleMeshFunctions_C(object): ENDCLASS
