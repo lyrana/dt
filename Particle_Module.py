@@ -592,7 +592,6 @@ class Particle_C(object):
 
 #                    print fncName, ": ip, pindex", ip, pCellIndex, "cell index:", pmeshCI.compute_cell_index(pseg[ip])
                     mLastFacet = pmeshCI.NO_FACET
-
                     facetCrossCount = 0
                     while not pmeshCI.is_inside(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
@@ -806,11 +805,18 @@ class Particle_C(object):
 
                     # Loop until the particle is in the current cell
                     mLastFacet = pmeshCI.NO_FACET
+                    facetCrossCount = 0
                     while not pmeshCI.is_inside(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
                         # there's a boundary-condition on that facet.
 #                        print fncName, "particle has migrated"
+
+                        facetCrossCount += 1
+                        # Check for an abnormal number of facet crossings:
+                        if facetCrossCount > self.MAX_FACET_CROSS_COUNT:
+                            errorMsg = "%s !!! MAX_FACET_CROSS_COUNT exceeded!!!" % (fncName)
+                            sys.exit(errorMsg)
 
                         # Compute dx[], the move vector that starts in
                         # the current cell
