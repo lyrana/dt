@@ -342,14 +342,19 @@ class DTmeshInput_C(object):
         self.diagonal = None
 
         self.field_boundary_file = None
-        # User-assigned names of mesh boundaries where Dirichlet values are
-        # set.
+        # User-assigned names of mesh boundaries where Dirichlet
+        # values are set.
         self.field_boundary_dict = None
 
         self.particle_boundary_file = None
-        # User-assigned names of mesh boundaries where particle BCs are
-        # set.
+        # User-assigned names of mesh boundaries where particle BCs
+        # are set.
         self.particle_boundary_dict = None
+
+        self.particle_source_file = None
+        # User-assigned names of mesh regions where particles are
+        # created
+        self.particle_source_dict = None
 
 # May want things like this in order to call DT from a loop?
 # or spawn off many runs?

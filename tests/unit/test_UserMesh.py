@@ -72,7 +72,7 @@ class TestUserMesh_y_Fields(unittest.TestCase):
         fncname = sys._getframe().f_code.co_name
         print '\ntest: ', fncname, '('+__file__+')'
 
-        meshCI = UserMesh_C(meshInputCI=self.miCI, plotFlag=False)
+        meshCI = UserMesh_C(meshInputCI=self.miCI, plot_flag=False)
 
 #        df_M.plot(meshCI.mesh, title='cylindrical mesh', axes=True)
 #        df_M.interactive()
@@ -90,7 +90,7 @@ class TestUserMesh_y_Fields(unittest.TestCase):
         else:
             plotFlag=True
 
-        meshCI = UserMesh_C(meshInputCI=self.miCI, plotFlag=plotFlag)
+        meshCI = UserMesh_C(meshInputCI=self.miCI, plot_flag=plotFlag)
 
 #        df_M.plot(meshCI.mesh, title='cylindrical mesh', axes=True)
 #        df_M.interactive()

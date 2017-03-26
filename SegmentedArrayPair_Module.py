@@ -95,6 +95,11 @@ class SegmentedArray_C(object):
            index.  The item is a tuple containing a complete record.
            Creates a new Segment, if needed.  This assumes that all
            the segments, except maybe the last one, are full.
+
+           :param item_input: A tuple containing a complete item record
+           :type input_item: tuple(float,...)
+           :var int full_index: The full index into the SA.
+           :return: (item record, full SA index)
         """
 
         # Abbreviations
@@ -137,6 +142,8 @@ class SegmentedArray_C(object):
         """Returns a REFERENCE to the i'th item from the 'out'
            SegmentedArray, since that's the up-to-date array.  The
            index is zero-based.
+
+           :param int i: The full index of an item to be retrieved.
         """
 
         # Abbreviations
@@ -155,7 +162,7 @@ class SegmentedArray_C(object):
 
            Returns a reference to the i'th item stored in the
            segmented array.  Note that internally, it gets the item
-           from the SegListPair class attribute, since that's the most
+           from the SegListPair attribute, since that's the most
            useful way to use indexing.
 
            Example:
@@ -249,6 +256,9 @@ class SegmentedArray_C(object):
         """Initialize a loop over the segments.  The loop should use
            get_next_segment('in') and get_next_out_segment() in the
            iteration loop.
+
+           :return: (number of items in the first segment of 'in' SA,
+                     ref to first segment of 'in' SA)
         """
 
         # Abbreviations
@@ -270,7 +280,8 @@ class SegmentedArray_C(object):
 
 #        print 'init_segment_loop B: inSA =', inSA, 'outSA =', outSA
 
-        # These are used to count through the segments
+        # These counters are used to count through the segments.
+        # Segment indexing is zero-based.
         self.CurrentSegment[0] = 0
         self.CurrentSegment[1] = 0
 
@@ -291,17 +302,13 @@ class SegmentedArray_C(object):
         else:
             lastItem = self.SEGMENTLENGTH
 
-
-#        self.CurrentSegment[inSA] += 1 # Increment segment for next time
-
         # Store the member values
         self.inSegmentedArray = inSA
         self.outSegmentedArray = outSA
 
         segIndex = 0
-#        return (lastItem, self.SegListPair[inSA][segIndex][0:lastItem], self.SegListPair[outSA][segIndex])
 
-        return (lastItem, self.SegListPair[inSA][segIndex][0:lastItem])
+        return (lastItem, self.SegListPair[inSA][segIndex][0:lastItem], self.SegListPair[outSA][segIndex])
 
 #    def init_inout_loop(self): ENDDEF
 
@@ -343,11 +350,13 @@ class SegmentedArray_C(object):
         """Returns a reference to the next segment of the 'out' array.
            This method is similar to the put() method above, since the
            'out' array is effectively scratch space.
+
+           :return: reference to next segment of the 'out' array.
         """
 
         # Abbreviations
         outSA = self.outSegmentedArray
-#        self.CurrentSegment[outSA] += 1
+        self.CurrentSegment[outSA] += 1
         segIndex = self.CurrentSegment[outSA]
 
         # If another segment is already available, use
@@ -361,7 +370,6 @@ class SegmentedArray_C(object):
             # FirstAvailableOffset[] = 0
             self.add_segment(outSA)
 
-        self.CurrentSegment[outSA] += 1
         return self.SegListPair[outSA][segIndex]
 #    def get_next_out_segment(self): ENDDEF
 
@@ -380,7 +388,9 @@ class SegmentedArray_C(object):
 #class SegmentedArray_C(object):
     def get_number_of_items(self):
         """Returns the total number of items currently stored in the
-        'out' array.
+           'out' array.
+
+           :return: Number of items in the 'out' SA.
         """
 
         # Abbreviations
@@ -391,6 +401,11 @@ class SegmentedArray_C(object):
 #class SegmentedArray_C(object):
     def set_number_of_items(self, InOut, n_items):
         """Sets the number of active items currently stored.
+
+           :param str InOut: Either 'in' or 'out' depending on whether
+                             we're dealing with the in or out SA.
+
+           :return: Nothing is returned.
         """
 
         if InOut == 'in':
@@ -450,6 +465,50 @@ class SegmentedArray_C(object):
         """
 #    def compress_segment(self, i): ENDDEF
 
+
+#class SegmentedArray_C(object):
+    def get_full_indices(self, i_in, i_out):
+        """
+           This computes the full indices of a particular item in the
+           'in' and 'out' SAs.
+
+           :param int i_in: offset of an item into the 'in' SA
+           :param int i_out: offset of an item into the 'out' SA
+
+           :return: (full index in 'in' array, full index in 'out' array)
+        """
+
+        # Abbreviations
+        inSA = self.inSegmentedArray
+        outSA = self.outSegmentedArray
+
+        full_index_in = self.CurrentSegment[inSA]*self.SEGMENTLENGTH + i_in
+        full_index_out = self.CurrentSegment[outSA]*self.SEGMENTLENGTH + i_out
+
+        return (full_index_in, full_index_out)
+#    def get_full_indices(self, i_in, i_out):ENDDEF
+
+#class SegmentedArray_C(object):
+    def get_full_index(self, indx, InOut):
+        """
+           This computes the full index of a particular item in either the 'in' or 'out'
+           SAs.
+
+           :param int indx: offset of an item into the SA
+           :param str InOut: 'in' or 'out', depending of which SA is intended
+
+           :return: full index in 'in' or 'out' array
+        """
+
+        if InOut == 'in':
+            theSA = self.inSegmentedArray
+        elif InOut == 'out':
+            theSA = self.outSegmentedArray
+
+        full_index = self.CurrentSegment[theSA]*self.SEGMENTLENGTH + indx
+
+        return full_index
+#    def get_full_index(self, indx, inout):ENDDEF
         
 #class SegmentedArray_C(object):
     def delete_item(self, full_index):

@@ -33,6 +33,7 @@ class DTmeshInput_C(object):
 
         self.field_boundary_dict = None
         self.particle_boundary_dict = None
+        self.particle_source_dict = None
 
         return
 
@@ -67,7 +68,7 @@ class TestFacetCrossing(unittest.TestCase):
         self.mesh1D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
-        self.mesh1DCI = UserMesh_C(mi1DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+        self.mesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
 #        self.mesh1DCI.compute_cell_vertex_dict()
 #        self.mesh1DCI.compute_cell_dict()
 
@@ -82,7 +83,7 @@ class TestFacetCrossing(unittest.TestCase):
         self.mesh2D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
-        self.mesh2DCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+        self.mesh2DCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
 #        self.mesh2DCI.compute_cell_vertex_dict()
 #        self.mesh2DCI.compute_cell_dict()
 
@@ -92,7 +93,7 @@ class TestFacetCrossing(unittest.TestCase):
         mi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
         mi3DCI.cells_on_side = (4, 4, 4)
         # Create mesh
-        self.mesh3DCI = UserMesh_C(mi3DCI, computeTree=True, plotFlag=plotFlag)
+        self.mesh3DCI = UserMesh_C(mi3DCI, compute_tree=True, plot_flag=plotFlag)
         self.mesh3DCI.compute_cell_entity_index_dict('vertex')
         self.mesh3DCI.compute_cell_entity_index_dict('facet')
         self.mesh3DCI.compute_cell_dict()

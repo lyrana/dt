@@ -23,8 +23,8 @@ class TestPoissonSolve(unittest.TestCase):
     def setUp(self):
         # initializations for each test go here...
 
-        fncname = sys._getframe().f_code.co_name
-        print "\n", fncname, ": This is DOLFIN Version", df_M.DOLFIN_VERSION_STRING, '\n'
+        fncName = sys._getframe().f_code.co_name
+        print "\n", fncName, ": This is DOLFIN Version", df_M.DOLFIN_VERSION_STRING, '\n'
 
         return
 
@@ -33,14 +33,14 @@ class TestPoissonSolve(unittest.TestCase):
         """Test a 1D Laplace equation in spherical coordinates.
         """
 
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = sys._getframe().f_code.co_name
+        print '\ntest: ', fncName, '('+__file__+')'
 
         # Plotting
         if os.environ.get('DISPLAY') is None:
-            plot_flag=False
+            plotFlag=False
         else:
-            plot_flag=True
+            plotFlag=True
 
         miCI = DTmeshInput_C()
 
@@ -53,16 +53,16 @@ class TestPoissonSolve(unittest.TestCase):
         # Name the Dirichlet boundaries and assign integers to them.
         # These are the boundary-name -> int pairs used to mark mesh
         # facets:
-        rmin_indx = 1
-        rmax_indx = 2
-        fieldBoundaryDict = {'rmin': rmin_indx,
-                             'rmax': rmax_indx,
+        rminIndx = 1
+        rmaxIndx = 2
+        fieldBoundaryDict = {'rmin': rminIndx,
+                             'rmax': rmaxIndx,
                              }
 
         miCI.field_boundary_dict = fieldBoundaryDict
 
         from UserMesh_y_Fields_Spherical1D_Module import UserMesh_C
-        meshCI = UserMesh_C(meshInputCI=miCI, computeTree=False, plotFlag=True)
+        meshCI = UserMesh_C(meshInputCI=miCI, compute_tree=False, plot_flag=True)
 
         # Storage for the potential and electric field
 
@@ -70,56 +70,56 @@ class TestPoissonSolve(unittest.TestCase):
         field_infrastructure_module = 'Dolfin_Module'
         fI_M = im_M.import_module(field_infrastructure_module)
 
-        phi_element_type = 'Lagrange'
-        phi_element_degree = 2
-        phi_field_type = 'scalar'
+        phiElementType = 'Lagrange'
+        phiElementDegree = 2
+        phiFieldType = 'scalar'
 
         phi = fI_M.Field_C(meshCI=meshCI,
-                           element_type=phi_element_type,
-                           element_degree=phi_element_degree,
-                           field_type=phi_field_type)
+                           element_type=phiElementType,
+                           element_degree=phiElementDegree,
+                           field_type=phiFieldType)
 
-        if phi_element_degree == 1:
+        if phiElementDegree == 1:
             # For linear elements, grad(phi) is discontinuous across
             # elements. To represent this field, we need Discontinuous Galerkin
             # elements.
-            electric_field_element_type = 'DG'
+            electricFieldElementType = 'DG'
         else:
-            electric_field_element_type = 'Lagrange'
+            electricFieldElementType = 'Lagrange'
 
-        neg_electric_field = fI_M.Field_C(meshCI=meshCI,
-                                      element_type=electric_field_element_type,
-                                      element_degree=phi_element_degree-1,
+        negElectricField = fI_M.Field_C(meshCI=meshCI,
+                                      element_type=electricFieldElementType,
+                                      element_degree=phiElementDegree-1,
                                       field_type='vector')
 
         # The Poisson solver parameters
 
-        function_space = phi.function_space
+        functionSpace = phi.function_space
 
-        linear_solver = 'lu'
+        linearSolver = 'lu'
         preconditioner = None
 
         # Dirichlet boundaries are marked with a boundary marker mesh function
         fieldBoundaryMarker = meshCI.field_boundary_marker
        
         # Boundary values of the potential
-        phi_vals = {'rmin':  0.0,
+        phiVals = {'rmin':  0.0,
                     'rmax': -1.5,
                     }
 
-        phi_BCs = dict( (bnd, [fieldBoundaryDict[bnd], phi_vals[bnd]]) for bnd in fieldBoundaryDict.keys())
+        phiBCs = dict( (bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
 
         # Compute the electrostatic field from phi
         from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve_C
         # Have to pass "mesh" because a SpatialCoordinate is used in Poisson's equation.
         poissonsolveCI = UserPoissonSolve_C(phi,
-                                            linear_solver, preconditioner,
+                                            linearSolver, preconditioner,
 #                                            boundary_marker, phi_rmin, phi_rmax,
-                                            fieldBoundaryMarker, phi_BCs,
-                                            negElectricField=neg_electric_field)
+                                            fieldBoundaryMarker, phiBCs,
+                                            negElectricField=negElectricField)
 
         # Solve for the potential
-        poissonsolveCI.solve_for_phi(plotFlag=plot_flag)
+        poissonsolveCI.solve_for_phi(plot_flag=plotFlag, plot_title=fncName)
 
 #        yesno = raw_input("Looks OK [Y/n]?")
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
@@ -140,7 +140,7 @@ class TestPoissonSolve(unittest.TestCase):
 
         # Check the 1/r^2 fall-off in E:
 
-        Emin, Emax = neg_electric_field.function(miCI.rmin), neg_electric_field.function(miCI.rmax)
+        Emin, Emax = negElectricField.function(miCI.rmin), negElectricField.function(miCI.rmax)
 
 #        print "Emin, Emax =", Emin, Emax
         ratio = Emin*miCI.rmin**2/(Emax*miCI.rmax**2)
@@ -191,14 +191,14 @@ class TestPoissonSolve(unittest.TestCase):
         """Test a 2D Laplace equation in cylindrical coordinates.
         """
 
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = sys._getframe().f_code.co_name
+        print '\ntest: ', fncName, '('+__file__+')'
 
         # Plotting
         if os.environ.get('DISPLAY') is None:
-            plot_flag=False
+            plotFlag=False
         else:
-            plot_flag=True
+            plotFlag=True
 
         miCI = DTmeshInput_C()
 
@@ -211,10 +211,10 @@ class TestPoissonSolve(unittest.TestCase):
         # Name the Dirichlet boundaries and assign integers to them.
         # These are the boundary-name -> int pairs used to mark mesh
         # facets:
-        rmin_indx = 1
-        rmax_indx = 2
-        fieldBoundaryDict = {'rmin': rmin_indx,
-                             'rmax': rmax_indx,
+        rminIndx = 1
+        rmaxIndx = 2
+        fieldBoundaryDict = {'rmin': rminIndx,
+                             'rmax': rmaxIndx,
                              }
 
         miCI.field_boundary_dict = fieldBoundaryDict
@@ -228,43 +228,43 @@ class TestPoissonSolve(unittest.TestCase):
         miCI.diagonal = 'crossed'
 
         from UserMesh_y_Fields_FE2D_Module import UserMesh_C
-        meshCI = UserMesh_C(meshInputCI=miCI, computeTree=False, plotFlag=False)
+        meshCI = UserMesh_C(meshInputCI=miCI, compute_tree=False, plot_flag=False)
 
         # For this calculation, we use the Dolfin framework for finite-element fields.
         field_infrastructure_module = 'Dolfin_Module'
         fI_M = im_M.import_module(field_infrastructure_module)
 
         # Storage for the potential and electric field
-        phi_element_type = 'Lagrange'
-        phi_element_degree = 1
-        phi_field_type = 'scalar'
+        phiElementType = 'Lagrange'
+        phiElementDegree = 1
+        phiFieldType = 'scalar'
 
         phi = fI_M.Field_C(meshCI=meshCI,
-                           element_type=phi_element_type,
-                           element_degree=phi_element_degree,
-                           field_type=phi_field_type)
+                           element_type=phiElementType,
+                           element_degree=phiElementDegree,
+                           field_type=phiFieldType)
 
-        if phi_element_degree == 1:
+        if phiElementDegree == 1:
             # For linear elements, grad(phi) is discontinuous across
             # elements. To get these values, we need Discontinuous Galerkin
             # elements.
-            electric_field_element_type = "DG"
+            electricFieldElementType = "DG"
         else:
-            electric_field_element_type = "Lagrange"
+            electricFieldElementType = "Lagrange"
 
-        neg_electric_field = fI_M.Field_C(meshCI=meshCI,
-                                      element_type=electric_field_element_type,
-                                      element_degree=phi_element_degree-1,
+        negElectricField = fI_M.Field_C(meshCI=meshCI,
+                                      element_type=electricFieldElementType,
+                                      element_degree=phiElementDegree-1,
                                       field_type='vector')
 
         # The Poisson solver parameters
 
-        function_space = phi.function_space
+        functionSpace = phi.function_space
 
-        linear_solver = 'lu'
+        linearSolver = 'lu'
         preconditioner = None
 # Don't get exactly the same solutions with the following
-#        linear_solver = 'cg'
+#        linearSolver = 'cg'
 #        preconditioner = 'ilu'
 
         # Dirichlet Boundaries are marked with a boundary marker mesh
@@ -273,22 +273,22 @@ class TestPoissonSolve(unittest.TestCase):
        
         # Boundary values of the potential.  These names have to be
         # the same as those assigned to the boundaries above.
-        phi_vals = {'rmin':  0.0,
+        phiVals = {'rmin':  0.0,
                     'rmax': -1.5,
                     }
 
-        phi_BCs = dict( (bnd, [fieldBoundaryDict[bnd], phi_vals[bnd]]) for bnd in fieldBoundaryDict.keys())
+        phiBCs = dict( (bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
 
         computeEflag = True
 
         from UserMesh_y_Fields_FE2D_Module import UserPoissonSolve_C
 
         poissonsolveCI = UserPoissonSolve_C(phi,
-                                            linear_solver, preconditioner,
-                                            fieldBoundaryMarker, phi_BCs,
-                                            negElectricField=neg_electric_field)
+                                            linearSolver, preconditioner,
+                                            fieldBoundaryMarker, phiBCs,
+                                            negElectricField=negElectricField)
 
-        poissonsolveCI.solve_for_phi(plotFlag=plot_flag)
+        poissonsolveCI.solve_for_phi(plot_flag=plotFlag, plot_title=fncName)
 
 #        yesno = raw_input("Looks OK [Y/n]?")
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
@@ -300,11 +300,11 @@ class TestPoissonSolve(unittest.TestCase):
         file << phi.function
         
         # Write -E to a file in VTK and XML formats
-        if neg_electric_field is not None:
+        if negElectricField is not None:
             file = df_M.File("negE2D_crossed.pvd")
-            file << neg_electric_field.function
+            file << negElectricField.function
             file = df_M.File("negE2D_crossed.xml")
-            file << neg_electric_field.function
+            file << negElectricField.function
 
         return
 #    def test_2D_poisson_solver(self):ENDDEF

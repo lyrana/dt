@@ -34,6 +34,7 @@ class DTmeshInput_C(object):
 
         self.field_boundary_dict = None
         self.particle_boundary_dict = None
+        self.particle_source_dict = None
 
         return
 
@@ -115,7 +116,7 @@ class TestParticleMigration(unittest.TestCase):
         mi1DCI.pmax = df_M.Point(10.0)
         mi1DCI.cells_on_side = (4)
         # Create a 1D particle mesh
-        self.pmesh1DCI = UserMesh_C(mi1DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+        self.pmesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
 #        self.pmesh1DCI.compute_cell_vertex_dict()
 #        self.pmesh1DCI.compute_cell_dict()
 
@@ -125,7 +126,7 @@ class TestParticleMigration(unittest.TestCase):
         mi2DCI.pmax = df_M.Point(10.0, 10.0)
         mi2DCI.cells_on_side = (4, 2)
         # Create a 2D particle mesh
-        self.pmesh2DCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+        self.pmesh2DCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
 #        self.pmesh2DCI.compute_cell_vertex_dict()
 #        self.pmesh2DCI.compute_cell_dict()
 
@@ -136,7 +137,7 @@ class TestParticleMigration(unittest.TestCase):
         mi3DCI.cells_on_side = (4, 4, 4)
 
         # Create a 3D particle mesh
-        self.pmesh3DCI = UserMesh_C(mi3DCI, computeTree=True, plotFlag=plotFlag)
+        self.pmesh3DCI = UserMesh_C(mi3DCI, compute_tree=True, plot_flag=plotFlag)
         # Explicitly compute dictionaries needed
         self.pmesh3DCI.compute_cell_entity_index_dict('vertex')
         self.pmesh3DCI.compute_cell_entity_index_dict('facet')
@@ -154,8 +155,8 @@ class TestParticleMigration(unittest.TestCase):
 
         """
 
-        fncname = sys._getframe().f_code.co_name + '():'
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName
 
         # List all the possible spatial coordinates
 #        spatial_coordinates = ('x','y','z')
@@ -232,8 +233,8 @@ class TestParticleMigration(unittest.TestCase):
 
         """
 
-        fncname = sys._getframe().f_code.co_name + '():'
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName
 
         ctrlCI = DTcontrol_C()
 
@@ -318,8 +319,8 @@ class TestParticleMigration(unittest.TestCase):
 
         """
 
-        fncname = sys._getframe().f_code.co_name + '():'
-        print '\ntest:', fncname, '('+__file__+')'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName
 
         ctrlCI = DTcontrol_C()
 
@@ -409,8 +410,8 @@ class TestParticleMigration(unittest.TestCase):
 
         return
 
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName
 
         # List all the possible spatial coordinates
         spatial_coordinates = ('x','y','z')

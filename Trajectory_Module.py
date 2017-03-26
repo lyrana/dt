@@ -16,13 +16,42 @@ class Trajectory_C(object):
     """Trajectory_C has a collection of particle trajectories indexed
        by species name.
 
-       No trajectory storage is created until particles with the
-        TRAJECTORY_FLAG turned on are encountered.
+       Particles that you want a trajectory for are marked with
+       TRAJECTORY_FLAG, and are thereafter identifed by their index in
+       the particle storage array.
+
+       Storage is created by 'create_trajectory()' when particles with
+       the TRAJECTORY_FLAG turned on are encountered.
     """
+
+    ### Static class variables
+
+    # Value signalling that the particle index does not exist.  E.g., particle was deleted
+    NO_PINDEX = -1
 
     def __init__(self, trajinCI, ctrlCI, explicit_species, implicit_species, neutral_species):
         """Set up the initial storage.  
-           TrajLength is at most the number of timesteps.
+
+           :var trajinCI.maxpoints: Maximum number of trajectory data points to be
+                                    collected.  If set to 'None', then every step on the
+                                    trajectory is saved.
+
+           :var npoints: The number of datapoints that will be saved in a trajectory.  If
+                         maxpoints is set, then npoints = maxpoints.  If maxpoints is
+                         'None', then npoints = nsteps, i.e., every step is saved.
+
+           :var ParticleIdList: ParticleIdList[sp] is a list of the particle indices of
+                                species sp that were selected for trajectories.
+
+           :var DataList: DataList[sp][itraj] is a numpy array of length npoints that
+                          stores the trajectory data for trajectory itraj of species sp.
+
+           :var explicitDict: a dictionary in numpy dtype format giving the string names
+                              of particle attributes that can be saved in a trajectory.
+
+           The storage uses numpy arrays of length self.npoints           
+           npoints is at most the number of timesteps.
+
            TrajDict is a dictionary of the trajectory variables.
            e.g.,  {'names': ['x', 'y'], 'formats': [np_M.float64, np_M.float64]}
         """
@@ -57,13 +86,16 @@ class Trajectory_C(object):
         # For each species, there is
         #    1. a list of trajectory-particle IDs
         #    2. a list of trajectory data arrays, one for each marked particle.
+        #    3. a list of trajectory lengths, one for each marked particle.
         # These lists are indexed by species name, so they are dictionaries:
-        self.ParticleIdList = {}
+        self.ParticleIdList = {} # List of particle IDs
         self.DataList = {}
+        self.TrajectoryLength = {}
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
             self.ParticleIdList[sp] = []
             self.DataList[sp] = []
+            self.TrajectoryLength[sp] = []
 
         # Create a ndarray for 1 particle that we can use like a SA.
 #            self.explicit_1particle_arr = np_M.empty(1, dtype=self.explicitDict))
@@ -140,31 +172,40 @@ class Trajectory_C(object):
 #    def plot_trajectories(self):ENDDEF
 
 #class Trajectory_C(object):
-    def plot_trajectories_on_mesh(self, mesh, holdPlot=False):
-        """Plot the trajectories on top of a mesh plot
+    def plot_trajectories_on_mesh(self, mesh, plot_title, hold_plot=False):
+        """Plot the (x, y) trajectory points on top of a mesh plot
         """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         # Create a plotter to display the trajectory.
         # !!! Direct call to dolfin!!!
-        plotter=df_M.plot(mesh, title="Trajectory plot")
+        plotter=df_M.plot(mesh, title=plot_title)
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
             comps = self.DataList[sp][0][0].dtype.names
             # Loop on trajectories for this species
             for it in xrange(len(self.ParticleIdList[sp])):
-                ip = self.ParticleIdList[sp][it]
+#                ip = self.ParticleIdList[sp][it] # Not used
+                nlength = self.TrajectoryLength[sp][it]
+                if nlength == 1:
+                    print fncName, "*** DT Warning: Trajectory", it, "for species", sp, "has only one point. Not plotting it.***"
+                    continue
                 data_arr = self.DataList[sp][it]
                 # x vs. y
                 if 'x' in comps:
                     if 'y' in comps:
-                        path = np_M.empty(2*data_arr['x'].size, dtype=np_M.float64) # dtype has to be double for add_polygon()
-                        path[0::2] = data_arr['x']
-                        path[1::2] = data_arr['y']
-#                        print 'path =', path
+#                        path = np_M.empty(2*data_arr['x'].size, dtype=np_M.float64) # dtype has to be double for add_polygon()
+                        path = np_M.empty(2*nlength, dtype=np_M.float64) # dtype has to be double for add_polygon()
+                        path[0::2] = data_arr['x'][0:nlength] # Start at 0, with stride 2
+                        path[1::2] = data_arr['y'][0:nlength] # Start at 1, with stride 2
+#                        print fncName, 'path =', path
+#                        print fncName, 'Trajectory', it, 'has ', path.size, 'points'
+                        print fncName, 'Trajectory', it, 'has ', nlength, 'points'
                         plotter.add_polygon(path)
 
         plotter.plot()
-        if holdPlot is True: df_M.interactive() # Stops the plot from disappearing
+        if hold_plot is True: df_M.interactive() # Stops the plot from disappearing
                 
         return
 #    def plot_trajectories_on_mesh(self):ENDDEF

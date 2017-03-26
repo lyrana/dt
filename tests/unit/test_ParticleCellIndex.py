@@ -33,6 +33,7 @@ class DTmeshInput_C(object):
 
         self.field_boundary_dict = None
         self.particle_boundary_dict = None
+        self.particle_source_dict = None
 
         return
 
@@ -120,7 +121,7 @@ class TestParticleCellIndex(unittest.TestCase):
         mi1DCI.pmax = df_M.Point(10.0)
         mi1DCI.cells_on_side = (4)
         # Create mesh
-        self.pmesh1DCI = UserMesh_C(mi1DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+        self.pmesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
 
         # 2D mesh input
         mi2DCI = DTmeshInput_C()
@@ -128,7 +129,7 @@ class TestParticleCellIndex(unittest.TestCase):
         mi2DCI.pmax = df_M.Point(0.03, 0.03)
         mi2DCI.cells_on_side = (4, 4)
         # Create mesh
-        self.pmesh2DCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+        self.pmesh2DCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
 #        self.mesh2DCI.compute_cell_vertex_dict()
 #        self.mesh2DCI.compute_cell_dict()
 
@@ -138,7 +139,7 @@ class TestParticleCellIndex(unittest.TestCase):
         mi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
         mi3DCI.cells_on_side = (4, 4, 4)
         # Create mesh
-        self.pmesh3DCI = UserMesh_C(mi3DCI, computeTree=True, plotFlag=plotFlag)
+        self.pmesh3DCI = UserMesh_C(mi3DCI, compute_tree=True, plot_flag=plotFlag)
         self.pmesh3DCI.compute_cell_entity_index_dict('vertex')
         self.pmesh3DCI.compute_cell_dict()
 

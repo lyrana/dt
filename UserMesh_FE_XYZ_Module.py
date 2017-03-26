@@ -19,6 +19,11 @@ from Dolfin_Module import Mesh_C
 
 import UserUnits_Module as U_M
 
+### Define boundary geometry
+
+# The inside() class functions are used to test whether a given mesh
+# point lies inside the boundary subdomain.
+
 class XBoundary(df_M.SubDomain):
     """The XBoundary class is a specialized SubDomain
     """
@@ -49,6 +54,25 @@ class YBoundary(df_M.SubDomain):
         tol = 1.0e-10
         return on_boundary and abs(x[1]-self.y_boundary_value) < tol
 
+### Define the geometry of the particle sources
+
+class SourceXrange(df_M.SubDomain):
+    """The SourceXrange class is a specialized SubDomain to used to
+       mark points that are inside this source region.
+
+    """
+    # Set the X range of the source region in the constructor
+    def __init__(self, x_min_value, x_max_value, map_tol=1.0e-10):
+        self.x_min_value=x_min_value
+        self.x_max_value=x_max_value
+        # Pass the map_tol argument on to the base class
+        super(self.__class__, self).__init__(map_tol=1.0e-10)
+
+    # Return true for points inside the subdomain
+    def inside(self, x, on_boundary):
+        tol = 1.0e-10
+        return True if (x[0] > self.x_min_value-tol and x[0] < self.x_max_value+tol) else False
+
 # User exposes whatever mesh parameters are useful in __init__ and
 # these can be set in __main__
 
@@ -71,7 +95,7 @@ class UserMesh_C(Mesh_C):
     Convert = U_M.MyPlasmaUnits_C
 
     # Constructor
-    def __init__(self, meshInputCI=None, computeDictionaries=False, computeTree=False, plotFlag=False):
+    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):
         """
             The class UserMesh_C contains these attributes:
                 1. A mesh.
@@ -85,7 +109,7 @@ class UserMesh_C(Mesh_C):
             sys.exit(error_msg)
 
         # Call the parent constructor to complete setting class variables.
-        super(UserMesh_C, self).__init__(meshFile=None, computeDictionaries=computeDictionaries, computeTree=computeTree, plotFlag=plotFlag)
+        super(UserMesh_C, self).__init__(mesh_file=None, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
 
         self.field_boundary_dict = meshInputCI.field_boundary_dict
         self.particle_boundary_dict = meshInputCI.particle_boundary_dict
@@ -99,7 +123,8 @@ class UserMesh_C(Mesh_C):
         """
            Create a mesh according to the user's specifications.
         """
-        fncname = sys._getframe().f_code.co_name
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         miCI = meshInputCI
 
@@ -113,6 +138,7 @@ class UserMesh_C(Mesh_C):
         # Boundary conditions for fields and particles
         fieldBoundaryDict = miCI.field_boundary_dict
         particleBoundaryDict = miCI.particle_boundary_dict
+        particleSourceDict = miCI.particle_source_dict
 
 #        if miCI.pmin.y() == miCI.pmax.y() and miCI.pmin.z() == miCI.pmax.z():
         if ymin == ymax and zmin == zmax:
@@ -129,6 +155,29 @@ class UserMesh_C(Mesh_C):
             particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
             # Initialize all mesh facets with a default value of 0.
             particleBoundaryMarker.set_all(0)
+
+            # Mark the cells for particle source regions.
+            # Create a MeshFunction object defined on the mesh cells
+            # The function has a default (size_t) value of 0,
+            # meaning 'no particle creation here'
+
+            particleSourceMarker = df_M.CellFunction('size_t', mesh)
+            particleSourceMarker.set_all(0)
+
+            if particleSourceDict is not None:
+                # Create mesh subdomains where particles are generated
+
+                # There's one line below for each entry in the dictionary
+                sourceX1 = SourceXrange(sourceX1min, sourceX1max)
+                sourceX2 = SourceXrange(sourceX2min, sourceX2max)
+
+                particleSourceDictInv = {v: k for k, v in particleSourceDict.iteritems()}
+                # Get the numerical value that identifies this source
+                sourceX1_indx = int(particleSourceDictInv['sourceX1'])
+                sourceX2_indx = int(particleSourceDictInv['sourceX2'])
+                # Mark the cells in the source with this value
+                sourceX1.mark(particleSourceMarker, sourceX1_indx)
+                sourceX2.mark(particleSourceMarker, sourceX2_indx)
 
 #        elif miCI.pmin.z() == miCI.pmax.z():
         elif zmin == zmax:
@@ -148,6 +197,7 @@ class UserMesh_C(Mesh_C):
 
             if particleBoundaryDict is not None:
                 # Create mesh subdomains to apply boundary-conditions
+                # There's one line below for each entry in the dictionary
                 Gamma_xmin = XBoundary(xmin)
                 Gamma_xmax = XBoundary(xmax)
                 Gamma_ymin = YBoundary(ymin)
@@ -156,12 +206,11 @@ class UserMesh_C(Mesh_C):
 #                print "particleBoundaryDict =", particleBoundaryDict
 
                 # Mark these subdomains (boundaries) with non-zero integers
-                # First, swap keys and values: e.g., '1': 'xmin' to 'xmin': '1'
-                particleBoundaryDictInv = {v: k for k, v in particleBoundaryDict.iteritems()}
-                xmin_indx = int(particleBoundaryDictInv['xmin'])
-                xmax_indx = int(particleBoundaryDictInv['xmax'])
-                ymin_indx = int(particleBoundaryDictInv['ymin'])
-                ymax_indx = int(particleBoundaryDictInv['ymax'])
+
+                xmin_indx = particleBoundaryDict['xmin']
+                xmax_indx = particleBoundaryDict['xmax']
+                ymin_indx = particleBoundaryDict['ymin']
+                ymax_indx = particleBoundaryDict['ymax']
                 Gamma_xmin.mark(particleBoundaryMarker, xmin_indx)
                 Gamma_xmax.mark(particleBoundaryMarker, xmax_indx)
                 Gamma_ymin.mark(particleBoundaryMarker, ymin_indx)

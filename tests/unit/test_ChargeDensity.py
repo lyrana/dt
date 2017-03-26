@@ -32,7 +32,7 @@ class TestChargeDensity(unittest.TestCase):
         # Create a 1D mesh
         mesh = df_M.IntervalMesh(2, -0.5, 0.5)
 
-        mesh1DCI = Mesh_C(Mesh=mesh, computeDictionaries=True, computeTree=True, plotFlag=False)
+        mesh1DCI = Mesh_C(Mesh=mesh, compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
 # Should I make a Mesh_C?        
 

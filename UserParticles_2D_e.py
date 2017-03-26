@@ -182,32 +182,45 @@ class UserParticleMeshFunctions_C(object):
     """
 
     @staticmethod
-    def default_bc(self, p, facet_index):
+    def default_bc(p, speciesName, facetIndex):
         """Global default boundary condition for all species.
         """
 
-        fncname = sys._getframe().f_code.co_name + '():'
-        print "Called", fncname
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print "Called", fncName
 
         return
 
     @staticmethod
-    def default_bc_at_rmin(self, p, facet_index):
+    def default_bc_at_rmin(p, speciesName, facetIndex):
         """Default boundary condition particles incident on rmin.
         """
 
-        fncname = sys._getframe().f_code.co_name + '():'
-        print "Called", fncname
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+        print fncName, "invoked by particle", p, "of species", speciesName
+
+        # Set the delete flag
+        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
+
+        # Count the number/charge/energy of deleted particles
 
         return
     
     @staticmethod
-    def bc_at_rmin_for_testelectrons(self, p, facet_index):
+    def bc_at_rmin_for_testelectrons(p, speciesName, facetIndex):
         """Boundary condition for testelectrons incident on rmin.
+
+           :param str speciesName: This is redundant since the
+                                   function contains the name of the
+                                   species, but may be useful for
+                                   indexing.
+           :param int facetIndex: The mesh index of the facet that
+                                  generated the call to this function.
+
         """
 
-        fncname = sys._getframe().f_code.co_name + '():'
-        print "Called", fncname
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print "Called", fncName
 
         return
 

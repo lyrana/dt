@@ -83,7 +83,7 @@ class UserMesh_C(Mesh_C):
     # Select the unit system to be used for input parameters.
     Convert = U_M.MyPlasmaUnits_C
 
-    def __init__(self, meshInputCI=None, computeDictionaries=False, computeTree=False, plotFlag=False):
+    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):
         """
             The class UserMesh_C contains these attributes:
                 1. A mesh.
@@ -94,13 +94,13 @@ class UserMesh_C(Mesh_C):
         """
 
         if meshInputCI.mesh_file is None:
-            self.create_mesh(meshInputCI, plotFlag)
+            self.create_mesh(meshInputCI, plot_flag)
             # don't need another mesh plot
-            plotFlag = False
+            plot_flag = False
 
         # Call the parent constructor to complete setting class variables.
-        meshFile = meshInputCI.mesh_file
-        super(self.__class__, self).__init__(meshFile=meshFile, computeDictionaries=computeDictionaries, computeTree=computeTree, plotFlag=plotFlag)
+        mesh_file = meshInputCI.mesh_file
+        super(self.__class__, self).__init__(mesh_file=mesh_file, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
         
         self.field_boundary_dict = meshInputCI.field_boundary_dict
         self.particle_boundary_dict = meshInputCI.particle_boundary_dict
@@ -117,14 +117,14 @@ class UserMesh_C(Mesh_C):
             self.particle_boundary_marker = particleBoundaryMarker
 
         return  
-#    def __init__(self, meshInputCI=None, computeDictionaries=False, computeTree=False, plotFlag=False):ENDDEF
+#    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
 
 # Inherited from Mesh_C:
 #    def copy(self):
 #        return copy.deepcopy(self)
 
 #class UserMesh_C(Mesh_C):
-    def create_mesh(self, meshInputCI, plotFlag):
+    def create_mesh(self, meshInputCI, plot_flag):
         """Create a mesh and mark subdomains (e.g., Dirichlet
            boundaries and particle boundaries) according to the user's
            specifications.
@@ -252,7 +252,7 @@ class UserMesh_C(Mesh_C):
         mesh.coordinates()[:] = xy_bar_coor
 
 # Plot the stretched mesh
-#        if plotFlag:
+#        if plot_flag:
 #            df_M.plot(mesh, title='stretched mesh', axes=True)
 #            df_M.interactive()
 #raw_input('B: Press <ENTER> to continue')
@@ -269,7 +269,7 @@ class UserMesh_C(Mesh_C):
 
         # Make a plot of the mesh, with non-zero values showing marked
         # boundaries
-        if (plotFlag):
+        if (plot_flag):
             df_M.plot(mesh, title='cylindrical mesh', axes=True)
             df_M.plot(fieldBoundaryMarker, title='field boundary marks', axes=True)
             df_M.plot(particleBoundaryMarker, title='particle boundary marks', axes=True)
@@ -285,7 +285,7 @@ class UserMesh_C(Mesh_C):
 #mesh_copy = Mesh(mesh)
 
         return
-#    def create_mesh(self, meshInputCI, plotFlag):ENDDEF
+#    def create_mesh(self, meshInputCI, plot_flag):ENDDEF
 
 #class UserMesh_C(Mesh_C): ENDCLASS
 
@@ -337,14 +337,14 @@ class UserPoissonSolve_C(PoissonSolve_C):
 #        V = function_space
 
         # Get the Dirichlet boundary indices and values
-        (rmin_indx, phi_rmin) = phi_BCs['rmin']
-        (rmax_indx, phi_rmax) = phi_BCs['rmax']
+        (rminIndx, phi_rmin) = phi_BCs['rmin']
+        (rmaxIndx, phi_rmax) = phi_BCs['rmax']
         
         # Create a function from the boundary values
-        u_rmin = df_M.Constant(phi_rmin)
-        u_rmax = df_M.Constant(phi_rmax)
+        uRmin = df_M.Constant(phi_rmin)
+        uRmax = df_M.Constant(phi_rmax)
 
-        self.bcs = [df_M.DirichletBC(V, u_rmin, fieldBoundaryMarker, rmin_indx), df_M.DirichletBC(V, u_rmax, fieldBoundaryMarker, rmax_indx)]
+        self.bcs = [df_M.DirichletBC(V, uRmin, fieldBoundaryMarker, rminIndx), df_M.DirichletBC(V, uRmax, fieldBoundaryMarker, rmaxIndx)]
 
 # Define the variational problem
         w = df_M.TrialFunction(V)

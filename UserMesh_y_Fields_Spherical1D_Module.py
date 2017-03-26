@@ -62,7 +62,7 @@ class UserMesh_C(Mesh_C):
     Convert = U_M.MyPlasmaUnits_C
 
 # Mesh_C constructor:
-    def __init__(self, meshInputCI=None, computeDictionaries=False, computeTree=False, plotFlag=False):
+    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):
         """
             The class UserMesh_C contains these attributes:
                 1. A mesh.
@@ -73,13 +73,13 @@ class UserMesh_C(Mesh_C):
         """
 
         if meshInputCI.mesh_file is None:
-            self.create_mesh(meshInputCI, plotFlag)
+            self.create_mesh(meshInputCI, plot_flag)
             # Don't need another mesh plot
-            plotFlag = False
+            plot_flag = False
 
         # Call the parent constructor to complete setting class variables.
-        meshFile = meshInputCI.mesh_file
-        super(self.__class__, self).__init__(meshFile=None, computeDictionaries=computeDictionaries, computeTree=computeTree, plotFlag=plotFlag)
+        mesh_file = meshInputCI.mesh_file
+        super(self.__class__, self).__init__(mesh_file=None, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
 
         self.field_boundary_dict = meshInputCI.field_boundary_dict
         self.particle_boundary_dict = meshInputCI.particle_boundary_dict
@@ -94,14 +94,14 @@ class UserMesh_C(Mesh_C):
 # or:       particleBoundaryMarker = df_M.MeshFunctionSizet(self.mesh, "Pbcs_quarter_circle_mesh_crossed.xml")
 
         return
-#    def __init__(self, meshInputCI=None, computeDictionaries=False, computeTree=False, plotFlag=False):ENDDEF
+#    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
 
 # Inherited from Mesh_C:
 #    def copy(self):
 #        return copy.deepcopy(self)
 
 #class UserMesh_C(Mesh_C):
-    def create_mesh(self, meshInputCI, plotFlag):
+    def create_mesh(self, meshInputCI, plot_flag):
         """
            Create a mesh according to the user's specifications.
         """
@@ -207,7 +207,7 @@ class UserMesh_C(Mesh_C):
         mesh.coordinates()[:,0] = r
 
 # Make a plot of the mesh
-        if (plotFlag):
+        if (plot_flag):
             df_M.plot(mesh, title='radial mesh', axes=True)
             df_M.interactive()
 
@@ -217,7 +217,7 @@ class UserMesh_C(Mesh_C):
         self.particle_boundary_marker = particleBoundaryMarker
 
         return
-#    def __init__(self, meshInputCI=None, Mesh=None, meshToCopy=None, computeDictionaries=False, computeTree=False, plotFlag=False):ENDDEF
+#    def __init__(self, meshInputCI=None, Mesh=None, meshToCopy=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
 
 #class UserMesh_C(Mesh_C):ENDCLASS
 

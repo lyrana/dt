@@ -17,9 +17,9 @@ class Mesh_C(object):
        boundary-conditions, etc.
     
        :param Mesh: a Dolfin Mesh object
-       :param meshFile: The name of a file containing an XML mesh
-       :param computeDictionaries: Boolean flag to compute dictionaries of mesh entities
-       :param computeTree: Boolean flag to compute the mesh bounding-box tree
+       :param mesh_file: The name of a file containing an XML mesh
+       :param compute_dictionaries: Boolean flag to compute dictionaries of mesh entities
+       :param compute_tree: Boolean flag to compute the mesh bounding-box tree
 
        :cvar gdim: Geometric dimension of the mesh
        :cvar tdim: Topological dimension of the mesh
@@ -33,29 +33,29 @@ class Mesh_C(object):
 
     # Constructor
 
-# Examine the need for the Mesh and meshToCopy args:
-    def __init__(self, Mesh=None, meshToCopy=None, meshFile=None, computeDictionaries=False, computeTree=False, plotFlag=False):
+# Examine the need for the Mesh and mesh_to_copy args:
+    def __init__(self, Mesh=None, mesh_to_copy=None, mesh_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):
 
         # Get a ref to the mesh from the arglist,
         if Mesh is not None:
             self.mesh = Mesh
         # or make a copy of the arglist mesh,
-        elif meshToCopy is not None:
-            self.mesh = df_M.Mesh(meshToCopy)
+        elif mesh_to_copy is not None:
+            self.mesh = df_M.Mesh(mesh_to_copy)
         # or read the mesh from a file.
-        elif meshFile is not None:
-            self.mesh = df_M.Mesh(meshFile)
+        elif mesh_file is not None:
+            self.mesh = df_M.Mesh(mesh_file)
 
         # This section will also execute if this __init__ is called by a
         # child class.
         if self.mesh is not None:
-            if plotFlag == True:
+            if plot_flag == True:
                 df_M.plot(self.mesh, axes=True)
                 df_M.interactive()
             # Compute the search tree. Uses:
             #     Evaluating field probes at a point.
             #     Computing the cell index of a particle.
-            if computeTree == True:
+            if compute_tree == True:
                 self.bbtree = self.mesh.bounding_box_tree()
 
             self.gdim = self.mesh.geometry().dim()
@@ -80,7 +80,7 @@ class Mesh_C(object):
             self.cell_neighbor_dict = {}
 
             # Compute lookup dictionaries
-            if computeDictionaries == True:
+            if compute_dictionaries == True:
                 self.compute_cell_dict()
                 self.compute_cell_entity_index_dict('vertex') # Get vertex indices from a cell index
                 self.compute_cell_entity_index_dict('facet') # Get facet indices from a cell index
@@ -90,7 +90,7 @@ class Mesh_C(object):
                 self.compute_cell_neighbor_dict() # Get neighbor cell indices from a cell index
 
         return
-#    def __init__(self, Mesh=None, meshFile=None, computeDictionaries=False, computeTree=False, plotFlag=False):ENDDEF
+#    def __init__(self, Mesh=None, mesh_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
 
 
  # Compute the search tree for this mesh
@@ -818,7 +818,7 @@ class PoissonSolve_C(object):
         return
 
 #class PoissonSolve_C(object):
-    def solve_for_phi(self, plotFlag=False):
+    def solve_for_phi(self, plot_flag=False, plot_title="solve_for_phi"):
         """Solve Poisson's equation for the electric potential.
         """
 
@@ -837,14 +837,14 @@ class PoissonSolve_C(object):
         df_M.solve(self.a == self.L, self.u, self.bcs, solver_parameters=self.solver_parameters)
 
 # Plot the electric potential
-        if plotFlag == True:
-            df_M.plot(self.u)
+        if plot_flag == True:
+            df_M.plot(self.u, title=plot_title+": phi")
             df_M.interactive()
 
 # Compute -E
         # This is supposed to test if neg_electric_field has been allocated.
         if self.neg_electric_field is not None:
-            self.compute_negE(plotFlag)
+            self.compute_negE(plot_flag, plot_title)
 
 # Plot radial component of -E:
 #        negE = df_M.grad(u)
@@ -862,7 +862,7 @@ class PoissonSolve_C(object):
         return
 
 #class PoissonSolve_C(object):
-    def compute_negE(self, plotFlag=False):
+    def compute_negE(self, plot_flag=False, plot_title="compute_negE"):
         """negE is the gradient of the electrostatic potential.
         """
 
@@ -870,8 +870,8 @@ class PoissonSolve_C(object):
 
         function_space = self.neg_electric_field.function_space
         self.neg_electric_field.function = df_M.project(negE, function_space)
-        if plotFlag == True:
-            df_M.plot(self.neg_electric_field.function)
+        if plot_flag == True:
+            df_M.plot(self.neg_electric_field.function, title=plot_title+": E")
             df_M.interactive()
 
         return self.neg_electric_field.function

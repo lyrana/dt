@@ -38,9 +38,9 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         # Create an instance of the DTparticleInput class
         pinCI = DTparticleInput_C()
+
         # Initialize particles
         pinCI.precision = numpy.float64
-
 #        pinCI.copy_field_mesh = False
         pinCI.particle_integration_loop = 'loop-on-particles'
         pinCI.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
@@ -79,12 +79,9 @@ class TestParticleNonuniformE(unittest.TestCase):
         # Make the mesh & fields from saved files
         # The is needed to construct the function space for E
 
-# Mesh creation
+        ### Mesh creation
 
         miCI = DTmeshInput_C()
-
-        # Make the mesh & fields from saved files
-        miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
 
         # Create mesh from a file
         miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
@@ -92,25 +89,23 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         # These are the (int boundary-name) pairs used to mark mesh
         # facets. The string value of the int is used as the index.
-        rmin_indx = '1'
-        rmax_indx = '2'
-        thmin_indx = '4'
-        thmax_indx = '8'
-        # Note the order, which is reversed from the fieldBoundaryDict
-        # order.
-        particleBoundaryDict = {rmin_indx:'rmin',
-                                rmax_indx:'rmax',
-                                thmin_indx:'thmin',
-                                thmax_indx:'thmax',
+        rmin_indx = 1
+        rmax_indx = 2
+        thmin_indx = 4
+        thmax_indx = 8
+        particleBoundaryDict = {'rmin': rmin_indx,
+                                'rmax': rmax_indx,
+                                'thmin': thmin_indx,
+                                'thmax': thmax_indx,
                                 }
 
         miCI.particle_boundary_dict = particleBoundaryDict
 
-        pmesh2DCI = UserMesh_C(miCI, computeDictionaries=True, computeTree=True, plotFlag=False)
+        pmesh2DCI = UserMesh_C(miCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
         self.particleCI.pmeshCI = pmesh2DCI
 
-# Particle boundary-conditions
+        ### Particle boundary-conditions
 
         # UserParticleMeshFunctions_C is where the facet-crossing callback
         # functions are defined.

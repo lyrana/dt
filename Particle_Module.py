@@ -31,7 +31,7 @@ class Particle_C(object):
           Initial particle distributions specified by the user (Checks that the initial distribution functions are defined in UserParticleDistributions.py)
           Initial number of particles per cell
 
-       :cvar position_coordinates: Labels of the position coordinate axes.
+       :cvar position_coordinates: The labels naming the position-coordinate components.
        :vartype position_coordinates: string array
        :cvar particle_dimension: Number of spatial coordinates in a particle position.
 
@@ -312,6 +312,7 @@ class Particle_C(object):
                 if self.trajCI is not None:
 #                    print 'pindex for trajectory = ', pindex
                     self.trajCI.ParticleIdList[species_name].append(pindex)
+                    self.trajCI.TrajectoryLength[species_name].append(0) # Set the count to 0
                     self.trajCI.create_trajectory(species_name, dynamics_type)
                 else:
 # Instead of printing this message, a trajCI object could be created here.
@@ -475,10 +476,15 @@ class Particle_C(object):
 
 #           Accelerate and move all the particles in this species
 #            (npSeg, psegIn, psegOut) = psaCI.init_inout_loop()
-            (npSeg, psegIn) = psaCI.init_inout_loop()
+#            (npSeg, psegIn) = psaCI.init_inout_loop()
+            (npSeg, psegIn, psegOut) = psaCI.init_inout_loop()
             particleCount = 0
             # ipOut counts through the 'out' array
             ipOut = 0
+            indxChange = False # Flag to indicate if particle SA indices have
+                               # changed.  This affects, e.g., trajectories,
+                               # which use SA indices to identify particles
+                               # chosen for trajectory plots.
             while isinstance(psegIn, np_M.ndarray):
 #            print pseg['z']
 #                print 'particles_mod: particles module: pseg = ', pseg
@@ -488,6 +494,7 @@ class Particle_C(object):
 #                print "position:", pseg['x'], pseg['y'] #, pseg['z']
 #                print "velocity:", pseg['ux'], pseg['uy'] #, pseg['uz']
 
+                # Interpolate the electric field to the particle positions
                 # This is the negative electric field
                 neg_electric_field.interpolate_field_to_points(psegIn, self.negE)
                 
@@ -536,10 +543,18 @@ class Particle_C(object):
                     # Can't use slice syntax here, because the array data are not homogeneous.
 
                     # skip deleted particles
-                    if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0: continue
+                    if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0: 
+                        indxChange = True # Particle SA indices are stale past
+                                          # this point due to deletions.
+                        continue
                     
-                    # Only gets the next 'out' segment if there are more 'in' particles to do
-                    if ipOut == 0: psegOut = psaCI.get_next_out_segment()
+                    # Get the next 'out' segment if the current 'out' segment is
+                    # full.
+                    if ipOut == self.SEGMENT_LENGTH:
+                        psegOut = psaCI.get_next_out_segment()
+                        ipOut = 0 # Reset the slot counter for the new segment
+
+#                    if ipOut == 0: psegOut = psaCI.get_next_out_segment()
 
                     # Copy the 'in' particle to a tmp
 #                    p_arr = psegIn[ipIn]
@@ -548,6 +563,13 @@ class Particle_C(object):
 #                    print 'psegOut = ', psegOut[ipOut]
 #                    print 'same?', psegOut[ipOut] is psegIn[ipIn]
 
+                    ## If particle indexing is disturbed, update things that depend on it.
+                    # E.g., if this is a trajectory particle, update its SA index
+                    if self.trajCI is not None:
+                        if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0:
+                            if indxChange is True:
+                            # Update the index in the trajectectory
+                                self.update_trajectory_particleId(sn, ipIn, ipOut)
 
                     # Accelerate the particle with the field components in Eseg
                     for comp in Eseg.dtype.names:
@@ -653,14 +675,11 @@ class Particle_C(object):
                             facValue = pmeshCI.particle_boundary_marker[mFacet]
                             # Check if this facet has a non-zero marker
                             if facValue != 0:
-                                # Convert the int marker to its string value...
-                                bFlag = str(facValue)
-#                                print "bFlag is", bFlag
-                                # ...and call the function associated with this value.
+                                # Call the function associated with this value.
 
 # Maybe this needs the whole particle object?  It could be the end-of-the line for the particle.
 # Need to check what needs to be in the following arg list:
-                                self.pmesh_bcCI.bcFunctionDict[bFlag][sn](psegOut[ipOut], sn, mFacet)
+                                self.pmesh_bcCI.bcFunctionDict[facValue][sn](psegOut[ipOut], sn, mFacet)
 
 # Not sure if this else is needed:                            else:
 
@@ -689,12 +708,16 @@ class Particle_C(object):
                         ipOut += 1
                     else:
                         print "Particle", ipIn, "of species", sn, "has been deleted."
+                        # Remove the particle from the trajectory list if it was tagged
+                        if self.trajCI is not None:
+                            if psegIn[ipIn]['bitflags'] & self.TRAJECTORY_FLAG != 0:
+                                self.remove_trajectory_particleId(sn, ipIn, psegOut[ipOut])
 
                     # Check if we've reached the end of this segment.  If
                     # so, we need to start writing on a new segment.
                     if (ipOut == self.SEGMENT_LENGTH):
                         particleCount += self.SEGMENT_LENGTH
-                        ipOut = 0 # This will cause get_next_out_segment() to be called
+#                        ipOut = 0 # This will cause get_next_out_segment() to be called
                                    # above if there are more 'in' particles to be processed.
 
                 # Done with this segment.
@@ -747,25 +770,45 @@ class Particle_C(object):
             if self.get_species_particle_count(sn) == 0: continue
 
 #           Move all the particles in this species
-            (npSeg, psegIn) = psaCI.init_inout_loop()
+            (npSeg, psegIn, psegOut) = psaCI.init_inout_loop() # (number of particles in
+#            (npSeg, psegIn) = psaCI.init_inout_loop() # (number of particles in
+                                                      # this segment, ref to
+                                                      # segment)
             particleCount = 0
             # ipOut counts particles being written to the current
             # 'out' segment.
             ipOut = 0
-            while isinstance(psegIn, np_M.ndarray):
-                for ipIn in xrange(npSeg):
-                    # pseg[i] is 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values of ith item
-                    # So pseg[i][0:3] is 'x', 'y', 'z'.
-                    # Can't use slice syntax here, because the array data are not homogeneous.
+            indxChange = False # Flag to indicate if particle SA indices have
+                               # changed.  This affects, e.g., trajectories,
+                               # which use SA indices to identify particles
+                               # chosen for trajectory plots.
+            while isinstance(psegIn, np_M.ndarray): # Keep looping until we run
+                                                    # out of 'in' segments
+                for ipIn in xrange(npSeg): # Loop on the particles in this 'in'
+                                           # segment
+                    # psegIn[ipIn] has the 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values of ith item
+                    # So psegIn[ipIn][0:3] is 'x', 'y', 'z'.
+                    # Can't use slice syntax here, because the array data are not of homogeneous type.
 
-                    # skip deleted particles
-                    if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0: continue
+                    # Skip deleted particles
+                    if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0:
+                        indxChange = True # Particle SA indices are stale past
+                                          # this point due to deletions.
+                        continue # skip to the next particle
                     
-                    # Only gets the next 'out' segment if there are more 'in' particles to do
-                    if ipOut == 0: psegOut = psaCI.get_next_out_segment()
+                    # If this 'out segment is full, get the next 'out' segment,
+                    # provided there are still some 'in' particles to advance.
+                    if ipOut == self.SEGMENT_LENGTH:
+                        psegOut = psaCI.get_next_out_segment()
+                        ipOut = 0 # Reset the counter for the new segment
+#                    if ipOut == 0: psegOut = psaCI.get_next_out_segment()
 
-# Check if the following copies, or resets the reference. Ans: it COPIES.
-                    psegOut[ipOut] = psegIn[ipIn]
+                    # The following COPIES data, rather than just setting a
+                    # reference to existing data.
+                    psegOut[ipOut] = psegIn[ipIn] # Copy this particle's data
+                                                  # from the input slot to the
+                                                  # output slot
+
 # Also, check if the following copies, or resets the reference. Ans: it COPIES.
 #                    p_out = psegOut[ipOut]
 # To get a REFERENCE, need to use SLICING syntax:
@@ -775,9 +818,17 @@ class Particle_C(object):
 # See also HPL p. 137. b=a[1,:], but b is still an array.
 # What about getting a ref to one particle returned from a function? That's possible because it uses the stack?
 
-                    # Move the particle
-                    # NON-RELATIVISTIC: v and u are the same
+                    ## If particle indexing is disturbed, update things that depend on it.
 
+                    # E.g., if this is a trajectory particle, update its SA index
+                    if self.trajCI is not None:
+                        if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0:
+                            if indxChange is True:
+                            # Update the index in the trajectectory
+                                self.update_trajectory_particleId(sn, ipIn, ipOut)
+
+                    ## Move the particle
+                    # NON-RELATIVISTIC: v and u are the same
                     for coord in self.position_coordinates:
                         coord0 = coord+'0'
                         psegOut[ipOut][coord0] = psegOut[ipOut][coord] # Save the starting positions
@@ -857,14 +908,11 @@ class Particle_C(object):
                             facValue = pmeshCI.particle_boundary_marker[mFacet]
                             # Check if this facet has a non-zero marker
                             if facValue != 0:
-                                # Convert the int marker to its string value...
-                                bFlag = str(facValue)
-#                                print "bFlag is", bFlag
-                                # ...and call the function associated with this value.
+                                # Call the function associated with this value.
 
 # Maybe this needs the whole particle object?  It could be the end-of-the line for the particle.
 # Need to check what needs to be in the following arg list:
-                                self.pmesh_bcCI.bcFunctionDict[bFlag][sn](psegOut[ipOut], sn, mFacet)
+                                self.pmesh_bcCI.bcFunctionDict[facValue][sn](psegOut[ipOut], sn, mFacet)
 
 # Not sure if this else is needed:                            else:
 
@@ -899,7 +947,7 @@ class Particle_C(object):
                     # so, we need to start writing on a new segment.
                     if (ipOut == self.SEGMENT_LENGTH):
                         particleCount += self.SEGMENT_LENGTH
-                        ipOut = 0 # This will cause get_next_out_segment() to be called
+#                        ipOut = 0 # This will cause get_next_out_segment() to be called
                                    # above, if there are more 'in' particles to be processed.
 
                 # Done with this segment.
@@ -993,7 +1041,8 @@ class Particle_C(object):
 
         # This loop moves particles, so swap the in/out particle arrays
 #        (npSeg, psegIn, psegOut) = psaCI.init_inout_loop()
-        (npSeg, psegIn) = psaCI.init_inout_loop()
+#        (npSeg, psegIn) = psaCI.init_inout_loop()
+        (npSeg, psegIn, psegOut) = psaCI.init_inout_loop()
 
 #        print "move_particles_in_uniform_fields: npSeg, psegIn, psegOut:", npSeg, psegIn, psegOut
         # Get the first segment of particles to move
@@ -1015,13 +1064,32 @@ class Particle_C(object):
             # ipIn counts through the 'in' segment
             for ipIn in xrange(npSeg):
 
-                # Skip deleted particles
-                if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0: continue
+                ## Skip deleted particles
+                if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0:
+                    print "Deleting particle with ipIn =", ipIn
+                    indxChange = True # Particle SA indices are stale past
+                                      # this point due to deleted items.
+                    continue # skip to the next particle
 
                 # Only gets the next 'out' segment if there are more 'in' particles to do
-                if ipOut == 0: psegOut = psaCI.get_next_out_segment()
+
+                if ipOut == self.SEGMENT_LENGTH:
+                    psegOut = psaCI.get_next_out_segment()
+                    ipOut = 0 # Reset the counter for the new segment
+#                if ipOut == 0: psegOut = psaCI.get_next_out_segment()
 
                 psegOut[ipOut] = psegIn[ipIn] # This copies everything over, to ensure weights, flags, etc. get copied.
+
+                ## If particle indexing is disturbed, update things that depend on it.
+
+                # E.g., if this is a trajectory particle, update its SA index
+                if self.trajCI is not None:
+                    if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0:
+                        if indxChange is True:
+                        # Update the index in the trajectectory
+                            (full_index_in, full_index_out) = self.update_trajectory_particleId(species_name, ipIn, ipOut)
+#                            print "Updated trajectory index", ipIn, "to", ipOut
+                            print "Updated trajectory index", full_index_in, "to", full_index_out
 
                 # Accelerate the particle
                 psegOut[ipOut]['ux'] = psegIn[ipIn]['ux'] + qmdt*E0.x
@@ -1041,8 +1109,6 @@ class Particle_C(object):
                 # are actually more 'in' particles to process.
                 if (ipOut == self.SEGMENT_LENGTH):
                     particleCount += ipOut
-                    ipOut = 0 # This will cause get_next_out_segment() to be called
-                               # above if there are more 'in' particles to be processed.
 
     #            print pseg['z']
             (npSeg, psegIn) = psaCI.get_next_segment('in')
@@ -1077,10 +1143,84 @@ class Particle_C(object):
         return
 #    def move_particles_in_uniform_fields(self, species_name, ctrlCI, printFlag = False):ENDDEF
 
+#class Particle_C(object):
+    def update_trajectory_particleId(self, sn, i_in, i_out):
+        """Replace the full index of a trajectory particle with the new value.
+
+           Trajectory particles are identified by their full SA index.  When
+           particles are deleted from the SA, these indices change for the
+           remaining particles, and have to be updated.
+
+           :param str sn: The name of the current species being advanced.
+           :param int i_in: The particle's index in the current 'in' segment.
+           :param int i_out: The particle's index in the current 'out' segment.
+        """
+
+        psaCI = self.pseg_arr[sn] # The segmented array for this species
+
+        # Obtain the full indices of this particle in the 'in' and 'out' arrays.
+        (full_index_in, full_index_out) = psaCI.get_full_indices(i_in, i_out)
+
+        # Find the position of full_index_in:
+        indx = self.trajCI.ParticleIdList[sn].index(full_index_in)
+        # Replace this with the new full index
+        self.trajCI.ParticleIdList[sn][indx] = full_index_out
+
+        return full_index_in, full_index_out
+#    def update_trajectory_particleId(self, sn, i_in, i_out):ENDDEF
 
 #class Particle_C(object):
-    def record_trajectory_data(self, neg_electric_field):
-        """Save the requested particle trajectory data.
+    def remove_trajectory_particleId(self, sn, i_in, p):
+        """Remove a particle from the trajectory list.
+
+           When a particle that is tagged as a trajectory particle is deleted,
+           it has to be removed for the trajectory list.
+
+           :param str sn: The name of the current species being advanced.
+           :param p: The current attributes of the particle being deleted.
+           :param int i_in: The particle's index in the current 'in' segment.
+        """
+
+        trajCI = self.trajCI
+        psaCI = self.pseg_arr[sn] # The segmented array for this species
+        p_arr = self.one_particle_arr
+
+        # Obtain the full index of this particle
+        full_index_in = psaCI.get_full_index(i_in, 'in')
+
+        # Record the last position
+        # Retrieve particle using its full index
+#        p_arr[0] = psaCI.get(full_index_in)
+        p_arr[0] = p
+
+        # Copy the particle values into the trajectory
+
+        # Find the position of full_index_in:
+        indx = self.trajCI.ParticleIdList[sn].index(full_index_in)
+
+        count = self.trajCI.TrajectoryLength[sn][indx]
+        for comp in trajCI.explicitDict['names']:
+            if comp in p_arr.dtype.names:
+                trajCI.DataList[sn][indx][comp][count] = p_arr[0][comp]
+                # The particle has been deleted and may be out-of-bounds, so set
+                # E to zero instead of interpolating.
+                # This isn't right: 'Ex' never passes this test.
+            if comp in self.negE.dtype.names:
+                Ecomp = 'E'+comp
+                trajCI.DataList[sn][indx][Ecomp][count] = 0.0
+        
+        self.trajCI.TrajectoryLength[sn][indx] += 1 # Increment the trajectory length
+
+        # Mark this as a trajectory where the particle no longer exists.
+        self.trajCI.ParticleIdList[sn][indx] = self.trajCI.NO_PINDEX
+
+        return full_index_in
+#    def remove_trajectory_particleId(self, sn, i_in):ENDDEF
+
+#class Particle_C(object):
+#    def record_trajectory_data(self, field=neg_electric_field):
+    def record_trajectory_data(self, neg_E_field=None):
+        """Save one trajectory data-record for the marked particles of all species.
         """
 
         trajCI = self.trajCI
@@ -1091,18 +1231,29 @@ class Particle_C(object):
         # Loop on trajectories of explicit particles
         for sp in trajCI.explicit_species:
             pseg_arrCI = self.pseg_arr[sp] # The SA for this species
-            for i in xrange(len(trajCI.ParticleIdList[sp])):
+            for i in xrange(len(trajCI.ParticleIdList[sp])): # i loops on
+                                                             # particle indices
 #            for ip in trajCI.ParticleIdList[sp]:
-                ip = trajCI.ParticleIdList[sp][i]
-                # Retrieve particle using its local index
-                p_arr[0] = pseg_arrCI.get(ip)
+                ip = trajCI.ParticleIdList[sp][i] # Look up the full particle index
+
+                # If a particle no longer exists, skip
+                if ip == trajCI.NO_PINDEX: continue
+
+                # Retrieve particle using its full index
+                p_arr[0] = pseg_arrCI.get(ip) # pulls value from the 'out' array.
+
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
                 # Compute the force on this particle
 
 #                E_arr = field_particleCI.compute_E_at_particles(p_arr)
 
-                neg_electric_field.interpolate_field_to_points(p_arr, self.negE)
+                self.zeroE = np_M.zeros(len(self.negE.dtype.fields), dtype=self.negE.dtype[0])
+
+                if neg_E_field is None:
+                    self.negE = self.zeroE  # is this a COPY?
+                else:
+                    neg_E_field.interpolate_field_to_points(p_arr, self.negE)
 
                 E_arr = self.negE[0:p_arr.size]
                 # Flip the sign to get correct E. (This is a vector
@@ -1110,14 +1261,17 @@ class Particle_C(object):
                 for n in E_arr.dtype.names:
                     E_arr[n] *= -1.0
 
-#                print "E_arr.dtype.names =", E_arr.dtype.names
+    #                print "E_arr.dtype.names =", E_arr.dtype.names
 
                 # Copy the particle values into the trajectory
+
+                count = self.trajCI.TrajectoryLength[sp][i]
                 for comp in trajCI.explicitDict['names']:
 #                    print 'comp = ', comp
                     if comp in p_arr.dtype.names:
 #                        trajCI.DataList[sp][i][count][comp] = p_arr[0][comp]
                         trajCI.DataList[sp][i][comp][count] = p_arr[0][comp]
+                    # This isn't right: 'Ex' never passes this test.
                     if comp in E_arr.dtype.names:
                         Ecomp = 'E'+comp
                         trajCI.DataList[sp][i][Ecomp][count] = E_arr[0][comp]
@@ -1127,7 +1281,9 @@ class Particle_C(object):
 
         # Loop on trajectories of implicit particles
         
-        self.trajCI.count += 1
+                self.trajCI.TrajectoryLength[sp][i] += 1 # Increment the trajectory length
+
+#        self.trajCI.count += 1
 
         return
 #    def record_trajectory_data(self, neg_electric_field):ENDDEF
@@ -1204,8 +1360,8 @@ class ParticleMeshBoundaryConditions_C(object):
 #    SEE     = 0b1 << 3        # Secondary-electron emission
 
 
+#class ParticleMeshBoundaryConditions_C(object):
 # Look for specific boundary conditions
-
     def __init__(self, speciesNames, pmeshCI, userParticleMeshFunctionsClass, printFlag = False):
         """Initialize particle callback functions (boundary conditions).
 
@@ -1221,31 +1377,41 @@ class ParticleMeshBoundaryConditions_C(object):
            species is used.
 
         """
-        # Set local variables from passed parameters
-
+        # Set local names from passed parameters
         pBDict = pmeshCI.particle_boundary_dict
-        particleBoundaryFlags = pBDict.keys()
 
-        # Initialize a dictionary for the boundary function for each
-        # (boundary, species) pair.
-        # The first index is the string value of the integer that
+        # We want to associate the names of the user-supplied boundary
+        # functions with the int values of the facet flags.  First, we
+        # swap the BC dictionary keys and values: e.g., 'xmin': '1' to
+        # '1': 'xmin'. This lets us use the facet-flag as an index to
+        # get the name of the boundary.
+
+#Q: can the integer 1 be used instead?
+        pBDictInv = {v: k for k, v in pBDict.iteritems()}
+
+        particleBoundaryFlags = pBDictInv.keys()
+
+        # Initialize a new dictionary that will contain the name of a
+        # boundary function for each (boundary, species) pair.
+        # The first index is the string value of the integer flag that
         # marks the boundary facets.
         self.bcFunctionDict = dict((bFlag, dict((sp, None) for sp in speciesNames)) for bFlag in particleBoundaryFlags)
 
-        # Get the global default boundary function, if there is one.
+        # Find the global default boundary function, if there is one,
+        # in the supplied UserParticleMeshFunctions object.
         bcFunctionName = 'default_bc'
         if hasattr(userParticleMeshFunctionsClass, bcFunctionName):
             bcGlobalDefaultFunction = getattr(userParticleMeshFunctionsClass, bcFunctionName)
         else:
             bcGlobalDefaultFunction = None
 
-        # Loop on particle boundary names and on particle species
+        # Loop on particle boundary flags and on particle species
         # names to find the most specific BC.
 
         # Overwrite the global default function with a function specific to
         # each boundary, if there is one.
         for bFlag in particleBoundaryFlags:
-            bcFunctionName = 'default_bc_at_' + pBDict[bFlag]
+            bcFunctionName = 'default_bc_at_' + pBDictInv[bFlag]
             if hasattr(userParticleMeshFunctionsClass, bcFunctionName):
                 bcBoundaryDefaultFunction = getattr(userParticleMeshFunctionsClass, bcFunctionName)
             else:
@@ -1254,15 +1420,15 @@ class ParticleMeshBoundaryConditions_C(object):
                 # Overwrite the default for this boundary with a
                 # function specific to this boundary and species, if
                 # there is one.
-                bcFunctionName = 'bc_at_' + pBDict[bFlag] + '_for_' + sp
+                bcFunctionName = 'bc_at_' + pBDictInv[bFlag] + '_for_' + sp
                 if hasattr(userParticleMeshFunctionsClass, bcFunctionName):
                     bcFunction = getattr(userParticleMeshFunctionsClass, bcFunctionName)
                 else:
                     bcFunction = bcBoundaryDefaultFunction
                 if bcFunction is None:
-                    print "ParticleMeshBoundaryConditions_C: No boundary condition specified for", pBDict[bFlag], "/", sp
+                    print "ParticleMeshBoundaryConditions_C: No boundary condition specified for", pBDictInv[bFlag], "/", sp
                 elif printFlag:
-                    print "ParticleMeshBoundaryConditions_C: Boundary condition for", pBDict[bFlag], "/", sp, "is", bcFunction
+                    print "ParticleMeshBoundaryConditions_C: Boundary condition for", pBDictInv[bFlag], "/", sp, "is", bcFunction
                 self.bcFunctionDict[bFlag][sp] = bcFunction
 
         return
