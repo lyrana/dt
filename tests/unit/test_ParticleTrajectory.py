@@ -254,6 +254,8 @@ class TestParticleTrajectory(unittest.TestCase):
 #                print 'pCI.trajCI.skip:', pCI.trajCI.skip
                 if istep % pCI.trajCI.skip == 0:
                     pCI.record_trajectory_data(neg_E_field=self.neg_electric_field)
+# test for neg_E_field = None:
+#                    pCI.record_trajectory_data()
 
             # Do the implicit species first
             if len(pCI.implicit_species) != 0:

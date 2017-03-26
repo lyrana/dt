@@ -229,6 +229,13 @@ class Particle_C(object):
             Etypes = [force_precision for comp in Ecomps]
             Eseg_dict = {'names': Ecomps, 'formats': Etypes}
             self.negE = np_M.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
+            # self.negE1 is used for one-particle field data for a trajectory
+            # Make an explicit name like 'Ex', 'Ey', 'Ez'
+            E1comps = ['E'+comp for comp in Ecomps]
+            E1seg_dict = {'names': E1comps, 'formats': Etypes}
+            self.negE1 = np_M.empty(1, dtype=E1seg_dict)
+            # Create an E with all components zero
+            self.zeroE = np_M.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
 
         # Not used yet
         self.particle_integration_loop = particleInputCI.particle_integration_loop
@@ -1244,24 +1251,21 @@ class Particle_C(object):
 
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
-                # Compute the force on this particle
-
-#                E_arr = field_particleCI.compute_E_at_particles(p_arr)
-
-                self.zeroE = np_M.zeros(len(self.negE.dtype.fields), dtype=self.negE.dtype[0])
-
+                # Compute the force on this single particle
                 if neg_E_field is None:
-                    self.negE = self.zeroE  # is this a COPY?
+                    self.negE1[0] = self.zeroE[0]
                 else:
-                    neg_E_field.interpolate_field_to_points(p_arr, self.negE)
+                    neg_E_field.interpolate_field_to_points(p_arr, self.negE1)
 
-                E_arr = self.negE[0:p_arr.size]
+                E_arr = self.negE1[0:p_arr.size] # Need this syntax, even though there's
+                                                # just one particle, to make E_arr an array.
+
                 # Flip the sign to get correct E. (This is a vector
                 # operation on each component of E.)
                 for n in E_arr.dtype.names:
                     E_arr[n] *= -1.0
 
-    #                print "E_arr.dtype.names =", E_arr.dtype.names
+#                print "E_arr.dtype.names =", E_arr.dtype.names
 
                 # Copy the particle values into the trajectory
 
@@ -1271,22 +1275,18 @@ class Particle_C(object):
                     if comp in p_arr.dtype.names:
 #                        trajCI.DataList[sp][i][count][comp] = p_arr[0][comp]
                         trajCI.DataList[sp][i][comp][count] = p_arr[0][comp]
-                    # This isn't right: 'Ex' never passes this test.
                     if comp in E_arr.dtype.names:
-                        Ecomp = 'E'+comp
-                        trajCI.DataList[sp][i][Ecomp][count] = E_arr[0][comp]
-#                        trajCI.DataList[sp][i][count][Ecomp] = E_arr[0][comp]
+                        trajCI.DataList[sp][i][comp][count] = E_arr[0][comp]
 
 #        print 'trajCI.DataList: ', trajCI.DataList['testelectrons'][0]
 
-        # Loop on trajectories of implicit particles
-        
                 self.trajCI.TrajectoryLength[sp][i] += 1 # Increment the trajectory length
 
-#        self.trajCI.count += 1
+        # Loop on trajectories of implicit particles
 
         return
-#    def record_trajectory_data(self, neg_electric_field):ENDDEF
+#    def record_trajectory_data(self, neg_E_field=None):ENDDEF
+
 
 #class Particle_C(object):
     def compute_charge_density(self, fCI):

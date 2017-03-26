@@ -338,6 +338,12 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         print "Moving", pCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "timesteps"
 
         for istep in xrange(ctrlCI.nsteps):
+
+            if pCI.trajCI is not None:
+#                print 'pCI.trajCI.skip:', pCI.trajCI.skip
+                if istep % pCI.trajCI.skip == 0:
+                    pCI.record_trajectory_data(neg_E_field=negElectricField)
+
             pCI.move_particles_in_electrostatic_field(ctrlCI.dt, negElectricField)
 
         # Record the LAST point on the particle trajectory
