@@ -12,20 +12,16 @@ import unittest
 
 import dolfin as df_M
 
-from DT_Module import DTmeshInput_C
-from DT_Module import DTparticleInput_C
 from DT_Module import DTcontrol_C
-from DT_Module import DTtrajectoryInput_C
 
-#from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 
 from SegmentedArrayPair_Module import SegmentedArray_C
 
-from Particle_Module import Particle_C
-from Particle_Module import ParticleMeshBoundaryConditions_C
+from Particle_Module import *
+from Particle_Module import *
 
-from Trajectory_Module import Trajectory_C
+from Trajectory_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
@@ -40,7 +36,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         return
 
 #class TestParticleBoundaryConditions(unittest.TestCase):
-    def test_1_xy_absorbing_boundary(self):
+    def test_1_2D_x_y_absorbing_boundary(self):
         """ Check that particles are deleted correctly when they
             strike an absorbing boundary on a 2D Cartesian mesh.
         """
@@ -61,7 +57,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 # Particle species input
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
         # Initialize particles
         pinCI.precision = numpy.float64
         pinCI.particle_integration_loop = 'loop-on-particles'
@@ -93,7 +89,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ### Create a trajectory object and add it to particleCI
 
         # Create input object for trajectories
-        trajinCI = DTtrajectoryInput_C()
+        trajinCI = TrajectoryInput_C()
 
         trajinCI.maxpoints = None # Set to None to get every point
 
@@ -112,24 +108,23 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         for sp in particleCI.species_names: printFlags[sp] = False
         particleCI.initialize_distributions(printFlags)
 
-#  Mesh input for the particle mesh, including particle boundary conditions.
-
-        # Here's the mesh definition for this test
-        #from UserMesh_y_Fields_FE2D_Module import UserMesh_C
-        from UserMesh_FE_XYZ_Module import UserMesh_C
+        ##  Mesh input for the particle mesh, including particle boundary conditions.
 
         # Create a 2D Cartesian mesh to use for advancing the particles.  The particles
         # themselves are given 3D coordinates.
 
-        mi2DCI = DTmeshInput_C()
+        from UserMesh_FE_XYZ_Module import UserMeshInput_C
 
         # 2D mesh input
-        mi2DCI = DTmeshInput_C()
+
+        mi2DCI = UserMeshInput_C()
         (xmin, ymin) = (-10.0, -10.0)
         (xmax, ymax) = ( 10.0,  10.0)
         mi2DCI.pmin = df_M.Point(xmin, ymin)
         mi2DCI.pmax = df_M.Point(xmax, ymax)
         mi2DCI.cells_on_side = (4, 2)
+#        mi2DCI.diagonal = 'crossed'
+
         # These are the (int boundary-name) pairs used to mark mesh
         # facets. The string value of the int is used as the index.
         # xmin_indx = '1'
@@ -148,6 +143,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                                 }
 
         mi2DCI.particle_boundary_dict = particleBoundaryDict
+
+        ## Create the 2D Cartesian mesh
+
+        from UserMesh_FE_XYZ_Module import UserMesh_C
 
         pmeshCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
         # Add this to the particle object:
@@ -183,12 +182,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
             particleCI.move_neutral_particles(ctrlCI.dt)
 
         return
-#    def test_2D_xy_absorbing_boundary(self):ENDDEF
-
-#class TestParticleBoundaryConditions(unittest.TestCase):ENDCLASS
+#    def test_1_2D_x_y_absorbing_boundary(self):ENDDEF
 
 #class TestParticleBoundaryConditions(unittest.TestCase):
-    def test_2_r_theta_absorbing_boundary(self):
+    def test_2_2D_r_theta_absorbing_boundary(self):
         """ Check that particles are deleted correctly when they
             strike an absorbing boundary.
         """
@@ -205,7 +202,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ### Particle species input
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
         # Initialize particles
         pinCI.precision = numpy.float64
         pinCI.particle_integration_loop = 'loop-on-particles'
@@ -236,7 +233,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ### Add a ref to a Trajectory_C object to particleCI
 
         # Create input object for trajectories
-        trajinCI = DTtrajectoryInput_C()
+        trajinCI = TrajectoryInput_C()
 
         trajinCI.maxpoints = None # Set to None to get every point
 
@@ -253,12 +250,12 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ###  Mesh and Fields input for the particle mesh.
 
-        # Here's the mesh definition for this test
-        from UserMesh_y_Fields_FE2D_Module import UserMesh_C
+        ## The mesh input
+        from UserMesh_y_Fields_FE2D_Module import UserMeshInput_C
 
-        ## Get the mesh from an existing file
+        ## The mesh to be created is in an existing file
 
-        miCI = DTmeshInput_C()
+        miCI = UserMeshInput_C()
         miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
         miCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
         # These are the boundary-name -> int pairs used to mark mesh facets:
@@ -274,7 +271,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         miCI.particle_boundary_dict = particleBoundaryDict
 
+        ## Create the mesh
+        from UserMesh_y_Fields_FE2D_Module import UserMesh_C
         pmeshCI = UserMesh_C(miCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+
         # Add this to the particle object:
         particleCI.pmeshCI = pmeshCI
 
@@ -313,12 +313,13 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmeshCI, userPMeshFnsClass, printFlag=False)
         particleCI.pmesh_bcCI = pmeshBCCI
 
+        ## Set control variables
 
         ctrlCI = DTcontrol_C()
 
         # These are fast electrons, so the timestep is small
         ctrlCI.dt = 1.0e-6
-        ctrlCI.nsteps = 13
+        ctrlCI.nsteps = 14
 
         # The trajectory object can now be created and added to particleCI
         pCI = particleCI

@@ -5,18 +5,67 @@
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-__all__ = ['Particle_C.initial_distribution_type', 
-           'Particle_C.number_of_species', 
-           'Particle_C.index', 
-           'Particle_C.name',
-           'Particle_C.number_per_cell', ]
-
-
+__all__ = ['ParticleInput_C',
+           'Particle_C', 
+           'ParticleMeshBoundaryConditions_C', 
+           'ParticleMeshSources_C',
+          ]
 
 import sys
 import numpy as np_M
 
 # use initial underscores for locals if you want to use a non-local name
+
+# This seems to be the same for all the particle classes used so far.
+class ParticleInput_C(object):
+    """Particle input class.
+
+       Contains the variables that describe the particles. The values are
+       usually set by the user in MAIN.py.
+
+    """
+
+    def __init__(self):
+
+        # Usually set from ctrlCI.precision
+        # Example: numpy.float64
+        self.precision = None
+
+        # Force components acting on the particles
+        # e.g., ['x', 'y', 'z']
+        self.force_components = None
+
+        # Usually set from ctrlCI.precision
+        # Example: numpy.float64
+        self.force_precision = None
+
+        # Values: 'loop-on-particles', 'loop-on-cells'
+        self.particle_integration_loop = None
+
+        # Determines the particle-storage dimensions
+        # Example: ['x', 'y',]
+        self.position_coordinates = None
+
+# May want things like this in order to call DT from a loop?
+# or spawn off many runs?
+# maybe don't need all of these:
+        self.particle_species = None
+
+        # The initial particle mesh is a copy of the field mesh
+#        self.pmesh = df_M.Mesh(mesh)
+        self.pmeshCI = None
+
+        # Module containing user-supplied particle distributions and
+        # boundary-conditions.
+        self.user_particles_module = None
+        # The class containing distribution functions
+        self.user_particles_class = None
+        # The class containing particle boundary conditions
+        self.user_particle_bcs_class = None
+
+        return
+
+#class ParticleInput_C(object):ENDCLASS
 
 import SegmentedArrayPair_Module as SA_M
 
@@ -677,7 +726,7 @@ class Particle_C(object):
                             else:
                                 mLastFacet = mFacet
                             # ...and get the value of the facet marker.
-# mFacet is a numpy.uint32, but the FacetFunction wants an int argument.
+# mFacet is a numpy.uint32 (size_t), but the FacetFunction wants an int argument.
 #                            print "type is:", type(mFacet)
                             facValue = pmeshCI.particle_boundary_marker[mFacet]
                             # Check if this facet has a non-zero marker
@@ -910,7 +959,7 @@ class Particle_C(object):
                             else:
                                 mLastFacet = mFacet
                             # ...and get the value of the facet marker.
-# mFacet is a numpy.uint32, but the FacetFunction wants an int argument.
+# mFacet is a of type 'size_t' or numpy.uint32, but the FacetFunction wants an int argument.
 #                            print "type is:", type(mFacet)
                             facValue = pmeshCI.particle_boundary_marker[mFacet]
                             # Check if this facet has a non-zero marker
@@ -1382,20 +1431,19 @@ class ParticleMeshBoundaryConditions_C(object):
 
         # We want to associate the names of the user-supplied boundary
         # functions with the int values of the facet flags.  First, we
-        # swap the BC dictionary keys and values: e.g., 'xmin': '1' to
-        # '1': 'xmin'. This lets us use the facet-flag as an index to
+        # swap the BC dictionary keys and values: e.g., 'xmin': 1 to
+        # 1: 'xmin'. This lets us use the facet uint (size_t) as an index to
         # get the name of the boundary.
 
-#Q: can the integer 1 be used instead?
         pBDictInv = {v: k for k, v in pBDict.iteritems()}
 
         particleBoundaryFlags = pBDictInv.keys()
 
         # Initialize a new dictionary that will contain the name of a
         # boundary function for each (boundary, species) pair.
-        # The first index is the string value of the integer flag that
+        # The first index is the integer flag that
         # marks the boundary facets.
-        self.bcFunctionDict = dict((bFlag, dict((sp, None) for sp in speciesNames)) for bFlag in particleBoundaryFlags)
+        self.bcFunctionDict = dict((intFlag, dict((sp, None) for sp in speciesNames)) for intFlag in particleBoundaryFlags)
 
         # Find the global default boundary function, if there is one,
         # in the supplied UserParticleMeshFunctions object.
@@ -1410,8 +1458,8 @@ class ParticleMeshBoundaryConditions_C(object):
 
         # Overwrite the global default function with a function specific to
         # each boundary, if there is one.
-        for bFlag in particleBoundaryFlags:
-            bcFunctionName = 'default_bc_at_' + pBDictInv[bFlag]
+        for intFlag in particleBoundaryFlags:
+            bcFunctionName = 'default_bc_at_' + pBDictInv[intFlag]
             if hasattr(userParticleMeshFunctionsClass, bcFunctionName):
                 bcBoundaryDefaultFunction = getattr(userParticleMeshFunctionsClass, bcFunctionName)
             else:
@@ -1420,16 +1468,16 @@ class ParticleMeshBoundaryConditions_C(object):
                 # Overwrite the default for this boundary with a
                 # function specific to this boundary and species, if
                 # there is one.
-                bcFunctionName = 'bc_at_' + pBDictInv[bFlag] + '_for_' + sp
+                bcFunctionName = 'bc_at_' + pBDictInv[intFlag] + '_for_' + sp
                 if hasattr(userParticleMeshFunctionsClass, bcFunctionName):
                     bcFunction = getattr(userParticleMeshFunctionsClass, bcFunctionName)
                 else:
                     bcFunction = bcBoundaryDefaultFunction
                 if bcFunction is None:
-                    print "ParticleMeshBoundaryConditions_C: No boundary condition specified for", pBDictInv[bFlag], "/", sp
+                    print "ParticleMeshBoundaryConditions_C: No boundary condition specified for", pBDictInv[intFlag], "/", sp
                 elif printFlag:
-                    print "ParticleMeshBoundaryConditions_C: Boundary condition for", pBDictInv[bFlag], "/", sp, "is", bcFunction
-                self.bcFunctionDict[bFlag][sp] = bcFunction
+                    print "ParticleMeshBoundaryConditions_C: Boundary condition for", pBDictInv[intFlag], "/", sp, "is", bcFunction
+                self.bcFunctionDict[intFlag][sp] = bcFunction
 
         return
 #    def __init__(self, particleInputCI, particleCI, printFlag = False):ENDDEF
@@ -1445,3 +1493,77 @@ class ParticleMeshBoundaryConditions_C(object):
 #    def reflect(self):ENDDEF
 
 #class ParticleMeshBoundaryConditions_C(object):ENDCLASS
+
+class ParticleMeshSources_C(object):
+    """ParticleMeshSources_C sets up a 2D dictionary
+       (srcFunctionDict, indexed by source name and species) to create
+       kinetic particles on a subdomain of the particle mesh.
+
+       The functions themselves are provided by the user in a
+       UserParticleMeshSourceFunctions_C object.
+    """
+
+    # Static class variables
+
+#class ParticleMeshSources_C(object):
+    def __init__(self, speciesNames, pmeshCI, userParticleMeshSourceFunctionsClass, printFlag = False):
+        """Initialize particle source functions.
+
+        """
+        # Set local names from passed parameters
+        pSrcDict = pmeshCI.particle_source_dict
+
+        # We want to associate the names of the user-supplied cell functions with the int
+        # values of the cell flags.  First, we swap the source dictionary keys and values:
+        # e.g., 'xmin': 1 to 1: 'xmin'. This lets us use the cell-flag as an index to get
+        # the name of the source.
+
+        pSrcDictInv = {v: k for k, v in pSrcDict.iteritems()}
+
+        particleBoundaryFlags = pSrcDictInv.keys()
+
+        # Initialize a new dictionary that will contain the name of a
+        # boundary function for each (boundary, species) pair.
+        # The first index is the integer flag that
+        # marks the boundary facets.
+        self.srcFunctionDict = dict((intFlag, dict((sp, None) for sp in speciesNames)) for intFlag in particleBoundaryFlags)
+
+        # Find the global default boundary function, if there is one,
+        # in the supplied UserParticleMeshFunctions object.
+        srcFunctionName = 'default_bc'
+        if hasattr(userParticleMeshSourceFunctionsClass, srcFunctionName):
+            bcGlobalDefaultFunction = getattr(userParticleMeshSourceFunctionsClass, srcFunctionName)
+        else:
+            bcGlobalDefaultFunction = None
+
+        # Loop on particle boundary flags and on particle species
+        # names to find the most specific BC.
+
+        # Overwrite the global default function with a function specific to
+        # each boundary, if there is one.
+        for intFlag in particleBoundaryFlags:
+            srcFunctionName = 'default_bc_at_' + pSrcDictInv[intFlag]
+            if hasattr(userParticleMeshSourceFunctionsClass, srcFunctionName):
+                bcBoundaryDefaultFunction = getattr(userParticleMeshSourceFunctionsClass, srcFunctionName)
+            else:
+                bcBoundaryDefaultFunction = bcGlobalDefaultFunction
+            for sp in speciesNames:
+                # Overwrite the default for this boundary with a
+                # function specific to this boundary and species, if
+                # there is one.
+                srcFunctionName = 'bc_at_' + pSrcDictInv[intFlag] + '_for_' + sp
+                if hasattr(userParticleMeshSourceFunctionsClass, srcFunctionName):
+                    srcFunction = getattr(userParticleMeshSourceFunctionsClass, srcFunctionName)
+                else:
+                    srcFunction = bcBoundaryDefaultFunction
+                if srcFunction is None:
+                    print "ParticleMeshSources_C: No boundary condition specified for", pSrcDictInv[intFlag], "/", sp
+                elif printFlag:
+                    print "ParticleMeshSources_C: Boundary condition for", pSrcDictInv[intFlag], "/", sp, "is", srcFunction
+                self.srcFunctionDict[intFlag][sp] = srcFunction
+
+        return
+#    def __init__(self, particleInputCI, particleCI, printFlag = False):ENDDEF
+
+#class ParticleMeshSources_C(object):ENDCLASS
+

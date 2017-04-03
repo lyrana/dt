@@ -1,8 +1,10 @@
 # Make a mesh that DT can use
 
-#__version__ = 0.1
-#__author__ = 'Copyright (C) 2016 L. D. Hughes'
-#__all__ = []
+__version__ = 0.1
+__author__ = 'Copyright (C) 2016 L. D. Hughes'
+__all__ = ['UserMeshInput_C',
+           'UserMesh_C',
+           ]
 
 """UserMesh defines the mesh.
 """
@@ -20,6 +22,63 @@ from Dolfin_Module import Mesh_C
 import UserUnits_Module as U_M
 
 ### Define boundary geometry
+
+class UserMeshInput_C(object):
+    """Input for the field mesh
+       The user can modify this for different mesh specifications.
+       Field mesh, field solve control?  Could use to pass control things to the field mesh
+    """
+
+    def __init__(self):
+        """ List the mesh variables that the user can set in MAIN.py
+        """
+#        self.mesh_type_options = ['FE', 'Cartesian']
+#        self.mesh_type = None
+
+        self.mesh_file = None
+
+        self.user_mesh_input = None
+        self.user_mesh_class = None
+
+        self.precision = None
+        self.mesh_class = None
+
+        self.pmin = None
+        self.pmax = None
+
+        self.cells_on_side = []
+
+        # 'diagonal' only applies to 2D rectangle:
+        # Options: 'left, 'right', 'left/right', 'crossed'
+        self.diagonal = None
+
+        self.field_boundary_file = None
+        # User-assigned names of mesh boundaries where Dirichlet
+        # values are set.
+        self.field_boundary_dict = None
+
+        self.particle_boundary_file = None
+        # User-assigned names of mesh boundaries where particle BCs
+        # are set.
+        self.particle_boundary_dict = None
+
+        self.particle_source_file = None
+        # User-assigned names of mesh regions where particles are
+        # created
+        self.particle_source_dict = None
+
+# May want things like this in order to call DT from a loop?
+# or spawn off many runs?
+# maybe don't need all of these:
+        self.meshCI = None
+        self.pmeshCI = None
+
+        # the particle mesh is a copy of the field mesh
+#        self.pmeshCI = df_M.Mesh(meshCI)
+
+        return
+
+#class UserMeshInput_C(object):ENDDEF
 
 # The inside() class functions are used to test whether a given mesh
 # point lies inside the boundary subdomain.
@@ -135,6 +194,9 @@ class UserMesh_C(Mesh_C):
         zmin = miCI.pmin.z()
         zmax = miCI.pmax.z()
 
+        # Options: 'left, 'right', 'left/right', 'crossed'
+        diagonal = meshInputCI.diagonal
+
         # Boundary conditions for fields and particles
         fieldBoundaryDict = miCI.field_boundary_dict
         particleBoundaryDict = miCI.particle_boundary_dict
@@ -183,9 +245,13 @@ class UserMesh_C(Mesh_C):
         elif zmin == zmax:
             # 2D mesh
             (nx, ny) = miCI.cells_on_side
+
 # v > 1.5:
             if df_M.DOLFIN_VERSION_STRING > '1.5.0':
-                mesh = df_M.RectangleMesh(miCI.pmin, miCI.pmax, nx, ny)
+                if diagonal is not None:
+                    mesh = df_M.RectangleMesh(miCI.pmin, miCI.pmax, nx, ny, diagonal)
+                else:
+                    mesh = df_M.RectangleMesh(miCI.pmin, miCI.pmax, nx, ny)
             else:
 # v = 1.5:
                 mesh = df_M.RectangleMesh(miCI.pmin[0], miCI.pmin[1], miCI.pmax[0], miCI.pmax[1], nx, ny)

@@ -12,22 +12,18 @@ import unittest
 
 import dolfin as df_M
 
-from DT_Module import DTmeshInput_C
-from DT_Module import DTparticleInput_C
 from DT_Module import DTcontrol_C
-from DT_Module import DTtrajectoryInput_C
 
 #from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 
-from Particle_Module import Particle_C
-from Particle_Module import ParticleMeshBoundaryConditions_C
+from Particle_Module import *
 
-from Trajectory_Module import Trajectory_C
+from Trajectory_Module import *
 
 from SegmentedArrayPair_Module import SegmentedArray_C
 
-from UserMesh_y_Fields_FE2D_Module import UserMesh_C
+from UserMesh_y_Fields_FE2D_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
@@ -46,7 +42,7 @@ class TestParticleTrajectory(unittest.TestCase):
         ### Particle species input
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
         # Initialize particles
         pinCI.precision = numpy.float64
         pinCI.particle_integration_loop = 'loop-on-particles'
@@ -76,7 +72,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         ###  Mesh creation
 
-        miCI = DTmeshInput_C()
+        miCI = UserMeshInput_C()
 
         # Make the mesh & fields from saved files
         miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
@@ -150,7 +146,7 @@ class TestParticleTrajectory(unittest.TestCase):
         ### Create a particle trajectory object
 
         # Use an input object to collect initialization data for the trajectory object
-        self.trajinCI = DTtrajectoryInput_C()
+        self.trajinCI = TrajectoryInput_C()
 
         self.trajinCI.maxpoints = None # Set to None to get every point
 

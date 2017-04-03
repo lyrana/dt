@@ -2,15 +2,32 @@
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-__all__ = ['', 
-           '', 
-           '', ]
+__all__ = ['TrajectoryInput_C', 
+           'Trajectory_C', 
+          ]
 
 import sys
 import numpy as np_M
 
 # !!! Direct invocation of dolfin for trajectory plots!!!
 import dolfin as df_M
+
+class TrajectoryInput_C(object):
+    """Parameters that specify particle trajectory
+    """
+
+    def __init__(self):
+        """ Initialize variables
+        """
+
+        # Upper limit is the number of timesteps
+        self.maxpoints = None
+
+        self.npoints = None
+
+        return
+
+#class TrajectoryInput_C(object):ENDCLASS
 
 class Trajectory_C(object):
     """Trajectory_C has a collection of particle trajectories indexed
@@ -206,7 +223,7 @@ class Trajectory_C(object):
 
         plotter.plot()
         if hold_plot is True: df_M.interactive() # Stops the plot from disappearing
-                
+
         return
 #    def plot_trajectories_on_mesh(self):ENDDEF
 

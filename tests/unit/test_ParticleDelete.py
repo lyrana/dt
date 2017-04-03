@@ -11,12 +11,9 @@ import unittest
 
 import DT_Module as DT_M
 
-from DT_Module import DTparticleInput_C
-from DT_Module import DTtrajectoryInput_C
-
 from UserUnits_Module import MyPlasmaUnits_C
-from Particle_Module import Particle_C
-from Trajectory_Module import Trajectory_C
+from Particle_Module import *
+from Trajectory_Module import *
 
 class Vec_C(object):
     """ Creates a 1, 2, or 3D vector.
@@ -48,7 +45,7 @@ class TestParticleDeletion(unittest.TestCase):
 
         ### Create an instance of the DTparticleInput class
 
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
 
         # Set particle parameters
         pinCI.precision = numpy.float64
@@ -104,7 +101,7 @@ class TestParticleDeletion(unittest.TestCase):
         ### Create a particle trajectory object
 
         # Use an input object to collect initialization data for the trajectory object
-        self.trajinCI = DTtrajectoryInput_C()
+        self.trajinCI = TrajectoryInput_C()
 
         self.trajinCI.maxpoints = None # Set to None to get every point
 

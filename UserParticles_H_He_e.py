@@ -36,7 +36,7 @@ class UserParticleDistributions_C(object):
     """
 
     # The spatial coordinates of all particles
-# Moved this to DTparticleInput_C:
+# Moved this to ParticleInput_C:
 #    position_coordinates = ['x', 'y', 'z']
 
 # These distributions are constant-density in space
@@ -126,7 +126,7 @@ class UserParticleDistributions_C(object):
         cell_index = Mesh_C.NO_CELL
 #        cell_index = -1
 
-        # Trim the number of coordinates here to match "position_coordinates" variable in DTparticleInput_C
+        # Trim the number of coordinates here to match "position_coordinates" variable in ParticleInput_C
         p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index)
 
         # Image particle with different weight
@@ -136,7 +136,7 @@ class UserParticleDistributions_C(object):
         bitflags1 = 0b01 # initialize all bits to 0
 #        bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG # use low bit for trajectory flag.
 
-        # Trim the number of coordinates here to match "position_coordinates" variable in DTparticleInput_C
+        # Trim the number of coordinates here to match "position_coordinates" variable in ParticleInput_C
         p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index)
 
         particle_list = (p0, p1)
@@ -210,7 +210,7 @@ class UserParticleBoundaryConditions_C(object):
 #    SEE  = 0b1 << 1 + bitOffset    # Secondary-electron emission
 
     # The spatial coordinates of all particles
-# Moved this to DTparticleInput_C:
+# Moved this to ParticleInput_C:
 #    position_coordinates = ['x', 'y', 'z']
 
 # These distributions are constant-density in space

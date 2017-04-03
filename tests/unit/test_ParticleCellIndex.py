@@ -12,32 +12,11 @@ import unittest
 
 import dolfin as df_M
 
-from DT_Module import DTparticleInput_C
 from UserUnits_Module import MyPlasmaUnits_C
 from Dolfin_Module import Mesh_C
-from Particle_Module import Particle_C
+from Particle_Module import *
 
-from UserMesh_FE_XYZ_Module import UserMesh_C
-
-class DTmeshInput_C(object):
-    """Input for the field mesh.  List the variables that can be
-       modified by the user.
-    """
-
-    def __init__(self):
-        """ List the mesh variables that the user can set in MAIN.py
-        """
-        self.pmin = None
-        self.pmax = None
-        self.cells_on_side = None
-
-        self.field_boundary_dict = None
-        self.particle_boundary_dict = None
-        self.particle_source_dict = None
-
-        return
-
-#class DTmeshInput_C(object):ENDCLASS
+from UserMesh_FE_XYZ_Module import *
 
 class TestParticleCellIndex(unittest.TestCase):
     """Test cell functions Particle_Module"""
@@ -47,7 +26,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # Initializations performed before each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
 
         # Set up particle variables
         pinCI.precision = np_M.float64
@@ -116,7 +95,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # Create meshes that the particles can be tested against
 
         # 1d mesh input
-        mi1DCI = DTmeshInput_C()
+        mi1DCI = UserMeshInput_C()
         mi1DCI.pmin = df_M.Point(-10.0)
         mi1DCI.pmax = df_M.Point(10.0)
         mi1DCI.cells_on_side = (4)
@@ -124,7 +103,7 @@ class TestParticleCellIndex(unittest.TestCase):
         self.pmesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
 
         # 2D mesh input
-        mi2DCI = DTmeshInput_C()
+        mi2DCI = UserMeshInput_C()
         mi2DCI.pmin = df_M.Point(-0.03, -0.03)
         mi2DCI.pmax = df_M.Point(0.03, 0.03)
         mi2DCI.cells_on_side = (4, 4)
@@ -134,7 +113,7 @@ class TestParticleCellIndex(unittest.TestCase):
 #        self.mesh2DCI.compute_cell_dict()
 
         # 3D mesh input
-        mi3DCI = DTmeshInput_C()
+        mi3DCI = UserMeshInput_C()
         mi3DCI.pmin = df_M.Point(-0.03, -0.03, -0.03)
         mi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
         mi3DCI.cells_on_side = (4, 4, 4)

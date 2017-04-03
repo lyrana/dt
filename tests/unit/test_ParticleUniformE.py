@@ -11,9 +11,9 @@ import unittest
 
 import DT_Module as DT_M
 
-from DT_Module import DTparticleInput_C
 from UserUnits_Module import MyPlasmaUnits_C
 from Particle_Module import Particle_C
+from Particle_Module import *
 
 class Vec_C(object):
     """ Creates a 1, 2, or 3D vector.
@@ -39,7 +39,7 @@ class TestParticleUniformE(unittest.TestCase):
         # initializations for each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
         # Initialize particles
         pinCI.precision = numpy.float64
         pinCI.particle_integration_loop = 'loop-on-particles'

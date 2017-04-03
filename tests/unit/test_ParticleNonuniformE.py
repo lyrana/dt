@@ -11,17 +11,14 @@ import unittest
 
 import dolfin as df_M
 
-from DT_Module import DTmeshInput_C
-from DT_Module import DTparticleInput_C
 from DT_Module import DTcontrol_C
 
-from UserMesh_y_Fields_FE2D_Module import UserMesh_C
+from UserMesh_y_Fields_FE2D_Module import *
 
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 
-from Particle_Module import Particle_C
-from Particle_Module import ParticleMeshBoundaryConditions_C
+from Particle_Module import *
 
 from SegmentedArrayPair_Module import SegmentedArray_C
 
@@ -37,7 +34,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         # initializations for each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
 
         # Initialize particles
         pinCI.precision = numpy.float64
@@ -81,7 +78,7 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         ### Mesh creation
 
-        miCI = DTmeshInput_C()
+        miCI = UserMeshInput_C()
 
         # Create mesh from a file
         miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'

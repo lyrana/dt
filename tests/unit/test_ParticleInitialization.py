@@ -9,9 +9,8 @@ import numpy
 import importlib as im_M
 import unittest
 
-from DT_Module import DTparticleInput_C
 from UserUnits_Module import MyPlasmaUnits_C
-from Particle_Module import Particle_C
+from Particle_Module import *
 
 class TestParticleInitialization(unittest.TestCase):
     """Test classes in Particle_Module"""
@@ -21,7 +20,7 @@ class TestParticleInitialization(unittest.TestCase):
         # Initializations performed before each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
         # Set up particle variables
         pinCI.precision = numpy.float64
 

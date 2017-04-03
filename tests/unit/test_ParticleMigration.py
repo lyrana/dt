@@ -13,33 +13,11 @@ import unittest
 import dolfin as df_M
 
 from DT_Module import DTcontrol_C
-from DT_Module import DTparticleInput_C
 from UserUnits_Module import MyPlasmaUnits_C
-from Particle_Module import Particle_C
+from Particle_Module import *
 
 # Here's the mesh definition for this test
-from UserMesh_FE_XYZ_Module import UserMesh_C
-
-class DTmeshInput_C(object):
-    """Input for the field mesh.  List the variables that can be
-       modified by the user.
-    """
-
-    def __init__(self):
-        """ List the mesh variables that the user can set in MAIN.py
-        """
-        self.pmin = None
-        self.pmax = None
-        self.cells_on_side = None
-
-        self.field_boundary_dict = None
-        self.particle_boundary_dict = None
-        self.particle_source_dict = None
-
-        return
-
-#class DTmeshInput_C(object): ENDCLASS
-
+from UserMesh_FE_XYZ_Module import *
 
 class TestParticleMigration(unittest.TestCase):
     """Test of tracking neutral particles that drift across the mesh.
@@ -53,7 +31,7 @@ class TestParticleMigration(unittest.TestCase):
         # Initializations performed before each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
 
         # Set up particle variables
         pinCI.precision = np_M.float64
@@ -111,7 +89,7 @@ class TestParticleMigration(unittest.TestCase):
         # Create 1D, 2D and 3D meshes that the particles can be tested against
 
         # 1d mesh input
-        mi1DCI = DTmeshInput_C()
+        mi1DCI = UserMeshInput_C()
         mi1DCI.pmin = df_M.Point(-10.0)
         mi1DCI.pmax = df_M.Point(10.0)
         mi1DCI.cells_on_side = (4)
@@ -121,7 +99,7 @@ class TestParticleMigration(unittest.TestCase):
 #        self.pmesh1DCI.compute_cell_dict()
 
         # 2D mesh input
-        mi2DCI = DTmeshInput_C()
+        mi2DCI = UserMeshInput_C()
         mi2DCI.pmin = df_M.Point(-10.0, -10.0)
         mi2DCI.pmax = df_M.Point(10.0, 10.0)
         mi2DCI.cells_on_side = (4, 2)
@@ -131,7 +109,7 @@ class TestParticleMigration(unittest.TestCase):
 #        self.pmesh2DCI.compute_cell_dict()
 
         # 3D mesh input
-        mi3DCI = DTmeshInput_C()
+        mi3DCI = UserMeshInput_C()
         mi3DCI.pmin = df_M.Point(-10.0, -10.0, -10.0)
         mi3DCI.pmax = df_M.Point(10.0, 10.0, 10.0)
         mi3DCI.cells_on_side = (4, 4, 4)

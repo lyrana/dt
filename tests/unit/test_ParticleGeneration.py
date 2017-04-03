@@ -12,18 +12,14 @@ import unittest
 
 import dolfin as df_M
 
-from DT_Module import DTmeshInput_C
-from DT_Module import DTparticleInput_C
 from DT_Module import DTcontrol_C
-from DT_Module import DTtrajectoryInput_C
 
 #from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 
 from SegmentedArrayPair_Module import SegmentedArray_C
-from Particle_Module import Particle_C
-from Particle_Module import ParticleMeshBoundaryConditions_C
-from Trajectory_Module import Trajectory_C
+from Particle_Module import *
+from Trajectory_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
@@ -36,14 +32,11 @@ class TestParticleGeneration(unittest.TestCase):
         # Initialization code common to the tests go here...
 
         # Common particle inputs
-        self.pinCI = DTparticleInput_C()
+        self.pinCI = ParticleInput_C()
 
         self.pinCI.precision = numpy.float64
         self.pinCI.particle_integration_loop = 'loop-on-particles'
         self.pinCI.force_precision = numpy.float64
-
-        # Common mesh inputs
-        self.miCI = DTmeshInput_C()
 
         return
 
@@ -82,9 +75,9 @@ class TestParticleGeneration(unittest.TestCase):
 
         ### 1D mesh input
 
-        mi1DCI = self.miCI
+        from UserMesh_FE_XYZ_Module import UserMeshInput_C
 
-        mi1DCI = DTmeshInput_C()
+        mi1DCI = UserMeshInput_C()
         mi1DCI.pmin = df_M.Point(-10.0)
         mi1DCI.pmax = df_M.Point(10.0)
         mi1DCI.cells_on_side = (4)
@@ -106,13 +99,13 @@ class TestParticleGeneration(unittest.TestCase):
 
         # These are the (int source-name) pairs used to mark mesh
         # cells. The string value of the int is used as the index.
-        sourceX1_indx = '1'
-        sourceX2_indx = '2'
+        sourceX1_indx = 1
+        sourceX2_indx = 2
         # Note the order, which is reversed from the fieldBoundaryDict
         # order.
-        particleSourceDict = {sourceX1_indx:'sourceX1',
-                                sourceX2_indx:'sourceX2',
-                                }
+        particleSourceDict = {'sourceX1': sourceX1_indx,
+                              'sourceX2': sourceX2_indx,
+                              }
 
         # Add these to the mesh input
         mi1DCI.particle_source_dict = particleSourceDict
@@ -131,7 +124,9 @@ class TestParticleGeneration(unittest.TestCase):
 
         """
 
-        mi2DCI = self.miCI
+        from UserMesh_FE_XYZ_Module import UserMeshInput_C
+
+        mi2DCI = UserMeshInput_C()
 
         mi2DCI.pmin = df_M.Point(-10.0, -10.0)
         mi2DCI.pmax = df_M.Point(10.0, 10.0)
