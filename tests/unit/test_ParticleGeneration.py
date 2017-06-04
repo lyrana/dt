@@ -244,9 +244,6 @@ class TestParticleGeneration(unittest.TestCase):
         trajCI = Trajectory_C(self.trajinCI, ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
         particleCI.trajCI = trajCI
 
-        # Add the sources to the particle mesh? or leave them standalone?
-#        pmesh1DCI.particle_source_dict = particleSourceDict
-
         particleCI.particle_source_dict = particleSourceDict
 
         ## Invoke the source functions and plot the particles

@@ -97,6 +97,57 @@ class ParticleSpecies_C(object):
 #class ParticleSpecies_C(object):ENDCLASS
 
 
+# This seems to be the same for all the particle classes used so far.
+class ParticleInput_C(object):
+    """Particle input class.
+
+       Contains the variables that describe the particles. The values are
+       usually set by the user in MAIN.py.
+
+    """
+
+    def __init__(self):
+
+        # Usually set from ctrlCI.precision
+        # Example: numpy.float64
+        self.precision = None
+
+        # Force components acting on the particles
+        # e.g., ['x', 'y', 'z']
+        self.force_components = None
+
+        # Usually set from ctrlCI.precision
+        # Example: numpy.float64
+        self.force_precision = None
+
+        # Values: 'loop-on-particles', 'loop-on-cells'
+        self.particle_integration_loop = None
+
+        # Determines the particle-storage dimensions
+        # Example: ['x', 'y',]
+        self.position_coordinates = None
+
+# May want things like this in order to call DT from a loop?
+# or spawn off many runs?
+# maybe don't need all of these:
+        self.particle_species = None
+
+        # The initial particle mesh is a copy of the field mesh
+#        self.pmesh = df_M.Mesh(mesh)
+        self.pmeshCI = None
+
+        # Module containing user-supplied particle distributions and
+        # boundary-conditions.
+        self.user_particles_module = None
+        # The class containing distribution functions
+        self.user_particles_class = None
+        # The class containing particle boundary conditions
+        self.user_particle_bcs_class = None
+
+        return
+
+#class ParticleInput_C(object):ENDCLASS
+
 import SegmentedArrayPair_Module as SA_M
 
 class Particle_C(object):
