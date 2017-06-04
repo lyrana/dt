@@ -31,6 +31,7 @@ import UserUnits_Module as U_M
 # Select the unit system to be used for input parameters.
 Convert = U_M.MyPlasmaUnits_C
 
+#STARTCLASS
 class UserParticleDistributions_C(object):
     """UserParticleDistributions_C is to be edited by the user to
        specify initial particle distributions.  The units are MKS by
@@ -73,7 +74,7 @@ class UserParticleDistributions_C(object):
         cell_index = Mesh_C.NO_CELL
 
         # Trim the number of coordinates here to match
-        # "position_coordinates" variable in DTparticleInput_C
+        # "position_coordinates" variable in ParticleInput_C
         p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index)
 
         # Second particle
@@ -95,7 +96,7 @@ class UserParticleDistributions_C(object):
         cell_index = Mesh_C.NO_CELL
 
         # Trim the number of coordinates here to match
-        # "position_coordinates" variable in DTparticleInput_C
+        # "position_coordinates" variable in ParticleInput_C
         p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index)
 
         particle_list = (p0, p1)
@@ -105,12 +106,12 @@ class UserParticleDistributions_C(object):
         return np, particle_list
 
     @staticmethod
-    def testelectrons(type):
+    def test_electrons(type):
         """These electrons are specified as lists of coordinates and weights.
         """
         # Check that the caller knows this function returns 'listed' particles:
         if type != 'listed':
-            error_msg = "testelectrons() called with type '" + str(type) + "' but it is of type 'listed'"
+            error_msg = "test_electrons() called with type '" + str(type) + "' but it is of type 'listed'"
             sys.exit(error_msg)
 
         # Set initial phase-space coordinates and macroparticle weight for each particle
@@ -137,7 +138,7 @@ class UserParticleDistributions_C(object):
         cell_index = Mesh_C.NO_CELL
 
         # Trim the number of coordinates here to match
-        # "position_coordinates" variable in DTparticleInput_C
+        # "position_coordinates" variable in ParticleInput_C
         p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index)
 
         # Second particle
@@ -159,7 +160,7 @@ class UserParticleDistributions_C(object):
 #        bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG 
 
         # Trim the number of coordinates here to to match
-        # "position_coordinates" variable in DTparticleInput_C
+        # "position_coordinates" variable in ParticleInput_C
         p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index)
 
         particle_list = (p0, p1)
@@ -172,8 +173,9 @@ class UserParticleDistributions_C(object):
 #class UserParticleDistributions_C(object):ENDCLASS
 
 #class UserParticleMeshBoundaryConditions_C(ParticleBoundaryConditions_C):
-class UserParticleMeshFunctions_C(object):
-    """UserParticleMeshFunctions_C implements callback functions
+#STARTCLASS
+class UserParticleBoundaryFunctions_C(object):
+    """UserParticleBoundaryFunctions_C implements callback functions
        (boundary conditions) for kinetic particles crossing marked
        mesh facets.
 
@@ -207,8 +209,8 @@ class UserParticleMeshFunctions_C(object):
         return
     
     @staticmethod
-    def bc_at_rmin_for_testelectrons(p, speciesName, facetIndex):
-        """Boundary condition for testelectrons incident on rmin.
+    def bc_at_rmin_for_test_electrons(p, speciesName, facetIndex):
+        """Boundary condition for test_electrons incident on rmin.
 
            :param str speciesName: This is redundant since the
                                    function contains the name of the
@@ -224,4 +226,4 @@ class UserParticleMeshFunctions_C(object):
 
         return
 
-#class UserParticleMeshFunctions_C(object): ENDCLASS
+#class UserParticleBoundaryFunctions_C(object): ENDCLASS

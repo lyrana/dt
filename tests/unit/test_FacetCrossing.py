@@ -12,32 +12,11 @@ import unittest
 
 import dolfin as df_M
 
-from DT_Module import DTparticleInput_C
 from Dolfin_Module import Mesh_C
 from UserUnits_Module import MyPlasmaUnits_C
-from Particle_Module import Particle_C
+from Particle_Module import *
 
-from UserMesh_FE_XYZ_Module import UserMesh_C
-
-class DTmeshInput_C(object):
-    """Input for the field mesh.  List the variables that can be
-       modified by the user.
-    """
-
-    def __init__(self):
-        """ List the mesh variables that the user can set in MAIN.py
-        """
-        self.pmin = None
-        self.pmax = None
-        self.cells_on_side = None
-
-        self.field_boundary_dict = None
-        self.particle_boundary_dict = None
-        self.particle_source_dict = None
-
-        return
-
-# class DTmeshInput_C(object):ENDCLASS
+from UserMesh_FE_XYZ_Module import *
 
 class TestFacetCrossing(unittest.TestCase):
     """Test of finding the facet crossed and desination cell due to a
@@ -58,7 +37,7 @@ class TestFacetCrossing(unittest.TestCase):
         # Create 1D, 2D and 3D meshes that the particles can be tested against
 
         # 1d mesh input
-        mi1DCI = DTmeshInput_C()
+        mi1DCI = UserMeshInput_C()
         pmin = -0.03
         pmax = 0.03
         cells_on_side = 4
@@ -73,13 +52,14 @@ class TestFacetCrossing(unittest.TestCase):
 #        self.mesh1DCI.compute_cell_dict()
 
         # 2D mesh input
-        mi2DCI = DTmeshInput_C()
+        mi2DCI = UserMeshInput_C()
         pmin = -0.03
         pmax = 0.03
         cells_on_side = 4
         mi2DCI.pmin = df_M.Point(pmin, pmin)
         mi2DCI.pmax = df_M.Point(pmax, pmax)
         mi2DCI.cells_on_side = (cells_on_side, cells_on_side)
+#        mi2DCI.diagonal = 'crossed'
         self.mesh2D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
@@ -88,7 +68,7 @@ class TestFacetCrossing(unittest.TestCase):
 #        self.mesh2DCI.compute_cell_dict()
 
         # 3D mesh input
-        mi3DCI = DTmeshInput_C()
+        mi3DCI = UserMeshInput_C()
         mi3DCI.pmin = df_M.Point(-0.03, -0.03, -0.03)
         mi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
         mi3DCI.cells_on_side = (4, 4, 4)

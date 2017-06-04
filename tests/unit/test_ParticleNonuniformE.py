@@ -11,22 +11,20 @@ import unittest
 
 import dolfin as df_M
 
-from DT_Module import DTmeshInput_C
-from DT_Module import DTparticleInput_C
 from DT_Module import DTcontrol_C
 
-from UserMesh_y_Fields_FE2D_Module import UserMesh_C
+from UserMesh_y_Fields_FE2D_Module import *
 
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 
-from Particle_Module import Particle_C
-from Particle_Module import ParticleMeshBoundaryConditions_C
+from Particle_Module import *
 
 from SegmentedArrayPair_Module import SegmentedArray_C
 
 from UserUnits_Module import MyPlasmaUnits_C
 
+#STARTCLASS
 class TestParticleNonuniformE(unittest.TestCase):
     """Test classes in Particle_Module that push particles in a
        uniform E field
@@ -34,10 +32,12 @@ class TestParticleNonuniformE(unittest.TestCase):
     
     def setUp(self):
 
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
         # initializations for each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
 
         # Initialize particles
         pinCI.precision = numpy.float64
@@ -49,39 +49,80 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         # Specify the particle properties
         # 1. electrons
-        pinCI.particle_species = (('testelectrons',
-                             {'initial_distribution_type' : 'listed',
-                              'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
-                              'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
-                              'dynamics' : 'explicit',
+        # pinCI.particle_species = (('testelectrons',
+        #                      {'initial_distribution_type' : 'listed',
+        #                       'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
+        #                       'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
+        #                       'dynamics' : 'explicit',
+        #                       }
+        #                      ),
+        #                     )
+
+        speciesName = 'test_electrons'
+        charge = -1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.electron_mass
+        dynamics = 'explicit'
+        testElectronsCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        # Add these species to particle input
+        pinCI.particle_species = (testElectronsCI,
+                                 )
+        # Make the particle object from pinCI
+        self.particleCI = Particle_C(pinCI, print_flag=False)
+
+        # Give the name of the .py file containing additional particle data (lists of
+        # particles, boundary conditions, source regions, etc.)
+        userParticleModule = "UserParticles_2D_e"
+
+        # Import this module
+        UPrt_M = im_M.import_module(userParticleModule)
+        self.particleCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+
+        ### test_electrons are present at t=0
+
+        # Name the initialized species (it should be in species_names above)
+        speciesName = 'test_electrons'
+        # Check that this species has been defined above
+        if speciesName not in self.particleCI.species_names:
+            print fncName + "The species", speciesName, "has not been defined"
+            sys.exit()
+
+        # Specify how the species will be initialized
+        initialDistributionType = 'listed'
+        # Check that there's a function listing the particles particles
+        printFlag = True
+        if hasattr(userParticleClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        # Write error message and exit if no distribution function exists
+        else:
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticleModule, speciesName)
+            sys.exit(errorMsg)
+
+        # Collect the parameters into a dictionary
+        # The 'listed' type will expect a function with the same name as the species.
+        testElectronParams = {'species_name': speciesName,
+                              'initial_distribution_type': initialDistributionType,
                               }
-                             ),
-                            )
 
-        # Provide the particle distributions (lists of particles, functions, etc.)
-        pinCI.user_particles_module = "UserParticles_2D_e"
-        UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_C = UPrt_M.UserParticleDistributions_C
+        # The dictionary keys are mnemonics for the initialized particles
+        initialParticlesDict = {'initial_test_electrons': (testElectronParams,),
+                                }
 
-        self.pinCI = pinCI
+        self.particleCI.initial_particles_dict = initialParticlesDict
 
-        # Make the particle storage array for all species
-        self.particleCI = Particle_C(pinCI, printFlag=False)
-
-        # Store the particles
-# Why not call particleCI.initialize_distributions() instead?
-
-        for sp in self.particleCI.species_names:
-            if self.particleCI.initial_distribution_type[sp] == 'listed':
+        # Create the initial particles
+        for ip in initialParticlesDict:
+            ipList = initialParticlesDict[ip]
+            ipParams = ipList[0]
+            s = ipParams['species_name']
+            initialDistributionType = ipParams['initial_distribution_type']
+            if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
-                self.particleCI.create_from_list(sp, False)
-
-        # Make the mesh & fields from saved files
-        # The is needed to construct the function space for E
+                self.particleCI.create_from_list(s, False)
 
         ### Mesh creation
 
-        miCI = DTmeshInput_C()
+        miCI = UserMeshInput_C()
 
         # Create mesh from a file
         miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
@@ -107,12 +148,12 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         ### Particle boundary-conditions
 
-        # UserParticleMeshFunctions_C is where the facet-crossing callback
+        # UserParticleBoundaryFunctions_C is where the facet-crossing callback
         # functions are defined.
-        userPMeshFnsClass = UPrt_M.UserParticleMeshFunctions_C # abbreviation
+        userPBndFnsClass = UPrt_M.UserParticleBoundaryFunctions_C # abbreviation
 
         spNames = self.particleCI.species_names
-        pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmesh2DCI, userPMeshFnsClass, printFlag=False)
+        pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmesh2DCI, userPBndFnsClass, print_flag=False)
         self.particleCI.pmesh_bcCI = pmeshBCCI
 
         # The following value should correspond to the element degree
@@ -149,13 +190,14 @@ class TestParticleNonuniformE(unittest.TestCase):
         """ Check that the electric field push is correct.  Push
             sample particles for 1 step.
         """
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName, '('+__file__+')'
 
         ctrlCI = DTcontrol_C()
 
         ctrlCI.dt = 1.0e-5
-        ctrlCI.nsteps = 1
+        ctrlCI.n_timesteps = 1
 
         dt = ctrlCI.dt
 
@@ -187,6 +229,9 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         # Advance the particles one timestep
         print "Moving", self.particleCI.get_total_particle_count(), "particles for one timestep"
+        ctrlCI.time_step = 0
+        ctrlCI.time = 0.0
+
         self.particleCI.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
 
         # Check the results
@@ -221,7 +266,7 @@ class TestParticleNonuniformE(unittest.TestCase):
     #     ctrlCI = DTcontrol_C()
 
     #     ctrlCI.dt = 1.0e-5
-    #     ctrlCI.nsteps = 10
+    #     ctrlCI.n_timesteps = 10
 
     #     return
 
@@ -238,8 +283,8 @@ class TestParticleNonuniformE(unittest.TestCase):
     def test_something(self):
         """ Check the number of particles in each species.
         """
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = sys._getframe().f_code.co_name
+        print '\ntest: ', fncName, '('+__file__+')'
         pass
 
         return

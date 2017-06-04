@@ -1,8 +1,8 @@
 # Contains methods that use the DOLFIN finite-element library
 
-#__version__ = 0.1
-#__author__ = 'Copyright (C) 2016 L. D. Hughes'
-#__all__ = []
+__version__ = 0.1
+__author__ = 'Copyright (C) 2016 L. D. Hughes'
+__all__ = ['Mesh_C', 'Field_C', 'PoissonSolve_C', 'RectangularRegion_C', 'SphericalRegion_C', 'WholeMesh_C']
 
 """Dolfin_Module contains classes that use the DOLFIN finite-element library.
 """
@@ -12,6 +12,7 @@ import os
 import dolfin as df_M
 import numpy as np_M
 
+#STARTCLASS
 class Mesh_C(object):
     """Mesh_C defines the mesh. UserMesh_C is a subclass that adds
        boundary-conditions, etc.
@@ -65,6 +66,9 @@ class Mesh_C(object):
             self.x0 = np_M.empty(self.gdim, np_M.float64)
 
             self.facet_normal_3d = np_M.empty(3, np_M.float64)
+
+            # This is an iterator over the cells of the mesh
+            self.cell_list = df_M.cells(self.mesh)
 
             # Don't need to declare all of these class variables here
             # provided they're created by the dict() function in the
@@ -131,6 +135,7 @@ class Mesh_C(object):
         self.cell_dict = {cell.index(): cell for cell in df_M.cells(self.mesh)}
 
         return
+#    def compute_cell_dict(self):ENDDEF
 
 #
 #  Things indexed by cell number
@@ -138,13 +143,14 @@ class Mesh_C(object):
 
     def compute_cell_entity_index_dict(self, entity_name):
         """
-           Make a dictionary giving a list of the cell entity indices, indexed by
-           the cell index.
+           Make a dictionary where the keys are cell indices and the values are
+           lists of the cell entity indices.
 
            Vertex indices can be used, e.g., to obtain the x, y, z
            coordinates of the vertices of a cell.
 
-           :param entity_name: The name of the entity: 'vertex', 'edge', 'facet'
+           :param entity_name: The name of the cell entity that will be in the
+                               value list, e.g., 'vertex', 'edge', 'facet'
            :type entity_name: string
 
         """
@@ -160,7 +166,8 @@ class Mesh_C(object):
         # A vertex has topological dimension 0.
         # A facet has topological codimension d-1.
 
-        # Type issue: Had to convert numpy.uint32 to long (using tolist()) and then to int (using map()).
+        # Type issue: Had to convert numpy.uint32 to long (using tolist()) and
+        # then to int (using map()).
         # This is because a FacetFunction wants the facet index as an int.
         self.cell_entity_index_dict[entity_name] = dict((cell.index(), map(int, cell.entities(d).tolist())) for cell in df_M.cells(self.mesh))
 
@@ -245,7 +252,7 @@ class Mesh_C(object):
 
 # Used "tdim" for quantities independent of geometry, like indices.
 
-# The following commented line creates a correct dictionary, but if a
+# The following commented-out line creates a correct dictionary, but if a
 # cell is at a boundary it skips that facet.  That doesn't work for
 # our purpose because we need to use the local facet number as an
 # index for the list of neighbor cells.
@@ -265,6 +272,7 @@ class Mesh_C(object):
             fi = 0 # fi ranges from 0 to n_facets-1
             for facet in df_M.facets(cell):
                 # Obtain the indices of cells attached to this facet
+                # See breakdown of this line above.
                 attached_cell_indices = filter(lambda ci: ci != cell.index(), facet.entities(tdim))
                 # Can only have at most 1 neighbor-cell attached
                 if len(attached_cell_indices) > 0:
@@ -394,6 +402,7 @@ class Mesh_C(object):
         # pseg[i] is a 'record' containing the 'x', 'y', 'z', 'vx', 'vy',... values of ith ithem
         # so pseg[i][0:3] is 'x', 'y', 'z'.
 
+            # Doesn't work!
             p = [points[ip][d] for d in range(gdim)]
             ploc = Point(p)
             compute_cell_index(ploc)
@@ -685,9 +694,10 @@ class Mesh_C(object):
             return facet, pathFraction
 #    def find_facet(self, r0, dr, cell_index):ENDDEF
 
-#class Mesh_C(object):END
+#class Mesh_C(object):ENDCLASS
 
 
+#STARTCLASS
 class Field_C(object):
     """Field_C uses the DOLFIN library to represent
        fields defined on finite-element spaces.
@@ -798,9 +808,10 @@ class Field_C(object):
         return
 #    def integrate_delta_function(self, p):END
 
-#class Field_C(object):END
+#class Field_C(object):ENDCLASS
 
 
+#STARTCLASS
 class PoissonSolve_C(object):
     """PoissonSolve_C uses the DOLFIN library for solving field
        equations with the finite-element method.  The methods here are
@@ -877,4 +888,260 @@ class PoissonSolve_C(object):
         return self.neg_electric_field.function
 # how do you change sign?: see Epoints
 
-#class PoissonSolve_C(object):END
+#class PoissonSolve_C(object):ENDCLASS
+
+#STARTCLASS
+class FacetSubDomain_C(df_M.SubDomain):
+    """
+       :param Mesh:
+
+       :cvar gdim: 
+    """
+
+    # Static class variables
+
+    # The SUBDOMAIN_INDEX is incremented for each new FacetSubDomain_C
+    FACET_SUBDOMAIN_INDEX = 0
+
+#class FacetSubDomain_C(df_M.SubDomain):ENDCLASS
+
+#STARTCLASS
+class CellRegion_C(object):
+    """A CellRegion_C produces and stores a set of mesh cells.
+       
+       :cvar cell_list: An iterable object containing a set of cells.
+    """
+
+    # Static class variables
+
+    # The SUBDOMAIN_INDEX is incremented for each new CellRegion_C
+    CELL_SUBDOMAIN_INDEX = 0
+
+    def __init__(self, meshCI, plot_flag=False):
+        """Create a CellRegion_C from the given mesh.
+           :param meshCI: A Mesh_C object.
+           :param plot_flag: Boolean flag to plot the subdomain
+
+           :cvar ncell: Number of cells in the list
+
+        """
+
+        plotFlag = plot_flag
+
+        # Use gdim, e.g., for the x,y,z coordinates of a point
+        self.gdim = meshCI.gdim
+            # p = [points[ip][d] for d in range(self.gdim)]
+            # ploc = Point(p)
+            # compute_cell_index(ploc)
+
+        # If an inside() function is not defined, the cell list is the entire mesh.
+
+        if hasattr(self, 'inside'):
+            self.cell_list = []
+            for cell in df_M.cells(meshCI.mesh):
+                p = cell.midpoint()
+                if self.inside(p):      
+                    self.cell_list.append(cell)
+        else:
+            self.cell_list = [cell for cell in df_M.cells(meshCI.mesh)] # The whole mesh
+
+        self.ncell = len(self.cell_list)
+
+# mid-point, circumradius, etc.
+        # Allocate storage
+        self.midpoint = np_M.empty(shape=(self.ncell, self.gdim), dtype = np_M.float64)
+        self.volume = np_M.empty(self.ncell, dtype = np_M.float64)
+        self.radius = np_M.empty(self.ncell, dtype = np_M.float64)
+
+
+        for icell in xrange(self.ncell):
+            c = self.cell_list[icell]
+            self.volume[icell] = c.volume()
+            midp = c.midpoint()
+            for i in range(self.gdim):
+                self.midpoint[icell][i] = midp[i]
+            self.radius[icell] = c.circumradius()
+
+            
+        return
+#    def __init__(self, mesh, plot_flag=False):ENDDEF
+
+    def in_cell(self, point, cell_index):
+        """Test if point is in the cell with index cell_index.
+
+           :param point: A numpy array containing x, y, z, or a subset
+           :param cell_index: The index into self.cell_list
+
+           :returns: True iff point is in cell cell_index
+           :rtype: bool
+
+        """
+
+        cell = self.cell_list[cell_index]
+
+        return cell.contains(df_M.Point(point))
+#    def in_cell(self, point, cell_index):ENDDEF
+
+#class CellRegion_C(object):ENDCLASS
+
+
+### Useful standard shapes for defining mesh regions.
+
+#STARTCLASS
+class RectangularRegion_C(CellRegion_C):
+    """The RectangularRegion_C class is a specialized CellRegion_C for specifying
+       (e.g.) cells that generate particles.
+
+       This should be generalized to 3D
+
+    """
+
+    def __init__(self, meshCI, xmin, xmax, plot_flag=False):
+        """Initialize a source with point or planar boundaries.
+
+           :param float xmin: The lower end of the source region
+           :param float xmax: The upper end of the source region
+
+        """
+
+        self.xmin = xmin
+        self.xmax = xmax
+        plotFlag = plot_flag
+
+        # Call the base class constructor
+        super(self.__class__, self).__init__(meshCI, plot_flag=plotFlag)
+
+        return
+#    def __init__(self, meshCI, xmin, xmax):ENDDEF
+
+#class RectangularRegion_C(CellRegion_C):
+    def inside(self, x):
+        """Used to define what cells are in this subdomain.
+
+           :param x: The point to be checked
+
+           :returns: True if x[] is inside the subdomain
+
+       """
+        tol = 1.0e-10
+
+        # The source is in the interval [xmin, xmax]
+        return x[0] >= self.xmin - tol and x[0] <= self.xmax + tol
+# def inside(self, x):ENDDEF
+
+#class RectangularRegion_C(CellRegion_C):ENDCLASS
+
+#STARTCLASS
+class SphericalRegion_C(CellRegion_C):
+    """
+       Define a source with a circular or spherical boundary.
+
+       This should be generalized to 3D
+
+    """
+
+    def __init__(self, meshCI, center, radius, plot_flag=False):
+
+        self.center = center
+        self.radius = radius
+        plotFlag = plot_flag
+
+        # Call the base class constructor
+        super(self.__class__, self).__init__(meshCI, plot_flag=plotFlag)
+
+        return
+#    def __init__(self, center, radius):ENDDEF
+
+#class SphericalRegion_C(CellRegion_C):
+    def inside(self, x):
+        """Used to define what cells are in this region.
+
+           :param x: The point to be checked
+
+           :returns: True if x[] is inside the region
+
+       """
+        tol = 1.0e-10
+
+        # The source is in the interval [xmin, xmax]
+        return x[0] >= self.center - self.radius - tol and x[0] <= self.center + self.radius + tol
+#    def inside(self, x):ENDDEF
+
+#class SphericalRegion_C(CellRegion_C):ENDCLASS
+
+#STARTCLASS
+class WholeMesh_C(CellRegion_C):
+    """
+       Define a cell region that's the whole mesh
+    """
+
+    def __init__(self, meshCI):
+
+        # Call the base class constructor
+        super(self.__class__, self).__init__(meshCI)
+
+        return
+#    def __init__(self, center, radius):ENDDEF
+
+#class WholeMesh_C(CellRegion_C):ENDCLASS
+
+
+#STARTCLASS
+class CellSubDomain_C2(df_M.SubDomain):
+    """A CellSubDomain_C is a subdomain of the mesh made up of cells.
+       
+       A Dolfin SubDomain is used to define a spatial region by implementing 
+
+           (1) an inside() function to test points x[] as being in or not in the
+           region.
+
+           (2) a mark() function that puts values (size_t, int, double, bool)
+           onto entities belonging to the SubDomain.  The values are applied
+           using a Dolfin MeshFunction defined on the mesh entities.  The
+           MeshFunction stores the marker values.
+
+           An example is to use integer markers on cells to identify cell
+           subdomains.  These markers can be used in making functions over
+           finite-element spaces that depend on the subdomains (FBook,
+           p. 62). E.g., thermal conductivity that varies from region to region.
+
+       Here, we use a Dolfin CellFunction to mark cells, and then make a list of
+       the marked cells.
+
+    """
+
+    # Static class variables
+
+    # The SUBDOMAIN_INDEX is incremented for each new CellSubDomain_C
+    CELL_SUBDOMAIN_INDEX = 0
+
+    def __init__(self, mesh, plot_flag=False):
+        """Create a CellSubDomain_C from the given mesh.
+           :param mesh: A Mesh_C object.
+           :param plot_flag: Boolean flag to plot the subdomain
+
+        """
+
+        for cell in df_M.cells(mesh):
+            p = cell.midpoint()
+
+        ## Create a CellFunction to mark the SubDomain
+        cellFunction = df_M.CellFunction('size_t', mesh)
+
+        # Set default value to zero
+        cellFunction.set_all(0)
+
+        # Mark the cells in the SubDomain with a 1
+        self.mark(cellFunction, 1)
+
+        # Create a list of the cells in this SubDomain
+
+        for icell in xrange(len(cellFunction.array())):
+            if cellFunction.array()[icell] == 1:
+                pass
+
+#        self.cell_function = cellFunction
+
+        return
+
+#class CellSubDomain_C2(df_M.SubDomain):ENDCLASS

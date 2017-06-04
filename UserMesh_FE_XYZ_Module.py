@@ -1,8 +1,10 @@
 # Make a mesh that DT can use
 
-#__version__ = 0.1
-#__author__ = 'Copyright (C) 2016 L. D. Hughes'
-#__all__ = []
+__version__ = 0.1
+__author__ = 'Copyright (C) 2016 L. D. Hughes'
+__all__ = ['UserMeshInput_C',
+           'UserMesh_C',
+           ]
 
 """UserMesh defines the mesh.
 """
@@ -16,16 +18,63 @@ import math
 import dolfin as df_M
 
 from Dolfin_Module import Mesh_C
+from Dolfin_Module import CellRegion_C
 
 import UserUnits_Module as U_M
 
 ### Define boundary geometry
 
+#STARTCLASS
+class UserMeshInput_C(object):
+    """Input for the field mesh
+       The user can modify this for different mesh specifications.
+       Field mesh, field solve control?  Could use to pass control things to the field mesh
+    """
+
+    def __init__(self):
+        """ List the mesh variables that the user can set in MAIN.py
+        """
+#        self.mesh_type_options = ['FE', 'Cartesian']
+#        self.mesh_type = None
+
+        self.mesh_file = None
+
+        self.precision = None
+
+        self.pmin = None
+        self.pmax = None
+
+        self.cells_on_side = []
+
+        # 'diagonal' only applies to 2D rectangle:
+        # Options: 'left, 'right', 'left/right', 'crossed'
+        self.diagonal = None
+
+        self.field_boundary_file = None
+        # User-assigned names of mesh boundaries where Dirichlet
+        # values are set.
+        self.field_boundary_dict = None
+
+        self.particle_boundary_file = None
+        # User-assigned names of mesh boundaries where particle BCs
+        # are set.
+        self.particle_boundary_dict = None
+
+        self.particle_source_file = None
+        # User-assigned names of mesh regions where particles are
+        # created
+        self.particle_source_dict = None
+
+        return
+
+#class UserMeshInput_C(object):ENDCLASS
+
 # The inside() class functions are used to test whether a given mesh
 # point lies inside the boundary subdomain.
 
-class XBoundary(df_M.SubDomain):
-    """The XBoundary class is a specialized SubDomain
+#STARTCLASS
+class XBoundary_C(df_M.SubDomain):
+    """The XBoundary_C class is a specialized SubDomain
     """
     # Set the X value of the boundary in the constructor
     def __init__(self, x_boundary_value, map_tol=1.0e-10):
@@ -38,8 +87,11 @@ class XBoundary(df_M.SubDomain):
         tol = 1.0e-10
         return on_boundary and abs(x[0]-self.x_boundary_value) < tol
 
-class YBoundary(df_M.SubDomain):
-    """The YBoundary class is a specialized SubDomain
+#class XBoundary_C(df_M.SubDomain):ENDCLASS
+
+#STARTCLASS
+class YBoundary_C(df_M.SubDomain):
+    """The YBoundary_C class is a specialized SubDomain
     """
     # Set the X value of the boundary in the constructor
     def __init__(self, y_boundary_value, map_tol=1.0e-10):
@@ -54,8 +106,9 @@ class YBoundary(df_M.SubDomain):
         tol = 1.0e-10
         return on_boundary and abs(x[1]-self.y_boundary_value) < tol
 
-### Define the geometry of the particle sources
+#class YBoundary_C(df_M.SubDomain):ENDCLASS
 
+#STARTCLASS
 class SourceXrange(df_M.SubDomain):
     """The SourceXrange class is a specialized SubDomain to used to
        mark points that are inside this source region.
@@ -71,11 +124,14 @@ class SourceXrange(df_M.SubDomain):
     # Return true for points inside the subdomain
     def inside(self, x, on_boundary):
         tol = 1.0e-10
-        return True if (x[0] > self.x_min_value-tol and x[0] < self.x_max_value+tol) else False
+        return x[0] > self.x_min_value-tol and x[0] < self.x_max_value+tol
+
+#class SourceXrange(df_M.SubDomain):ENDCLASS
 
 # User exposes whatever mesh parameters are useful in __init__ and
 # these can be set in __main__
 
+#STARTCLASS
 class UserMesh_C(Mesh_C):
     """UserMesh_C is derived from Mesh_C.  It is to be edited by the user to specify the simulation
        mesh.  The units are MKS by default (i.e., if no conversion
@@ -135,6 +191,9 @@ class UserMesh_C(Mesh_C):
         zmin = miCI.pmin.z()
         zmax = miCI.pmax.z()
 
+        # Options: 'left, 'right', 'left/right', 'crossed'
+        diagonal = meshInputCI.diagonal
+
         # Boundary conditions for fields and particles
         fieldBoundaryDict = miCI.field_boundary_dict
         particleBoundaryDict = miCI.particle_boundary_dict
@@ -183,9 +242,13 @@ class UserMesh_C(Mesh_C):
         elif zmin == zmax:
             # 2D mesh
             (nx, ny) = miCI.cells_on_side
+
 # v > 1.5:
             if df_M.DOLFIN_VERSION_STRING > '1.5.0':
-                mesh = df_M.RectangleMesh(miCI.pmin, miCI.pmax, nx, ny)
+                if diagonal is not None:
+                    mesh = df_M.RectangleMesh(miCI.pmin, miCI.pmax, nx, ny, diagonal)
+                else:
+                    mesh = df_M.RectangleMesh(miCI.pmin, miCI.pmax, nx, ny)
             else:
 # v = 1.5:
                 mesh = df_M.RectangleMesh(miCI.pmin[0], miCI.pmin[1], miCI.pmax[0], miCI.pmax[1], nx, ny)
@@ -198,14 +261,14 @@ class UserMesh_C(Mesh_C):
             if particleBoundaryDict is not None:
                 # Create mesh subdomains to apply boundary-conditions
                 # There's one line below for each entry in the dictionary
-                Gamma_xmin = XBoundary(xmin)
-                Gamma_xmax = XBoundary(xmax)
-                Gamma_ymin = YBoundary(ymin)
-                Gamma_ymax = YBoundary(ymax)
+                Gamma_xmin = XBoundary_C(xmin)
+                Gamma_xmax = XBoundary_C(xmax)
+                Gamma_ymin = YBoundary_C(ymin)
+                Gamma_ymax = YBoundary_C(ymax)
 
 #                print "particleBoundaryDict =", particleBoundaryDict
 
-                # Mark these subdomains (boundaries) with non-zero integers
+                # Mark these subdomains (boundaries) with non-zero size_t integers
 
                 xmin_indx = particleBoundaryDict['xmin']
                 xmax_indx = particleBoundaryDict['xmax']

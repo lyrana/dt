@@ -10,6 +10,7 @@ import unittest
 
 from UserUnits_Module import MyPlasmaUnits_C
 
+#STARTCLASS
 class TestUserUnits(unittest.TestCase):
     """Test the classes in UserUnits_Module.py"""
     
@@ -26,10 +27,13 @@ class TestUserUnits(unittest.TestCase):
         input_temp_eV = 3.0
 
         # Convert it to code units (Kelvin)
-        converted_temp = input_temp_eV*MyPlasmaUnits_C.eV
-
+#        converted_temp = input_temp_eV*MyPlasmaUnits_C.eV
         # Compare the result to the correct value
-        correct_value = 3.0*11604.505
+#        correct_value = 3.0*11604.505
+
+        # Convert it to code units (Joule)
+        converted_temp = input_temp_eV*MyPlasmaUnits_C.elem_charge
+        correct_value = 3.0*1.602176487e-19
 
         self.assertAlmostEqual(converted_temp, correct_value, delta = 0.1, msg = "!Temperature not converted correctly!")
         

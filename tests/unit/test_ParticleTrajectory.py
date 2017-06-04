@@ -12,30 +12,29 @@ import unittest
 
 import dolfin as df_M
 
-from DT_Module import DTmeshInput_C
-from DT_Module import DTparticleInput_C
 from DT_Module import DTcontrol_C
-from DT_Module import DTtrajectoryInput_C
 
 #from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 
-from Particle_Module import Particle_C
-from Particle_Module import ParticleMeshBoundaryConditions_C
+from Particle_Module import *
 
-from Trajectory_Module import Trajectory_C
+from Trajectory_Module import *
 
 from SegmentedArrayPair_Module import SegmentedArray_C
 
-from UserMesh_y_Fields_FE2D_Module import UserMesh_C
+from UserMesh_y_Fields_FE2D_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
+#STARTCLASS
 class TestParticleTrajectory(unittest.TestCase):
     """Test classes in Trajectory_Module.
     """
     
     def setUp(self):
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         # initializations for each test go here...
 
@@ -46,7 +45,7 @@ class TestParticleTrajectory(unittest.TestCase):
         ### Particle species input
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
         # Initialize particles
         pinCI.precision = numpy.float64
         pinCI.particle_integration_loop = 'loop-on-particles'
@@ -55,32 +54,85 @@ class TestParticleTrajectory(unittest.TestCase):
         pinCI.force_precision = numpy.float64
 
         # Specify the particle-species properties
+
         # 1. electrons
-        pinCI.particle_species = (('trajelectrons',
-                             {'initial_distribution_type' : 'listed',
-                              'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
-                              'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
-                              'dynamics' : 'explicit',
-#                              'dynamics' : 'implicit',
-                              }
-                             ),
-                            )
+        # pinCI.particle_species = (('trajelectrons',
+        #                      {'initial_distribution_type' : 'listed',
+        #                       'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
+        #                       'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
+        #                       'dynamics' : 'explicit',
+        #                       }
+        #                      ),
+        #                     )
 
-        # Provide the particle distributions for the above species
-        pinCI.user_particles_module = "UserParticles_2D_e"
-        UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_M.UserParticleDistributions_C
+        # Define an electron species. Use this name later to initialize this species
+        # or to create a source of this species.
+        speciesName = 'trajelectrons'
+        charge = -1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.electron_mass
+        dynamics = 'explicit'
+        trajelectronsCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
-        # Make the particle object from pinCI
-        self.particleCI = Particle_C(pinCI, printFlag=False)
+        # Add the electrons to particle input
+        pinCI.particle_species = (trajelectronsCI,
+                                 )
+        ## Make the particle storage array for all species.
+        self.particleCI = Particle_C(pinCI, print_flag=False)
+
+        ## Give the name of the .py file containing special particle data (lists of
+        # particles, boundary conditions, source regions, etc.)
+        userParticleModule = "UserParticles_2D_e"
+
+        # Import this module
+        UPrt_M = im_M.import_module(userParticleModule)
+
+        self.particleCI.user_particle_module = userParticleModule
+        self.particleCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+
 
         ###  Mesh creation
 
-        miCI = DTmeshInput_C()
+        miCI = UserMeshInput_C()
 
         # Make the mesh & fields from saved files
         miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
         miCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
+
+        ### Input for initial particles (i.e., particles present at t=0)
+
+        # a. Name the species (it should be in species_names above)
+        speciesName = 'trajelectrons'
+
+        # Check that this species has been defined above
+        if speciesName in self.particleCI.species_names:
+            charge = self.particleCI.charge[speciesName]
+            mass = self.particleCI.mass[speciesName]
+        else:
+            print "The species", speciesName, "has not been defined"
+            sys.exit()
+
+        initialDistributionType = 'listed'
+        # Check that there's a function listing the particles particles
+        printFlag = True
+        if hasattr(userParticleClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        # Write error message and exit if no distribution function exists
+        else:
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
+            sys.exit(errorMsg)
+
+        # Collect the parameters into a dictionary
+        # The 'listed' type will expect a function with the same name as the species.
+        trajElectronParams = {'species_name': speciesName,
+                              'initial_distribution_type': initialDistributionType,
+                              }
+
+        # The dictionary keys are mnemonics for the initialized particles
+        initialParticlesDict = {'initial_trajelectrons': (trajElectronParams,),
+                               }
+
+        # Add the initialized particles to the Particle_C object
+        self.particleCI.initial_particles_dict = initialParticlesDict
 
         # Create the particle mesh object
 # 'crossed' diagonals
@@ -137,28 +189,28 @@ class TestParticleTrajectory(unittest.TestCase):
 
         ## Particle boundary-conditions
 
-        # UserParticleMeshFunctions_C is where the facet-crossing callback
+        # UserParticleBoundaryFunctions_C is where the facet-crossing callback
         # functions are defined.
-        userPMeshFnsClass = UPrt_M.UserParticleMeshFunctions_C # abbreviation
+        userPBndFnsClass = UPrt_M.UserParticleBoundaryFunctions_C # abbreviation
 
         # Make the particle-mesh boundary-conditions object and add it
         # to the particle object.
         spNames = self.particleCI.species_names
-        pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmeshCI, userPMeshFnsClass, printFlag=False)
+        pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmeshCI, userPBndFnsClass, print_flag=False)
         self.particleCI.pmesh_bcCI = pmeshBCCI
 
-        ### Create a particle trajectory object
+        ### Create input for a particle trajectory object
 
         # Use an input object to collect initialization data for the trajectory object
-        self.trajinCI = DTtrajectoryInput_C()
+        self.trajinCI = TrajectoryInput_C()
 
         self.trajinCI.maxpoints = None # Set to None to get every point
 
         # Specify which particle variables to save.  This has the
         # form of a numpy dtype specification.
-        self.trajinCI.explicitDict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
-        self.trajinCI.implicitDict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
-        self.trajinCI.neutralDict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
+        self.trajinCI.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
+        self.trajinCI.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
+        self.trajinCI.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
 
         return
 
@@ -175,7 +227,7 @@ class TestParticleTrajectory(unittest.TestCase):
         # Abbreviations
         pCI = self.particleCI
 
-        self.ctrlCI.nsteps = 13
+        self.ctrlCI.n_timesteps = 13
 
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
@@ -192,12 +244,13 @@ class TestParticleTrajectory(unittest.TestCase):
         # Create particles that are selected for trajectories.
 # Could call particleCI.initialize_distributions() instead?
 
-        pCI.create_from_list('trajelectrons', printFlag=True)
+        pCI.create_from_list('trajelectrons', print_flag=True)
 
-        # Check the results
+        # Check that the trajectory parameters are correct by
+        # reading them back from the Particle_C object.
 
 #        print "The explicit species with trajectory particles are", pCI.trajCI.explicit_species
-        expectedList = self.trajinCI.explicitDict['names']
+        expectedList = self.trajinCI.explicit_dict['names']
         for sp in pCI.trajCI.explicit_species:
 #            print "  with particle indices", pCI.trajCI.ParticleIdList[sp]
 #            print "  and values", pCI.trajCI.DataList[sp][0].dtype.names
@@ -206,7 +259,7 @@ class TestParticleTrajectory(unittest.TestCase):
                 self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for and explicit particle")
 
 #        print "The implicit species are", pCI.trajCI.implicit_species
-        expectedList = self.trajinCI.implicitDict['names']
+        expectedList = self.trajinCI.implicit_dict['names']
         for sp in pCI.trajCI.implicit_species:
 #            print "  with indices", pCI.trajCI.ParticleIdList[sp]
 #            print "  and values", pCI.trajCI.DataList[sp][0].dtype.names
@@ -229,7 +282,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         pCI = self.particleCI
 
-        self.ctrlCI.nsteps = 13
+        self.ctrlCI.n_timesteps = 13
         dt = self.ctrlCI.dt
 
         ## Create the trajectory object and attach it to the particle object.
@@ -239,14 +292,14 @@ class TestParticleTrajectory(unittest.TestCase):
         self.particleCI.trajCI = trajCI
 
         # Create particles that are selected for trajectories.
-        pCI.create_from_list('trajelectrons', printFlag=True)
+        pCI.create_from_list('trajelectrons', print_flag=True)
 
         # Get the initial cell index of each particle.
         pCI.compute_mesh_cell_indices()
 
-        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.nsteps, "timesteps"
-        for istep in xrange(self.ctrlCI.nsteps):
-            # needs dt; doesn't need nsteps
+        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.n_timesteps, "timesteps"
+        for istep in xrange(self.ctrlCI.n_timesteps):
+            # needs dt; doesn't need n_timesteps
 
             # Gather particle trajectory data
             # First point is the initial particle condition at istep = 0
@@ -333,7 +386,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         pCI = self.particleCI
 
-        self.ctrlCI.nsteps = 14 # This puts the particle out-of-bounds
+        self.ctrlCI.n_timesteps = 14 # This puts the particle out-of-bounds
         dt = self.ctrlCI.dt
 
         ## Create the trajectory object and attach it to the particle object.
@@ -343,14 +396,14 @@ class TestParticleTrajectory(unittest.TestCase):
         self.particleCI.trajCI = trajCI
 
         # Create particles that are selected for trajectories.
-        pCI.create_from_list('trajelectrons', printFlag=True)
+        pCI.create_from_list('trajelectrons', print_flag=True)
 
         # Get the initial cell index of each particle.
         pCI.compute_mesh_cell_indices()
 
-        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.nsteps, "timesteps"
-        for istep in xrange(self.ctrlCI.nsteps):
-            # needs dt; doesn't need nsteps
+        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.n_timesteps, "timesteps"
+        for istep in xrange(self.ctrlCI.n_timesteps):
+            # needs dt; doesn't need n_timesteps
 
             # Gather particle trajectory data
             # First point is the initial particle condition at istep = 0

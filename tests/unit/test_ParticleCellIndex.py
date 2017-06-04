@@ -12,42 +12,24 @@ import unittest
 
 import dolfin as df_M
 
-from DT_Module import DTparticleInput_C
 from UserUnits_Module import MyPlasmaUnits_C
 from Dolfin_Module import Mesh_C
-from Particle_Module import Particle_C
+from Particle_Module import *
 
-from UserMesh_FE_XYZ_Module import UserMesh_C
+from UserMesh_FE_XYZ_Module import *
 
-class DTmeshInput_C(object):
-    """Input for the field mesh.  List the variables that can be
-       modified by the user.
-    """
-
-    def __init__(self):
-        """ List the mesh variables that the user can set in MAIN.py
-        """
-        self.pmin = None
-        self.pmax = None
-        self.cells_on_side = None
-
-        self.field_boundary_dict = None
-        self.particle_boundary_dict = None
-        self.particle_source_dict = None
-
-        return
-
-#class DTmeshInput_C(object):ENDCLASS
-
+#STARTCLASS
 class TestParticleCellIndex(unittest.TestCase):
     """Test cell functions Particle_Module"""
     
     def setUp(self):
 
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
         # Initializations performed before each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
 
         # Set up particle variables
         pinCI.precision = np_M.float64
@@ -60,50 +42,137 @@ class TestParticleCellIndex(unittest.TestCase):
         # and masses are normally those of the physical particles, and
         # not the computational macroparticles.  Macroparticle weights
         # are specified or computed in a separate file (see
-        # user_particles_module below) giving the distribution
+        # user_particle_module below) giving the distribution
         # functions, and can vary from particle to particle.
 
-        pinCI.particle_species = (('plasmaelectrons',
-                             {'initial_distribution_type' : 'listed',
-                              'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
-                              'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
-                              'dynamics' : 'implicit',
-#                              'number_per_cell' : 12,
+#         pinCI.particle_species = (('plasmaelectrons',
+#                              {'initial_distribution_type' : 'listed',
+#                               'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
+#                               'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
+#                               'dynamics' : 'implicit',
+# #                              'number_per_cell' : 12,
+#                               }
+#                              ),
+#                             ('Hplus', 
+#                              {'initial_distribution_type' : 'listed',
+#                               'charge' : 1.0*MyPlasmaUnits_C.elem_charge,
+#                               'mass' : 1.0*MyPlasmaUnits_C.AMU,
+#                               'dynamics' : 'implicit',
+# #                              'number_per_cell' : 6,
+#                               }
+#                              ),
+#                             ('He', 
+#                              {'initial_distribution_type' : None,
+#                               'charge' : 0.0,
+#                               'mass' : 4.0*MyPlasmaUnits_C.AMU,
+#                               'dynamics' : 'implicit',
+# #                              'number_per_cell' : 1,
+#                               }
+#                              ),
+#                             )
+
+        speciesName = 'plasma_electrons'
+        charge = -1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.electron_mass
+        dynamics = 'explicit'
+        plasmaElectronsCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        speciesName = 'H_plus'
+        charge = 1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.proton_mass
+        dynamics = 'explicit'
+        HPlusCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        speciesName = 'He'
+        charge = 0.0
+        mass = 4.0*MyPlasmaUnits_C.AMU
+        dynamics = 'explicit'
+        HeCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        # Add these species to particle input
+        pinCI.particle_species = (plasmaElectronsCI, HPlusCI, HeCI,
+                                 )
+        # Make the particle object from pinCI
+        self.particleCI = Particle_C(pinCI, print_flag=False)
+
+        # Give the name of the .py file containing additional particle data (lists of
+        # particles, boundary conditions, source regions, etc.)
+        userParticleModule = "UserParticles_H_He_e"
+
+        # Import this module
+        UPrt_M = im_M.import_module(userParticleModule)
+
+        self.particleCI.user_particle_module = userParticleModule
+        self.particleCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+
+        ### plasma_electrons are present at t=0
+
+        ## plasma electrons are present at t=0
+        # Name the initialized species (it should be in species_names above)
+        speciesName = 'plasma_electrons'
+        # Check that this species has been defined above
+        if speciesName not in self.particleCI.species_names:
+            print fncName + "The species", speciesName, "has not been defined"
+            sys.exit()
+
+        # Specify how the species will be initialized
+        initialDistributionType = 'listed'
+        # Check that there's a function listing the particles particles
+        printFlag = True
+        if hasattr(userParticleClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        # Write error message and exit if no distribution function exists
+        else:
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticleModule, speciesName)
+            sys.exit(errorMsg)
+
+        # Collect the parameters into a dictionary
+        # The 'listed' type will expect a function with the same name as the species.
+        plasmaElectronParams = {'species_name': speciesName,
+                              'initial_distribution_type': initialDistributionType,
                               }
-                             ),
-                            ('Hplus', 
-                             {'initial_distribution_type' : 'listed',
-                              'charge' : 1.0*MyPlasmaUnits_C.elem_charge,
-                              'mass' : 1.0*MyPlasmaUnits_C.AMU,
-                              'dynamics' : 'implicit',
-#                              'number_per_cell' : 6,
-                              }
-                             ),
-                            ('He', 
-                             {'initial_distribution_type' : None,
-                              'charge' : 0.0,
-                              'mass' : 4.0*MyPlasmaUnits_C.AMU,
-                              'dynamics' : 'implicit',
-#                              'number_per_cell' : 1,
-                              }
-                             ),
-                            )
 
-        # Provide the name of the .py file containing the user-provided particle distributions
-        pinCI.user_particles_module = "UserParticles_H_He_e"
-#        print "setUp: UserParticle module is", pinCI.user_particles_module
-        UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_C = UPrt_M.UserParticleDistributions_C
 
-        self.pinCI = pinCI
+        ### H+ ions are present at t=0
+        speciesName = 'H_plus'
+        # Check that this species has been defined above
+        if speciesName not in self.particleCI.species_names:
+            print fncName + "The species", speciesName, "has not been defined"
+            sys.exit()
 
-        self.particles = Particle_C(pinCI, printFlag=False)
+        # Specify how the species will be initialized
+        initialDistributionType = 'listed'
+        # Check that there's a function listing the particles particles
+        printFlag = True
+        if hasattr(userParticleClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        # Write error message and exit if no distribution function exists
+        else:
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
+            sys.exit(errorMsg)
 
-        # Store the particles
-        for sp in self.particles.species_names:
-            if self.particles.initial_distribution_type[sp] == 'listed':
+        # Collect the parameters into a dictionary
+        # The 'listed' type will expect a function with the same name as the species.
+        HPlusParams = {'species_name': speciesName,
+                              'initial_distribution_type': initialDistributionType,
+                       }
+
+        # The dictionary keys are mnemonics for the initialized particles
+        initialParticlesDict = {'initial_plasma_electrons': (plasmaElectronParams,),
+                                'initial_H_plus': (HPlusParams,),
+                                }
+
+        self.particleCI.initial_particles_dict = initialParticlesDict
+
+        # Create the initial particles
+        for ip in initialParticlesDict:
+            ipList = initialParticlesDict[ip]
+            ipParams = ipList[0]
+            s = ipParams['species_name']
+            initialDistributionType = ipParams['initial_distribution_type']
+            if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
-                self.particles.create_from_list(sp, False)
+                self.particleCI.create_from_list(s, False)
 
         plotFlag = False
         # Turn off plotting if there's no DISPLAY
@@ -116,7 +185,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # Create meshes that the particles can be tested against
 
         # 1d mesh input
-        mi1DCI = DTmeshInput_C()
+        mi1DCI = UserMeshInput_C()
         mi1DCI.pmin = df_M.Point(-10.0)
         mi1DCI.pmax = df_M.Point(10.0)
         mi1DCI.cells_on_side = (4)
@@ -124,7 +193,7 @@ class TestParticleCellIndex(unittest.TestCase):
         self.pmesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
 
         # 2D mesh input
-        mi2DCI = DTmeshInput_C()
+        mi2DCI = UserMeshInput_C()
         mi2DCI.pmin = df_M.Point(-0.03, -0.03)
         mi2DCI.pmax = df_M.Point(0.03, 0.03)
         mi2DCI.cells_on_side = (4, 4)
@@ -134,7 +203,7 @@ class TestParticleCellIndex(unittest.TestCase):
 #        self.mesh2DCI.compute_cell_dict()
 
         # 3D mesh input
-        mi3DCI = DTmeshInput_C()
+        mi3DCI = UserMeshInput_C()
         mi3DCI.pmin = df_M.Point(-0.03, -0.03, -0.03)
         mi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
         mi3DCI.cells_on_side = (4, 4, 4)
@@ -163,8 +232,8 @@ class TestParticleCellIndex(unittest.TestCase):
            mesh.
         """
 
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname, '('+__file__+')'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest:', fncName, '('+__file__+')'
 
         # 1D mesh
 
@@ -240,8 +309,8 @@ class TestParticleCellIndex(unittest.TestCase):
            the test.
         """
 
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname, '('+__file__+')'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest:', fncName, '('+__file__+')'
 
         # List all the possible spatial coordinates
         spatial_coordinates = ('x','y','z')
@@ -249,10 +318,10 @@ class TestParticleCellIndex(unittest.TestCase):
         print "1D, 2D, 3D tests"
         # Loop on the species
         isp = 0
-        for sp in self.particles.species_names:
-            if self.particles.get_species_particle_count(sp) == 0: continue
+        for sp in self.particleCI.species_names:
+            if self.particleCI.get_species_particle_count(sp) == 0: continue
 
-            psaCI = self.particles.pseg_arr[sp] # segmented array for this species
+            psaCI = self.particleCI.pseg_arr[sp] # segmented array for this species
 
             # Loop on the particles for this species
             (np_seg, pseg) = psaCI.init_out_loop()

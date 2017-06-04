@@ -13,34 +13,13 @@ import unittest
 import dolfin as df_M
 
 from DT_Module import DTcontrol_C
-from DT_Module import DTparticleInput_C
 from UserUnits_Module import MyPlasmaUnits_C
-from Particle_Module import Particle_C
+from Particle_Module import *
 
 # Here's the mesh definition for this test
-from UserMesh_FE_XYZ_Module import UserMesh_C
+from UserMesh_FE_XYZ_Module import *
 
-class DTmeshInput_C(object):
-    """Input for the field mesh.  List the variables that can be
-       modified by the user.
-    """
-
-    def __init__(self):
-        """ List the mesh variables that the user can set in MAIN.py
-        """
-        self.pmin = None
-        self.pmax = None
-        self.cells_on_side = None
-
-        self.field_boundary_dict = None
-        self.particle_boundary_dict = None
-        self.particle_source_dict = None
-
-        return
-
-#class DTmeshInput_C(object): ENDCLASS
-
-
+#STARTCLASS
 class TestParticleMigration(unittest.TestCase):
     """Test of tracking neutral particles that drift across the mesh.
 
@@ -50,10 +29,12 @@ class TestParticleMigration(unittest.TestCase):
     
     def setUp(self):
 
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
         # Initializations performed before each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
 
         # Set up particle variables
         pinCI.precision = np_M.float64
@@ -70,35 +51,82 @@ class TestParticleMigration(unittest.TestCase):
         # and masses are normally those of the physical particles, and
         # not the computational macroparticles.  Macroparticle weights
         # are specified or computed in a separate file (see
-        # user_particles_module below) giving the distribution
+        # user_particle_module below) giving the distribution
         # functions, and can vary from particle to particle.
 
-        pinCI.particle_species = (('neutral_H',
-                             {'initial_distribution_type' : 'listed',
-                              'charge' : 0.0,
-                              'mass' : 1.0*MyPlasmaUnits_C.AMU,
-                              'dynamics' : 'explicit',
-#                              'number_per_cell' : 12,
-                              }
-                             ),
-                            )
+#         pinCI.particle_species = (('neutral_H',
+#                              {'initial_distribution_type' : 'listed',
+#                               'charge' : 0.0,
+#                               'mass' : 1.0*MyPlasmaUnits_C.AMU,
+#                               'dynamics' : 'explicit',
+# #                              'number_per_cell' : 12,
+#                               }
+#                              ),
+#                             )
 
-        # Provide the name of the .py file containing the user-provided particle distributions
-        pinCI.user_particles_module = "UserParticles_3D"
-#        print "setUp: UserParticle module is", pinCI.user_particles_module
-        UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_C = UPrt_M.UserParticleDistributions_C
+        speciesName = 'neutral_H'
+        charge = 0.0
+        mass = 1.0*MyPlasmaUnits_C.AMU
+        dynamics = 'explicit'
+        neutralHCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
-        self.pinCI = pinCI
+        # Add these species to particle input
+        pinCI.particle_species = (neutralHCI,
+                                 )
+        # Make the particle object from pinCI
+        self.particleCI = Particle_C(pinCI, print_flag=False)
 
-        # Make the particle object using pinCI
-        self.particleCI = Particle_C(pinCI, printFlag=False)
+        # Give the name of the .py file containing additional particle data (lists of
+        # particles, boundary conditions, source regions, etc.)
+        userParticleModule = "UserParticles_3D"
+#        print "setUp: UserParticle module is", userParticleModule
 
-        # Store the particles
-        for sp in self.particleCI.species_names:
-            if self.particleCI.initial_distribution_type[sp] == 'listed':
+        # Import this module
+        UPrt_M = im_M.import_module(userParticleModule)
+
+        self.particleCI.user_particle_module = userParticleModule
+        self.particleCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+
+        ### neutral H atoms are present at t=0
+        speciesName = 'neutral_H'
+        # Check that this species has been defined above
+        if speciesName not in self.particleCI.species_names:
+            print fncName + "The species", speciesName, "has not been defined"
+            sys.exit()
+
+        # Specify how the species will be initialized
+        initialDistributionType = 'listed'
+        # Check that there's a function listing the particles particles
+        printFlag = True
+        if hasattr(userParticleClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        # Write error message and exit if no distribution function exists
+        else:
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
+            sys.exit(errorMsg)
+
+        # Collect the parameters into a dictionary
+        # The 'listed' type will expect a function with the same name as the species.
+        neutralHParams = {'species_name': speciesName,
+                              'initial_distribution_type': initialDistributionType,
+                       }
+
+        # The dictionary keys are mnemonics for the initialized particles
+        initialParticlesDict = {
+                                'initial_neutral_H': (neutralHParams,),
+                                }
+
+        self.particleCI.initial_particles_dict = initialParticlesDict
+
+        # Create the initial particles
+        for ip in initialParticlesDict:
+            ipList = initialParticlesDict[ip]
+            ipParams = ipList[0]
+            s = ipParams['species_name']
+            initialDistributionType = ipParams['initial_distribution_type']
+            if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
-                self.particleCI.create_from_list(sp, False)
+                self.particleCI.create_from_list(s, False)
 
         plotFlag = False
         # Turn off plotting if there's no DISPLAY
@@ -111,7 +139,7 @@ class TestParticleMigration(unittest.TestCase):
         # Create 1D, 2D and 3D meshes that the particles can be tested against
 
         # 1d mesh input
-        mi1DCI = DTmeshInput_C()
+        mi1DCI = UserMeshInput_C()
         mi1DCI.pmin = df_M.Point(-10.0)
         mi1DCI.pmax = df_M.Point(10.0)
         mi1DCI.cells_on_side = (4)
@@ -121,7 +149,7 @@ class TestParticleMigration(unittest.TestCase):
 #        self.pmesh1DCI.compute_cell_dict()
 
         # 2D mesh input
-        mi2DCI = DTmeshInput_C()
+        mi2DCI = UserMeshInput_C()
         mi2DCI.pmin = df_M.Point(-10.0, -10.0)
         mi2DCI.pmax = df_M.Point(10.0, 10.0)
         mi2DCI.cells_on_side = (4, 2)
@@ -131,7 +159,7 @@ class TestParticleMigration(unittest.TestCase):
 #        self.pmesh2DCI.compute_cell_dict()
 
         # 3D mesh input
-        mi3DCI = DTmeshInput_C()
+        mi3DCI = UserMeshInput_C()
         mi3DCI.pmin = df_M.Point(-10.0, -10.0, -10.0)
         mi3DCI.pmax = df_M.Point(10.0, 10.0, 10.0)
         mi3DCI.cells_on_side = (4, 4, 4)
@@ -164,18 +192,11 @@ class TestParticleMigration(unittest.TestCase):
         ctrlCI = DTcontrol_C()
 
         ctrlCI.dt = 0.5
-        ctrlCI.nsteps = 19
+        ctrlCI.n_timesteps = 19
 
         # Run for 1, 2, and 3D meshes
 
         self.particleCI.pmeshCI = self.pmesh1DCI
-
-        # Initialize or reinitialize the particles
-#        for sp in self.particleCI.species_names:
-#            if self.particleCI.initial_distribution_type[sp] == 'listed':
-                # Put user-listed particles into the storage array
-#                self.particleCI.create_from_list(sp, printFlag=False, resetCounters=True)
-#                self.particleCI.create_from_list(sp, printFlag=False)
 
         # Get the initial cell index of each particle.
         self.particleCI.compute_mesh_cell_indices()
@@ -207,9 +228,9 @@ class TestParticleMigration(unittest.TestCase):
 
         p_expected = (psp0, psp1)
 
-        # Integrate for nsteps
-        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "timesteps"
-        for istep in xrange(ctrlCI.nsteps):
+        # Integrate for n_timesteps
+        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "timesteps"
+        for istep in xrange(ctrlCI.n_timesteps):
             self.particleCI.move_neutral_particles(ctrlCI.dt)
 
         # Check the results
@@ -239,7 +260,7 @@ class TestParticleMigration(unittest.TestCase):
         ctrlCI = DTcontrol_C()
 
         ctrlCI.dt = 0.5
-        ctrlCI.nsteps = 19
+        ctrlCI.n_timesteps = 19
 
         # Run for 2D mesh
 
@@ -284,9 +305,9 @@ class TestParticleMigration(unittest.TestCase):
 
         p_expected = (psp0, psp1)
 
-        # Integrate for nsteps
-        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "timesteps"
-        for istep in xrange(ctrlCI.nsteps):
+        # Integrate for n_timesteps
+        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "timesteps"
+        for istep in xrange(ctrlCI.n_timesteps):
             self.particleCI.move_neutral_particles(ctrlCI.dt)
 
         # Create a mesh plotter to display the trajectory
@@ -325,7 +346,7 @@ class TestParticleMigration(unittest.TestCase):
         ctrlCI = DTcontrol_C()
 
         ctrlCI.dt = 0.5
-        ctrlCI.nsteps = 19
+        ctrlCI.n_timesteps = 19
 
         # Run for 3D mesh
 
@@ -367,9 +388,9 @@ class TestParticleMigration(unittest.TestCase):
 
         p_expected = (psp0, psp1)
 
-        # Integrate for nsteps
-        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "steps"
-        for istep in xrange(ctrlCI.nsteps):
+        # Integrate for n_timesteps
+        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "steps"
+        for istep in xrange(ctrlCI.n_timesteps):
             self.particleCI.move_neutral_particles(ctrlCI.dt)
 
         # Create a mesh plotter to display the trajectory (just the
@@ -419,7 +440,7 @@ class TestParticleMigration(unittest.TestCase):
         ctrlCI = DTcontrol_C()
 
         ctrlCI.dt = 0.5
-        ctrlCI.nsteps = 18
+        ctrlCI.n_timesteps = 18
 
         # Run for 1, 2, and 3D meshes
 
@@ -437,7 +458,7 @@ class TestParticleMigration(unittest.TestCase):
             for sp in self.particleCI.species_names:
                 if self.particleCI.initial_distribution_type[sp] == 'listed':
                     # Put user-listed particles into the storage array
-                    self.particleCI.create_from_list(sp, printFlag=False, resetCounters=True)
+                    self.particleCI.create_from_list(sp, print_flag=False, resetCounters=True)
 
             # Get the initial cell index of each particle.
             self.particleCI.compute_mesh_cell_indices(meshCI)
@@ -467,8 +488,8 @@ class TestParticleMigration(unittest.TestCase):
 
             p_expected = (psp1, psp2)
 
-            # Integrate for nsteps
-            for istep in xrange(ctrlCI.nsteps):
+            # Integrate for n_timesteps
+            for istep in xrange(ctrlCI.n_timesteps):
                 self.particleCI.move_particles_without_fields(ctrlCI.dt, meshCI=meshCI)
 
                     #self.assertTrue(meshCI.is_inside(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")

@@ -1,4 +1,4 @@
-# DT code in Python
+# DnT code in Python
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -12,14 +12,9 @@ import importlib as im_M
 import numpy as np_M
 #import dolfin as df_M
 
-import DT_Module as DT_M
-#import Field_Module as Fld_M
-#import Particle_Module as Prt_M
-#import Field_Particle_Module as FldPrt_M
+import DnT_Module as DnT_M
 
 import Trajectory_Module as Traj_M
-
-#import Particles-Mesh_Module as PrtMsh_M
 
 #import IO_Module as IO_M
 import UserUnits_Module as U_M
@@ -34,7 +29,7 @@ import UserUnits_Module as U_M
 Convert = U_M.MyPlasmaUnits_C
 
 # Create the simulation object
-systemCI = DT_M.DTsystem_C()
+systemCI = DnT_M.DnTsystem_C()
 
 # Write input with python.
 
@@ -42,11 +37,11 @@ systemCI = DT_M.DTsystem_C()
 # USER INPUT SECTION
 #
 
-# Create an instance of a DTcontrol object
-ctrlCI = DT_M.DTcontrol_C(use_mpi=True)
+# Create an instance of a DnTcontrol object
+ctrlCI = DnT_M.DnTcontrol_C(use_mpi=True)
 
 # Specify numerical precision
-#prec = DTparam.precision = np_M.float32
+#prec = DnTparam.precision = np_M.float32
 ctrlCI.precision = np_M.float64
 
 # Timestep
@@ -56,13 +51,13 @@ ctrlCI.dt = 0.1
 ctrlCI.nsteps = 10 # doesn't usually need to be passed down to functions
 
 #user_mesh_input = "UserMesh-QuarterCircle.py"
-#DTrun.user_mesh_fileobj = IO_M.open_file(user_mesh_input, 'r')
+#DnTrun.user_mesh_fileobj = IO_M.open_file(user_mesh_input, 'r')
 
 # may not need this?
-# DTrun.mesh_type = 'FE'
-# if DTrun.mesh_type not in DTrun.mesh_type_options:
-#     print 'Mesh type must be one of ', DTrun.mesh_type_options
-#     error_msg = "Mesh type must be one of %s" % DTrun.mesh_type_options
+# DnTrun.mesh_type = 'FE'
+# if DnTrun.mesh_type not in DnTrun.mesh_type_options:
+#     print 'Mesh type must be one of ', DnTrun.mesh_type_options
+#     error_msg = "Mesh type must be one of %s" % DnTrun.mesh_type_options
 #     sys.exit(error_msg)
 
 # The particles live inside the spatial domain defined by the boundary
@@ -77,7 +72,7 @@ ctrlCI.nsteps = 10 # doesn't usually need to be passed down to functions
 
 # The user can specify some geometry and mesh parameters here.
 
-miCI = DT_M.DTmeshInput_C()
+miCI = DnT_M.DnTmeshInput_C()
 
 # radial
 miCI.rmin, miCI.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
@@ -142,7 +137,7 @@ user_fieldsolve_module = "UserMesh_y_Fields_FE2D_Module"
 UFldSlv_M = im_M.import_module(fiCI.user_fieldsolve_module)
 
 # poissonSolveInput class contains specialized input for the poissinsolver
-#psiCI = DT_M.DTpoissonSolveInput()
+#psiCI = DnT_M.DnTpoissonSolveInput()
 linear_solver = 'cg'
 preconditioner = 'ilu'
 
@@ -164,8 +159,8 @@ ctrlCI.use_particles = True
 
 if ctrlCI.use_particles == True:
 
-    # Create an instance of the ParticleInput class
-    pinCI = DT_M.ParticleInput_C()
+    # Create an instance of the DnTparticleInput class
+    pinCI = DnT_M.DnTparticleInput_C()
 
     pinCI.precision = ctrlCI.precision
 
@@ -182,15 +177,15 @@ if ctrlCI.use_particles == True:
 
 #    position_coordinates = ('x', 'y', 'z') # Usually, but not always, these are the same as the mesh coordinates, and have the same number of dimensions.
 
-#if DTrun.position_coordinates not in DTrun.position_coordinate_options:
-#    error_msg = "Position coordinates must be one of %s" % DTrun.position_coordinate_options
+#if DnTrun.position_coordinates not in DnTrun.position_coordinate_options:
+#    error_msg = "Position coordinates must be one of %s" % DnTrun.position_coordinate_options
 #    sys.exit(error_msg)
 
 # Could construct these names from the above: 'u' + comp
 
 #    velocity_coordinates = ('ux', 'uy', 'uz')
-#if DTrun.velocity_coordinates not in DTrun.velocity_coordinate_options:
-#    error_msg = "Position coordinates must be one of %s" % DTrun.velocity_coordinate_options
+#if DnTrun.velocity_coordinates not in DnTrun.velocity_coordinate_options:
+#    error_msg = "Position coordinates must be one of %s" % DnTrun.velocity_coordinate_options
 #    sys.exit(error_msg)
 
 #    pinCI.phase_coords = position_coordinates + velocity_coordinates
@@ -201,7 +196,7 @@ if ctrlCI.use_particles == True:
 
 # Define the particle species used
 # need this?
-#    DTrun.user_particles_fileobj = IO_M.open_file(user_particles_input, 'r')
+#    DnTrun.user_particles_fileobj = IO_M.open_file(user_particles_input, 'r')
 
     # Give the properties of the particle species.  The charges and
     # masses are normally those of the physical plasma particles, and
@@ -244,16 +239,16 @@ if ctrlCI.use_particles == True:
 #    ph = PH_M.Particles_Mesh(allSpecies)
 
 # Length of the particle array segments
-#    seg_len = DTrun.PARTICLE_SEGMENT_LENGTH = 100
+#    seg_len = DnTrun.PARTICLE_SEGMENT_LENGTH = 100
 
 # Create the simulation object
-#    runCI = DT_M.DTrun_C()
+#    runCI = DnT_M.DnTrun_C()
 
 
 # Create the object that initializes and stores the particle species
 # Don't need a seg_len here: Could be using storage that's not a segmented array.
-# Pass DTrun?, or storage info? Or just put seg_len in the SV class? Or a global?
-#    DTrun.particles = Part_M.Particles_C(particle_species, phase_coords, prec, seg_len, UPrt_C, echoFlag=True)
+# Pass DnTrun?, or storage info? Or just put seg_len in the SV class? Or a global?
+#    DnTrun.particles = Part_M.Particles_C(particle_species, phase_coords, prec, seg_len, UPrt_C, echoFlag=True)
     systemCI.particleCI = Part_M.Particle_C(pinCI, printFlag=True)
 
 # ??Generate the initial particle distributions
@@ -268,7 +263,7 @@ if ctrlCI.use_particles == True:
 # Interaction of fields and particles
 
     # Create the input for this...
-    fpinCI = DT_M.DTfieldParticleInput_C()
+    fpinCI = DnT_M.DnTfieldParticleInput_C()
     fpinCI.copy_field_mesh = False
     fpinCI.particle_integration_loop = 'loop-on-particles'
     fpinCI.force_components = ['x', 'y',]
@@ -282,15 +277,15 @@ if ctrlCI.use_particles == True:
 # species type will be collected; e.g., allElectrons, allIons
 
 # Create the initial state of the kinetic plasma from the particles and mesh
-# DTrun.particles_mesh = PrtMsh_M.Particles_UserMesh_C(DTrun.particles, DTrun.mesh)
-# DTrun.initial_state = PrtMsh_M.Particles_UserMesh_C(DTrun.particles, DTrun.mesh)
+# DnTrun.particles_mesh = PrtMsh_M.Particles_UserMesh_C(DnTrun.particles, DnTrun.mesh)
+# DnTrun.initial_state = PrtMsh_M.Particles_UserMesh_C(DnTrun.particles, DnTrun.mesh)
 
-#    DTrun.initial_state = PrtMsh_M.Particles_UserMesh_C(DTrun.particles, DTrun.mesh)
+#    DnTrun.initial_state = PrtMsh_M.Particles_UserMesh_C(DnTrun.particles, DnTrun.mesh)
 
 #ph.create_initial_particles(mesh)
 
 # Plot the initial state
-# DTrun.plot(fields, particles)
+# DnTrun.plot(fields, particles)
 
 # sys.exit()
 
@@ -298,7 +293,7 @@ if ctrlCI.use_particles == True:
 # Particle trajectories
 
     # Create input for trajectories
-    trajinCI = DT_M.DTtrajectoryInput_C()
+    trajinCI = DnT_M.DnTtrajectoryInput_C()
 
     trajinCI.maxpoints = 1000 # Set to None to get every point
 

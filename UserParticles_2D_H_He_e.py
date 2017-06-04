@@ -12,7 +12,6 @@ __all__ = ['UserParticleDistributions_C.initial_electrons',
            ]
 
 import sys
-from Particles_Module import Particles_C
 import UserUnits_Module as U_M
 
 #
@@ -26,6 +25,7 @@ import UserUnits_Module as U_M
 # Select the unit system to be used for input parameters.
 Convert = U_M.MyPlasmaUnits_C
 
+#STARTCLASS
 class UserParticleDistributions_C(object):
     """UserParticleDistributions_C is to be edited by the user to
        specify initial particle distributions.  The units are MKS by
@@ -84,6 +84,7 @@ class UserParticleDistributions_C(object):
 
 #class UserParticleDistributions_C(object):ENDCLASS
 
+#STARTCLASS
 class UserParticleBoundaryConditions_C(object):
     """UserParticleBoundaryConditions_C implements commonly-used boundary
        conditions for kinetic particles incident on a mesh boundary.
@@ -99,10 +100,10 @@ class UserParticleBoundaryConditions_C(object):
 #    ISEE    = 0b1 << 2        # Ion-stimulated electron emission
 #    SEE     = 0b1 << 3        # Secondary-electron emission
 
-    if hasattr(user_particles_class, species_name):
+    if hasattr(user_particle_class, species_name):
         # store the name of the distribution function
-        self.initial_distribution_function[species_name] = getattr(user_particles_class, species_name)
-        if printFlag: print 'Particle_C: Initial distribution for', species_name, ' is the function of that name in ', user_particles_class
+        self.initial_distribution_function[species_name] = getattr(user_particle_class, species_name)
+        if printFlag: print 'Particle_C: Initial distribution for', species_name, ' is the function of that name in ', user_particle_class
     # Write error message and exit if no distribution function exists
     else:
         error_msg = "Particle_C: Need to define a particle distribution function %s in UserParticle.py for species %s " % (species_name, species_name)

@@ -38,12 +38,12 @@ class SegmentedArray_C(object):
 # Provide a classmethod to set this value?
 
 #class SegmentedArray_C(object):
-    def __init__(self, segment_length, item_dict):
+    def __init__(self, segment_length, item_dtype):
         """Set up the segmented array.
         """
 
         self.SEGMENTLENGTH = segment_length
-        self.ItemDict = item_dict
+        self.ItemType = item_dtype
 
         # Make a pair of empty list of segments
         self.SegListPair = [ [], [] ]
@@ -60,7 +60,7 @@ class SegmentedArray_C(object):
         self.nPmax = [0, 0]
         for iSA in (0, 1):
             # Add the numpy array for the first segment
-            self.SegListPair[iSA].append(np_M.empty(self.SEGMENTLENGTH, dtype=item_dict))
+            self.SegListPair[iSA].append(np_M.empty(self.SEGMENTLENGTH, dtype=item_dtype))
             # Count the number of segments:
             self.nSeg[iSA] = len(self.SegListPair[iSA])
             # Maximum number of particles that can be stored at present
@@ -204,7 +204,7 @@ class SegmentedArray_C(object):
         # Abbreviations
 
         self.nSeg[theSA] += 1
-        self.SegListPair[theSA].append(np_M.empty(self.SEGMENTLENGTH, dtype=self.ItemDict))
+        self.SegListPair[theSA].append(np_M.empty(self.SEGMENTLENGTH, dtype=self.ItemType))
 
         # A list of the locations of unneeded items in the segment
 ##        self.HoleIndices[self.nSeg] = self.HoleIndices.append(np.empty(self.SegmentLength, dtype=int))

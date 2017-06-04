@@ -25,6 +25,64 @@ from Dolfin_Module import PoissonSolve_C
 
 import UserUnits_Module as U_M
 
+class UserMeshInput_C(object):
+#class DTmeshInput_C(object):
+    """Input for the field mesh
+       The user can modify this for different mesh specifications.
+       Field mesh, field solve control?  Could use to pass control things to the field mesh
+    """
+
+    def __init__(self):
+        """ List the mesh variables that the user can set in MAIN.py
+        """
+#        self.mesh_type_options = ['FE', 'Cartesian']
+#        self.mesh_type = None
+
+        self.mesh_file = None
+
+        self.user_mesh_input = None
+        self.user_mesh_class = None
+
+        self.precision = None
+        self.mesh_class = None
+
+        self.rmin = None
+        self.rmax = None
+        self.nr = None
+        self.stretch = None
+        
+        self.tmax = None
+        self.nt = None
+
+        # Options: 'left, 'right', 'left/right', 'crossed'
+        self.diagonal = None
+
+        self.field_boundary_file = None
+        # User-assigned names of mesh boundaries where Dirichlet
+        # values are set.
+        self.field_boundary_dict = None
+
+        self.particle_boundary_file = None
+        # User-assigned names of mesh boundaries where particle BCs
+        # are set.
+        self.particle_boundary_dict = None
+
+        self.particle_source_file = None
+        # User-assigned names of mesh regions where particles are
+        # created
+        self.particle_source_dict = None
+
+# May want things like this in order to call DT from a loop?
+# or spawn off many runs?
+# maybe don't need all of these:
+        self.meshCI = None
+        self.pmeshCI = None
+
+        # the particle mesh is a copy of the field mesh
+#        self.pmeshCI = df_M.Mesh(meshCI)
+
+        return
+
 # Create definitions of functions to test if points are on the boundaries
 # The XBoundary function takes care of the two Dirichlet boundaries, and
 # set_all() marks every facet with a 2.

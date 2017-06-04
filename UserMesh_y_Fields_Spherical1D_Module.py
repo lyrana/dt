@@ -24,11 +24,64 @@ from Dolfin_Module import PoissonSolve_C
 
 import UserUnits_Module as U_M
 
+class UserMeshInput_C(object):
+    """Input for the field mesh
+       The user can modify this for different mesh specifications.
+       Field mesh, field solve control?  Could use to pass control things to the field mesh
+    """
+
+    def __init__(self):
+        """ List the mesh variables that the user can set in MAIN.py
+        """
+#        self.mesh_type_options = ['FE', 'Cartesian']
+#        self.mesh_type = None
+
+        self.mesh_file = None
+
+        self.user_mesh_input = None
+        self.user_mesh_class = None
+
+        self.precision = None
+        self.mesh_class = None
+
+        self.rmin = None
+        self.rmax = None
+        self.nr = None
+        self.stretch = None
+        
+        self.field_boundary_file = None
+        # User-assigned names of mesh boundaries where Dirichlet
+        # values are set.
+        self.field_boundary_dict = None
+
+        self.particle_boundary_file = None
+        # User-assigned names of mesh boundaries where particle BCs
+        # are set.
+        self.particle_boundary_dict = None
+
+        self.particle_source_file = None
+        # User-assigned names of mesh regions where particles are
+        # created
+        self.particle_source_dict = None
+
+# May want things like this in order to call DT from a loop?
+# or spawn off many runs?
+# maybe don't need all of these:
+        self.meshCI = None
+        self.pmeshCI = None
+
+        # the particle mesh is a copy of the field mesh
+#        self.pmeshCI = df_M.Mesh(meshCI)
+
+        return
+        
+#class UserMeshInput_C(object):ENDCLASS
+
+
 # Define subdomain classes to test if points are on the boundaries
 # The XBoundary function takes care of the two Dirichlet boundaries, and
 # set_all() marks every facet with a 2.
 
-#ClassClassClassClassClassClassClassClassclass
 class XBoundary(df_M.SubDomain):
     """The XBoundary class is a specialized SubDomain
     """
@@ -44,10 +97,11 @@ class XBoundary(df_M.SubDomain):
         tol = 1.0e-10
         return on_boundary and abs(x[0]-self.x_boundary_value) < tol
 
+#class XBoundary(df_M.SubDomain):ENDCLASS
+
 # User exposes whatever mesh parameters are useful in __init__ and
 # these can be set in __main__
 
-#ClassClassClassClassClassClassClassClassclass
 class UserMesh_C(Mesh_C):
     """UserMesh_C is derived from Mesh_C.  It is to be edited by the user to specify the simulation
        mesh.  The units are MKS by default (i.e., if no conversion
@@ -224,6 +278,38 @@ class UserMesh_C(Mesh_C):
 # The field-solve class could be in a different module file.  Here,
 # the connection between the field mesh and the field solve is close, so
 # they're both in the same file.
+
+# This isn't used anywhere: not enough args?
+
+class UserPoissonSolveInput_C(object):
+    """Input for the field solver(s).
+       The user can modify this for different field solvers.
+    """
+
+    def __init__(self):
+        """ List the field-solver parameters that the user
+        can set in MAIN.py
+        """
+
+        self.user_poissonsolve_input = None
+        self.user_poissonsolve_class = None
+
+        self.meshCI = None
+
+        self.element_type = None
+        self.element_degree = None
+
+        self.linear_solver = None
+        self.preconditioner = None
+
+        # Dirichlet BC object
+        self.phi_BCs = None
+
+        self.computeEflag = None
+
+        return
+
+#class UserPoissonSolveInput_C(object):ENDCLASS
 
 #
 # Solve the equations for the fields

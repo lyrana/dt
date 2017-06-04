@@ -2,9 +2,9 @@
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-__all__ = ['', 
-           '', 
-           '', ]
+__all__ = ['TrajectoryInput_C', 
+           'Trajectory_C', 
+          ]
 
 import sys
 import numpy as np_M
@@ -12,6 +12,29 @@ import numpy as np_M
 # !!! Direct invocation of dolfin for trajectory plots!!!
 import dolfin as df_M
 
+#STARTCLASS
+class TrajectoryInput_C(object):
+    """Parameters that specify particle trajectory
+    """
+
+    def __init__(self):
+        """ Initialize variables
+        """
+
+        # Upper limit is the number of timesteps
+        self.maxpoints = None
+
+        self.npoints = None
+
+        self.explicit_dict = None
+        self.implicit_dict = None
+        self.neutral_dict = None
+
+        return
+
+#class TrajectoryInput_C(object):ENDCLASS
+
+#STARTCLASS
 class Trajectory_C(object):
     """Trajectory_C has a collection of particle trajectories indexed
        by species name.
@@ -38,7 +61,7 @@ class Trajectory_C(object):
 
            :var npoints: The number of datapoints that will be saved in a trajectory.  If
                          maxpoints is set, then npoints = maxpoints.  If maxpoints is
-                         'None', then npoints = nsteps, i.e., every step is saved.
+                         'None', then npoints = n_timesteps, i.e., every step is saved.
 
            :var ParticleIdList: ParticleIdList[sp] is a list of the particle indices of
                                 species sp that were selected for trajectories.
@@ -46,7 +69,7 @@ class Trajectory_C(object):
            :var DataList: DataList[sp][itraj] is a numpy array of length npoints that
                           stores the trajectory data for trajectory itraj of species sp.
 
-           :var explicitDict: a dictionary in numpy dtype format giving the string names
+           :var explicit_dict: a dictionary in numpy dtype format giving the string names
                               of particle attributes that can be saved in a trajectory.
 
            The storage uses numpy arrays of length self.npoints           
@@ -64,10 +87,10 @@ class Trajectory_C(object):
         if trajinCI.maxpoints == None:
             self.skip = 1
         else:
-            self.skip = ctrlCI.nsteps/trajinCI.maxpoints + 1
+            self.skip = ctrlCI.n_timesteps/trajinCI.maxpoints + 1
 
         # Length of trajectory data arrays
-        self.npoints = ctrlCI.nsteps/self.skip + 1
+        self.npoints = ctrlCI.n_timesteps/self.skip + 1
 
         # Time interval between datapoints
         self.data_interval = self.skip * ctrlCI.dt
@@ -79,9 +102,9 @@ class Trajectory_C(object):
 
         # The dictionary is in the form of a numpy dtype, giving names
         # and types of the trajectory values, as specified by the user's input.
-        self.explicitDict = trajinCI.explicitDict
-        self.implicitDict = trajinCI.implicitDict
-        self.neutralDict = trajinCI.neutralDict
+        self.explicit_dict = trajinCI.explicit_dict
+        self.implicit_dict = trajinCI.implicit_dict
+        self.neutral_dict = trajinCI.neutral_dict
 
         # For each species, there is
         #    1. a list of trajectory-particle IDs
@@ -97,10 +120,6 @@ class Trajectory_C(object):
             self.DataList[sp] = []
             self.TrajectoryLength[sp] = []
 
-        # Create a ndarray for 1 particle that we can use like a SA.
-#            self.explicit_1particle_arr = np_M.empty(1, dtype=self.explicitDict))
-#            self.implicit_1particle_arr = np_M.empty(1, dtype=self.implicitDict))
-
         return
 #    def __init__(self, trajinCI, ctrlCI, explicit_species, implicit_species, neutral_species):ENDDEF
 
@@ -110,11 +129,11 @@ class Trajectory_C(object):
 
         # Add a numpy array for the data
         if dynamics_type == 'explicit':
-            self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.explicitDict))
+            self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.explicit_dict))
         elif dynamics_type == 'implicit':
-            self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.implicitDict))
+            self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.implicit_dict))
         elif dynamics_type == 'neutral':
-            self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.neutralDict))
+            self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.neutral_dict))
         else:
             error_msg = "Trajectory_C:create_trajectory: dynamics_type %s is unknown" % dynamics_type
             sys.exit(error_msg)
@@ -206,7 +225,7 @@ class Trajectory_C(object):
 
         plotter.plot()
         if hold_plot is True: df_M.interactive() # Stops the plot from disappearing
-                
+
         return
 #    def plot_trajectories_on_mesh(self):ENDDEF
 

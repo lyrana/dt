@@ -14,8 +14,7 @@ import importlib as im_M
 import numpy as np_M
 import dolfin as df_M
 
-from DT_Module import DTmeshInput_C
-from DT_Module import DTpoissonSolveInput_C
+from UserMesh_y_Fields_Spherical1D_Module import *
 
 class TestPoissonSolve(unittest.TestCase):
     """Test the field solvers in UserMesh_y_Fields_FE2D_Module.py"""
@@ -36,15 +35,16 @@ class TestPoissonSolve(unittest.TestCase):
         fncName = sys._getframe().f_code.co_name
         print '\ntest: ', fncName, '('+__file__+')'
 
-        # Plotting
+        ## Plotting
         if os.environ.get('DISPLAY') is None:
             plotFlag=False
         else:
             plotFlag=True
 
-        miCI = DTmeshInput_C()
+        miCI = UserMeshInput_C()
 
-        # Make the mesh
+        ## Make the mesh
+
         # radial
         miCI.rmin, miCI.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
         miCI.nr = 10 # Number of divisions in r direction
@@ -61,10 +61,9 @@ class TestPoissonSolve(unittest.TestCase):
 
         miCI.field_boundary_dict = fieldBoundaryDict
 
-        from UserMesh_y_Fields_Spherical1D_Module import UserMesh_C
         meshCI = UserMesh_C(meshInputCI=miCI, compute_tree=False, plot_flag=True)
 
-        # Storage for the potential and electric field
+        ## Storage for the potential and electric field
 
         # For this calculation, we use the Dolfin framework for finite-element fields.
         field_infrastructure_module = 'Dolfin_Module'
@@ -92,7 +91,7 @@ class TestPoissonSolve(unittest.TestCase):
                                       element_degree=phiElementDegree-1,
                                       field_type='vector')
 
-        # The Poisson solver parameters
+        ## The Poisson solver parameters
 
         functionSpace = phi.function_space
 
@@ -110,7 +109,6 @@ class TestPoissonSolve(unittest.TestCase):
         phiBCs = dict( (bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
 
         # Compute the electrostatic field from phi
-        from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve_C
         # Have to pass "mesh" because a SpatialCoordinate is used in Poisson's equation.
         poissonsolveCI = UserPoissonSolve_C(phi,
                                             linearSolver, preconditioner,
@@ -200,7 +198,7 @@ class TestPoissonSolve(unittest.TestCase):
         else:
             plotFlag=True
 
-        miCI = DTmeshInput_C()
+        miCI = UserMeshInput_C()
 
         # Make the mesh
         # radial

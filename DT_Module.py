@@ -1,4 +1,4 @@
-# timestep, nsteps, 
+# timestep, n_timesteps, 
 # things you need for debugging, like procid
 
 #__version__ = 0.1
@@ -7,6 +7,7 @@
 
 import numpy as np_M
 
+#STARTCLASS
 class DTcontrol_C(object):
     """Top-level control of the run
     """
@@ -37,7 +38,20 @@ class DTcontrol_C(object):
         self.E0 = None
         self.B0 = None
         
+        # Random number seed
+        self.random_seed = np_M.random.seed(1)
+
         # Diagnostics
+
+        self.particle_output_file = None
+        self.particle_output_interval = None
+        self.particle_output_attributes = None
+#        self.particle_output_attribute_dtypes = None
+
+        # Run information
+
+        self.timestep_count = None
+        self.time = None
 
         return
 #    def __init__(self, use_mpi = False):ENDDEF
@@ -48,6 +62,7 @@ class DTcontrol_C(object):
 
 #class DTcontrol_C(object):ENDCLASS
 
+#STARTCLASS
 class DTsystem_C(object):
     """The physical system of interacting fields and particles.
     """
@@ -75,14 +90,14 @@ class DTsystem_C(object):
         """
         pCI = self.particleCI # abbrev for particle Class Instance
 
-#        for istep in xrange(ctrlCI.nsteps):
+#        for istep in xrange(ctrlCI.n_timesteps):
 #            for sp in pCI.names:
 #                pCI.move_particles_in_uniform_fields(sp, ctrlCI)
 
         dt = ctrlCI.dt
         E0 = ctrlCI.E0
-        for istep in xrange(ctrlCI.nsteps):
-            # needs dt; doesn't need nsteps
+        for istep in xrange(ctrlCI.n_timesteps):
+            # needs dt; doesn't need n_timesteps
             for sp in pCI.names:
 
                 if self.pCI.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
@@ -114,8 +129,8 @@ class DTsystem_C(object):
 
         dt = ctrlCI.dt
 
-        for istep in xrange(ctrlCI.nsteps):
-            # needs dt; doesn't need nsteps
+        for istep in xrange(ctrlCI.n_timesteps):
+            # needs dt; doesn't need n_timesteps
 
             # Gather particle trajectory data
             if pCI.trajCI.trajCI is not None:
@@ -257,167 +272,7 @@ class DTsystem_C(object):
 
 #class DTsystem_C(object):ENDCLASS
 
-class DTparticleInput_C(object):
-    """Particle input class.
-
-       Contains the variables that describe the particles. The values are
-       usually set by the user in MAIN.py.
-
-       .. note:: The user can modify this class if different variables
-                 are needed to specify the particles.
-
-    """
-
-    def __init__(self):
-
-        # Usually set from ctrlCI.precision
-        # Example: numpy.float64
-        self.precision = None
-
-        # Force components acting on the particles
-        # e.g., ['x', 'y', 'z']
-        self.force_components = None
-
-        # Usually set from ctrlCI.precision
-        # Example: numpy.float64
-        self.force_precision = None
-
-        # Values: 'loop-on-particles', 'loop-on-cells'
-        self.particle_integration_loop = None
-
-        # Determines the particle-storage dimensions
-        # Example: ['x', 'y',]
-        self.position_coordinates = None
-
-# May want things like this in order to call DT from a loop?
-# or spawn off many runs?
-# maybe don't need all of these:
-        self.particle_species = None
-
-        # The initial particle mesh is a copy of the field mesh
-#        self.pmesh = df_M.Mesh(mesh)
-        self.pmeshCI = None
-
-        # Module containing user-supplied particle distributions and
-        # boundary-conditions.
-        self.user_particles_module = None
-        # The class containing distribution functions
-        self.user_particles_class = None
-        # The class containing particle boundary conditions
-        self.user_particle_bcs_class = None
-
-        return
-
-#class DTparticleInput_C(object):ENDCLASS
-
-class DTmeshInput_C(object):
-    """Input for the field mesh
-       The user can modify this for different mesh specifications.
-       Field mesh, field solve control?  Could use to pass control things to the field mesh
-    """
-
-    def __init__(self):
-        """ List the mesh variables that the user can set in MAIN.py
-        """
-#        self.mesh_type_options = ['FE', 'Cartesian']
-#        self.mesh_type = None
-
-        self.mesh_file = None
-
-        self.user_mesh_input = None
-        self.user_mesh_class = None
-
-        self.precision = None
-        self.mesh_class = None
-
-        self.rmin = None
-        self.rmax = None
-        self.nr = None
-        self.stretch = None
-        
-        self.tmax = None
-        self.nt = None
-
-        # Options: 'left, 'right', 'left/right', 'crossed'
-        self.diagonal = None
-
-        self.field_boundary_file = None
-        # User-assigned names of mesh boundaries where Dirichlet
-        # values are set.
-        self.field_boundary_dict = None
-
-        self.particle_boundary_file = None
-        # User-assigned names of mesh boundaries where particle BCs
-        # are set.
-        self.particle_boundary_dict = None
-
-        self.particle_source_file = None
-        # User-assigned names of mesh regions where particles are
-        # created
-        self.particle_source_dict = None
-
-# May want things like this in order to call DT from a loop?
-# or spawn off many runs?
-# maybe don't need all of these:
-        self.meshCI = None
-        self.pmeshCI = None
-
-        # the particle mesh is a copy of the field mesh
-#        self.pmeshCI = df_M.Mesh(meshCI)
-
-        return
-        
-#class DTmeshInput_C(object):ENDCLASS
-
-class DTpoissonSolveInput_C(object):
-    """Input for the field solver(s).
-       The user can modify this for different field solvers.
-    """
-
-    def __init__(self):
-        """ List the field-solver parameters that the user
-        can set in MAIN.py
-        """
-
-        self.user_poissonsolve_input = None
-        self.user_poissonsolve_class = None
-
-        self.meshCI = None
-
-        self.element_type = None
-        self.element_degree = None
-
-        self.linear_solver = None
-        self.preconditioner = None
-
-        # Dirichlet BC object
-        self.phi_BCs = None
-
-        self.computeEflag = None
-
-        return
-
-#class DTpoissonSolveInput_C(object):ENDCLASS
-
-class DTtrajectoryInput_C(object):
-    """Parameters that specify particle trajectory
-    """
-
-    def __init__(self):
-        """ Initialize variables
-        """
-
-        # Upper limit is the number of timesteps
-        self.maxpoints = None
-
-        self.npoints = None
-
-
-
-        return
-
-#class DTtrajectoryInput_C(object):ENDCLASS
-
+#STARTCLASS
 class DToutput_C(object):
     """Output specifications
     """

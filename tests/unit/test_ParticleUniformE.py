@@ -11,10 +11,11 @@ import unittest
 
 import DT_Module as DT_M
 
-from DT_Module import DTparticleInput_C
 from UserUnits_Module import MyPlasmaUnits_C
 from Particle_Module import Particle_C
+from Particle_Module import *
 
+#STARTCLASS
 class Vec_C(object):
     """ Creates a 1, 2, or 3D vector.
     """
@@ -31,15 +32,18 @@ class Vec_C(object):
 
 # class Vec_C(object): ENDCLASS
 
+#STARTCLASS
 class TestParticleUniformE(unittest.TestCase):
     """Test classes in Particle_Module"""
     
     def setUp(self):
 
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
         # initializations for each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
         # Initialize particles
         pinCI.precision = numpy.float64
         pinCI.particle_integration_loop = 'loop-on-particles'
@@ -49,63 +53,153 @@ class TestParticleUniformE(unittest.TestCase):
 
         # Specify the particle species for this calculation
         # 1. electrons
-        pinCI.particle_species = (('plasmaelectrons',
-                             {'initial_distribution_type' : 'listed',
-                              'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
-                              'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
-                              'dynamics' : 'explicit',
-#                              'number_per_cell' : 12,
+#         pinCI.particle_species = (('plasmaelectrons',
+#                              {'initial_distribution_type' : 'listed',
+#                               'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
+#                               'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
+#                               'dynamics' : 'explicit',
+# #                              'number_per_cell' : 12,
+#                               }
+#                              ),
+#         # 2. Hplus (proton)
+#                             ('Hplus', 
+#                              {'initial_distribution_type' : 'listed',
+#                               'charge' : 1.0*MyPlasmaUnits_C.elem_charge,
+#                               'mass' : 1.0*MyPlasmaUnits_C.proton_mass,
+#                               'dynamics' : 'explicit',
+# #                              'mass' : 1.0*MyPlasmaUnits_C.AMU,
+# #                              'number_per_cell' : 6,
+#                               }
+#                              ),
+#         # 3. Neutral: test when there are no particles
+#                             ('He', 
+#                              {'initial_distribution_type' : None,
+#                               'charge' : 0.0,
+#                               'mass' : 4.0*MyPlasmaUnits_C.AMU,
+#                               'dynamics' : 'explicit',
+# #                              'number_per_cell' : 1,
+#                               }
+#                              ),
+#                             )
+
+
+        speciesName = 'plasma_electrons'
+        charge = -1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.electron_mass
+        dynamics = 'explicit'
+        plasmaElectronsCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        speciesName = 'H_plus'
+        charge = 1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.proton_mass
+        dynamics = 'explicit'
+        HPlusCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        speciesName = 'He'
+        charge = 0.0
+        mass = 4.0*MyPlasmaUnits_C.AMU
+        dynamics = 'explicit'
+        HeCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        # Add these species to particle input
+        pinCI.particle_species = (plasmaElectronsCI, HPlusCI, HeCI,
+                                 )
+        # Make the particle object from pinCI
+        self.particleCI = Particle_C(pinCI, print_flag=False)
+
+        # Give the name of the .py file containing additional particle data (lists of
+        # particles, boundary conditions, source regions, etc.)
+        userParticleModule = "UserParticles_H_He_e"
+
+        # Import this module
+        UPrt_M = im_M.import_module(userParticleModule)
+
+        self.particleCI.user_particle_module = userParticleModule
+        self.particleCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+
+
+        ### plasma_electrons are present at t=0
+
+        # Name the initialized species (it should be in species_names above)
+        speciesName = 'plasma_electrons'
+        # Check that this species has been defined above
+        if speciesName not in self.particleCI.species_names:
+            print fncName + "The species", speciesName, "has not been defined"
+            sys.exit()
+
+        # Specify how the species will be initialized
+        initialDistributionType = 'listed'
+        # Check that there's a function listing the particles particles
+        printFlag = True
+        if hasattr(userParticleClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        # Write error message and exit if no distribution function exists
+        else:
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticleModule, speciesName)
+            sys.exit(errorMsg)
+
+        # Collect the parameters into a dictionary
+        # The 'listed' type will expect a function with the same name as the species.
+        plasmaElectronParams = {'species_name': speciesName,
+                              'initial_distribution_type': initialDistributionType,
                               }
-                             ),
-        # 2. Hplus (proton)
-                            ('Hplus', 
-                             {'initial_distribution_type' : 'listed',
-                              'charge' : 1.0*MyPlasmaUnits_C.elem_charge,
-                              'mass' : 1.0*MyPlasmaUnits_C.proton_mass,
-                              'dynamics' : 'explicit',
-#                              'mass' : 1.0*MyPlasmaUnits_C.AMU,
-#                              'number_per_cell' : 6,
-                              }
-                             ),
-        # 3. Neutral: test when there are no particles
-                            ('He', 
-                             {'initial_distribution_type' : None,
-                              'charge' : 0.0,
-                              'mass' : 4.0*MyPlasmaUnits_C.AMU,
-                              'dynamics' : 'explicit',
-#                              'number_per_cell' : 1,
-                              }
-                             ),
-                            )
 
-        # Provide the initial conditions for the above species
-        pinCI.user_particles_module = "UserParticles_H_He_e"
-        UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_M.UserParticleDistributions_C
+        ## H+ ions are present at t=0
+        speciesName = 'H_plus'
+        # Check that this species has been defined above
+        if speciesName not in self.particleCI.species_names:
+            print fncName + "The species", speciesName, "has not been defined"
+            sys.exit()
 
-        self.pinCI = pinCI
+        # Specify how the species will be initialized
+        initialDistributionType = 'listed'
+        # Check that there's a function listing the particles particles
+        printFlag = True
+        if hasattr(userParticleClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        # Write error message and exit if no distribution function exists
+        else:
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
+            sys.exit(errorMsg)
 
-        # Make the storage array
-        self.particleCI = Particle_C(pinCI, printFlag=False)
+        # Collect the parameters into a dictionary
+        # The 'listed' type will expect a function with the same name as the species.
+        HPlusParams = {'species_name': speciesName,
+                              'initial_distribution_type': initialDistributionType,
+                       }
 
-        # Store the particles
-        for sp in self.particleCI.species_names:
-            if self.particleCI.initial_distribution_type[sp] == 'listed':
+        # The dictionary keys are mnemonics for the initialized particles
+        initialParticlesDict = {'initial_plasma_electrons': (plasmaElectronParams,),
+                                'initial_H_plus': (HPlusParams,),
+                                }
+
+        self.particleCI.initial_particles_dict = initialParticlesDict
+
+        # Create the initial particles
+        for ip in initialParticlesDict:
+            ipList = initialParticlesDict[ip]
+            ipParams = ipList[0]
+            s = ipParams['species_name']
+            initialDistributionType = ipParams['initial_distribution_type']
+            if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
-                self.particleCI.create_from_list(sp, False)
-        return
+                self.particleCI.create_from_list(s, False)
 
+        return
+#    def setUp(self):ENDDEF
+
+#class TestParticleUniformE(unittest.TestCase):
     def test_1_electric_field_push_1step(self):
         """ Check that the electric field push is correct.  Push
             sample particles for 1 step.
         """
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = sys._getframe().f_code.co_name
+        print '\ntest: ', fncName, '('+__file__+')'
 
         ctrlCI = DT_M.DTcontrol_C()
 
         ctrlCI.dt = 1.0e-5
-        ctrlCI.nsteps = 1
+        ctrlCI.n_timesteps = 1
 
         # Set constant fields
         E0 = (1.0e-4, 2.0e-4, 3.0e-4)
@@ -135,7 +229,7 @@ class TestParticleUniformE(unittest.TestCase):
         ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
         isp = 0
 
-        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.nsteps, "timesteps"
+        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "timesteps"
         for sp in self.particleCI.species_names:
             if self.particleCI.get_species_particle_count(sp) == 0: continue
             self.particleCI.move_particles_in_uniform_fields(sp, ctrlCI)
@@ -150,18 +244,20 @@ class TestParticleUniformE(unittest.TestCase):
             isp += 1
 
         return
+#    def test_1_electric_field_push_1step(self):ENDDEF
 
+#class TestParticleUniformE(unittest.TestCase):
     def test_2_electric_field_push_10steps(self):
         """ Check that the electric field push is correct.  Push
             sample particles for 10 steps.
         """
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = sys._getframe().f_code.co_name
+        print '\ntest: ', fncName, '('+__file__+')'
 
         ctrlCI = DT_M.DTcontrol_C()
 
         ctrlCI.dt = 1.0e-5
-        ctrlCI.nsteps = 10
+        ctrlCI.n_timesteps = 10
 
         # Set constant fields
         E0 = (1.0e-4, 2.0e-4, 3.0e-4)
@@ -193,15 +289,21 @@ class TestParticleUniformE(unittest.TestCase):
 
         p_expected = (psp1, psp2)
 
-        # Integrate for nsteps
-        for istep in xrange(ctrlCI.nsteps):
+        # Integrate for n_timesteps
+        ctrlCI.time_step = 0
+        ctrlCI.time = 0.0
+        for istep in xrange(ctrlCI.n_timesteps):
 #            print 'test_2_electric_field_push_10steps: istep =', istep
+
             # Loop on the species
             for sp in self.particleCI.species_names:
 #                if sp != 'plasmaelectrons': continue
 #                print 'test_2_electric_field_push_10steps: sp =', sp
                 if self.particleCI.get_species_particle_count(sp) == 0: continue
                 self.particleCI.move_particles_in_uniform_fields(sp, ctrlCI)
+
+            ctrlCI.time_step += 1
+            ctrlCI.time += ctrlCI.dt
 
         # check the final position of the first particle of each species
         ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
@@ -210,33 +312,37 @@ class TestParticleUniformE(unittest.TestCase):
             if self.particleCI.get_species_particle_count(sp) == 0: continue
             # Check that the first particles in the array reach the right speed
             getparticle = self.particleCI.pseg_arr[sp].get(0)
-#            print 'calculated = ', getparticle
-#            print 'expected = ', p_expected[isp]
+#            print 'calculated = ', getparticle, 'for species', sp
+#            print 'expected = ', p_expected[isp], 'for species', sp
             for ic in range(ncoords):
 #            for ix in range(len(getparticle)):
                 self.assertAlmostEqual(getparticle[ic], p_expected[isp][ic], msg="Particle is not in correct position")
             isp += 1
 
         return
+#    def test_2_electric_field_push_10steps(self):ENDDEF
 
+#class TestParticleUniformE(unittest.TestCase):
     def test_3_magnetic_field_push(self):            
         """ 1. Check that the magnetic field push is correct.
             2. 
         """
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = sys._getframe().f_code.co_name
+        print '\ntest: ', fncName, '('+__file__+')'
         pass
 
         return
 
+#class TestParticleUniformE(unittest.TestCase):
     def test_4_something(self):
         """ Check the number of particles in each species.
         """
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = sys._getframe().f_code.co_name
+        print '\ntest: ', fncName, '('+__file__+')'
         pass
 
         return
+
 # class TestParticleUniformE(unittest.TestCase): ENDCLASS
 
 

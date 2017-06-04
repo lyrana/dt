@@ -27,6 +27,7 @@ import UserUnits_Module as U_M
 # Select the unit system to be used for input parameters.
 Convert = U_M.MyPlasmaUnits_C
 
+#STARTCLASS
 class UserParticleDistributions_C(object):
     """UserParticleDistributions_C is to be edited by the user to
        specify initial particle distributions.  The units are MKS by
@@ -36,7 +37,7 @@ class UserParticleDistributions_C(object):
     """
 
     # The spatial coordinates of all particles
-# Moved this to DTparticleInput_C:
+# Moved this to ParticleInput_C:
 #    position_coordinates = ['x', 'y', 'z']
 
 # These distributions are constant-density in space
@@ -58,12 +59,12 @@ class UserParticleDistributions_C(object):
 
 # Initialize a few particles from each species
     @staticmethod
-    def plasmaelectrons(type):
+    def plasma_electrons(type):
         """The plasma electrons are specified as lists of coordinates and weights.
         """
         # Check that the caller knows this function returns 'listed' particles:
         if type != 'listed':
-            error_msg = "plasmaelectrons() called with type '" + str(type) + "' but it is of type 'listed'"
+            error_msg = "plasma_electrons() called with type '" + str(type) + "' but it is of type 'listed'"
             sys.exit(error_msg)
 
         # Set initial phase-space coordinates and macroparticle weight for each particle
@@ -78,7 +79,7 @@ class UserParticleDistributions_C(object):
         bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG # turn on trajectory flag
 #        cell_index = -1
         cell_index = Mesh_C.NO_CELL
-#        print "plasmaele... Particle_C.TRAJECTORY_FLAG, bitflags0 = ", Particle_C.TRAJECTORY_FLAG, bitflags0
+#        print "plasma_ele... Particle_C.TRAJECTORY_FLAG, bitflags0 = ", Particle_C.TRAJECTORY_FLAG, bitflags0
 
         p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0,bitflags0,cell_index)
 
@@ -104,12 +105,12 @@ class UserParticleDistributions_C(object):
 # 
 
     @staticmethod
-    def Hplus(type):
-        """The Hplus ions are specified as lists of coordinates and weights.
+    def H_plus(type):
+        """The H_plus ions are specified as lists of coordinates and weights.
         """
         # Check that the caller knows this function returns 'listed' particles:
         if type != 'listed':
-            error_msg = "Hplus() called with type '" + str(type) + "' but it is of type 'listed'"
+            error_msg = "H_plus() called with type '" + str(type) + "' but it is of type 'listed'"
             sys.exit(error_msg)
 
         # Set phase-space coordinates and macroparticle weight for each particle
@@ -126,7 +127,7 @@ class UserParticleDistributions_C(object):
         cell_index = Mesh_C.NO_CELL
 #        cell_index = -1
 
-        # Trim the number of coordinates here to match "position_coordinates" variable in DTparticleInput_C
+        # Trim the number of coordinates here to match "position_coordinates" variable in ParticleInput_C
         p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index)
 
         # Image particle with different weight
@@ -136,7 +137,7 @@ class UserParticleDistributions_C(object):
         bitflags1 = 0b01 # initialize all bits to 0
 #        bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG # use low bit for trajectory flag.
 
-        # Trim the number of coordinates here to match "position_coordinates" variable in DTparticleInput_C
+        # Trim the number of coordinates here to match "position_coordinates" variable in ParticleInput_C
         p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index)
 
         particle_list = (p0, p1)
@@ -196,6 +197,7 @@ class UserParticleDistributions_C(object):
 #from Particle_Module import ParticleBoundaryConditions_C as PBC_C
 
 #class UserParticleBoundaryConditions_C(ParticleBoundaryConditions_C):
+#STARTCLASS
 class UserParticleBoundaryConditions_C(object):
     """UserParticleBoundaryConditions_C is to be edited by the user to
        provide less commonly-used treatments of particles incident on a mesh boundary.
@@ -210,7 +212,7 @@ class UserParticleBoundaryConditions_C(object):
 #    SEE  = 0b1 << 1 + bitOffset    # Secondary-electron emission
 
     # The spatial coordinates of all particles
-# Moved this to DTparticleInput_C:
+# Moved this to ParticleInput_C:
 #    position_coordinates = ['x', 'y', 'z']
 
 # These distributions are constant-density in space

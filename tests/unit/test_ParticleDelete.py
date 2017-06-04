@@ -11,13 +11,11 @@ import unittest
 
 import DT_Module as DT_M
 
-from DT_Module import DTparticleInput_C
-from DT_Module import DTtrajectoryInput_C
-
 from UserUnits_Module import MyPlasmaUnits_C
-from Particle_Module import Particle_C
-from Trajectory_Module import Trajectory_C
+from Particle_Module import *
+from Trajectory_Module import *
 
+#STARTCLASS
 class Vec_C(object):
     """ Creates a 1, 2, or 3D vector.
     """
@@ -33,22 +31,24 @@ class Vec_C(object):
         return
 # class Vec_C(object): ENDCLASS
 
+#STARTCLASS
 class TestParticleDeletion(unittest.TestCase):
     """Test deletion of particles from the storage arrays"""
     
     def setUp(self):
 
-        # initializations for each test go here...
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
+        # initializations for each test go here...
 
         self.ctrlCI = DT_M.DTcontrol_C()
 
         self.ctrlCI.dt = 1.0e-5
-        self.ctrlCI.nsteps = 1
+        self.ctrlCI.n_timesteps = 1
 
         ### Create an instance of the DTparticleInput class
 
-        pinCI = DTparticleInput_C()
+        pinCI = ParticleInput_C()
 
         # Set particle parameters
         pinCI.precision = numpy.float64
@@ -62,57 +62,114 @@ class TestParticleDeletion(unittest.TestCase):
         ### Specify the particle species for this calculation
 
         # 1. electrons
-        pinCI.particle_species = (('one_electron',
-                             {'initial_distribution_type' : 'listed',
-                              'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
-                              'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
-                              'dynamics' : 'explicit',
-#                              'number_per_cell' : 12,
+#         pinCI.particle_species = (('one_electron',
+#                              {'initial_distribution_type' : 'listed',
+#                               'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
+#                               'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
+#                               'dynamics' : 'explicit',
+# #                              'number_per_cell' : 12,
+#                               }
+#                              ),
+#         # 2. Hplus (proton)
+#                             ('Hplus', 
+#                              {'initial_distribution_type' : None,
+#                               'charge' : 1.0*MyPlasmaUnits_C.elem_charge,
+#                               'mass' : 1.0*MyPlasmaUnits_C.proton_mass,
+#                               'dynamics' : 'explicit',
+# #                              'number_per_cell' : 6,
+#                               }
+#                              ),
+#         # 3. Neutral: test when there are no particles
+#                             ('He', 
+#                              {'initial_distribution_type' : None,
+#                               'charge' : 0.0,
+#                               'mass' : 4.0*MyPlasmaUnits_C.AMU,
+#                               'dynamics' : 'explicit',
+# #                              'number_per_cell' : 1,
+#                               }
+#                              ),
+
+#                             )
+
+        speciesName = 'one_electron'
+        charge = -1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.electron_mass
+        dynamics = 'explicit'
+        oneElectronCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        speciesName = 'H_plus'
+        charge = 1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.proton_mass
+        dynamics = 'explicit'
+        HPlusCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        speciesName = 'He'
+        charge = 0.0
+        mass = 4.0*MyPlasmaUnits_C.AMU
+        dynamics = 'explicit'
+        HeCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        # Add these species to particle input
+        pinCI.particle_species = (oneElectronCI, HPlusCI, HeCI,
+                                 )
+        # Make the particle object from pinCI
+        self.particleCI = Particle_C(pinCI, print_flag=False)
+
+        # Give the name of the .py file containing additional particle data (lists of
+        # particles, boundary conditions, source regions, etc.)
+        userParticleModule = "UserParticles_H_He_e"
+
+        # Import this module
+        UPrt_M = im_M.import_module(userParticleModule)
+
+        self.particleCI.user_particle_module = userParticleModule
+        self.particleCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+
+        ### one_electron is present at t=0
+
+        # Name the initialized species (it should be in species_names above)
+        speciesName = 'one_electron'
+        # Check that this species has been defined above
+        if speciesName not in self.particleCI.species_names:
+            print fncName + "The species", speciesName, "has not been defined"
+            sys.exit()
+
+        # Specify how the species will be initialized
+        initialDistributionType = 'listed'
+        # Check that there's a function listing the particles particles
+        printFlag = True
+        if hasattr(userParticleClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        # Write error message and exit if no distribution function exists
+        else:
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticleModule, speciesName)
+            sys.exit(errorMsg)
+
+        # Collect the parameters into a dictionary
+        # The 'listed' type will expect a function with the same name as the species.
+        oneElectronParams = {'species_name': speciesName,
+                              'initial_distribution_type': initialDistributionType,
                               }
-                             ),
-        # 2. Hplus (proton)
-                            ('Hplus', 
-                             {'initial_distribution_type' : None,
-                              'charge' : 1.0*MyPlasmaUnits_C.elem_charge,
-                              'mass' : 1.0*MyPlasmaUnits_C.proton_mass,
-                              'dynamics' : 'explicit',
-#                              'number_per_cell' : 6,
-                              }
-                             ),
-        # 3. Neutral: test when there are no particles
-                            ('He', 
-                             {'initial_distribution_type' : None,
-                              'charge' : 0.0,
-                              'mass' : 4.0*MyPlasmaUnits_C.AMU,
-                              'dynamics' : 'explicit',
-#                              'number_per_cell' : 1,
-                              }
-                             ),
 
-                            )
+        # The dictionary keys are mnemonics for the initialized particles
+        initialParticlesDict = {'initial_one_electron': (oneElectronParams,),
+                                }
 
-        # Provide the initial conditions for the above species
-        pinCI.user_particles_module = "UserParticles_H_He_e"
-        UPrt_M = im_M.import_module(pinCI.user_particles_module)
-        pinCI.user_particles_class = UPrt_M.UserParticleDistributions_C
+        self.particleCI.initial_particles_dict = initialParticlesDict
 
-        self.pinCI = pinCI
-
-        # Make the storage array
-        self.particleCI = Particle_C(pinCI, printFlag=False)
 
         ### Create a particle trajectory object
 
         # Use an input object to collect initialization data for the trajectory object
-        self.trajinCI = DTtrajectoryInput_C()
+        self.trajinCI = TrajectoryInput_C()
 
         self.trajinCI.maxpoints = None # Set to None to get every point
 
         # Specify which particle variables to save.  This has the
         # form of a numpy dtype specification.
-        self.trajinCI.explicitDict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
-        self.trajinCI.implicitDict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
-        self.trajinCI.neutralDict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
+        self.trajinCI.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
+        self.trajinCI.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
+        self.trajinCI.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
 
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
@@ -121,11 +178,16 @@ class TestParticleDeletion(unittest.TestCase):
         trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
         self.particleCI.trajCI = trajCI
 
-        # Initialize the particle properties
-        for sp in self.particleCI.species_names:
-            if self.particleCI.initial_distribution_type[sp] == 'listed':
+        # Create the initial particles
+        for ip in initialParticlesDict:
+            ipList = initialParticlesDict[ip]
+            ipParams = ipList[0]
+            s = ipParams['species_name']
+            initialDistributionType = ipParams['initial_distribution_type']
+            if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
-                self.particleCI.create_from_list(sp, False)
+                self.particleCI.create_from_list(s, False)
+
         return
 #    def setUp(self): #ENDDEF
 
@@ -179,8 +241,8 @@ class TestParticleDeletion(unittest.TestCase):
                     if trajCI is not None:
                         print 'pindex for trajectory = ', pindex
                         trajCI.ParticleIdList[sp].append(pindex)
-                        dynamics_type = 'explicit'
-                        trajCI.create_trajectory(sp, dynamics_type)
+                        dynamicsType = 'explicit'
+                        trajCI.create_trajectory(sp, dynamicsType)
                     else:
     # Instead of printing this message, a trajCI object could be created here.
                         print fncName, "*** DT Warning: A trajectory flag is on, but no trajectory object has been created yet. ***"
@@ -221,7 +283,7 @@ class TestParticleDeletion(unittest.TestCase):
 
         ncoords = pCI.particle_dimension # number of particle coordinates to check
 #        isp = 0
-        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.nsteps, "timesteps"
+        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.n_timesteps, "timesteps"
         for sp in pCI.species_names:
             if pCI.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
             pCI.move_particles_in_uniform_fields(sp, self.ctrlCI)

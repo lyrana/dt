@@ -14,7 +14,7 @@
 #
 # in the python script.
 
-#ClassClassClassClassClassClassClassClassclass
+#STARTCLASS
 class MyPlasmaUnits_C(object):
     """ MyPlasmaUnits_C is to be edited by the user.  It gives the
         conversion factors to change input-parameter units to internal
@@ -36,6 +36,8 @@ class MyPlasmaUnits_C(object):
         when writing the value of the temperature, e.g.,
 
         temperature = 1.6*UserUnits_M.MyPlasmaUnits_C.eV
+
+        Reference:http://physics.nist.gov/cuu/Constants/index.html 
     """
 
 # These variable are static
@@ -46,10 +48,16 @@ class MyPlasmaUnits_C(object):
     coulomb = 1.0
 
     # Physical constants
+
+# Should get all these from NIST above
+
     elem_charge = 1.602176487e-19 # Coulomb per user's unit of electric charge
     electron_mass = 9.10938215e-31 # kg per user's electron-mass unit
     proton_mass = 1.672621637e-27  # kg
-    eV = 11604.505 # Kelvin per per eV
+    boltzmann_constant = 1.38064852e-23 # joules per Kelvin
+
+#    eV = 11604.505 # Kelvin per eV
+
     m_per_s = 1.0 # m/s per user's velocity unit
     number_per_m3 = 1.0 # n/m3 per user's number-density unit
 
@@ -69,7 +77,7 @@ class MyPlasmaUnits_C(object):
 #        self.eV = 1.0
         return
 
-#ClassClassClassClassClassClassClassClassclass
+#STARTCLASS
 class MyCGSUnits_C(object):
     """ MyCGSUnits_C is to be edited by the user.  It gives the
         conversion factors to change input-parameter units to internal

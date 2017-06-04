@@ -11,8 +11,7 @@ import unittest
 
 import dolfin as df_M
 
-from DT_Module import DTmeshInput_C
-from UserMesh_y_Fields_FE2D_Module import UserMesh_C
+from UserMesh_y_Fields_FE2D_Module import *
 
 class TestUserMesh_y_Fields(unittest.TestCase):
     """Test the mesh class in UserMesh_y_Fields_FE2D_Module.py"""
@@ -20,7 +19,7 @@ class TestUserMesh_y_Fields(unittest.TestCase):
     def setUp(self):
         # initializations for each test go here...
 
-        miCI = DTmeshInput_C()
+        miCI = UserMeshInput_C()
 
         # Make the mesh
         # radial
