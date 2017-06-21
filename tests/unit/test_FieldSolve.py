@@ -124,6 +124,8 @@ class TestPoissonSolve(unittest.TestCase):
 
         # Write the potential to a file in VTK and XML formats
         file = df_M.File('phi1D.pvd')
+        # phi_name goes into the output file; phi_label doesn't
+        phi.function.rename("phi1D", "phi_label")
         file << phi.function
         file = df_M.File('phi1D.xml')
         file << phi.function
@@ -293,12 +295,14 @@ class TestPoissonSolve(unittest.TestCase):
 
         # Write the potential to a file in VTK and XML formats
         file = df_M.File("phi2D_crossed.pvd")
+        phi.function.rename("phi2D", "phi_label")
         file << phi.function
         file = df_M.File("phi2D_crossed.xml")
         file << phi.function
         
         # Write -E to a file in VTK and XML formats
         if negElectricField is not None:
+            negElectricField.function.rename("E2D", "E_label")
             file = df_M.File("negE2D_crossed.pvd")
             file << negElectricField.function
             file = df_M.File("negE2D_crossed.xml")

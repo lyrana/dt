@@ -1459,9 +1459,7 @@ class Particle_C(object):
 
 #class Particle_C(object):
     def compute_charge_density(self, fCI):
-        """Apply electric force to particles.  Compute the change in
-           velocity and position in time dt. Use an explicit method to
-           integrate the orbit.
+        """Compute the electric charge density from discrete particles.
 
            Arguments:
                dt: time interval.
@@ -1471,39 +1469,22 @@ class Particle_C(object):
                
         """
 
-        isp = 0
-        for sn in self.species_names:
+        ## Loop over species
+        if self.pmeshCI is not None:
+            for s in self.species_names:
+                charge = self.charge[s]
+                # Loop over the segments of the 'out' array
+                psaCI = self.pseg_arr[s] # segmented array for this species
+                (npSeg, pseg) = psaCI.init_out_loop()
+                while isinstance(pseg, np_M.ndarray):
 
-            # Invariant parameters
-#            print 'sn = ', sn
-            charge = self.charge[sn]
-        
+                    # Sum density and charge-density
 
-# charge on the particle:
-# compute density first, then accumulate into a charge-density
+                    (npSeg, pseg) = psaCI.get_next_segment('out')
 
-# species number?
-
-
-#        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
-            psaCI = self.pseg_arr[sn] # segmented array for this species
-
-            # Eseg is long enough to hold one particle segment worth
-            # of values.  If segment length is the same for all
-            # species, this could be a Field_Particle class array,
-            # i.e., one that persists.
-
-#            Eseg = np.empty(len(psaCI[0]), dtype=fpCI.Eseg_dict)
-
-#           Accelerate and move all the particles in this species
-            psaCI.init_segment_loop()
-            pseg = psaCI.get_next_segment()
-#            while pseg != None:
-            while isinstance(pseg, np_M.ndarray):
-                fCI.compute_rho_from_particles(isp, charge, pseg)
-
-            isp += 1
-
+        else:
+            print fncName, "(DnT WARNING) The reference to pmeshCI is None"
+            
             return
 #    def compute_charge_density(self, fCI):ENDDEF
 

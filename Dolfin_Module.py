@@ -35,7 +35,7 @@ class Mesh_C(object):
     # Constructor
 
 # Examine the need for the Mesh and mesh_to_copy args:
-    def __init__(self, Mesh=None, mesh_to_copy=None, mesh_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):
+    def __init__(self, Mesh=None, mesh_to_copy=None, mesh_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title="Mesh"):
 
         # Get a ref to the mesh from the arglist,
         if Mesh is not None:
@@ -51,7 +51,7 @@ class Mesh_C(object):
         # child class.
         if self.mesh is not None:
             if plot_flag == True:
-                df_M.plot(self.mesh, axes=True)
+                df_M.plot(self.mesh, title=plot_title, axes=True)
                 df_M.interactive()
             # Compute the search tree. Uses:
             #     Evaluating field probes at a point.
@@ -718,9 +718,9 @@ class Field_C(object):
         self.mesh_tdim = meshCI.mesh.topology().dim()
 
         if field_type is 'scalar':
-            self.function_space = df_M.FunctionSpace(meshCI.mesh, element_type, element_degree)
+            self.function_space = df_M.FunctionSpace(self.meshCI.mesh, element_type, element_degree)
         elif field_type is 'vector':
-            self.function_space = df_M.VectorFunctionSpace(meshCI.mesh, element_type, element_degree)
+            self.function_space = df_M.VectorFunctionSpace(self.meshCI.mesh, element_type, element_degree)
 
         # Create the finite-element function for this field
         self.function = df_M.Function(self.function_space)
@@ -773,7 +773,7 @@ class Field_C(object):
 
 #class Field_C(object):
     def integrate_delta_function(self, p):
-        """This function takes the inner product of a delta-function
+        """This function takes the 'inner product' of a delta-function
            located at point p and the basis functions used by the
            field object.  This occurs, e.g., in computing the source
            density for Poisson's equations, where the basis functions
@@ -807,6 +807,115 @@ class Field_C(object):
 
         return
 #    def integrate_delta_function(self, p):END
+
+
+#class Field_C(object):
+    def interpolate_delta_function_to_dofs(self, p):
+        """This function takes the 'inner product' of a delta-function
+           located at point p and the basis functions used by the
+           field object.  This occurs, e.g., in computing the source
+           density for Poisson's equations, where the basis functions
+           are the "test" functions. The field must be a scalar.
+
+           :param p: A point inside the domain of the function.
+           :type p: An object with data fields 'x', ('y', 'z'),
+                    'weight', e.g., a particle.
+
+           :returns: None.  The DOFs of the field in the cell
+                     containing the point are incremented by the value of the
+                     basis function evaluated at the point, multiplied by the
+                     point's weight.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
+        cellIndex = p['cell_index']
+        el = self.function_space.element()
+        cell = df_M.Cell(self.meshCI.mesh, cellIndex)
+# QQQ: why is get_vertex_coordinates() used instead of get_coordinate_dofs()?
+# AAA: The DoFs are the same as the vertices for CG1 elements
+#      I tried both and they give the same output for CG1 elements.
+#      
+#        coordinate_dofs = cell.get_vertex_coordinates()
+        coordinate_dofs = cell.get_coordinate_dofs()
+
+        # Compute the basis-function values at the given point, p.
+        # "basis_values" stores the values of the basis_functions at p.
+        # el.space_dimension() is the number of basis functions
+
+        nBF = el.space_dimension()
+        # A numpy array is needed to pass this value to evaluate_basis_all() below.
+        numberOfBasisFunctions = np_M.zeros(1, dtype=np_M.intc)
+        numberOfBasisFunctions[0] = nBF
+
+        # Make scratch for basisValues
+        basisValues = np_M.zeros(nBF, dtype=float)
+        # Make scratch for point
+        point = np_M.zeros(self.mesh_gdim, dtype=float)
+        for i in range(self.mesh_gdim):
+            point[i] = p[i]
+
+        el.evaluate_basis_all(basisValues, point, coordinate_dofs, cell.orientation()) 
+#        print fncName, basisValues
+
+        # Now insert the values for this cell into the global density array.
+
+  # From PointSource.cpp:
+
+  # // Compute local-to-global mapping
+  # dolfin_assert(_function_space->dofmap());
+  # const ArrayView<const dolfin::la_index> dofs
+  #   = _function_space->dofmap()->cell_dofs(cell.index());
+
+  # // Add values to vector
+  # dolfin_assert(_function_space->element()->space_dimension()
+  #               == _function_space->dofmap()->num_element_dofs(cell.index()));
+  # b.add_local(values.data(), _function_space->element()->space_dimension(),
+  #             dofs.data());
+  # b.apply("add");
+
+        # Get the dof indices, i.e., the indices where the dof values of
+        # densities from this cell are located
+        dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # type: numpy.ndarray
+# this works:
+        self.function.vector()[dofIndices] += basisValues
+# Is something additional needed in parallel?
+
+        # Sum the densites into these array locations
+#        print fncName, dofIndices, 'type=', type(dofIndices), 'dir=', dir(dofIndices)
+#        self.function.vector() has type dolfin.cpp.la.GenericVector
+#                               has a __setslice__ method
+#                               has a add_local method
+
+# Cant get this to work:
+#        self.function.vector().add_local(basisValues, numberOfBasisFunctions, dofIndices)
+
+# Get information on the add_local() function
+
+        # name with which this function was defined:
+#        print 'add_local name', self.function.vector().add_local.__name__
+# add_local name GenericVector_add_local
+
+        # function object containing implentation:
+#        print 'add_local im_func', self.function.vector().add_local.im_func
+# im_func <built-in function GenericVector_add_local>
+
+        # class object that asked for this method:
+#        print 'add_local im_class', self.function.vector().add_local.im_class
+# add_local im_class <class 'dolfin.cpp.la.GenericVector'>
+        
+        # instance to which this method is bound:
+#        print 'add_local im_self', self.function.vector().add_local.im_self
+# add_local im_self <PETScVector of size 9>
+
+# this doesnt work, because array() contains a copy of vector(), not the underlying data.
+#        for i in range(len(dofIndices)):
+#            self.function.vector().array()[dofIndices[i]] += basisValues[i]
+
+        return
+#    def interpolate_delta_function_to_dofs(self, p):ENDDEF
+
 
 #class Field_C(object):ENDCLASS
 

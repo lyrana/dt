@@ -151,7 +151,7 @@ class UserMesh_C(Mesh_C):
     Convert = U_M.MyPlasmaUnits_C
 
     # Constructor
-    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):
+    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title="UserMesh"):
         """
             The class UserMesh_C contains these attributes:
                 1. A mesh.
@@ -165,7 +165,7 @@ class UserMesh_C(Mesh_C):
             sys.exit(error_msg)
 
         # Call the parent constructor to complete setting class variables.
-        super(UserMesh_C, self).__init__(mesh_file=None, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
+        super(UserMesh_C, self).__init__(mesh_file=None, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag, plot_title=plot_title)
 
         self.field_boundary_dict = meshInputCI.field_boundary_dict
         self.particle_boundary_dict = meshInputCI.particle_boundary_dict
