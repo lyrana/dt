@@ -856,62 +856,32 @@ class Field_C(object):
         for i in range(self.mesh_gdim):
             point[i] = p[i]
 
+        w = p['weight']
+
         el.evaluate_basis_all(basisValues, point, coordinate_dofs, cell.orientation()) 
 #        print fncName, basisValues
 
         # Now insert the values for this cell into the global density array.
 
-  # From PointSource.cpp:
-
-  # // Compute local-to-global mapping
-  # dolfin_assert(_function_space->dofmap());
-  # const ArrayView<const dolfin::la_index> dofs
-  #   = _function_space->dofmap()->cell_dofs(cell.index());
-
-  # // Add values to vector
-  # dolfin_assert(_function_space->element()->space_dimension()
-  #               == _function_space->dofmap()->num_element_dofs(cell.index()));
-  # b.add_local(values.data(), _function_space->element()->space_dimension(),
-  #             dofs.data());
-  # b.apply("add");
+        # Follow C++ source in PointSource.cpp:
 
         # Get the dof indices, i.e., the indices where the dof values of
-        # densities from this cell are located
+        # densities from this cell are located.
+        # Note: in general, these are not the numbered the same as the vertices
+
         dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # type: numpy.ndarray
-# this works:
-        self.function.vector()[dofIndices] += basisValues
-# Is something additional needed in parallel?
-
-        # Sum the densites into these array locations
-#        print fncName, dofIndices, 'type=', type(dofIndices), 'dir=', dir(dofIndices)
-#        self.function.vector() has type dolfin.cpp.la.GenericVector
-#                               has a __setslice__ method
-#                               has a add_local method
-
-# Cant get this to work:
-#        self.function.vector().add_local(basisValues, numberOfBasisFunctions, dofIndices)
-
-# Get information on the add_local() function
-
-        # name with which this function was defined:
-#        print 'add_local name', self.function.vector().add_local.__name__
-# add_local name GenericVector_add_local
-
-        # function object containing implentation:
-#        print 'add_local im_func', self.function.vector().add_local.im_func
-# im_func <built-in function GenericVector_add_local>
-
-        # class object that asked for this method:
-#        print 'add_local im_class', self.function.vector().add_local.im_class
-# add_local im_class <class 'dolfin.cpp.la.GenericVector'>
-        
-        # instance to which this method is bound:
-#        print 'add_local im_self', self.function.vector().add_local.im_self
-# add_local im_self <PETScVector of size 9>
-
-# this doesnt work, because array() contains a copy of vector(), not the underlying data.
+        # This doesnt work, because array() contains a *copy* of vector(), not
+        # the underlying data.
 #        for i in range(len(dofIndices)):
 #            self.function.vector().array()[dofIndices[i]] += basisValues[i]
+# This works:
+        # Sum the densities into these array locations
+        self.function.vector()[dofIndices] += w*basisValues
+
+# Is something additional needed in parallel? .apply("add")?
+
+# Cant get this to work; complains of a type mismatch:
+#        self.function.vector().add_local(basisValues, numberOfBasisFunctions, dofIndices)
 
         return
 #    def interpolate_delta_function_to_dofs(self, p):ENDDEF

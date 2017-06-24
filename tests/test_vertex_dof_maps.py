@@ -5,8 +5,9 @@ mesh = UnitSquareMesh(5,5)
 # A 2D vector function space represented by CG1 elements
 Q = VectorFunctionSpace(mesh, "CG", 1, dim=2)
 
-# DOF indices index the functions in the CG function space
-# This map converts a vertex index to a DOF index
+# DOF indices index the function values in the CG function space
+# The following map converts a vertex index (the index that, for example, is shown in
+# plot()) to a DOF index
 v2d=vertex_to_dof_map(Q)
 d2v=dof_to_vertex_map(Q)
 
@@ -27,12 +28,14 @@ v = VertexFunction("size_t", mesh)
 # This function uses the dofs.
 q = Function(Q)
 
-# set the value at vertices 10 and 25
+# Set the value at vertices 10 and 25
+# Note that "array()" here gives access to the underlying data
 v.array()[10] = 1.0
 v.array()[25] = 1.0
 # 
 # Set the dofs at these vertics.
 # Sets both x and y components to 1?
+# Note that "vector()" here gives access to the underlying data
 q.vector()[v2d[10]] = 1.0
 q.vector()[v2d[25]] = 1.0
 
