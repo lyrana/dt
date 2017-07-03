@@ -141,7 +141,7 @@ class UserMesh_C(Mesh_C):
     # Select the unit system to be used for input parameters.
     Convert = U_M.MyPlasmaUnits_C
 
-    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):
+    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
         """
             The class UserMesh_C contains these attributes:
                 1. A mesh.
@@ -152,7 +152,7 @@ class UserMesh_C(Mesh_C):
         """
 
         if meshInputCI.mesh_file is None:
-            self.create_mesh(meshInputCI, plot_flag)
+            self.create_mesh(meshInputCI, plot_flag=plot_flag, plot_title=plot_title)
             # don't need another mesh plot
             plot_flag = False
 
@@ -182,7 +182,7 @@ class UserMesh_C(Mesh_C):
 #        return copy.deepcopy(self)
 
 #class UserMesh_C(Mesh_C):
-    def create_mesh(self, meshInputCI, plot_flag):
+    def create_mesh(self, meshInputCI, plot_flag=False, plot_title=None):
         """Create a mesh and mark subdomains (e.g., Dirichlet
            boundaries and particle boundaries) according to the user's
            specifications.
@@ -205,6 +205,8 @@ class UserMesh_C(Mesh_C):
         # Boundary conditions for fields and particles
         fieldBoundaryDict = meshInputCI.field_boundary_dict
         particleBoundaryDict = meshInputCI.particle_boundary_dict
+
+        plotTitle = plot_title
 
 # First, make a rectangular mesh
 
@@ -328,9 +330,11 @@ class UserMesh_C(Mesh_C):
         # Make a plot of the mesh, with non-zero values showing marked
         # boundaries
         if (plot_flag):
-            df_M.plot(mesh, title='cylindrical mesh', axes=True)
-            df_M.plot(fieldBoundaryMarker, title='field boundary marks', axes=True)
-            df_M.plot(particleBoundaryMarker, title='particle boundary marks', axes=True)
+            fileName = os.path.basename(__file__)
+            if plot_title is None: plotTitle = fileName + ": RZ-mesh"
+            df_M.plot(mesh, title=plotTitle, axes=True)
+            df_M.plot(fieldBoundaryMarker, title=fileName + ': field boundary marks', axes=True)
+            df_M.plot(particleBoundaryMarker, title=fileName + ': particle boundary marks', axes=True)
             df_M.interactive()
 #raw_input('C: Press <ENTER> to continue')
 

@@ -276,8 +276,7 @@ class TestParticleTrajectory(unittest.TestCase):
             Checks the final particle position.
         """
 
-        testName = sys._getframe().f_code.co_name
-        fncName = '('+__file__+') ' + testName + '():\n'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName
 
         pCI = self.particleCI
@@ -361,9 +360,10 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Plot the trajectory onto the particle mesh
 
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         mesh = pCI.pmeshCI.mesh
-        holdPlot = True # Set to True to stop the plot from disappearing.
-        pCI.trajCI.plot_trajectories_on_mesh(mesh, testName, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        holdPlot = False # Set to True to stop the plot from disappearing.
+        pCI.trajCI.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         # Plot the trajectory in phase-space
 
@@ -380,8 +380,7 @@ class TestParticleTrajectory(unittest.TestCase):
             Make the particles leave the mesh.
         """
 
-        testName = sys._getframe().f_code.co_name
-        fncName = '('+__file__+') ' + testName + '():\n'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName
 
         pCI = self.particleCI
@@ -463,9 +462,10 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Plot the trajectory onto the particle mesh
 
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         mesh = pCI.pmeshCI.mesh
         holdPlot = True # Set to True to stop the plot from disappearing.
-        pCI.trajCI.plot_trajectories_on_mesh(mesh, testName, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        pCI.trajCI.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         # Plot the trajectory in phase-space
 

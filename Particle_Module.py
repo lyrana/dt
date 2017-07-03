@@ -378,6 +378,10 @@ class Particle_C(object):
 #class Particle_C(object):
     def initialize_particles(self, print_flags):
         """Generate initial particle distributions.
+
+           This function is similar to 'add_more_particles()', which loops on
+           particle source regions during the run.
+
         """
 #    pCI = runCI.particles # abbrev for particle Class Instance
 
@@ -387,15 +391,31 @@ class Particle_C(object):
 
         initialParticlesDict = self.initial_particles_dict
 
-        # Loop on initialized particles
-        for ip in initialParticlesDict:
-            ipList = initialParticlesDict[ip]
-            ipParams = ipList[0]
+        # Loop on the initialization methods in the dictionary
+
+        # For 'listed' initialization, the dictionary has entries like
+        # {ipName: (ipParams,)}
+        # For 'function_over_region' initialization, the dictionary has entries
+        # like
+        # {ipName: (ipParams, ipFunc, ipRegion)}
+        for ipName, ipTuple in initialParticlesDict.iteritems():
+            ipParams = ipTuple[0]
             s = ipParams['species_name']
             initialDistributionType = ipParams['initial_distribution_type']
 
+            if print_flags[s] is True:
+                print fncName, "Initializating", ipName, "particles"
             if initialDistributionType == 'listed':
                 self.create_from_list(s, print_flags[s])
+            elif initialDistributionType == 'function_over_region':
+                ipFunc = ipTuple[1]
+                ipRegion = ipTuple[2]
+                # Invoke the creation function
+                time = 0.0
+                ipFunc(time, ipRegion, ipParams)
+            else:
+                errorMsg = "(DnT ERROR) %s Unknown initial_distribution_type %s for species %s" % (fncName, initial_distribution_type, s)
+                sys.exit(errorMsg)
 
         # for sp in self.species_names:
         #     initialDistributionType = self.initial_distribution_type[sp]
@@ -484,7 +504,7 @@ class Particle_C(object):
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
-        pseg_arrCI = self.pseg_arrCI[species_name] # storage array for this species
+        pseg_arrCI = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
 
         p_list_method = self.initial_distribution_function[species_name]
         number_of_macroparticles, particle_list = p_list_method(type='listed')
@@ -535,9 +555,14 @@ class Particle_C(object):
         particleSourceDict = self.particle_source_dict
 
         # Loop on the source regions
-        for src in particleSourceDict:
-            (srcParams, srcFunc, srcRegion) = particleSourceDict[src]
+        for srcName, srcTuple in particleSourceDict.iteritems():
+            # Get the physical parameters, the creation function, and the source
+            # region.
+            (srcParams, srcFunc, srcRegion) = srcTuple
             if ctrlCI.timestep_count % srcParams['timestep_interval'] == 0:
+                # Invoke the creation function
+                if print_flag is True:
+                    print fncName, "Creating new particles for source", srcName
                 srcFunc(ctrlCI.time, srcRegion, srcParams)
 
         return
@@ -1492,14 +1517,18 @@ class Particle_C(object):
 # Standard distribution types
 
 #class Particle_C(object):
-    def add_maxwellian_particles(self, time, domain, paramDict):
-        """Adds a Maxwellian particle distribution to the existing distributions.
+    def create_maxwellian_particles(self, time, domain, paramDict):
+        """Generates particles with a Maxwellian velocty distribution and adds
+           them to particle storage.
+
+           This function loops over the cells in the given domain and generates
+           particles in each one according to the parameters provided.
 
            :param time: The physical time of the simulation.
 
            :param domain: The spatial domain in which the Maxwellian particles are added.
-                          This can be the entire mesh, or a subset of it.  If
-                          it's a subset, then it's a list of cells.
+                          This can be the entire mesh, or a subset of it. In either case,
+                          it's a list of cells.
 
            :param str paramDict.species_name: The name of the species getting a 
                                               Maxwellian velocity distribution
@@ -1555,36 +1584,36 @@ class Particle_C(object):
             # Compute the particle weight (number of particles per macroparticle)
             weight = domain.volume[icell]*weightMult
 
-            bitflags = 0b00 # bit flags variable is all zeroes
-
             cell_index = Mesh_C.NO_CELL
 
             # Set positions and velocities
             cellRad = domain.radius[icell]
             cellMid = domain.midpoint[icell]
+            gDim = domain.gdim
 
             for ip in xrange(numberPerCell):
                 # Put the first particle at the centroid
                 # Put the rest at random positions in the cell
+                bitflags = 0b00 # bit flags variable is all zeroes
                 if ip == 0:
-                    for i in range(pDim):
+                    for i in range(gDim):
                         pCoord[i] = cellMid[i]
                         # Turn trajectory flag ON for the first particle:
                         bitflags = bitflags | Particle_C.TRAJECTORY_FLAG
                 else:
                     while True:
                         # Put the particle in a sphere
-                        random_vals = np_M.random.uniform(-1.0, 1.0, pDim)
-                        for i in range(pDim):
+                        random_vals = np_M.random.uniform(-1.0, 1.0, gDim)
+                        for i in range(gDim):
                             pCoord[i] = cellMid[i]+random_vals[i]*cellRad
                         # Check if its in the cell    
                         if domain.in_cell(pCoord, icell):
                             break
 
                 # Generate a velocity vector
-                pVel = np_M.random.normal(0.0, thermalSpeed, pDim)
+                pVel = np_M.random.normal(0.0, thermalSpeed, pDim) + driftVelocity
 
-                # Fill a particle record (x,y,z, x0,y0,z0, ux,uy,uz, weight,
+                # Fill a particle record: (x,y,z, x0,y0,z0, ux,uy,uz, weight,
                 #                         bitflags, cell_index)
 
                 # Set x[], x0[], ux[]
@@ -1593,7 +1622,7 @@ class Particle_C(object):
                     particle[i+pDim] = pCoord[i]
                     particle[i+2*pDim] = pVel[i]
                 
-                # The rest of the data for this particle
+                # Fill in the rest of the data for this particle
                 particle[3*pDim] = weight
                 particle[3*pDim+1] = bitflags
                 particle[3*pDim+2] = cell_index
@@ -1627,7 +1656,7 @@ class Particle_C(object):
 #        if (print_flag): print fncName, "bitflags for ", speciesName, " is ", bitflags
 
         return
-#    def add_maxwellian_particles(self,):ENDDEF
+#    def create_maxwellian_particles(self,):ENDDEF
 
 #class Particle_C(object):
     def check_particle_output_parameters(self, ctrlCI):

@@ -116,7 +116,7 @@ class UserMesh_C(Mesh_C):
     Convert = U_M.MyPlasmaUnits_C
 
 # Mesh_C constructor:
-    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):
+    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
         """
             The class UserMesh_C contains these attributes:
                 1. A mesh.
@@ -127,13 +127,13 @@ class UserMesh_C(Mesh_C):
         """
 
         if meshInputCI.mesh_file is None:
-            self.create_mesh(meshInputCI, plot_flag)
+            self.create_mesh(meshInputCI, plot_flag=plot_flag, plot_title=plot_title)
             # Don't need another mesh plot
             plot_flag = False
 
         # Call the parent constructor to complete setting class variables.
         mesh_file = meshInputCI.mesh_file
-        super(self.__class__, self).__init__(mesh_file=None, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
+        super(self.__class__, self).__init__(mesh_file=None, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag, plot_title=plot_title)
 
         self.field_boundary_dict = meshInputCI.field_boundary_dict
         self.particle_boundary_dict = meshInputCI.particle_boundary_dict
@@ -155,7 +155,7 @@ class UserMesh_C(Mesh_C):
 #        return copy.deepcopy(self)
 
 #class UserMesh_C(Mesh_C):
-    def create_mesh(self, meshInputCI, plot_flag):
+    def create_mesh(self, meshInputCI, plot_flag=False, plot_title=None):
         """
            Create a mesh according to the user's specifications.
         """
@@ -167,6 +167,8 @@ class UserMesh_C(Mesh_C):
 
         stretch = meshInputCI.stretch
         nr = meshInputCI.nr
+
+        plotTitle = plot_title
 
         # First, make a 1-D mesh
         mesh = df_M.UnitIntervalMesh(nr)
@@ -262,7 +264,8 @@ class UserMesh_C(Mesh_C):
 
 # Make a plot of the mesh
         if (plot_flag):
-            df_M.plot(mesh, title='radial mesh', axes=True)
+            if plot_title is None: plotTitle = "1D radial"
+            df_M.plot(mesh, title=plotTitle + ": mesh", axes=True)
             df_M.interactive()
 
         # Save the class attributes

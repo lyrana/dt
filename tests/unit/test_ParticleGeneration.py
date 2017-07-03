@@ -47,6 +47,9 @@ class TestParticleGeneration(unittest.TestCase):
 
         """
 
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName, '('+__file__+')'
+
         ## Set control variables
 
         ctrlCI = DTcontrol_C()
@@ -105,8 +108,8 @@ class TestParticleGeneration(unittest.TestCase):
 
 
         # Create numpy storage needed below
-        driftVelocity = np_M.empty(particleCI.particle_dimension, dtype=particleCI.precision)
-        ## 1. Hot electron source on left
+#        driftVelocity = np_M.empty(particleCI.particle_dimension, dtype=particleCI.precision)
+        ## 1. Hot electron source on left side of the mesh
 
         # a. Provide the species name and physical parameters
         #    for this source
@@ -139,7 +142,11 @@ class TestParticleGeneration(unittest.TestCase):
         thermalSpeed = np_M.sqrt(2.0*temp_joule/mass)
 
         # Set a drift velocity
-        driftVelocity[:] = (1.0,)
+        vdrift_x = 1.0
+        vdrift_y = 2.0
+        vdrift_z = 3.0
+
+        driftVelocity = (vdrift_x, vdrift_y, vdrift_z)
 
         # Set desired particles-per-cell
         numberPerCell = 1
@@ -154,7 +161,7 @@ class TestParticleGeneration(unittest.TestCase):
                              'number_per_cell': numberPerCell}
 
         # b. Name the particle-creation function.
-        maxwellianGenerator = particleCI.add_maxwellian_particles
+        maxwellianGenerator = particleCI.create_maxwellian_particles
 
         # c. Source-region geometry
         xmin = -9.0
@@ -196,7 +203,11 @@ class TestParticleGeneration(unittest.TestCase):
         thermalSpeed = np_M.sqrt(2.0*temp_joule/mass)
 
         # Set a drift velocity
-        driftVelocity[:] = (0.5,)
+        vdrift_x = 0.5
+        vdrift_y = 1.5
+        vdrift_z = 2.5
+
+        driftVelocity = (vdrift_x, vdrift_y, vdrift_z)
 
         # Set desired particles-per-cell
         numberPerCell = 10
@@ -229,6 +240,8 @@ class TestParticleGeneration(unittest.TestCase):
                               'background_electron_source': (backgroundElectronParams, maxwellianGenerator, wholeMesh),
                               }
 
+        particleCI.particle_source_dict = particleSourceDict
+
         ### Create input for a particle trajectory object
 
         # Use an input object to collect initialization data for the trajectory object
@@ -244,15 +257,7 @@ class TestParticleGeneration(unittest.TestCase):
         trajCI = Trajectory_C(self.trajinCI, ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
         particleCI.trajCI = trajCI
 
-        particleCI.particle_source_dict = particleSourceDict
-
-        ## Invoke the source functions and plot the particles
-        # time = 0.0
-        # for src in particleSourceDict:
-        #     print 'Source:', src
-        #     (srcRegion, srcFunc, srcParams) = particleSourceDict[src]
-        #     srcFunc(time, srcRegion, srcParams)
-
+        ## Invoke the source functions and write out the particles
         
         ctrlCI.timestep_count = 0
         ctrlCI.time = 0.0
@@ -263,7 +268,7 @@ class TestParticleGeneration(unittest.TestCase):
         ctrlCI.author = "tph"
 
         ### Select output for particles
-        ctrlCI.particle_output_file = "p.h5part"
+        ctrlCI.particle_output_file = "particleGeneration.h5part"
         ctrlCI.particle_output_interval = 1
         ctrlCI.particle_output_attributes = ('species_index', 'x', 'ux', 'weight')
 
@@ -286,10 +291,14 @@ class TestParticleGeneration(unittest.TestCase):
 
         """
 
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName, '('+__file__+')'
+
         from UserMesh_FE_XYZ_Module import UserMeshInput_C
 
         mi2DCI = UserMeshInput_C()
 
+# Change these to TUPLES instead of Points (avoid df_M at toplevel)
         mi2DCI.pmin = df_M.Point(-10.0, -10.0)
         mi2DCI.pmax = df_M.Point(10.0, 10.0)
         mi2DCI.cells_on_side = (4, 2)
@@ -300,6 +309,7 @@ class TestParticleGeneration(unittest.TestCase):
 #        pmesh2DCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
 
         return
+#    def test_2D_particle_source_region(self):ENDDEF
 
 #class TestParticleGeneration(unittest.TestCase):ENDCLASS
 

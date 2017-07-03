@@ -18,7 +18,7 @@ import math
 import dolfin as df_M
 
 from Dolfin_Module import Mesh_C
-from Dolfin_Module import CellRegion_C
+from Dolfin_Module import CellSet_C
 
 import UserUnits_Module as U_M
 
@@ -151,7 +151,7 @@ class UserMesh_C(Mesh_C):
     Convert = U_M.MyPlasmaUnits_C
 
     # Constructor
-    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title="UserMesh"):
+    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
         """
             The class UserMesh_C contains these attributes:
                 1. A mesh.
@@ -159,7 +159,7 @@ class UserMesh_C(Mesh_C):
         """
 
         if meshInputCI is not None:
-            self.create_mesh(meshInputCI)
+            self.create_mesh(meshInputCI, plot_flag=plot_flag, plot_title=plot_title)
         else:
             error_msg = "UserMesh_C: no mesh input given"
             sys.exit(error_msg)
@@ -175,7 +175,7 @@ class UserMesh_C(Mesh_C):
     # Methods
 
 #class UserMesh_C(Mesh_C):
-    def create_mesh(self, meshInputCI):
+    def create_mesh(self, meshInputCI, plot_flag=False, plot_title=None):
         """
            Create a mesh according to the user's specifications.
         """
@@ -192,18 +192,23 @@ class UserMesh_C(Mesh_C):
         zmax = miCI.pmax.z()
 
         # Options: 'left, 'right', 'left/right', 'crossed'
-        diagonal = meshInputCI.diagonal
+        diagonal = miCI.diagonal
 
         # Boundary conditions for fields and particles
         fieldBoundaryDict = miCI.field_boundary_dict
         particleBoundaryDict = miCI.particle_boundary_dict
         particleSourceDict = miCI.particle_source_dict
 
+        plotTitle = plot_title
+
 #        if miCI.pmin.y() == miCI.pmax.y() and miCI.pmin.z() == miCI.pmax.z():
         if ymin == ymax and zmin == zmax:
             # 1D mesh
             (nx) = miCI.cells_on_side
             mesh = df_M.IntervalMesh(nx, xmin, xmax)
+
+            if plot_title is None: plotTitle = "X-mesh"
+            meshFileName = "X-mesh.pvd"
 
             # Mark the facets for particle boundary conditions
             # Create a MeshFunction object defined on the facets of this
@@ -253,6 +258,9 @@ class UserMesh_C(Mesh_C):
 # v = 1.5:
                 mesh = df_M.RectangleMesh(miCI.pmin[0], miCI.pmin[1], miCI.pmax[0], miCI.pmax[1], nx, ny)
 
+            meshFileName = "XY-mesh.pvd"
+            if plot_title is None: plotTitle = "XY-mesh"
+
             # A boundary has dimension 1 less than the domain:
             particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
             # Initialize all mesh facets with a default value of 0.
@@ -290,11 +298,27 @@ class UserMesh_C(Mesh_C):
             else:
 # v = 1.5:
                 mesh = df_M.BoxMesh(miCI.pmin[0], miCI.pmin[1], miCI.pmin[2], miCI.pmax[0], miCI.pmax[1], miCI.pmax[2], nx, ny, nz)
+
+            if plot_title is None: plotTitle = "XYZ-mesh"
+            meshFileName = "XYZ-mesh.pvd"
+
             # A boundary has dimension 1 less than the domain:
             particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
             # Initialize all mesh facets with a default value of 0.
             particleBoundaryMarker.set_all(0)
 #       END:if ymin == ymax and zmin == zmax:
+
+        # Make a plot of the mesh, with non-zero values showing marked
+        # boundaries
+        if (plot_flag):
+            df_M.plot(mesh, title=plotTitle, axes=True)
+#            df_M.plot(fieldBoundaryMarker, title='field boundary marks', axes=True)
+            df_M.plot(particleBoundaryMarker, title='particle boundary marks', axes=True)
+            df_M.interactive()
+
+        # Write the mesh to a VTK file
+        meshFile = df_M.File(meshFileName)
+        meshFile << mesh
 
         # Save the class attributes
         self.mesh = mesh

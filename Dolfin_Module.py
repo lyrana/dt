@@ -472,7 +472,7 @@ class Mesh_C(object):
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
-        gDim = self.gdim # The geometric dimenion of the mesh
+        gDim = self.gdim # The geometric dimension of the mesh
 
         dx = self.dx
         x0 = self.x0
@@ -985,22 +985,30 @@ class FacetSubDomain_C(df_M.SubDomain):
 #class FacetSubDomain_C(df_M.SubDomain):ENDCLASS
 
 #STARTCLASS
-class CellRegion_C(object):
-    """A CellRegion_C produces and stores a set of mesh cells.
-       
-       :cvar cell_list: An iterable object containing a set of cells.
+class CellSet_C(object):
+    """A CellSet_C produces and stores a set of mesh cells.
+
+       The cell set is defined using called a function called "inside()", which
+       is provided by the subclasses of CellSet_C.  The "inside()" function
+       is used to determine if a given cell is included in the set.  If
+       "inside()" is not defined in the subclass, the cell set is the *whole
+       mesh*.
+
+       Examples of CellSet_C subclasses are regions bounded by planes, or
+       spherical regions.
     """
 
     # Static class variables
 
-    # The SUBDOMAIN_INDEX is incremented for each new CellRegion_C
-    CELL_SUBDOMAIN_INDEX = 0
+    # The SUBDOMAIN_INDEX is incremented for each new CellSet_C
+#needed?    CELL_SUBDOMAIN_INDEX = 0
 
     def __init__(self, meshCI, plot_flag=False):
-        """Create a CellRegion_C from the given mesh.
+        """Create a CellSet_C from the given mesh.
            :param meshCI: A Mesh_C object.
            :param plot_flag: Boolean flag to plot the subdomain
 
+           :cvar cell_list: An iterable object containing a set of cells.
            :cvar ncell: Number of cells in the list
 
         """
@@ -1009,12 +1017,8 @@ class CellRegion_C(object):
 
         # Use gdim, e.g., for the x,y,z coordinates of a point
         self.gdim = meshCI.gdim
-            # p = [points[ip][d] for d in range(self.gdim)]
-            # ploc = Point(p)
-            # compute_cell_index(ploc)
 
         # If an inside() function is not defined, the cell list is the entire mesh.
-
         if hasattr(self, 'inside'):
             self.cell_list = []
             for cell in df_M.cells(meshCI.mesh):
@@ -1061,30 +1065,34 @@ class CellRegion_C(object):
         return cell.contains(df_M.Point(point))
 #    def in_cell(self, point, cell_index):ENDDEF
 
-#class CellRegion_C(object):ENDCLASS
+#class CellSet_C(object):ENDCLASS
 
 
 ### Useful standard shapes for defining mesh regions.
 
 #STARTCLASS
-class RectangularRegion_C(CellRegion_C):
-    """The RectangularRegion_C class is a specialized CellRegion_C for specifying
+class RectangularRegion_C(CellSet_C):
+    """The RectangularRegion_C class is a specialized CellSet_C for specifying
        (e.g.) cells that generate particles.
 
        This should be generalized to 3D
 
     """
 
-    def __init__(self, meshCI, xmin, xmax, plot_flag=False):
+    def __init__(self, meshCI, pmin, pmax, plot_flag=False):
         """Initialize a source with point or planar boundaries.
 
-           :param float xmin: The lower end of the source region
-           :param float xmax: The upper end of the source region
+           :param float pmin: The lower corner of the source region. This is a scalar for 1D, and a tuple for 2D, 3D
+           :param float pmax: The upper corner of the source region. This is a scalar for 1D, and a tuple for 2D, 3D
 
         """
 
-        self.xmin = xmin
-        self.xmax = xmax
+        # Use gdim, e.g., for the x,y,z coordinates of a point
+        self.gdim = meshCI.gdim
+
+        self.pmin = pmin
+        self.pmax = pmax
+
         plotFlag = plot_flag
 
         # Call the base class constructor
@@ -1093,7 +1101,7 @@ class RectangularRegion_C(CellRegion_C):
         return
 #    def __init__(self, meshCI, xmin, xmax):ENDDEF
 
-#class RectangularRegion_C(CellRegion_C):
+#class RectangularRegion_C(CellSet_C):
     def inside(self, x):
         """Used to define what cells are in this subdomain.
 
@@ -1104,14 +1112,23 @@ class RectangularRegion_C(CellRegion_C):
        """
         tol = 1.0e-10
 
+        if self.gdim == 3:
+            return x[0] >= self.pmin[0] - tol and x[0] <= self.pmax[0] + tol \
+               and x[1] >= self.pmin[1] - tol and x[1] <= self.pmax[1] + tol \
+               and x[2] >= self.pmin[2] - tol and x[2] <= self.pmax[2] + tol
+        elif self.gdim == 2:
+            return x[0] >= self.pmin[0] - tol and x[0] <= self.pmax[0] + tol \
+               and x[1] >= self.pmin[1] - tol and x[1] <= self.pmax[1] + tol
+        else:
+            return x[0] >= self.pmin - tol and x[0] <= self.pmax + tol
+
         # The source is in the interval [xmin, xmax]
-        return x[0] >= self.xmin - tol and x[0] <= self.xmax + tol
 # def inside(self, x):ENDDEF
 
-#class RectangularRegion_C(CellRegion_C):ENDCLASS
+#class RectangularRegion_C(CellSet_C):ENDCLASS
 
 #STARTCLASS
-class SphericalRegion_C(CellRegion_C):
+class SphericalRegion_C(CellSet_C):
     """
        Define a source with a circular or spherical boundary.
 
@@ -1131,7 +1148,7 @@ class SphericalRegion_C(CellRegion_C):
         return
 #    def __init__(self, center, radius):ENDDEF
 
-#class SphericalRegion_C(CellRegion_C):
+#class SphericalRegion_C(CellSet_C):
     def inside(self, x):
         """Used to define what cells are in this region.
 
@@ -1146,10 +1163,10 @@ class SphericalRegion_C(CellRegion_C):
         return x[0] >= self.center - self.radius - tol and x[0] <= self.center + self.radius + tol
 #    def inside(self, x):ENDDEF
 
-#class SphericalRegion_C(CellRegion_C):ENDCLASS
+#class SphericalRegion_C(CellSet_C):ENDCLASS
 
 #STARTCLASS
-class WholeMesh_C(CellRegion_C):
+class WholeMesh_C(CellSet_C):
     """
        Define a cell region that's the whole mesh
     """
@@ -1162,7 +1179,7 @@ class WholeMesh_C(CellRegion_C):
         return
 #    def __init__(self, center, radius):ENDDEF
 
-#class WholeMesh_C(CellRegion_C):ENDCLASS
+#class WholeMesh_C(CellSet_C):ENDCLASS
 
 
 #STARTCLASS

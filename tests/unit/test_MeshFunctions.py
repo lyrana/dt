@@ -5,6 +5,7 @@ __author__ = 'Copyright (C) 2016 L. D. Hughes'
 #__all__ = []
 
 import sys
+import os
 import math
 import unittest
 
@@ -27,6 +28,7 @@ class TestMeshFunctions(unittest.TestCase):
         """
 
         mesh = df_M.UnitSquareMesh(2, 2)
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": mesh"
 
         # Init facet-cell connectivity
         tdim = mesh.topology().dim()
@@ -47,7 +49,7 @@ class TestMeshFunctions(unittest.TestCase):
 
 #        print cell_neighbors
 
-        df_M.plot(mesh)
+        df_M.plot(mesh, title=plotTitle)
         df_M.interactive()
 
 #        self.assertEqual(len(shared_items), len(expected_neighbors), msg="Cell neighbor list is not correct")

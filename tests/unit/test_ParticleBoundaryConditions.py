@@ -160,7 +160,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         from UserMesh_FE_XYZ_Module import UserMesh_C
 
-        pmeshCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
+        pmeshCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=False, plot_title=plotTitle)
         # Add this to the particle object:
         particleCI.pmeshCI = pmeshCI
 
@@ -248,8 +249,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
             strike an absorbing boundary.
         """
 
-        testName = sys._getframe().f_code.co_name
-        fncName = '('+__file__+') ' + testName + '():\n'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName
 
         # if os.environ.get('DISPLAY') is None:
@@ -469,8 +469,9 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Plot the trajectory onto the particle mesh
 
         mesh = pCI.pmeshCI.mesh
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
         holdPlot = True # Set to True to stop the plot from disappearing.
-        pCI.trajCI.plot_trajectories_on_mesh(mesh, testName, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        pCI.trajCI.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         return
 #    def test_2D_r_theta_absorbing_boundary(self):

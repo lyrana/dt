@@ -27,6 +27,8 @@ class TestFacetCrossing(unittest.TestCase):
         # Initializations performed before each test go here...
 
         plotFlag = False
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
+
         # Turn off plotting if there's no DISPLAY
 
         # if os.environ.get('DISPLAY') is None:
@@ -47,7 +49,7 @@ class TestFacetCrossing(unittest.TestCase):
         self.mesh1D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
-        self.mesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
+        self.mesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
 #        self.mesh1DCI.compute_cell_vertex_dict()
 #        self.mesh1DCI.compute_cell_dict()
 
@@ -63,7 +65,7 @@ class TestFacetCrossing(unittest.TestCase):
         self.mesh2D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
-        self.mesh2DCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
+        self.mesh2DCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
 #        self.mesh2DCI.compute_cell_vertex_dict()
 #        self.mesh2DCI.compute_cell_dict()
 
@@ -73,7 +75,7 @@ class TestFacetCrossing(unittest.TestCase):
         mi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
         mi3DCI.cells_on_side = (4, 4, 4)
         # Create mesh
-        self.mesh3DCI = UserMesh_C(mi3DCI, compute_tree=True, plot_flag=plotFlag)
+        self.mesh3DCI = UserMesh_C(mi3DCI, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 3D")
         self.mesh3DCI.compute_cell_entity_index_dict('vertex')
         self.mesh3DCI.compute_cell_entity_index_dict('facet')
         self.mesh3DCI.compute_cell_dict()
@@ -90,8 +92,8 @@ class TestFacetCrossing(unittest.TestCase):
         """Test the facet-normal dictionary.
         """
 
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname, '('+__file__+')'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest:', fncName, '('+__file__+')'
 
         # 1D mesh
 
@@ -192,8 +194,8 @@ class TestFacetCrossing(unittest.TestCase):
 
         """
 
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest:', fncname, '('+__file__+')'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest:', fncName, '('+__file__+')'
 
         #
         # 1D: Initial point = center of cell, move = cell length

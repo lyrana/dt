@@ -129,6 +129,8 @@ class TestParticleMigration(unittest.TestCase):
                 self.particleCI.create_from_list(s, False)
 
         plotFlag = False
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
+
         # Turn off plotting if there's no DISPLAY
 
         # if os.environ.get('DISPLAY') is None:
@@ -144,7 +146,7 @@ class TestParticleMigration(unittest.TestCase):
         mi1DCI.pmax = df_M.Point(10.0)
         mi1DCI.cells_on_side = (4)
         # Create a 1D particle mesh
-        self.pmesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
+        self.pmesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
 #        self.pmesh1DCI.compute_cell_vertex_dict()
 #        self.pmesh1DCI.compute_cell_dict()
 
@@ -154,7 +156,7 @@ class TestParticleMigration(unittest.TestCase):
         mi2DCI.pmax = df_M.Point(10.0, 10.0)
         mi2DCI.cells_on_side = (4, 2)
         # Create a 2D particle mesh
-        self.pmesh2DCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
+        self.pmesh2DCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
 #        self.pmesh2DCI.compute_cell_vertex_dict()
 #        self.pmesh2DCI.compute_cell_dict()
 
@@ -165,7 +167,7 @@ class TestParticleMigration(unittest.TestCase):
         mi3DCI.cells_on_side = (4, 4, 4)
 
         # Create a 3D particle mesh
-        self.pmesh3DCI = UserMesh_C(mi3DCI, compute_tree=True, plot_flag=plotFlag)
+        self.pmesh3DCI = UserMesh_C(mi3DCI, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 3D")
         # Explicitly compute dictionaries needed
         self.pmesh3DCI.compute_cell_entity_index_dict('vertex')
         self.pmesh3DCI.compute_cell_entity_index_dict('facet')
@@ -311,7 +313,8 @@ class TestParticleMigration(unittest.TestCase):
             self.particleCI.move_neutral_particles(ctrlCI.dt)
 
         # Create a mesh plotter to display the trajectory
-        plotter=df_M.plot(self.particleCI.pmeshCI.mesh, title="First & last positions")
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": First & last positions"
+        plotter=df_M.plot(self.particleCI.pmeshCI.mesh, title=plotTitle)
 
         # Check the results
         ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
@@ -395,7 +398,8 @@ class TestParticleMigration(unittest.TestCase):
 
         # Create a mesh plotter to display the trajectory (just the
         # first and last positions)
-        plotter=df_M.plot(self.particleCI.pmeshCI.mesh, title="First & last positions")
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": First & last positions"
+        plotter=df_M.plot(self.particleCI.pmeshCI.mesh, title=plotTitle)
 
         # Check the results
         ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
@@ -416,7 +420,7 @@ class TestParticleMigration(unittest.TestCase):
                 self.assertEqual(p_expected[ip][-1], getparticle[-1], msg="Particle is not in correct cell")
 
         plotter.plot()
-#        df_M.interactive() # Stops the plot from disappearing
+        df_M.interactive() # Stops the plot from disappearing
 
         return
 #    def test_3D_particle_migration(self):ENDDEF

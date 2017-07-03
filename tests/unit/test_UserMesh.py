@@ -68,8 +68,8 @@ class TestUserMesh_y_Fields(unittest.TestCase):
 
     def test_quarter_circle_plot_false(self):
 
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName, '('+__file__+')'
 
         meshCI = UserMesh_C(meshInputCI=self.miCI, plot_flag=False)
 
@@ -81,15 +81,16 @@ class TestUserMesh_y_Fields(unittest.TestCase):
         
     def test_quarter_circle_plot_true(self):
 
-        fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName, '('+__file__+')'
 
         if os.environ.get('DISPLAY') is None:
             plotFlag=False
         else:
             plotFlag=True
 
-        meshCI = UserMesh_C(meshInputCI=self.miCI, plot_flag=plotFlag)
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": mesh"
+        meshCI = UserMesh_C(meshInputCI=self.miCI, plot_flag=plotFlag, plot_title=plotTitle)
 
 #        df_M.plot(meshCI.mesh, title='cylindrical mesh', axes=True)
 #        df_M.interactive()

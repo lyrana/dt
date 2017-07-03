@@ -22,7 +22,7 @@ class TestPoissonSolve(unittest.TestCase):
     def setUp(self):
         # initializations for each test go here...
 
-        fncName = sys._getframe().f_code.co_name
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print "\n", fncName, ": This is DOLFIN Version", df_M.DOLFIN_VERSION_STRING, '\n'
 
         return
@@ -32,7 +32,7 @@ class TestPoissonSolve(unittest.TestCase):
         """Test a 1D Laplace equation in spherical coordinates.
         """
 
-        fncName = sys._getframe().f_code.co_name
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName, '('+__file__+')'
 
         ## Plotting
@@ -61,7 +61,8 @@ class TestPoissonSolve(unittest.TestCase):
 
         miCI.field_boundary_dict = fieldBoundaryDict
 
-        meshCI = UserMesh_C(meshInputCI=miCI, compute_tree=False, plot_flag=True)
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
+        meshCI = UserMesh_C(meshInputCI=miCI, compute_tree=False, plot_flag=True, plot_title=plotTitle)
 
         ## Storage for the potential and electric field
 
@@ -117,7 +118,8 @@ class TestPoissonSolve(unittest.TestCase):
                                             negElectricField=negElectricField)
 
         # Solve for the potential
-        poissonsolveCI.solve_for_phi(plot_flag=plotFlag, plot_title=fncName)
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
+        poissonsolveCI.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
 
 #        yesno = raw_input("Looks OK [Y/n]?")
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
@@ -191,7 +193,7 @@ class TestPoissonSolve(unittest.TestCase):
         """Test a 2D Laplace equation in cylindrical coordinates.
         """
 
-        fncName = sys._getframe().f_code.co_name
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName, '('+__file__+')'
 
         # Plotting
@@ -288,7 +290,8 @@ class TestPoissonSolve(unittest.TestCase):
                                             fieldBoundaryMarker, phiBCs,
                                             negElectricField=negElectricField)
 
-        poissonsolveCI.solve_for_phi(plot_flag=plotFlag, plot_title=fncName)
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
+        poissonsolveCI.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
 
 #        yesno = raw_input("Looks OK [Y/n]?")
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
