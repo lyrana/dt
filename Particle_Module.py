@@ -112,7 +112,7 @@ class ParticleInput_C(object):
         # Example: numpy.float64
         self.precision = None
 
-        # Force components acting on the particles
+        # Strings that label the force components acting on the particles
         # e.g., ['x', 'y', 'z']
         self.force_components = None
 
@@ -322,11 +322,18 @@ class Particle_C(object):
 
 #        self.user_particle_class = userParticleClass
 
-        ## Reference to particle initialization (added after construction)
+        ## Reference to particle initialization (add this after construction of
+        ## Particle_C instance)
         self.initial_particle_dict = None
 
-        ## Reference to particle sources (added after construction)
+        ## Reference to particle sources (add this after construction of Particle_C
+        ## instance)
         self.particle_source_dict = None
+
+        ## Reference to particle number densities (add this after construction of
+        ## Particle_C instance)
+        # Set to None until the storage is allocated
+        self.number_density_dict = {s: None for s in self.species_names}
 
         # This is for a reference to a Trajectory_C object to handle particles
         # that have the TRAJECTORY_FLAG bit turned on.  A Trajectory_C object
@@ -428,6 +435,10 @@ class Particle_C(object):
         #     else:
         #         errorMsg = "Unknown initial_distribution_type " + self.initial_distribution_type + " in Main for species " + sp
         #         sys.exit(errorMsg)
+
+            # Compute the particle number density if storage has been allocated
+            if self.number_density_dict[s] is not None:
+                self.accumulate_number_density(s)
 
         return
 #    def initialize_particles(self, print_flags):ENDDEF
@@ -633,6 +644,53 @@ class Particle_C(object):
 
         return
 #    def compute_mesh_cell_indices(self):ENDDEF
+
+#class Particle_C(object):
+    def accumulate_number_density(self, species_name):
+        """Add contributions to the number density for the given species.
+
+           This implementation doesn't generate an actual number-density, but
+           rather the vector {n*u_i*dx}, where the {u_i} are the shape functions
+           for the i'th DoF. The result needs to be divided by a volume to get an
+           actual density.
+
+           Loops on particles, not on cells.
+
+           :returns: None
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
+        psaCI = self.pseg_arr[species_name] # segmented array for this species
+        (npSeg, pseg) = psaCI.init_out_loop()
+
+        while isinstance(pseg, np_M.ndarray):
+            for p in pseg:
+                self.number_density_dict[species_name].interpolate_delta_function_to_dofs(p)
+            (npSeg, pseg) = psaCI.get_next_segment('out')
+
+        return
+#    def accumulate_number_density(self, species_name):ENDDEF
+
+# Useless function:
+
+#class Particle_C(object):
+    def set_number_density(self, species_name, value):
+        """Set the values in the number density array for the given species.
+
+           :param value: The number density is set to this value.
+
+           :returns: None
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
+        self.number_density_dict[species_name].set_to_value(value)
+
+        return
+#    def set_number_density(self, species_name, value):ENDDEF
 
 #class Particle_C(object):
     def move_particles_in_electrostatic_field(self, dt, neg_electric_field):
@@ -1483,38 +1541,31 @@ class Particle_C(object):
 
 
 #class Particle_C(object):
-    def compute_charge_density(self, fCI):
-        """Compute the electric charge density from discrete particles.
+    def accumulate_charge_density_from_particles(self, charge_density):
+        """Compute the charge density contributed by the kinetic particles.
 
-           Arguments:
-               dt: time interval.
+           :param charge_density: Storage into which charge-density is accumulated.
 
-               fpCI: an object that can provide method to compute
-               density from discrete particles.
+           :returns: None
                
         """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         ## Loop over species
         if self.pmeshCI is not None:
             for s in self.species_names:
                 charge = self.charge[s]
-                # Loop over the segments of the 'out' array
-                psaCI = self.pseg_arr[s] # segmented array for this species
-                (npSeg, pseg) = psaCI.init_out_loop()
-                while isinstance(pseg, np_M.ndarray):
-
-                    # Sum density and charge-density
-
-                    (npSeg, pseg) = psaCI.get_next_segment('out')
-
+                # Loop over the number-density arrays
+                charge_density.multiply_add(self.number_density_dict[s], charge)
         else:
             print fncName, "(DnT WARNING) The reference to pmeshCI is None"
             
-            return
-#    def compute_charge_density(self, fCI):ENDDEF
+        return
+#    def accumulate_charge_density_from_particles(self, charge_density):ENDDEF
 
 
-# Standard distribution types
+# Standard particle distribution types
 
 #class Particle_C(object):
     def create_maxwellian_particles(self, time, domain, paramDict):

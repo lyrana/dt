@@ -12,7 +12,6 @@ import unittest
 import DT_Module as DT_M
 
 from UserUnits_Module import MyPlasmaUnits_C
-from Particle_Module import Particle_C
 from Particle_Module import *
 
 #STARTCLASS

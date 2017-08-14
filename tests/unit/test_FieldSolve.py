@@ -26,10 +26,14 @@ class TestPoissonSolve(unittest.TestCase):
         print "\n", fncName, ": This is DOLFIN Version", df_M.DOLFIN_VERSION_STRING, '\n'
 
         return
+#    def setUp(self):ENDDEF
 
 #class TestPoissonSolve(unittest.TestCase):
     def test_1D_poisson_solver(self):
         """Test a 1D Laplace equation in spherical coordinates.
+
+           This is a Laplace solve as there is no source term, only
+           boundary-conditions.
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -94,8 +98,6 @@ class TestPoissonSolve(unittest.TestCase):
 
         ## The Poisson solver parameters
 
-        functionSpace = phi.function_space
-
         linearSolver = 'lu'
         preconditioner = None
 
@@ -115,7 +117,7 @@ class TestPoissonSolve(unittest.TestCase):
                                             linearSolver, preconditioner,
 #                                            boundary_marker, phi_rmin, phi_rmax,
                                             fieldBoundaryMarker, phiBCs,
-                                            negElectricField=negElectricField)
+                                            neg_electric_field=negElectricField)
 
         # Solve for the potential
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
@@ -191,6 +193,10 @@ class TestPoissonSolve(unittest.TestCase):
 #class TestPoissonSolve(unittest.TestCase):
     def test_2D_poisson_solver(self):
         """Test a 2D Laplace equation in cylindrical coordinates.
+
+           This is a Laplace solve as there is no source term, only
+           boundary-conditions.
+
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -261,8 +267,6 @@ class TestPoissonSolve(unittest.TestCase):
 
         # The Poisson solver parameters
 
-        functionSpace = phi.function_space
-
         linearSolver = 'lu'
         preconditioner = None
 # Don't get exactly the same solutions with the following
@@ -288,7 +292,7 @@ class TestPoissonSolve(unittest.TestCase):
         poissonsolveCI = UserPoissonSolve_C(phi,
                                             linearSolver, preconditioner,
                                             fieldBoundaryMarker, phiBCs,
-                                            negElectricField=negElectricField)
+                                            neg_electric_field=negElectricField)
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         poissonsolveCI.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)

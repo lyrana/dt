@@ -32,14 +32,14 @@ class TestParticleInitialization(unittest.TestCase):
         # Initializations performed before each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = self.pinCI = ParticleInput_C()
+        pin_PI = self.pin_PI = ParticleInput_C()
         # Set up particle variables
-        pinCI.precision = np_M.float64
+        pin_PI.precision = np_M.float64
 
-        pinCI.particle_integration_loop = 'loop-on-particles'
-        pinCI.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
-        pinCI.force_components = ['x', 'y', 'z']
-        pinCI.force_precision = np_M.float64
+        pin_PI.particle_integration_loop = 'loop-on-particles'
+        pin_PI.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin_PI.force_components = ['x', 'y', 'z']
+        pin_PI.force_precision = np_M.float64
 
 
         ### Particle species input
@@ -81,25 +81,25 @@ class TestParticleInitialization(unittest.TestCase):
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
         dynamics = 'implicit'
-        plasmaElectronsCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        plasmaElectrons_PS = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         speciesName = 'H_plus'
         charge = 1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.AMU
         dynamics = 'implicit'
-        HPlusCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        Hplus_PS = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         speciesName = 'He'
         charge = 0.0
         mass = 4.0*MyPlasmaUnits_C.AMU
         dynamics = 'implicit'
-        HeCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        He_PS = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
-        # Add these species to particle input
-        pinCI.particle_species = (plasmaElectronsCI, HPlusCI, HeCI,
+        # Add these 3 species to particle input
+        pin_PI.particle_species = (plasmaElectrons_PS, Hplus_PS, He_PS,
                                  )
-        # Make the particle object from pinCI
-        pCI = self.particleCI = Particle_C(pinCI, print_flag=False)
+        # Make the particle object from pin_PI
+        p_P = self.particle_P = Particle_C(pin_PI, print_flag=False)
 
         # Give the name of the .py file containing special particle data (lists
         # of particles, boundary conditions, particle-initialization regions,
@@ -109,8 +109,8 @@ class TestParticleInitialization(unittest.TestCase):
         # Import this module
         UPrt_M = im_M.import_module(userParticleModule)
 
-        pCI.user_particle_module = userParticleModule
-        pCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+        p_P.user_particle_module = userParticleModule
+        p_P.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
 
         ### Provide input for particles present at t=0
 
@@ -118,11 +118,13 @@ class TestParticleInitialization(unittest.TestCase):
         # Name the initialized species (it should be in species_names above)
         speciesName = 'plasma_electrons'
         # Check that this species has been defined above
-        if speciesName not in pCI.species_names:
+        if speciesName not in p_P.species_names:
             print fncName + "The species", speciesName, "has not been defined"
             sys.exit()
 
         # Specify how the species will be initialized
+### Could you get this info without using this variable?
+### E.g., by giving the name of the function that lists the particles?
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
@@ -135,6 +137,9 @@ class TestParticleInitialization(unittest.TestCase):
 
         # Collect the parameters into a dictionary
         # The 'listed' type will expect a function with the same name as the species.
+
+### Here, we'd provide the name of the distribution function, 'plasma_electrons_listed'
+
         plasmaElectronParams = {'species_name': speciesName,
                                 'initial_distribution_type': initialDistributionType,
                               }
@@ -142,7 +147,7 @@ class TestParticleInitialization(unittest.TestCase):
         ## H+ ions are present at t=0
         speciesName = 'H_plus'
         # Check that this species has been defined above
-        if speciesName not in pCI.species_names:
+        if speciesName not in p_P.species_names:
             print fncName + "The species", speciesName, "has not been defined"
             sys.exit()
 
@@ -159,16 +164,16 @@ class TestParticleInitialization(unittest.TestCase):
 
         # Collect the parameters into a dictionary
         # The 'listed' type will expect a function with the same name as the species.
-        HPlusParams = {'species_name': speciesName,
+        HplusParams = {'species_name': speciesName,
                        'initial_distribution_type': initialDistributionType,
                        }
 
         # The dictionary keys are mnemonics for the initialized particles
         initialParticlesDict = {'initial_plasma_electrons': (plasmaElectronParams,),
-                                'initial_H_plus': (HPlusParams,),
+                                'initial_H_plus': (HplusParams,),
                                 }
 
-        pCI.initial_particles_dict = initialParticlesDict
+        p_P.initial_particles_dict = initialParticlesDict
 
         return
 #    def setUp(self):ENDDEF
@@ -181,12 +186,12 @@ class TestParticleInitialization(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest:', fncName, '('+__file__+')'
 
-        particle_species = self.pinCI.particle_species
+        particle_species = self.pin_PI.particle_species
         # Check the names of the species
         for i in range(len(particle_species)):
             expected_name = particle_species[i].name
-#            print "expected_name:", expected_name,"actual name:", self.particleCI.species_names[i]
-            self.assertEqual(self.particleCI.species_names[i], expected_name, msg = "Species name is not correct")
+#            print "expected_name:", expected_name,"actual name:", self.particle_P.species_names[i]
+            self.assertEqual(self.particle_P.species_names[i], expected_name, msg = "Species name is not correct")
         return
 #    def test_species_names(self):ENDDEF
 
@@ -199,11 +204,11 @@ class TestParticleInitialization(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName, '('+__file__+')'
 
-        userParticleClass = self.particleCI.user_particle_class
+        userParticleClass = self.particle_P.user_particle_class
 
         ninput_total = 0
 
-        initialParticlesDict = self.particleCI.initial_particles_dict
+        initialParticlesDict = self.particle_P.initial_particles_dict
 
         # Loop on initialized particles
         for ip in initialParticlesDict:
@@ -214,7 +219,7 @@ class TestParticleInitialization(unittest.TestCase):
 
             if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
-                self.particleCI.create_from_list(s, False)
+                self.particle_P.create_from_list(s, False)
                 # Get the original listed-particle input data by calling the
                 # user-provided function in 'user_particle_file'.
                 # The function name is the species name, and the
@@ -227,25 +232,25 @@ class TestParticleInitialization(unittest.TestCase):
                     putparticle = particles[i]
                     # Get the stored particle data
 #                    getparticle = self.particles.pseg_arr[sp][ip]
-                    getparticle = self.particleCI.pseg_arr[s].get(i)
+                    getparticle = self.particle_P.pseg_arr[s].get(i)
 #                    print 'putparticle = ', putparticle
 #                    print 'getparticle = ', getparticle
                     for ix in range(len(getparticle)):
                         self.assertAlmostEqual(getparticle[ix], putparticle[ix], msg="Particle is not correct")
 
                 # Check the number of stored particles in each species
-                nStored = self.particleCI.get_species_particle_count(s, print_flag = False)
+                nStored = self.particle_P.get_species_particle_count(s, print_flag = False)
                 self.assertEqual(nStored, ninput, msg = "Number of stored particles is not correct")
 
         # check total number of stored particles
-        nStored = self.particleCI.get_total_particle_count(print_flag = False)
+        nStored = self.particle_P.get_total_particle_count(print_flag = False)
         self.assertEqual(nStored, ninput_total, msg = "Number of stored particles is not correct")
 
         return
 #    def test_listed_particles(self):ENDDEF
 
 #class TestParticleInitialization(unittest.TestCase):
-    def test_functional_particles(self):
+    def test_function_initialized_particles(self):
         """ Test initialization of particles using a function over a region of
             the mesh.
 
@@ -255,27 +260,27 @@ class TestParticleInitialization(unittest.TestCase):
         print '\ntest: ', fncName, '('+__file__+')'
 
         ## Control struct
-        ctrlCI = DTcontrol_C()
+        ctrl = DTcontrol_C()
 
         ## Mesh input
-        uMI2DCI = UserMeshInput_C()
+        mi2d_UMI = UserMeshInput_C()
 
 # Replace with TUPLES since we're at toplevel
-        uMI2DCI.pmin = df_M.Point(-10.0, -10.0)
-        uMI2DCI.pmax = df_M.Point(10.0, 10.0)
-        uMI2DCI.cells_on_side = (2, 2)
-        uMI2DCI.diagonal = 'left'
+        mi2d_UMI.pmin = df_M.Point(-10.0, -10.0)
+        mi2d_UMI.pmax = df_M.Point(10.0, 10.0)
+        mi2d_UMI.cells_on_side = (2, 2)
+        mi2d_UMI.diagonal = 'left'
 
         ## Create a 2D particle mesh, since we're going to initialize particles
         ## on a region of a mesh.
         # UserMesh_FE_XYZ_Module can make the mesh from the above input.
         plotFlag = False
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": mesh"
-        pmesh2DCI = UserMesh_C(uMI2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
+        pmesh2d_UM = UserMesh_C(mi2d_UMI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
 
-        pCI = self.particleCI
+        p_P = self.particle_P
 
-        userParticleClass = pCI.user_particle_class
+        userParticleClass = p_P.user_particle_class
 
         ## 1. Initial hot electrons on bottom-left side of the mesh
 
@@ -284,9 +289,9 @@ class TestParticleInitialization(unittest.TestCase):
         speciesName = 'plasma_electrons'
 
         # Check that this species has been defined
-        if speciesName in pCI.species_names:
-            charge = pCI.charge[speciesName]
-            mass = pCI.mass[speciesName]
+        if speciesName in p_P.species_names:
+            charge = p_P.charge[speciesName]
+            mass = p_P.mass[speciesName]
         else:
             print "The species", speciesName, "needs to be defined."
             sys.exit()
@@ -325,7 +330,7 @@ class TestParticleInitialization(unittest.TestCase):
                              'number_per_cell': numberPerCell}
 
         # b. Name the particle-creation function.
-        maxwellianGenerator = pCI.create_maxwellian_particles
+        maxwellianGenerator = p_P.create_maxwellian_particles
 
         # c. Initialization-region geometry
         xmin = -9.0; ymin = -9.0
@@ -336,7 +341,7 @@ class TestParticleInitialization(unittest.TestCase):
 #        pmax = df_M.Point(xmax, ymax)
         pmin = (xmin, ymin)
         pmax = (xmax, ymax)
-        hotElectronsRegionCI = RectangularRegion_C(pmesh2DCI, pmin, pmax)
+        hotElectronsRegion_RR = RectangularRegion_C(pmesh2d_UM, pmin, pmax)
 
         ## Put all the particle-initialization data into a dictionary
 
@@ -347,14 +352,14 @@ class TestParticleInitialization(unittest.TestCase):
         #   c. initialization region
 
         ## Note: the names here are particle-initialization names, NOT species names!
-        initialParticlesDict = {'initial_hot_electrons': (hotElectronParams, maxwellianGenerator, hotElectronsRegionCI),
+        initialParticlesDict = {'initial_hot_electrons': (hotElectronParams, maxwellianGenerator, hotElectronsRegion_RR),
 #                              'initial_background_electrons': (backgroundElectronParams, maxwellianGenerator, wholeMesh),
                               }
 
         # Replace the 'listed' initial particles made in Setup() with
-        # the 'functional' initial particles created above
+        # the 'function_initialized' initial particles created above
 
-        pCI.initial_particles_dict = initialParticlesDict
+        p_P.initial_particles_dict = initialParticlesDict
 
         # Loop on the initialization methods in the dictionary
 
@@ -362,7 +367,7 @@ class TestParticleInitialization(unittest.TestCase):
         # {ipName: (ipParams,)}
         # For 'function_over_region' initialization, the dictionary has entries
         # like
-        # {ipName: (ipParams, ipFunc, ipRegionCI)}
+        # {ipName: (ipParams, ipFunc, ipRegion_RR)}
 
         nCreatedTotal = 0
         for ipName, ipTuple in initialParticlesDict.iteritems():
@@ -373,51 +378,51 @@ class TestParticleInitialization(unittest.TestCase):
             if initialDistributionType == 'function_over_region':
                 print fncName, "Initializating", ipName, "particles"
                 ipFunc = ipTuple[1]
-                ipRegionCI = ipTuple[2]
+                ipRegion_RR = ipTuple[2]
                 # Invoke the creation function
                 time = 0.0
-                ipFunc(time, ipRegionCI, ipParams)
+                ipFunc(time, ipRegion_RR, ipParams)
 
                 # Check the number of stored particles for each species
 
-                nCreated = ipRegionCI.ncell * ipParams['number_per_cell']
+                nCreated = ipRegion_RR.ncell * ipParams['number_per_cell']
                 print fncName, "Number of particles created =", nCreated
                 nCreatedTotal += nCreated
 
-                nStored = pCI.get_species_particle_count(s, print_flag = False)
+                nStored = p_P.get_species_particle_count(s, print_flag = False)
                 self.assertEqual(nStored, nCreated, msg = "Number of stored particles is not correct")
 
         # check total number of stored particles
-        nStored = pCI.get_total_particle_count(print_flag = False)
+        nStored = p_P.get_total_particle_count(print_flag = False)
         print fncName, "Total number of particles created =", nCreatedTotal
         self.assertEqual(nStored, nCreatedTotal, msg = "Total number of stored particles is not correct")
 
         # Write out the particles to an HDF5 file
 
-        ctrlCI.timestep_count = 0
-        ctrlCI.time = 0.0
+        ctrl.timestep_count = 0
+        ctrl.time = 0.0
 
         # Run identifier
-        ctrlCI.title = "test_ParticleGeneration"
+        ctrl.title = "test_ParticleGeneration"
         # Run author
-        ctrlCI.author = "tph"
+        ctrl.author = "tph"
 
         ### Select output for particles
-        ctrlCI.particle_output_file = "particleInitialization.h5part"
-        ctrlCI.particle_output_interval = 1
-        ctrlCI.particle_output_attributes = ('species_index', 'x', 'y', 'z', 'ux', 'uy', 'uz', 'weight')
+        ctrl.particle_output_file = "particleInitialization.h5part"
+        ctrl.particle_output_interval = 1
+        ctrl.particle_output_attributes = ('species_index', 'x', 'y', 'z', 'ux', 'uy', 'uz', 'weight')
 
         # Check these values
-        pCI.check_particle_output_parameters(ctrlCI)
+        p_P.check_particle_output_parameters(ctrl)
 
         # Dump the particle data to a file
-        pCI.initialize_particle_output_file(ctrlCI)
+        p_P.initialize_particle_output_file(ctrl)
 
         # Write the particle attributes
-        pCI.write_particle_attributes(ctrlCI)
+        p_P.write_particle_attributes(ctrl)
 
         return
-#    def test_functional_particles(self):ENDDEF
+#    def test_function_initialized_particles(self):ENDDEF
 
 
 #class TestParticleInitialization(unittest.TestCase):

@@ -346,7 +346,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         miCI.particle_boundary_dict = particleBoundaryDict
 
-        ## Create the mesh
+        ## Create the particle mesh
         from UserMesh_y_Fields_FE2D_Module import UserMesh_C
         pmeshCI = UserMesh_C(miCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
