@@ -67,9 +67,6 @@ class Mesh_C(object):
 
             self.facet_normal_3d = np_M.empty(3, np_M.float64)
 
-            # This is an iterator over the cells of the mesh
-            self.cell_list = df_M.cells(self.mesh)
-
             # Don't need to declare all of these class variables here
             # provided they're created by the dict() function in the
             # class methods.  They're listed here only for
@@ -78,10 +75,11 @@ class Mesh_C(object):
 
             self.entity_dimension = {'vertex': 0, 'edge': 1, 'facet': self.tdim-1}
             self.cell_entity_index_dict = {}
-
             self.vertex_cell_dict = {}
             self.cell_facet_normals_dict = {}
             self.cell_neighbor_dict = {}
+
+            self.cell_volume_dict = {}
 
             # Compute lookup dictionaries
             if compute_dictionaries == True:
@@ -92,6 +90,8 @@ class Mesh_C(object):
 
                 self.compute_cell_facet_normals_dict() # Unit vectors normal to cell facets
                 self.compute_cell_neighbor_dict() # Get neighbor cell indices from a cell index
+
+                self.compute_cell_volume_dict() # Compute cell volumes indexed by cell index
 
         return
 #    def __init__(self, Mesh=None, mesh_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
@@ -411,7 +411,19 @@ class Mesh_C(object):
         print fncName, "cell index =", first
 
         return
-        
+
+#class Mesh_C(object):
+    def compute_cell_volume_dict(self):
+        """
+           Make a dictionary giving the cell volume, indexed by
+           the cell index.
+        """
+
+        self.cell_volume_dict = dict((cell.index(), cell.volume()) for cell in df_M.cells(self.mesh))
+
+        return
+#    def compute_cell_volume_dict(self):ENDDEF
+
     def is_inside(self, point, cell_index):
         """Check if a point lies within a give cell
 
@@ -736,6 +748,37 @@ class Field_C(object):
         return
 #    def __init__(self, meshCI, element_type, element_degree, field_type):END
 
+#class Field_C(object):
+    def set_to_value(self, value):
+        """Set all the field values to the given value
+
+           :param value: Value to set the field to.
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
+        # Assignment to an FE function: FBook p. 25:
+        self.function.vector()[:] = value
+
+        return
+#    def set_to_value(self, value):ENDDEF
+
+#class Field_C(object):
+    def multiply_add(self, field_to_add, multiplier):
+        """Add multiplier*field_to_add to the existing field values
+
+           :field_to_add: A Field_C object to be added to this Field_C
+           :param multiplier: Scalar value to multiply the field_to_add values
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
+        # Assignment to an FE function: FBook p. 25:
+        self.function.vector()[:] += multiplier*field_to_add.function.vector()
+
+        return
+#    def multiply_add(self, value):ENDDEF
+
 #    def interpolate_vectorField_to_points(self, points, vFpoints):
 #class Field_C(object):
     def interpolate_field_to_points(self, points, field_at_points):
@@ -811,11 +854,13 @@ class Field_C(object):
 
 #class Field_C(object):
     def interpolate_delta_function_to_dofs(self, p):
-        """This function takes the 'inner product' of a delta-function
-           located at point p and the basis functions used by the
-           field object.  This occurs, e.g., in computing the source
-           density for Poisson's equations, where the basis functions
-           are the "test" functions. The field must be a scalar.
+        """This function takes the 'inner product' of a delta-function located
+           at point p and the basis functions used by the field object.
+
+           This can be used e.g., to assemble the space-charge source vector
+           {rho*u_i*dx} for the variational form of Poisson's equation from a
+           distribution of delta-function particles.  The basis functions {u_i}
+           are the "test" functions. The field rho is a scalar.
 
            :param p: A point inside the domain of the function.
            :type p: An object with data fields 'x', ('y', 'z'),
@@ -827,6 +872,9 @@ class Field_C(object):
                      point's weight.
 
         """
+
+# Another version of this function would loop on cells instead of looping on particles
+# Then coords wouldn't have to be retrieved multiple times
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
@@ -988,7 +1036,7 @@ class FacetSubDomain_C(df_M.SubDomain):
 class CellSet_C(object):
     """A CellSet_C produces and stores a set of mesh cells.
 
-       The cell set is defined using called a function called "inside()", which
+       A cell set is defined using a function called "inside()", which
        is provided by the subclasses of CellSet_C.  The "inside()" function
        is used to determine if a given cell is included in the set.  If
        "inside()" is not defined in the subclass, the cell set is the *whole
@@ -1036,15 +1084,17 @@ class CellSet_C(object):
         self.volume = np_M.empty(self.ncell, dtype = np_M.float64)
         self.radius = np_M.empty(self.ncell, dtype = np_M.float64)
 
-
+        # Note that icell is just a counter, not the Dolfin cell index.
+        # One could instead create an Interator over the cells in the set.
         for icell in xrange(self.ncell):
             c = self.cell_list[icell]
-            self.volume[icell] = c.volume()
+# 12aug17 note: now have precomputed vol for each cell in mesh
+#            self.volume[icell] = c.volume()
+            self.volume[icell] = meshCI.cell_volume_dict[c.index()]
             midp = c.midpoint()
             for i in range(self.gdim):
                 self.midpoint[icell][i] = midp[i]
             self.radius[icell] = c.circumradius()
-
             
         return
 #    def __init__(self, mesh, plot_flag=False):ENDDEF

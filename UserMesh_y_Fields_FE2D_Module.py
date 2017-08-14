@@ -370,7 +370,7 @@ class UserPoissonSolve_C(PoissonSolve_C):
 # Select the unit system to be used for input parameters.
     Convert = U_M.MyPlasmaUnits_C
 
-    def __init__(self, phi, linear_solver, preconditioner, fieldBoundaryMarker, phi_BCs, chargeDensity=None, negElectricField=None):
+    def __init__(self, phi, linear_solver, preconditioner, fieldBoundaryMarker, phi_BCs, charge_density=None, neg_electric_field=None):
 #    def __init__(self, phi, linear_solver, preconditioner, boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):
 #    def __init__(self, function_space, linear_solver, preconditioner, boundary_marker, phi_rmin, phi_rmax, computeEflag, mesh=None):
         """Constructor for a Poisson solver written by the user.
@@ -384,8 +384,8 @@ class UserPoissonSolve_C(PoissonSolve_C):
 #        u_rmin = df_M.Constant(phi_rmin)
 #        u_rmax = df_M.Constant(phi_rmax)
 
-        self.charge_density = chargeDensity
-        self.neg_electric_field = negElectricField
+        self.charge_density = charge_density
+        self.neg_electric_field = neg_electric_field
 
         # Field-solver parameters
         self.solver_parameters = {}
