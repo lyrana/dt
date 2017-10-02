@@ -77,7 +77,8 @@ class TestParticleMigration(unittest.TestCase):
         self.particleCI = Particle_C(pinCI, print_flag=False)
 
         # Give the name of the .py file containing additional particle data (lists of
-        # particles, boundary conditions, source regions, etc.)
+        # particles, boundary-condition callbacks, source regions, etc.)
+        # Particles have a 3D/3D phase-space even though mesh is just 2D
         userParticleModule = "UserParticles_3D"
 #        print "setUp: UserParticle module is", userParticleModule
 
@@ -141,33 +142,75 @@ class TestParticleMigration(unittest.TestCase):
         # Create 1D, 2D and 3D meshes that the particles can be tested against
 
         # 1d mesh input
-        mi1DCI = UserMeshInput_C()
-        mi1DCI.pmin = df_M.Point(-10.0)
-        mi1DCI.pmax = df_M.Point(10.0)
-        mi1DCI.cells_on_side = (4)
+        umi1DCI = UserMeshInput_C()
+        umi1DCI.pmin = df_M.Point(-10.0)
+        umi1DCI.pmax = df_M.Point(10.0)
+        umi1DCI.cells_on_side = (4,)
+
+        # Identify where particle boundary-conditions will be imposed
+        xminIndx = 1
+        xmaxIndx = 2
+        particleBoundaryDict = {'xmin': xminIndx,
+                                'xmax': xmaxIndx,
+                                }
+
+        umi1DCI.particle_boundary_dict = particleBoundaryDict
+
         # Create a 1D particle mesh
-        self.pmesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
+        self.pmesh1DCI = UserMesh_C(umi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
 #        self.pmesh1DCI.compute_cell_vertex_dict()
 #        self.pmesh1DCI.compute_cell_dict()
 
         # 2D mesh input
-        mi2DCI = UserMeshInput_C()
-        mi2DCI.pmin = df_M.Point(-10.0, -10.0)
-        mi2DCI.pmax = df_M.Point(10.0, 10.0)
-        mi2DCI.cells_on_side = (4, 2)
+        umi2DCI = UserMeshInput_C()
+        umi2DCI.pmin = df_M.Point(-10.0, -10.0)
+        umi2DCI.pmax = df_M.Point(10.0, 10.0)
+        umi2DCI.cells_on_side = (4, 2)
+
+        # Identify where particle boundary-conditions will be imposed
+        xminIndx = 1
+        xmaxIndx = 2
+        yminIndx = 4
+        ymaxIndx = 8
+        particleBoundaryDict = {'xmin': xminIndx,
+                                'xmax': xmaxIndx,
+                                'ymin': yminIndx,
+                                'ymax': ymaxIndx,
+                                }
+
+        umi2DCI.particle_boundary_dict = particleBoundaryDict
+
         # Create a 2D particle mesh
-        self.pmesh2DCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
+        self.pmesh2DCI = UserMesh_C(umi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
 #        self.pmesh2DCI.compute_cell_vertex_dict()
 #        self.pmesh2DCI.compute_cell_dict()
 
         # 3D mesh input
-        mi3DCI = UserMeshInput_C()
-        mi3DCI.pmin = df_M.Point(-10.0, -10.0, -10.0)
-        mi3DCI.pmax = df_M.Point(10.0, 10.0, 10.0)
-        mi3DCI.cells_on_side = (4, 4, 4)
+        umi3DCI = UserMeshInput_C()
+        umi3DCI.pmin = df_M.Point(-10.0, -10.0, -10.0)
+        umi3DCI.pmax = df_M.Point(10.0, 10.0, 10.0)
+        umi3DCI.cells_on_side = (4, 4, 4)
+
+        # Identify where particle boundary-conditions will be imposed
+        xminIndx = 1
+        xmaxIndx = 2
+        yminIndx = 4
+        ymaxIndx = 8
+        zminIndx = 16
+        zmaxIndx = 32
+        particleBoundaryDict = {'xmin': xminIndx,
+                                'xmax': xmaxIndx,
+                                'ymin': yminIndx,
+                                'ymax': ymaxIndx,
+                                'zmin': zminIndx,
+                                'zmax': zmaxIndx,
+                                }
+
+        umi3DCI.particle_boundary_dict = particleBoundaryDict
+
 
         # Create a 3D particle mesh
-        self.pmesh3DCI = UserMesh_C(mi3DCI, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 3D")
+        self.pmesh3DCI = UserMesh_C(umi3DCI, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 3D")
         # Explicitly compute dictionaries needed
         self.pmesh3DCI.compute_cell_entity_index_dict('vertex')
         self.pmesh3DCI.compute_cell_entity_index_dict('facet')
@@ -196,7 +239,7 @@ class TestParticleMigration(unittest.TestCase):
         ctrlCI.dt = 0.5
         ctrlCI.n_timesteps = 19
 
-        # Run for 1, 2, and 3D meshes
+        # Run for 1D mesh
 
         self.particleCI.pmeshCI = self.pmesh1DCI
 
@@ -204,7 +247,7 @@ class TestParticleMigration(unittest.TestCase):
         self.particleCI.compute_mesh_cell_indices()
 
 
-        # Put the expected ending results into the p_expected tuple
+        ### Put the expected ending results into the p_expected tuple ###
 
         # First particle
 

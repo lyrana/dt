@@ -122,11 +122,11 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         ### Mesh creation
 
-        miCI = UserMeshInput_C()
+        umiCI = UserMeshInput_C()
 
         # Create mesh from a file
-        miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
-        miCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
+        umiCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
+        umiCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
 
         # These are the (int boundary-name) pairs used to mark mesh
         # facets. The string value of the int is used as the index.
@@ -140,9 +140,9 @@ class TestParticleNonuniformE(unittest.TestCase):
                                 'thmax': thmax_indx,
                                 }
 
-        miCI.particle_boundary_dict = particleBoundaryDict
+        umiCI.particle_boundary_dict = particleBoundaryDict
 
-        pmesh2DCI = UserMesh_C(miCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh2DCI = UserMesh_C(umiCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
         self.particleCI.pmeshCI = pmesh2DCI
 

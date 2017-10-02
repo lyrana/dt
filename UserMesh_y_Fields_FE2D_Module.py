@@ -14,11 +14,11 @@
 
 import sys
 import os
-import numpy as np_M
+import numpy as np_m
 import math
 # !!! Direct invocation of dolfin. OK because UserMesh_C is a
 # sub-class of Mesh_C !!!
-import dolfin as df_M
+import dolfin as df_m
 
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import PoissonSolve_C
@@ -79,7 +79,7 @@ class UserMeshInput_C(object):
         self.pmeshCI = None
 
         # the particle mesh is a copy of the field mesh
-#        self.pmeshCI = df_M.Mesh(meshCI)
+#        self.pmeshCI = df_m.Mesh(meshCI)
 
         return
 
@@ -88,14 +88,14 @@ class UserMeshInput_C(object):
 # set_all() marks every facet with a 2.
 
 # Don't actually need the AllFacets function for this problem
-class AllFacets(df_M.SubDomain):
+class AllFacets(df_m.SubDomain):
     """The AllFacets class is a specialized SubDomain
     """
     # Return true for every location x that is on a boundary
     def inside(self, x, on_boundary):
         return on_boundary
 
-class XBoundary(df_M.SubDomain):
+class XBoundary(df_m.SubDomain):
     """The XBoundary class is a specialized SubDomain
     """
     # Set the X value of the boundary in the constructor
@@ -109,7 +109,7 @@ class XBoundary(df_M.SubDomain):
         tol = 1.0e-10
         return on_boundary and abs(x[0]-self.x_boundary_value) < tol
 
-class YBoundary(df_M.SubDomain):
+class YBoundary(df_m.SubDomain):
     """The YBoundary class is a specialized SubDomain
     """
     # Set the X value of the boundary in the constructor
@@ -167,11 +167,11 @@ class UserMesh_C(Mesh_C):
         fieldBoundaryFile = meshInputCI.field_boundary_file
         particleBoundaryFile = meshInputCI.particle_boundary_file
         if meshInputCI.field_boundary_file is not None:
-            fieldBoundaryMarker = df_M.MeshFunction("size_t", self.mesh, fieldBoundaryFile)
+            fieldBoundaryMarker = df_m.MeshFunction("size_t", self.mesh, fieldBoundaryFile)
             self.field_boundary_marker = fieldBoundaryMarker
         if particleBoundaryFile is not None:
-            particleBoundaryMarker = df_M.MeshFunction("size_t", self.mesh, particleBoundaryFile)
-# or equivalently:       particleBoundaryMarker = df_M.MeshFunctionSizet(self.mesh, "Pbcs_quarter_circle_mesh_crossed.xml")
+            particleBoundaryMarker = df_m.MeshFunction("size_t", self.mesh, particleBoundaryFile)
+# or equivalently:       particleBoundaryMarker = df_m.MeshFunctionSizet(self.mesh, "Pbcs_quarter_circle_mesh_crossed.xml")
             self.particle_boundary_marker = particleBoundaryMarker
 
         return  
@@ -213,12 +213,12 @@ class UserMesh_C(Mesh_C):
 #       args: RectangleMesh(x0, y0, x1, y1, nx, ny, diagonal="right")
 
 # Switch these for CEE/Laptop
-        if df_M.DOLFIN_VERSION_STRING > "1.5.0":
+        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
 # v > 1.5:
-            mesh = df_M.RectangleMesh(df_M.Point(rmin, 0.0), df_M.Point(rmax, 1.0), nr, nt, diagonal)
+            mesh = df_m.RectangleMesh(df_m.Point(rmin, 0.0), df_m.Point(rmax, 1.0), nr, nt, diagonal)
         else:
 # v = 1.5:
-            mesh = df_M.RectangleMesh(rmin, 0.0, rmax, 1.0, nr, nt, diagonal)
+            mesh = df_m.RectangleMesh(rmin, 0.0, rmax, 1.0, nr, nt, diagonal)
 
 #V = df.FunctionSpace(mesh, 'Lagrange', 1)
 
@@ -234,8 +234,8 @@ class UserMesh_C(Mesh_C):
             # The function values are set later.
 
             # A boundary has dimension 1 less than the domain:
-    # equivalent:       fieldBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
-            fieldBoundaryMarker = df_M.FacetFunction('size_t', mesh)
+    # equivalent:       fieldBoundaryMarker = df_m.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
+            fieldBoundaryMarker = df_m.FacetFunction('size_t', mesh)
 
             # Initialize all mesh facets with a default value of 0
             # Then overwrite boundary facets that have Dirichlet BCs.
@@ -263,7 +263,7 @@ class UserMesh_C(Mesh_C):
         # The function values are set later.
 
         # A boundary has dimension 1 less than the domain:
-        particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
+        particleBoundaryMarker = df_m.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
 
         # Initialize all mesh facets with a default value of 0
         # Then overwrite boundary facets that have callback functions.
@@ -306,25 +306,25 @@ class UserMesh_C(Mesh_C):
         x_bar, y_bar = denser(x, y)
 
         # Transpose to get them 'interleaved' as x1, y1, x2, y2, ... again
-        xy_bar_coor = np_M.array([x_bar, y_bar]).transpose()
+        xy_bar_coor = np_m.array([x_bar, y_bar]).transpose()
 
         # Put the coords back into the mesh to get a plot
         mesh.coordinates()[:] = xy_bar_coor
 
 # Plot the stretched mesh
 #        if plot_flag:
-#            df_M.plot(mesh, title='stretched mesh', axes=True)
-#            df_M.interactive()
+#            df_m.plot(mesh, title='stretched mesh', axes=True)
+#            df_m.interactive()
 #raw_input('B: Press <ENTER> to continue')
 
         # Convert x, y coordinates to r, theta coordinates
         def cylinder(r, t):
-            return [r*np_M.cos(tmax*t), r*np_M.sin(tmax*t)]
+            return [r*np_m.cos(tmax*t), r*np_m.sin(tmax*t)]
 
         x_hat, y_hat = cylinder(x_bar, y_bar)
 
         # Put the coords back into the mesh object to get a plot
-        xy_hat_coor = np_M.array([x_hat, y_hat]).transpose()
+        xy_hat_coor = np_m.array([x_hat, y_hat]).transpose()
         mesh.coordinates()[:] = xy_hat_coor
 
         # Make a plot of the mesh, with non-zero values showing marked
@@ -332,10 +332,10 @@ class UserMesh_C(Mesh_C):
         if (plot_flag):
             fileName = os.path.basename(__file__)
             if plot_title is None: plotTitle = fileName + ": RZ-mesh"
-            df_M.plot(mesh, title=plotTitle, axes=True)
-            df_M.plot(fieldBoundaryMarker, title=fileName + ': field boundary marks', axes=True)
-            df_M.plot(particleBoundaryMarker, title=fileName + ': particle boundary marks', axes=True)
-            df_M.interactive()
+            df_m.plot(mesh, title=plotTitle, axes=True)
+            df_m.plot(fieldBoundaryMarker, title=fileName + ': field boundary marks', axes=True)
+            df_m.plot(particleBoundaryMarker, title=fileName + ': particle boundary marks', axes=True)
+            df_m.interactive()
 #raw_input('C: Press <ENTER> to continue')
 
         # Save the class attributes
@@ -370,21 +370,20 @@ class UserPoissonSolve_C(PoissonSolve_C):
 # Select the unit system to be used for input parameters.
     Convert = U_M.MyPlasmaUnits_C
 
-    def __init__(self, phi, linear_solver, preconditioner, fieldBoundaryMarker, phi_BCs, charge_density=None, neg_electric_field=None):
-#    def __init__(self, phi, linear_solver, preconditioner, boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):
-#    def __init__(self, function_space, linear_solver, preconditioner, boundary_marker, phi_rmin, phi_rmax, computeEflag, mesh=None):
+    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, assembled_charge=None, neg_electric_field=None):
         """Constructor for a Poisson solver written by the user.
         """
 
-        print "This is DOLFIN Version", df_M.DOLFIN_VERSION_STRING
+        print "This is DOLFIN Version", df_m.DOLFIN_VERSION_STRING
 
         self.u = phi.function
         V = phi.function_space
 
-#        u_rmin = df_M.Constant(phi_rmin)
-#        u_rmax = df_M.Constant(phi_rmax)
+#        u_rmin = df_m.Constant(phi_rmin)
+#        u_rmax = df_m.Constant(phi_rmax)
 
         self.charge_density = charge_density
+        self.assembled_charge = assembled_charge
         self.neg_electric_field = neg_electric_field
 
         # Field-solver parameters
@@ -403,24 +402,40 @@ class UserPoissonSolve_C(PoissonSolve_C):
         (rmaxIndx, phi_rmax) = phi_BCs['rmax']
         
         # Create a function from the boundary values
-        uRmin = df_M.Constant(phi_rmin)
-        uRmax = df_M.Constant(phi_rmax)
+        uRmin = df_m.Constant(phi_rmin)
+        uRmax = df_m.Constant(phi_rmax)
 
-        self.bcs = [df_M.DirichletBC(V, uRmin, fieldBoundaryMarker, rminIndx), df_M.DirichletBC(V, uRmax, fieldBoundaryMarker, rmaxIndx)]
+        self.bcs = [df_m.DirichletBC(V, uRmin, field_boundary_marker, rminIndx), df_m.DirichletBC(V, uRmax, field_boundary_marker, rmaxIndx)]
 
 # Define the variational problem
-        w = df_M.TrialFunction(V)
-        self.v = df_M.TestFunction(V)
-        f = df_M.Constant(0.0)
-        self.a = df_M.inner(df_M.grad(w), df_M.grad(self.v))*df_M.dx
+        w = df_m.TrialFunction(V)
+        self.v = df_m.TestFunction(V)
+        f = df_m.Constant(0.0)
+        self.a = df_m.inner(df_m.grad(w), df_m.grad(self.v))*df_m.dx
 
-        df_M.set_log_level(df_M.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
+        # Specify whether 'a' has time-independent coefficients.
+        self.a_has_constant_coeffs = True
+
+        # If so, the A matrix only needs to be assembled once.
+
+        # if self.a_has_constant_coeffs is True:
+        #     self.A = df_m.assemble(self.a)
+        #     print "A is of type", type(self.A)
+        #     for bc in self.bcs:
+        #         bc.apply(self.A)
+
+        df_m.set_log_level(df_m.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
 #df.set_log_level(1) # Gives the most messages
 
 # default LU is flakey: different answers on different calls: NO!: this was a heap problem of unitialized memory! Fix was to used set_all(0) above.
 #        self.phi = None
 #        self.negE = None
+
+        # Call the PoissonSolve_C base class constructor for
+        # non-problem-specific initialization.
+        super(self.__class__, self).__init__()
+
         return
-#    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):ENDDEF
+#    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, neg_electric_field=None):ENDDEF
 
 #class UserPoissonSolve_C(PoissonSolve_C):ENDCLASS

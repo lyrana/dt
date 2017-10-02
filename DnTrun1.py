@@ -72,16 +72,16 @@ ctrlCI.nsteps = 10 # doesn't usually need to be passed down to functions
 
 # The user can specify some geometry and mesh parameters here.
 
-miCI = DnT_M.DnTmeshInput_C()
+umiCI = DnT_M.DnTmeshInput_C()
 
 # radial
-miCI.rmin, miCI.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
-miCI.nr = 10 # Number of divisions in r direction
-miCI.stretch = 1.3 # Stretch parameter
+umiCI.rmin, umiCI.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
+umiCI.nr = 10 # Number of divisions in r direction
+umiCI.stretch = 1.3 # Stretch parameter
 
 # theta, starts at 0
-miCI.tmax = math.pi/2 # theta extent of the mesh
-miCI.nt = 20  # Number of divisions in theta direction
+umiCI.tmax = math.pi/2 # theta extent of the mesh
+umiCI.nt = 20  # Number of divisions in theta direction
 
 # Specify the module where the user creates the geometry and mesh
 # (i.e. the UserMesh_C class), and import it.
@@ -89,7 +89,7 @@ user_mesh_module = "UserMesh_y_Fields_FE2D_Module"
 UMsh_M = im_M.import_module(user_mesh_module)
 
 # Create the mesh
-systemCI.meshCI = UMsh_M.UserMesh_C(miCI)
+systemCI.meshCI = UMsh_M.UserMesh_C(umiCI)
 
 #
 # FIELDS needed for the calculation

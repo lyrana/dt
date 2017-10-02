@@ -13,27 +13,28 @@ import dolfin as df_M
 
 from UserMesh_y_Fields_FE2D_Module import *
 
-class TestUserMesh_y_Fields(unittest.TestCase):
+class TestUserMesh(unittest.TestCase):
     """Test the mesh class in UserMesh_y_Fields_FE2D_Module.py"""
     
+#class TestUserMesh(unittest.TestCase):
     def setUp(self):
         # initializations for each test go here...
 
-        miCI = UserMeshInput_C()
+        umiCI = UserMeshInput_C()
 
         # Make the mesh
         # radial
-        miCI.rmin, miCI.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
-        miCI.nr = 10 # Number of divisions in r direction
-        miCI.stretch = 1.3 # Stretch parameter
+        umiCI.rmin, umiCI.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
+        umiCI.nr = 10 # Number of divisions in r direction
+        umiCI.stretch = 1.3 # Stretch parameter
 
         # theta, starts at 0
-        miCI.tmax = math.pi/2 # quarter-circle
-        miCI.nt = 20  # Number of divisions in theta direction
+        umiCI.tmax = math.pi/2 # quarter-circle
+        umiCI.nt = 20  # Number of divisions in theta direction
         
         # The diagonal that makes the triangular mesh
         # Options: 'left, 'right', 'left/right', 'crossed'
-        miCI.diagonal = 'crossed'
+        umiCI.diagonal = 'crossed'
 
         # Name the Dirichlet boundaries and assign integers to them.
         # These are the boundary-name -> int pairs used to mark mesh
@@ -44,7 +45,7 @@ class TestUserMesh_y_Fields(unittest.TestCase):
                              'rmax': rmax_indx,
                              }
 
-        miCI.field_boundary_dict = fieldBoundaryDict
+        umiCI.field_boundary_dict = fieldBoundaryDict
 
         # Name the boundaries used to apply particle
         # boundary-conditions and assign integers to them.  These are
@@ -60,18 +61,19 @@ class TestUserMesh_y_Fields(unittest.TestCase):
                                 'thmax': thmax_indx,
                                 }
 
-        miCI.particle_boundary_dict = particleBoundaryDict
+        umiCI.particle_boundary_dict = particleBoundaryDict
 
-        self.miCI = miCI
+        self.umiCI = umiCI
 
         return
 
+#class TestUserMesh(unittest.TestCase):
     def test_quarter_circle_plot_false(self):
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName, '('+__file__+')'
 
-        meshCI = UserMesh_C(meshInputCI=self.miCI, plot_flag=False)
+        meshCI = UserMesh_C(meshInputCI=self.umiCI, plot_flag=False)
 
 #        df_M.plot(meshCI.mesh, title='cylindrical mesh', axes=True)
 #        df_M.interactive()
@@ -79,6 +81,9 @@ class TestUserMesh_y_Fields(unittest.TestCase):
 #        yesno = raw_input("Looks OK [Y/n]?")
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
         
+#    def test_quarter_circle_plot_false(self):ENDDEF
+
+#class TestUserMesh(unittest.TestCase):
     def test_quarter_circle_plot_true(self):
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -90,7 +95,7 @@ class TestUserMesh_y_Fields(unittest.TestCase):
             plotFlag=True
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": mesh"
-        meshCI = UserMesh_C(meshInputCI=self.miCI, plot_flag=plotFlag, plot_title=plotTitle)
+        meshCI = UserMesh_C(meshInputCI=self.umiCI, plot_flag=plotFlag, plot_title=plotTitle)
 
 #        df_M.plot(meshCI.mesh, title='cylindrical mesh', axes=True)
 #        df_M.interactive()
@@ -114,6 +119,11 @@ class TestUserMesh_y_Fields(unittest.TestCase):
         particle_boundary_marker_file << meshCI.particle_boundary_marker
         # Read back in:
         particle_boundary_marker_file >> meshCI.particle_boundary_marker
+
+        return
+#    def test_quarter_circle_plot_true(self):ENDDEF
+
+#class TestUserMesh(unittest.TestCase):ENDCLASS
 
 if __name__ == '__main__':
     unittest.main()

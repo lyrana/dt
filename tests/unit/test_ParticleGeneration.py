@@ -91,13 +91,13 @@ class TestParticleGeneration(unittest.TestCase):
         ### Mesh input for a 1D mesh
 
         # Specify the mesh parameters
-        mi1DCI = UserMeshInput_C()
-        mi1DCI.pmin = df_M.Point(-10.0)
-        mi1DCI.pmax = df_M.Point(10.0)
-        mi1DCI.cells_on_side = (20)
+        umi1DCI = UserMeshInput_C()
+        umi1DCI.pmin = df_M.Point(-10.0)
+        umi1DCI.pmax = df_M.Point(10.0)
+        umi1DCI.cells_on_side = (20,) # Need the comma to indicate a tuple
 
         ### Create the 1D particle mesh and add to the Particle_C object
-        pmesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh1DCI = UserMesh_C(umi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
         particleCI.pmeshCI = pmesh1DCI
 
         ### Input for particle sources
@@ -296,17 +296,17 @@ class TestParticleGeneration(unittest.TestCase):
 
         from UserMesh_FE_XYZ_Module import UserMeshInput_C
 
-        mi2DCI = UserMeshInput_C()
+        umi2DCI = UserMeshInput_C()
 
 # Change these to TUPLES instead of Points (avoid df_M at toplevel)
-        mi2DCI.pmin = df_M.Point(-10.0, -10.0)
-        mi2DCI.pmax = df_M.Point(10.0, 10.0)
-        mi2DCI.cells_on_side = (4, 2)
+        umi2DCI.pmin = df_M.Point(-10.0, -10.0)
+        umi2DCI.pmax = df_M.Point(10.0, 10.0)
+        umi2DCI.cells_on_side = (4, 2)
 
         ## Boundary conditions for the particles on this mesh
 
         # Create a 2D particle mesh
-#        pmesh2DCI = UserMesh_C(mi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+#        pmesh2DCI = UserMesh_C(umi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
 
         return
 #    def test_2D_particle_source_region(self):ENDDEF

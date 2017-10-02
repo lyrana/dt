@@ -33,7 +33,7 @@ class TestFieldInterpolation(unittest.TestCase):
                                       element_degree=phi_element_degree,
                                       field_type='scalar')
 
-        # Read the solution
+        # Read the potential from a file
         file = df_M.File("phi2D_crossed.xml")
         file >> self.phi.function
 
@@ -55,8 +55,7 @@ class TestFieldInterpolation(unittest.TestCase):
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')
 
-        # Set the electric field values to those read in above
-
+        # Read the electric field from a file
         file = df_M.File("negE2D_crossed.xml")
         file >> self.neg_electric_field.function
 
@@ -117,6 +116,7 @@ class TestFieldInterpolation(unittest.TestCase):
 
         self.neg_electric_field.interpolate_field_to_points(points, Epoints)
 
+        # Check the interpolated electric field against the expected values
         for ip in range(len(points)):
             for ic in range(len(Ecomps)):
 #                print "Ecalc, Eexpect =", Epoints[ip][ic], Eexpected[ip][ic]

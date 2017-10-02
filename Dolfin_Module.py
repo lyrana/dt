@@ -2,28 +2,27 @@
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-__all__ = ['Mesh_C', 'Field_C', 'PoissonSolve_C', 'RectangularRegion_C', 'SphericalRegion_C', 'WholeMesh_C']
+# Alphabetical list of exports
+__all__ = ['Field_C',
+           'Mesh_C',
+           'PoissonSolve_C',
+           'RectangularRegion_C',
+           'SphericalRegion_C',
+           'WholeMesh_C']
 
 """Dolfin_Module contains classes that use the DOLFIN finite-element library.
 """
 
 import sys
 import os
-import dolfin as df_M
-import numpy as np_M
+import dolfin as df_m
+import numpy as np_m
 
 #STARTCLASS
 class Mesh_C(object):
     """Mesh_C defines the mesh. UserMesh_C is a subclass that adds
        boundary-conditions, etc.
     
-       :param Mesh: a Dolfin Mesh object
-       :param mesh_file: The name of a file containing an XML mesh
-       :param compute_dictionaries: Boolean flag to compute dictionaries of mesh entities
-       :param compute_tree: Boolean flag to compute the mesh bounding-box tree
-
-       :cvar gdim: Geometric dimension of the mesh
-       :cvar tdim: Topological dimension of the mesh
     """
 
     # Static class variables
@@ -35,24 +34,33 @@ class Mesh_C(object):
     # Constructor
 
 # Examine the need for the Mesh and mesh_to_copy args:
-    def __init__(self, Mesh=None, mesh_to_copy=None, mesh_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title="Mesh"):
+    def __init__(self, Mesh=None, mesh_to_copy=None, mesh_file=None, field_boundary_marker_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title="Mesh"):
+        """
+           :param Mesh: a Dolfin Mesh object
+           :param mesh_file: The name of a file containing an XML mesh
+           :param compute_dictionaries: Boolean flag to compute dictionaries of mesh entities
+           :param compute_tree: Boolean flag to compute the mesh bounding-box tree
+
+           :cvar gdim: Geometric dimension of the mesh
+           :cvar tdim: Topological dimension of the mesh
+        """
 
         # Get a ref to the mesh from the arglist,
         if Mesh is not None:
             self.mesh = Mesh
         # or make a copy of the arglist mesh,
         elif mesh_to_copy is not None:
-            self.mesh = df_M.Mesh(mesh_to_copy)
+            self.mesh = df_m.Mesh(mesh_to_copy)
         # or read the mesh from a file.
         elif mesh_file is not None:
-            self.mesh = df_M.Mesh(mesh_file)
+            self.mesh = df_m.Mesh(mesh_file)
 
         # This section will also execute if this __init__ is called by a
         # child class.
         if self.mesh is not None:
             if plot_flag == True:
-                df_M.plot(self.mesh, title=plot_title, axes=True)
-                df_M.interactive()
+                df_m.plot(self.mesh, title=plot_title, axes=True)
+                df_m.interactive()
             # Compute the search tree. Uses:
             #     Evaluating field probes at a point.
             #     Computing the cell index of a particle.
@@ -62,10 +70,10 @@ class Mesh_C(object):
             self.gdim = self.mesh.geometry().dim()
             self.tdim = self.mesh.topology().dim()
 
-            self.dx = np_M.empty(self.gdim, np_M.float64) # !!! This is a particle quantity requiring particle precision??  maybe using mesh precision is more consistent with the operations here since this is a mesh class. DOLFIN precision is double = float64.
-            self.x0 = np_M.empty(self.gdim, np_M.float64)
+            self.dx = np_m.empty(self.gdim, np_m.float64) # !!! This is a particle quantity requiring particle precision??  maybe using mesh precision is more consistent with the operations here since this is a mesh class. DOLFIN precision is double = float64.
+            self.x0 = np_m.empty(self.gdim, np_m.float64)
 
-            self.facet_normal_3d = np_M.empty(3, np_M.float64)
+            self.facet_normal_3d = np_m.empty(3, np_m.float64)
 
             # Don't need to declare all of these class variables here
             # provided they're created by the dict() function in the
@@ -92,6 +100,13 @@ class Mesh_C(object):
                 self.compute_cell_neighbor_dict() # Get neighbor cell indices from a cell index
 
                 self.compute_cell_volume_dict() # Compute cell volumes indexed by cell index
+
+            # Read the field boundary marker from a file, if one is provided
+            if field_boundary_marker_file is not None:
+                fieldBoundaryMarkerFile_df = df_m.File(field_boundary_marker_file)
+                fieldBoundaryMarker = df_m.MeshFunction('size_t', self.mesh, self.mesh.topology().dim()-1)
+                fieldBoundaryMarkerFile_df >> fieldBoundaryMarker
+                self.field_boundary_marker = fieldBoundaryMarker
 
         return
 #    def __init__(self, Mesh=None, mesh_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
@@ -132,7 +147,7 @@ class Mesh_C(object):
         """
 
         # If the cells are numbered consecutively, this could just be an array.
-        self.cell_dict = {cell.index(): cell for cell in df_M.cells(self.mesh)}
+        self.cell_dict = {cell.index(): cell for cell in df_m.cells(self.mesh)}
 
         return
 #    def compute_cell_dict(self):ENDDEF
@@ -169,7 +184,7 @@ class Mesh_C(object):
         # Type issue: Had to convert numpy.uint32 to long (using tolist()) and
         # then to int (using map()).
         # This is because a FacetFunction wants the facet index as an int.
-        self.cell_entity_index_dict[entity_name] = dict((cell.index(), map(int, cell.entities(d).tolist())) for cell in df_M.cells(self.mesh))
+        self.cell_entity_index_dict[entity_name] = dict((cell.index(), map(int, cell.entities(d).tolist())) for cell in df_m.cells(self.mesh))
 
         # E.g., use the dictionary to print the vertex coordinates:
 
@@ -194,7 +209,7 @@ class Mesh_C(object):
 
         # For each cell, get a list of the vertices in it
         # A vertex has topological dimension 0
-        self.cell_vertex_dict = dict((cell.index(), cell.entities(0)) for cell in df_M.cells(self.mesh))
+        self.cell_vertex_dict = dict((cell.index(), cell.entities(0)) for cell in df_m.cells(self.mesh))
 
         # Use the dictionary to print the vertex coordinates:
 
@@ -257,20 +272,20 @@ class Mesh_C(object):
 # our purpose because we need to use the local facet number as an
 # index for the list of neighbor cells.
 
-#        self.cell_neighbor_dict = {cell.index(): sum((filter(lambda ci: ci != cell.index(), facet.entities(tdim)) for facet in df_M.facets(cell)), []) for cell in df_M.cells(self.mesh)}
+#        self.cell_neighbor_dict = {cell.index(): sum((filter(lambda ci: ci != cell.index(), facet.entities(tdim)) for facet in df_m.facets(cell)), []) for cell in df_m.cells(self.mesh)}
 
         n_facets = tdim + 1
 #        n_normal_coords = self.gdim
 
-        for cell in df_M.cells(self.mesh):
+        for cell in df_m.cells(self.mesh):
 
             # Make a numpy array to hold the indices of the neighbor cells.
             # A cell has n_facets, and each facet can have at most 1 neighbor-cell attached.
             # Use a 32-bit int for the cell indices.
-            neighbor_cells = np_M.empty(n_facets, np_M.int32)
+            neighbor_cells = np_m.empty(n_facets, np_m.int32)
 
             fi = 0 # fi ranges from 0 to n_facets-1
-            for facet in df_M.facets(cell):
+            for facet in df_m.facets(cell):
                 # Obtain the indices of cells attached to this facet
                 # See breakdown of this line above.
                 attached_cell_indices = filter(lambda ci: ci != cell.index(), facet.entities(tdim))
@@ -302,7 +317,7 @@ class Mesh_C(object):
         """
 
         # For each vertex, get a list of the cells that contain this vertex
-        self.vertex_cell_dict = dict((v.index(), [c.index() for c in df_M.cells(v)]) for v in df_M.vertices(self.mesh))
+        self.vertex_cell_dict = dict((v.index(), [c.index() for c in df_m.cells(v)]) for v in df_m.vertices(self.mesh))
 
         return
 
@@ -333,8 +348,8 @@ class Mesh_C(object):
 
         facet_normal_3d = self.facet_normal_3d
         
-        for cell in df_M.cells(self.mesh):
-            normals = np_M.empty(shape=(n_facets, n_normal_coords), dtype = np_M.float64)
+        for cell in df_m.cells(self.mesh):
+            normals = np_m.empty(shape=(n_facets, n_normal_coords), dtype = np_m.float64)
             for fi in range(n_facets):
                 facet_normal_3d[0] = cell.normal(fi).x()
                 facet_normal_3d[1] = cell.normal(fi).y()
@@ -343,7 +358,7 @@ class Mesh_C(object):
                 normals[fi] = facet_normal_3d[0:n_normal_coords]
             self.cell_facet_normals_dict[cell.index()] = normals
 
-#        self.cell_facet_normals = dict((cell.index(), [cell.normal(fi) for fi in range(self.tdim+1)]) for cell in df_M.cells(self.mesh))
+#        self.cell_facet_normals = dict((cell.index(), [cell.normal(fi) for fi in range(self.tdim+1)]) for cell in df_m.cells(self.mesh))
 
         return
 #    def compute_cell_facet_normals_dict(self):ENDDEF
@@ -366,13 +381,13 @@ class Mesh_C(object):
         """
 
         if self.gdim == 3:
-            p = df_M.Point(point['x'], point['y'], point['z'])
+            p = df_m.Point(point['x'], point['y'], point['z'])
         elif self.gdim == 2:
-            p = df_M.Point(point['x'], point['y'])
+            p = df_m.Point(point['x'], point['y'])
         else:
-            p = df_M.Point(point['x'])
+            p = df_m.Point(point['x'])
 
-#        first = self.bbtree.compute_first_entity_collision(df_M.Point(p)) # not compute_first_collision()
+#        first = self.bbtree.compute_first_entity_collision(df_m.Point(p)) # not compute_first_collision()
         first = self.bbtree.compute_first_entity_collision(p) # not compute_first_collision()
 
         fncName = sys._getframe().f_code.co_name + '():'
@@ -382,7 +397,7 @@ class Mesh_C(object):
         # (eight Fs and F = 1111)
 #        if first == 0xFFFFFFFF:
         if first == Mesh_C.NO_CELL:
-            print "fncName: particle is out of bounds"
+            print fncName, ": particle is out of bounds"
             sys.exit()
 
         return first
@@ -419,7 +434,7 @@ class Mesh_C(object):
            the cell index.
         """
 
-        self.cell_volume_dict = dict((cell.index(), cell.volume()) for cell in df_M.cells(self.mesh))
+        self.cell_volume_dict = dict((cell.index(), cell.volume()) for cell in df_m.cells(self.mesh))
 
         return
 #    def compute_cell_volume_dict(self):ENDDEF
@@ -438,14 +453,14 @@ class Mesh_C(object):
         cell = self.cell_dict[cell_index]
 
         if self.gdim == 3:
-            p = df_M.Point(point['x'], point['y'], point['z'])
+            p = df_m.Point(point['x'], point['y'], point['z'])
         elif self.gdim == 2:
-            p = df_M.Point(point['x'], point['y'])
+            p = df_m.Point(point['x'], point['y'])
         else:
-            p = df_M.Point(point['x'])
+            p = df_m.Point(point['x'])
 
-#        return cell.contains(df_M.Point(self.gdim, point))
-        return cell.contains(df_M.Point(p))
+#        return cell.contains(df_m.Point(self.gdim, point))
+        return cell.contains(df_m.Point(p))
 
 #class Mesh_C(object):
     def find_facet(self, r0, dr, cell_index):
@@ -498,7 +513,7 @@ class Mesh_C(object):
         pathFraction = 1.0
         distanceToFacet = 0.0
 
-        if np_M.dot(dx,dx) == 0.0:
+        if np_m.dot(dx,dx) == 0.0:
             return facet, pathFraction
 
         cell = self.cell_dict[cell_index]
@@ -517,13 +532,13 @@ class Mesh_C(object):
             # 3D mesh: There are 4 facets indexed 0,1,2,3, and the normal vector is 3D.
 
             # Test if the plane of facet 0 is crossed:
-            n0_dot_dx = np_M.dot(facet_normal_vectors[0], dx)
+            n0_dot_dx = np_m.dot(facet_normal_vectors[0], dx)
 #            print "find_facet(): facet_normal_vectors[0] = ", facet_normal_vectors[0], "dx=", dx, "n0_dot_dx=", n0_dot_dx
             if n0_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vecToFacet = np_M.subtract(vertex_coords[1], x0)
+                vecToFacet = np_m.subtract(vertex_coords[1], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_M.dot(facet_normal_vectors[0], vecToFacet)
+                distanceToFacet = np_m.dot(facet_normal_vectors[0], vecToFacet)
 #                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
                 if distanceToFacet < 0.0:
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
@@ -535,13 +550,13 @@ class Mesh_C(object):
 #                    print "f0 find_facet(): facet=", facet, "pathFraction=", pathFraction
 
             # Next, test if the plane of facet 1 is crossed:
-            n1_dot_dx = np_M.dot(facet_normal_vectors[1], dx)
+            n1_dot_dx = np_m.dot(facet_normal_vectors[1], dx)
 #            print "find_facet(): n1_dot_dx=", n1_dot_dx
             if n1_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vecToFacet = np_M.subtract(vertex_coords[2], x0)
+                vecToFacet = np_m.subtract(vertex_coords[2], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_M.dot(facet_normal_vectors[1], vecToFacet)
+                distanceToFacet = np_m.dot(facet_normal_vectors[1], vecToFacet)
                 if distanceToFacet < 0.0:
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
@@ -551,13 +566,13 @@ class Mesh_C(object):
                     pathFraction = distanceToFacet/n1_dot_dx
 
             # Next, test if the plane of facet 2 is crossed:
-            n2_dot_dx = np_M.dot(facet_normal_vectors[2], dx)
+            n2_dot_dx = np_m.dot(facet_normal_vectors[2], dx)
 #            print "find_facet(): n2_dot_dx=", n2_dot_dx
             if n2_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vecToFacet = np_M.subtract(vertex_coords[3], x0)
+                vecToFacet = np_m.subtract(vertex_coords[3], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_M.dot(facet_normal_vectors[2], vecToFacet)
+                distanceToFacet = np_m.dot(facet_normal_vectors[2], vecToFacet)
                 if distanceToFacet < 0.0:
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
@@ -567,13 +582,13 @@ class Mesh_C(object):
                     pathFraction = distanceToFacet/n2_dot_dx
 
             # Next, test if the plane of facet 3 is crossed:
-            n3_dot_dx = np_M.dot(facet_normal_vectors[3], dx)
+            n3_dot_dx = np_m.dot(facet_normal_vectors[3], dx)
 #            print "find_facet(): n3_dot_dx=", n3_dot_dx
             if n3_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vecToFacet = np_M.subtract(vertex_coords[0], x0)
+                vecToFacet = np_m.subtract(vertex_coords[0], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_M.dot(facet_normal_vectors[3], vecToFacet)
+                distanceToFacet = np_m.dot(facet_normal_vectors[3], vecToFacet)
                 if distanceToFacet < 0.0:
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
@@ -595,13 +610,13 @@ class Mesh_C(object):
 
             # Test if the plane of facet 0 is crossed.
             # Distance traveled normal to facet 0:
-            n0_dot_dx = np_M.dot(facet_normal_vectors[0], dx)
+            n0_dot_dx = np_m.dot(facet_normal_vectors[0], dx)
 #            print "find_facet(): facet_normal_vectors[0] = ", facet_normal_vectors[0], "dx=", dx, "n0_dot_dx=", n0_dot_dx
             if n0_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vecToFacet = np_M.subtract(vertex_coords[1], x0)
+                vecToFacet = np_m.subtract(vertex_coords[1], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_M.dot(facet_normal_vectors[0], vecToFacet)
+                distanceToFacet = np_m.dot(facet_normal_vectors[0], vecToFacet)
                 if distanceToFacet < 0.0:
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
@@ -615,13 +630,13 @@ class Mesh_C(object):
 
             # Next, test if the plane of facet 1 is crossed.
             # Distance traveled normal to facet 0:
-            n1_dot_dx = np_M.dot(facet_normal_vectors[1], dx)
+            n1_dot_dx = np_m.dot(facet_normal_vectors[1], dx)
 #            print "find_facet(): n1_dot_dx=", n1_dot_dx
             if n1_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vecToFacet = np_M.subtract(vertex_coords[2], x0)
+                vecToFacet = np_m.subtract(vertex_coords[2], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_M.dot(facet_normal_vectors[1], vecToFacet)
+                distanceToFacet = np_m.dot(facet_normal_vectors[1], vecToFacet)
                 # If the path-fraction to this facet's plane is
                 # smaller than for facet 0, this may be the one crossed.
                 if distanceToFacet < 0.0:
@@ -635,13 +650,13 @@ class Mesh_C(object):
 
             # Next, test if the plane of facet 2 is crossed.
             # Distance traveled normal to facet 2:
-            n2_dot_dx = np_M.dot(facet_normal_vectors[2], dx)
+            n2_dot_dx = np_m.dot(facet_normal_vectors[2], dx)
 #            print "find_facet(): n2_dot_dx=", n2_dot_dx
             if n2_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
-                vecToFacet = np_M.subtract(vertex_coords[0], x0)
+                vecToFacet = np_m.subtract(vertex_coords[0], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_M.dot(facet_normal_vectors[2], vecToFacet)
+                distanceToFacet = np_m.dot(facet_normal_vectors[2], vecToFacet)
                 if distanceToFacet < 0.0:
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
@@ -730,12 +745,12 @@ class Field_C(object):
         self.mesh_tdim = meshCI.mesh.topology().dim()
 
         if field_type is 'scalar':
-            self.function_space = df_M.FunctionSpace(self.meshCI.mesh, element_type, element_degree)
+            self.function_space = df_m.FunctionSpace(self.meshCI.mesh, element_type, element_degree)
         elif field_type is 'vector':
-            self.function_space = df_M.VectorFunctionSpace(self.meshCI.mesh, element_type, element_degree)
+            self.function_space = df_m.VectorFunctionSpace(self.meshCI.mesh, element_type, element_degree)
 
         # Create the finite-element function for this field
-        self.function = df_M.Function(self.function_space)
+        self.function = df_m.Function(self.function_space)
         self.function_values = self.function.vector()
 
 # Q: Is it a good idea to set the following variables?
@@ -795,8 +810,8 @@ class Field_C(object):
 
         # Temporary ndarray for the interpolated field at a point
         # Length is number of components of field (1 for scalar; 2 for 2D vector, etc.) 
-        fieldValue = np_M.empty(len(field_at_points.dtype.fields), dtype=field_at_points.dtype[0])
-#        fieldValue = np_M.empty(self.mesh_gdim, dtype=vFpoints.dtype[0])
+        fieldValue = np_m.empty(len(field_at_points.dtype.fields), dtype=field_at_points.dtype[0])
+#        fieldValue = np_m.empty(self.mesh_gdim, dtype=vFpoints.dtype[0])
 
 # Loop on the points:
 
@@ -836,13 +851,13 @@ class Field_C(object):
         # Should be able to use p['cell_index'] here instead of having
         # to search for the cell that contains the point.
         if self.mesh_gdim == 3:
-            point = df_M.Point(p['x'], p['y'], p['z'])
+            point = df_m.Point(p['x'], p['y'], p['z'])
         elif self.mesh_gdim == 2:
-            point = df_M.Point(p['x'], p['y'])
+            point = df_m.Point(p['x'], p['y'])
         else:
-            point = df_M.Point(p['x'])
+            point = df_m.Point(p['x'])
 
-        df_M.PointSource(self.function_space, point, p['weight']).apply(self.function_values)
+        df_m.PointSource(self.function_space, point, p['weight']).apply(self.function_values)
 
         # get cell from the particle index
 #        c = self.mesh3DCI.cell_dict[pseg[ip]['cell_index']]
@@ -880,7 +895,7 @@ class Field_C(object):
 
         cellIndex = p['cell_index']
         el = self.function_space.element()
-        cell = df_M.Cell(self.meshCI.mesh, cellIndex)
+        cell = df_m.Cell(self.meshCI.mesh, cellIndex)
 # QQQ: why is get_vertex_coordinates() used instead of get_coordinate_dofs()?
 # AAA: The DoFs are the same as the vertices for CG1 elements
 #      I tried both and they give the same output for CG1 elements.
@@ -894,13 +909,13 @@ class Field_C(object):
 
         nBF = el.space_dimension()
         # A numpy array is needed to pass this value to evaluate_basis_all() below.
-        numberOfBasisFunctions = np_M.zeros(1, dtype=np_M.intc)
+        numberOfBasisFunctions = np_m.zeros(1, dtype=np_m.intc)
         numberOfBasisFunctions[0] = nBF
 
         # Make scratch for basisValues
-        basisValues = np_M.zeros(nBF, dtype=float)
+        basisValues = np_m.zeros(nBF, dtype=float)
         # Make scratch for point
-        point = np_M.zeros(self.mesh_gdim, dtype=float)
+        point = np_m.zeros(self.mesh_gdim, dtype=float)
         for i in range(self.mesh_gdim):
             point[i] = p[i]
 
@@ -940,44 +955,207 @@ class Field_C(object):
 
 #STARTCLASS
 class PoissonSolve_C(object):
-    """PoissonSolve_C uses the DOLFIN library for solving field
-       equations with the finite-element method.  The methods here are
+    """PoissonSolve_C uses the DOLFIN library for solving field equations with
+       the finite-element method.  The methods in this parent class are
        ones that the user doesn't have to modify for set up different
        simulations.  (Functions that the user can modify are in the
-       UserPoissonSolve_C class in the UserMesh module.)
+       UserPoissonSolve_C class in the UserMesh_... module.)
        
        Methods:
            solve_for_phi()
            compute_negE
+
+       Notes on the finite-element solution method:
+
+       The variational form of the field equation is:
+                  a(u,v) = L(v)
+       a(u,v) is a bilinear form in the functions 'u' and 'v'. It contains
+       known coefficients that may be functions of space and time.
+       'u' is the unknown solution (the "trial function").
+       L(v) is a linear form in 'v', where 'v' is any function in the "test
+       function" space.
+
+       The above variational form is turned into a matrix equation
+                  Ax = b
+       by using finite-dimensional trial and test-function spaces [1].
+       The trial-function space is spanned by the basis functions {u[i]}.
+       The test-function space is spanned by the basis functions {v[j]}.
+
+       The matrix equation Ax = b denotes a system of equations where the
+       i'th equation is
+                  A[i,j]*x[j] = b[i] (summation on j)
+
+       Note that the term A[i,j] is a(u[j], v[i]). (see [2], for order and [3]
+       for definition of a(u,v)), so that the i'th row of A, i.e., A[i,*], is
+       obtained from a(u, v[i]).
+
+       'x' is the column-vector of unknown coefficients used to express 'u' as a
+       linear sum of the basis functions of the trial space, {u[j]}.  Thus,
+       x[j] is the coefficient of basis function u[j], i,e., u = x[j]*u[j],
+       summed over j.
+
+       b[i] is obtained by evaluating L(v[i]) (which involves an integral over
+       the domain [4]).
+
+       Making the matrix A[i,j] from 'a', {u[j]}, and {v[i]}, and making the
+       vector b[i] from 'L' and {v[i]} is called "assembly".
+
+       References:
+       [1] FBOOK, p. 309 (Sec. 17.4)
+       [2] FBOOK, p. 140 (Sec. 5.7)
+       [3] FBOOK, p. 4 (Eq. 1.10)
+       [4] FBOOK, p. 4 (Eq. 1.11)
+
     """
 
-    def __init__(self):
+    def __init__(self, a_has_constant_coeffs=False):
+        """The problem-specific initialization is done in the child classes.
+
+        """
+
+        # If the bilinear form a(u,v) has time-independent coefficients, the
+        # matrix A only needs to be assembled once, which redundant work.
+
+        # A[i,j] is formed from {u[j]}, {v[i]}, and any coefficients in
+        # a(u,v). Note the order of i, j here.
+        if self.a_has_constant_coeffs is True:
+            self.A = df_m.assemble(self.a)
+            for bc in self.bcs:
+                bc.apply(self.A)
 
         return
+#    def __init__(self, a_has_constant_coeffs=False):ENDDEF
+
+#class PoissonSolve_C(object):
+    def set_constant_source(self, charge_density_value):
+        """Set the source term in the field equation to a constant value.
+
+           A source has to be of type 'Expression', which is a Dolfin class [1].
+
+           References:
+           [1] FBOOK, p. 196 (Sec. 103.6).
+
+        """
+
+        source_expression = df_m.Constant(charge_density)
+        return source_expression*self.v*df_m.dx
+#    def set_constant_source(self):ENDDEF
+
+#class PoissonSolve_C(object):
+#    def set_source_function(self, charge_density_expression):
+    def assemble_source_expression(self, source_density):
+        """Create a source vector for the RHS of the field equation, given a
+           constant density, or a string expression giving the density as a
+           function of the spatial coordinates.
+
+           The density is first turned into an 'Expression' (a Dolfin class
+           [1]).  Then it is used to create a linear form, namely, the integral
+           of the density times a function belonging to the test-function space.
+           This linear form is applied to the basis functions of the
+           test-function space to obtain the source vector for the variational
+           form of the field equation.  The latter process is called 'assembly'
+           of the source vector.
+
+           An example of an Expression is [2]:
+           f = df_m.Expression("sin(x[0])*cos(x[1]")
+
+           Time-dependent Expressions can also be defined [2].
+
+           An example of a linear form is:
+           f*v*dx
+           where v is in the test-function space.
+
+           References:
+           [1] FBOOK, p. 196 (Sec. 10.3.6).
+           [2] FBOOK, p. 197 (Sec. 10.3.6).
+
+           :param source_density: A constant or a string expressing a function of
+                                  the spatial coordinates {x[0], x[1], x[2]}
+
+           :returns: The linear form corresponding to the charge density.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
+        # Check the type of 'source_density'
+        if source_density is None:
+            source_expression = df_m.Constant(0.0)
+        elif isinstance(source_density, str):
+            source_expression = df_m.Expression(source_density)
+        elif isinstance(source_density, float):
+            source_expression = df_m.Constant(source_density)
+        elif isinstance(source_density, int):
+            source_expression = df_m.Constant(float(source_density))
+        else:
+            errorMsg = "%s Parameter source_density is of unexpected type" % fncName
+            sys.exit(errorMsg)
+        
+        L = source_expression*self.v*df_m.dx
+        self.b = df_m.assemble(L)
+
+        if source_density is not None:
+            for bc in self.bcs:
+                bc.apply(self.b)
+
+#        return b
+        return
+#    def assemble_source_expression(self, source_density):ENDDEF
 
 #class PoissonSolve_C(object):
     def solve_for_phi(self, plot_flag=False, plot_title="solve_for_phi"):
         """Solve Poisson's equation for the electric potential.
+
+           The variational form of the equation is:
+                      a(u,v) = L(v)
+           a(u,v) is a bilinear form in 'u' and 'v'
+           'u' is the unknown solution ("trial function")
+           L(v) is a linear form in 'v'
+           v is any function in the test function space.
+
+           The variational form is turned into a matrix equation:
+                      Ax = b
+           by using finite-dimensional trial and test-function spaces.
+
+           Making the matrix 'A' from 'a' and the vector 'b' from 'L' is called
+           "assembly".
+
+           :cvar U: An alias for the solution vector.
+
         """
 
-# Note that "scalarFunctionSpace" must be defined in the child class
-#        self.phi = df_M.Function(self.scalarFunctionSpace)
-#        df_M.solve(self.a == self.L, self.phi, self.bcs)
+        ### Assemble the A matrix for the LHS ###
 
-# Set the RHS (charge-density sources)
-        if self.charge_density is None:
-            f = df_M.Constant(0.0)
-        else:
-            f = self.charge_density
-        self.L = f*self.v*df_M.dx
+        # If a(u,v) has coefficients that change, then it needs to be assembled
+        # again. If the coefficients don't change, then the one-time assembly
+        # takes place when UserPoissonSolve... is initialized.
+        if self.a_has_constant_coeffs is False:
+            self.A = df_m.assemble(self.a)
+#            print "A is of type", type(self.A)
+            for bc in self.bcs:
+                bc.apply(self.A)
 
-# Compute solution
-        df_M.solve(self.a == self.L, self.u, self.bcs, solver_parameters=self.solver_parameters)
+        ### Assemble the b vector for the RHS ###
+
+        # Assembled charge sources (e.g., from delta-function kinetic particles)
+        if self.assembled_charge is not None:
+            # Create a Vector and initialize it with Function.vector()
+            self.b = df_m.Vector(self.assembled_charge.vector())
+            # Apply the boundary conditions
+            for bc in self.bcs:
+                bc.apply(self.b)
+
+        # U is the solution vector
+        U = self.u.vector()
+
+        ### Solve the Laplace/Poisson equation ###
+
+        df_m.solve(self.A, U, self.b)
 
 # Plot the electric potential
         if plot_flag == True:
-            df_M.plot(self.u, title=plot_title+": phi")
-            df_M.interactive()
+            df_m.plot(self.u, title=plot_title+": phi")
+            df_m.interactive()
 
 # Compute -E
         # This is supposed to test if neg_electric_field has been allocated.
@@ -985,32 +1163,35 @@ class PoissonSolve_C(object):
             self.compute_negE(plot_flag, plot_title)
 
 # Plot radial component of -E:
-#        negE = df_M.grad(u)
+#        negE = df_m.grad(u)
 
 # Project onto a piece-wise constant-in-element function
-#        negE2 = df_M.project(E, df_M.VectorFunctionSpace(mesh, 'DG', 0))
+#        negE2 = df_m.project(E, df_m.VectorFunctionSpace(mesh, 'DG', 0))
 
 #        negE2_x = E2[0]
 #        negE2_y = E2[1]
 
-#        df_M.plot(negE2_x, title="negE2_x")
-#        df_M.plot(negE2_y, title="negE2_y")
+#        df_m.plot(negE2_x, title="negE2_x")
+#        df_m.plot(negE2_y, title="negE2_y")
 
-#        df_M.interactive()
+#        df_m.interactive()
         return
 
 #class PoissonSolve_C(object):
     def compute_negE(self, plot_flag=False, plot_title="compute_negE"):
         """negE is the gradient of the electrostatic potential.
+
+           :cvar negE: the negative gradient of the electrostatic potential
+
         """
 
-        negE = df_M.grad(self.u)
+        negE = df_m.grad(self.u)
 
         function_space = self.neg_electric_field.function_space
-        self.neg_electric_field.function = df_M.project(negE, function_space)
+        self.neg_electric_field.function = df_m.project(negE, function_space)
         if plot_flag == True:
-            df_M.plot(self.neg_electric_field.function, title=plot_title+": E")
-            df_M.interactive()
+            df_m.plot(self.neg_electric_field.function, title=plot_title+": -E")
+            df_m.interactive()
 
         return self.neg_electric_field.function
 # how do you change sign?: see Epoints
@@ -1018,7 +1199,7 @@ class PoissonSolve_C(object):
 #class PoissonSolve_C(object):ENDCLASS
 
 #STARTCLASS
-class FacetSubDomain_C(df_M.SubDomain):
+class FacetSubDomain_C(df_m.SubDomain):
     """
        :param Mesh:
 
@@ -1030,7 +1211,7 @@ class FacetSubDomain_C(df_M.SubDomain):
     # The SUBDOMAIN_INDEX is incremented for each new FacetSubDomain_C
     FACET_SUBDOMAIN_INDEX = 0
 
-#class FacetSubDomain_C(df_M.SubDomain):ENDCLASS
+#class FacetSubDomain_C(df_m.SubDomain):ENDCLASS
 
 #STARTCLASS
 class CellSet_C(object):
@@ -1069,20 +1250,20 @@ class CellSet_C(object):
         # If an inside() function is not defined, the cell list is the entire mesh.
         if hasattr(self, 'inside'):
             self.cell_list = []
-            for cell in df_M.cells(meshCI.mesh):
+            for cell in df_m.cells(meshCI.mesh):
                 p = cell.midpoint()
                 if self.inside(p):      
                     self.cell_list.append(cell)
         else:
-            self.cell_list = [cell for cell in df_M.cells(meshCI.mesh)] # The whole mesh
+            self.cell_list = [cell for cell in df_m.cells(meshCI.mesh)] # The whole mesh
 
         self.ncell = len(self.cell_list)
 
 # mid-point, circumradius, etc.
         # Allocate storage
-        self.midpoint = np_M.empty(shape=(self.ncell, self.gdim), dtype = np_M.float64)
-        self.volume = np_M.empty(self.ncell, dtype = np_M.float64)
-        self.radius = np_M.empty(self.ncell, dtype = np_M.float64)
+        self.midpoint = np_m.empty(shape=(self.ncell, self.gdim), dtype = np_m.float64)
+        self.volume = np_m.empty(self.ncell, dtype = np_m.float64)
+        self.radius = np_m.empty(self.ncell, dtype = np_m.float64)
 
         # Note that icell is just a counter, not the Dolfin cell index.
         # One could instead create an Interator over the cells in the set.
@@ -1112,7 +1293,7 @@ class CellSet_C(object):
 
         cell = self.cell_list[cell_index]
 
-        return cell.contains(df_M.Point(point))
+        return cell.contains(df_m.Point(point))
 #    def in_cell(self, point, cell_index):ENDDEF
 
 #class CellSet_C(object):ENDCLASS
@@ -1233,7 +1414,7 @@ class WholeMesh_C(CellSet_C):
 
 
 #STARTCLASS
-class CellSubDomain_C2(df_M.SubDomain):
+class CellSubDomain_C2(df_m.SubDomain):
     """A CellSubDomain_C is a subdomain of the mesh made up of cells.
        
        A Dolfin SubDomain is used to define a spatial region by implementing 
@@ -1268,11 +1449,11 @@ class CellSubDomain_C2(df_M.SubDomain):
 
         """
 
-        for cell in df_M.cells(mesh):
+        for cell in df_m.cells(mesh):
             p = cell.midpoint()
 
         ## Create a CellFunction to mark the SubDomain
-        cellFunction = df_M.CellFunction('size_t', mesh)
+        cellFunction = df_m.CellFunction('size_t', mesh)
 
         # Set default value to zero
         cellFunction.set_all(0)
@@ -1289,5 +1470,6 @@ class CellSubDomain_C2(df_M.SubDomain):
 #        self.cell_function = cellFunction
 
         return
+#    def __init__(self, mesh, plot_flag=False):ENDDEF
 
-#class CellSubDomain_C2(df_M.SubDomain):ENDCLASS
+#class CellSubDomain_C2(df_m.SubDomain):ENDCLASS
