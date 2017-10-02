@@ -92,11 +92,11 @@ class TestParticleTrajectory(unittest.TestCase):
 
         ###  Mesh creation
 
-        miCI = UserMeshInput_C()
+        umiCI = UserMeshInput_C()
 
         # Make the mesh & fields from saved files
-        miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
-        miCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
+        umiCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
+        umiCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
 
         ### Input for initial particles (i.e., particles present at t=0)
 
@@ -151,14 +151,14 @@ class TestParticleTrajectory(unittest.TestCase):
                                 'thmax': thmaxIndx,
                                 }
 
-        miCI.particle_boundary_dict = particleBoundaryDict
+        umiCI.particle_boundary_dict = particleBoundaryDict
 
         # Read the mesh from an existing file
 
 #        pinCI.pmeshCI = UserMesh_C(meshFile='quarter_circle_mesh_crossed.xml', particleBoundaryFile='Pbcs_quarter_circle_mesh_crossed.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
 
 # Can this be attached to Particle_C after Particle_C construction? YES
-        pmeshCI = UserMesh_C(miCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmeshCI = UserMesh_C(umiCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
         self.particleCI.pmeshCI = pmeshCI
 

@@ -39,43 +39,43 @@ class TestFacetCrossing(unittest.TestCase):
         # Create 1D, 2D and 3D meshes that the particles can be tested against
 
         # 1d mesh input
-        mi1DCI = UserMeshInput_C()
+        umi1DCI = UserMeshInput_C()
         pmin = -0.03
         pmax = 0.03
         cells_on_side = 4
-        mi1DCI.pmin = df_M.Point(pmin)
-        mi1DCI.pmax = df_M.Point(pmax)
-        mi1DCI.cells_on_side = (cells_on_side)
+        umi1DCI.pmin = df_M.Point(pmin)
+        umi1DCI.pmax = df_M.Point(pmax)
+        umi1DCI.cells_on_side = (cells_on_side,) # Need the comma to indicate a tuple
         self.mesh1D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
-        self.mesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
+        self.mesh1DCI = UserMesh_C(umi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
 #        self.mesh1DCI.compute_cell_vertex_dict()
 #        self.mesh1DCI.compute_cell_dict()
 
         # 2D mesh input
-        mi2DCI = UserMeshInput_C()
+        umi2DCI = UserMeshInput_C()
         pmin = -0.03
         pmax = 0.03
         cells_on_side = 4
-        mi2DCI.pmin = df_M.Point(pmin, pmin)
-        mi2DCI.pmax = df_M.Point(pmax, pmax)
-        mi2DCI.cells_on_side = (cells_on_side, cells_on_side)
-#        mi2DCI.diagonal = 'crossed'
+        umi2DCI.pmin = df_M.Point(pmin, pmin)
+        umi2DCI.pmax = df_M.Point(pmax, pmax)
+        umi2DCI.cells_on_side = (cells_on_side, cells_on_side)
+#        umi2DCI.diagonal = 'crossed'
         self.mesh2D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
-        self.mesh2DCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
+        self.mesh2DCI = UserMesh_C(umi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
 #        self.mesh2DCI.compute_cell_vertex_dict()
 #        self.mesh2DCI.compute_cell_dict()
 
         # 3D mesh input
-        mi3DCI = UserMeshInput_C()
-        mi3DCI.pmin = df_M.Point(-0.03, -0.03, -0.03)
-        mi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
-        mi3DCI.cells_on_side = (4, 4, 4)
+        umi3DCI = UserMeshInput_C()
+        umi3DCI.pmin = df_M.Point(-0.03, -0.03, -0.03)
+        umi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
+        umi3DCI.cells_on_side = (4, 4, 4)
         # Create mesh
-        self.mesh3DCI = UserMesh_C(mi3DCI, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 3D")
+        self.mesh3DCI = UserMesh_C(umi3DCI, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 3D")
         self.mesh3DCI.compute_cell_entity_index_dict('vertex')
         self.mesh3DCI.compute_cell_entity_index_dict('facet')
         self.mesh3DCI.compute_cell_dict()

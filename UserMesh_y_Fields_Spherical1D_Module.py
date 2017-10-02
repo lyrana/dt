@@ -1,8 +1,14 @@
 # Make a mesh that DT can use
 
-#__version__ = 0.1
-#__author__ = 'Copyright (C) 2016 L. D. Hughes'
-#__all__ = []
+__version__ = 0.1
+__author__ = 'Copyright (C) 2016 L. D. Hughes'
+__all__ = ['UserMesh_C',
+           'UserMeshInput_C', 
+           'UserPoissonSolve_C',           
+           'UserPoissonSolveInput_C',
+           ]
+
+
 
 """UserFields defines the mesh, field boundary conditions (BCs), and
    the field solver.  The type of mesh may be FE or FD.  In this case,
@@ -13,11 +19,11 @@
 
 import sys
 import os
-import numpy as np_M
+#import numpy as np_m
 import math
 # !!! Direct invocation of dolfin. OK because UserMesh_C is a
 # sub-class of Mesh_C !!!
-import dolfin as df_M
+import dolfin as df_m
 
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import PoissonSolve_C
@@ -53,16 +59,22 @@ class UserMeshInput_C(object):
         # User-assigned names of mesh boundaries where Dirichlet
         # values are set.
         self.field_boundary_dict = None
+        # The mesh function that marks facets with BCs
+        self.field_boundary_marker = None
 
         self.particle_boundary_file = None
         # User-assigned names of mesh boundaries where particle BCs
         # are set.
         self.particle_boundary_dict = None
+        # The mesh function that marks facets with BCs
+        self.particle_boundary_marker = None
 
         self.particle_source_file = None
         # User-assigned names of mesh regions where particles are
         # created
         self.particle_source_dict = None
+        # The mesh function that marks source cells
+        self.particle_source_marker = None
 
 # May want things like this in order to call DT from a loop?
 # or spawn off many runs?
@@ -71,7 +83,7 @@ class UserMeshInput_C(object):
         self.pmeshCI = None
 
         # the particle mesh is a copy of the field mesh
-#        self.pmeshCI = df_M.Mesh(meshCI)
+#        self.pmeshCI = df_m.Mesh(meshCI)
 
         return
         
@@ -82,7 +94,7 @@ class UserMeshInput_C(object):
 # The XBoundary function takes care of the two Dirichlet boundaries, and
 # set_all() marks every facet with a 2.
 
-class XBoundary(df_M.SubDomain):
+class XBoundary(df_m.SubDomain):
     """The XBoundary class is a specialized SubDomain
     """
     # Set the X value of the boundary in the constructor
@@ -97,7 +109,7 @@ class XBoundary(df_M.SubDomain):
         tol = 1.0e-10
         return on_boundary and abs(x[0]-self.x_boundary_value) < tol
 
-#class XBoundary(df_M.SubDomain):ENDCLASS
+#class XBoundary(df_m.SubDomain):ENDCLASS
 
 # User exposes whatever mesh parameters are useful in __init__ and
 # these can be set in __main__
@@ -142,10 +154,10 @@ class UserMesh_C(Mesh_C):
         fieldBoundaryFile = meshInputCI.field_boundary_file
         particleBoundaryFile = meshInputCI.particle_boundary_file
         if fieldBoundaryFile is not None:
-            fieldBoundaryMarker = df_M.MeshFunctionSizet(self.mesh, fieldBoundaryFile)
+            fieldBoundaryMarker = df_m.MeshFunctionSizet(self.mesh, fieldBoundaryFile)
         if particleBoundaryFile is not None:
-            particleBoundaryMarker = df_M.MeshFunctionSizet(self.mesh, particleBoundaryFile)
-# or:       particleBoundaryMarker = df_M.MeshFunctionSizet(self.mesh, "Pbcs_quarter_circle_mesh_crossed.xml")
+            particleBoundaryMarker = df_m.MeshFunctionSizet(self.mesh, particleBoundaryFile)
+# or:       particleBoundaryMarker = df_m.MeshFunctionSizet(self.mesh, "Pbcs_quarter_circle_mesh_crossed.xml")
 
         return
 #    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
@@ -171,7 +183,7 @@ class UserMesh_C(Mesh_C):
         plotTitle = plot_title
 
         # First, make a 1-D mesh
-        mesh = df_M.UnitIntervalMesh(nr)
+        mesh = df_m.UnitIntervalMesh(nr)
 
         # Field boundary conditions
 
@@ -187,7 +199,7 @@ class UserMesh_C(Mesh_C):
             # these numbers are set later.
 
             # A 'boundary' by definition has dimension 1 less than the domain:
-            fieldBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
+            fieldBoundaryMarker = df_m.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
 
 #        print 'dim =', mesh.topology().dim()
 
@@ -225,12 +237,12 @@ class UserMesh_C(Mesh_C):
         # meaning 'no action needed'
 
         # A boundary has dimension 1 less than the domain:
-        particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
+        particleBoundaryMarker = df_m.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
         # Initialize all mesh facets with a default value of 0.
         particleBoundaryMarker.set_all(0)
 
         if particleBoundaryDict is not None:
-            particleBoundaryMarker = df_M.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
+            particleBoundaryMarker = df_m.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
             particleBoundaryMarker.set_all(0)
             Gamma_rmin = XBoundary(0.0) # Gamma_rmin is the lower radial boundary
             Gamma_rmax = XBoundary(1.0) # Gamma_rmax is the upper radial boundary
@@ -265,8 +277,8 @@ class UserMesh_C(Mesh_C):
 # Make a plot of the mesh
         if (plot_flag):
             if plot_title is None: plotTitle = "1D radial"
-            df_M.plot(mesh, title=plotTitle + ": mesh", axes=True)
-            df_M.interactive()
+            df_m.plot(mesh, title=plotTitle + ": mesh", axes=True)
+            df_m.interactive()
 
         # Save the class attributes
         self.mesh = mesh
@@ -282,7 +294,7 @@ class UserMesh_C(Mesh_C):
 # the connection between the field mesh and the field solve is close, so
 # they're both in the same file.
 
-# This isn't used anywhere: not enough args?
+# This isn't used anywhere: not enough args to bother with an input class?
 
 class UserPoissonSolveInput_C(object):
     """Input for the field solver(s).
@@ -329,8 +341,7 @@ class UserPoissonSolve_C(PoissonSolve_C):
 # Select the unit system to be used for input parameters.
     Convert = U_M.MyPlasmaUnits_C
 
-#    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):
-    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, neg_electric_field=None):
+    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, assembled_charge=None, neg_electric_field=None):
         """mesh argument is only needed if, e.g., using a SpatialCoordinate in the equations.
         """
 
@@ -341,10 +352,11 @@ class UserPoissonSolve_C(PoissonSolve_C):
         (rmin_indx, phi_rmin) = phi_BCs['rmin']
         (rmax_indx, phi_rmax) = phi_BCs['rmax']
 
-        u_rmin = df_M.Constant(phi_rmin)
-        u_rmax = df_M.Constant(phi_rmax)
+        u_rmin = df_m.Constant(phi_rmin)
+        u_rmax = df_m.Constant(phi_rmax)
 
         self.charge_density = charge_density
+        self.assembled_charge = assembled_charge
         self.neg_electric_field = neg_electric_field
 
         # Field-solver parameters
@@ -360,23 +372,47 @@ class UserPoissonSolve_C(PoissonSolve_C):
         # set.
         #       args: DirichletBC(FunctionSpace, GenericFunction, MeshFunction, int, method="topological")
 
-        self.bcs = [df_M.DirichletBC(V, u_rmin, field_boundary_marker, rmin_indx), df_M.DirichletBC(V, u_rmax, field_boundary_marker, rmax_indx)]
+        self.bcs = [df_m.DirichletBC(V, u_rmin, field_boundary_marker, rmin_indx), df_m.DirichletBC(V, u_rmax, field_boundary_marker, rmax_indx)]
 
-        # Define the variational problem
-        w = df_M.TrialFunction(V)
-        self.v = df_M.TestFunction(V)
-        f = df_M.Constant(0.0)
-        r = df_M.SpatialCoordinate(V.mesh())
+        ### Set up the variational problem ###
 
-        # Spherical-coordinate form has factor r**2
-        self.a = df_M.inner(df_M.nabla_grad(w), df_M.nabla_grad(self.v))*r[0]**2*df_M.dx
+        w = df_m.TrialFunction(V)
+        self.v = df_m.TestFunction(V)
 
-        df_M.set_log_level(df_M.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
+        ## Make the bilinear form 'a(w,v)' ##
+
+        # The bilinear form 'a' is the LHS in the variational form of the
+        # Laplace/Poisson eq. It is the 'inner product' of grad(w) times
+        # grad(v), i.e., the integral of this product (times any coefficients)
+        # over the domain. The spherical-coordinate form has a coefficient r**2
+        # (for the volume-element needed to integrate over the domain).
+
+#        f = df_m.Constant(0.0)
+        r = df_m.SpatialCoordinate(V.mesh())
+
+        self.a = df_m.inner(df_m.nabla_grad(w), df_m.nabla_grad(self.v))*r[0]**2*df_m.dx
+
+        # Specify whether 'a' has time-independent coefficients.
+        self.a_has_constant_coeffs = True
+
+        # If so, the A matrix only needs to be assembled once.
+# Moved
+        # if self.a_has_constant_coeffs is True:
+        #     self.A = df_m.assemble(self.a)
+        #     print "A is of type", type(self.A)
+        #     for bc in self.bcs:
+        #         bc.apply(self.A)
+
+        df_m.set_log_level(df_m.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
 #df.set_log_level(1) # Gives the most messages
 
 # default LU is flakey: different answers on different calls: NO!: this was a heap problem of unitialized memory!
 #        self.phi = None
 #        self.negE = None
+
+        # Call the PoissonSolve_C base class constructor for
+        # non-problem-specific initialization.
+        super(self.__class__, self).__init__()
 
         return
 #    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):ENDDEF

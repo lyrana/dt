@@ -95,6 +95,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Provide the particle distributions for the above species
         # This could be done more like how the mesh is specified:
         # import UserParticles_3D as UPrt_M
+        # Particles have a 3D/3D phase-space even though mesh is just 2D
         userParticleModule = 'UserParticles_3D'
 
         # Import this module
@@ -129,13 +130,13 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # 2D mesh input
 
-        mi2DCI = UserMeshInput_C()
+        umi2DCI = UserMeshInput_C()
         (xmin, ymin) = (-10.0, -10.0)
         (xmax, ymax) = ( 10.0,  10.0)
-        mi2DCI.pmin = df_M.Point(xmin, ymin)
-        mi2DCI.pmax = df_M.Point(xmax, ymax)
-        mi2DCI.cells_on_side = (4, 2)
-#        mi2DCI.diagonal = 'crossed'
+        umi2DCI.pmin = df_M.Point(xmin, ymin)
+        umi2DCI.pmax = df_M.Point(xmax, ymax)
+        umi2DCI.cells_on_side = (4, 2)
+#        umi2DCI.diagonal = 'crossed'
 
         # These are the (int boundary-name) pairs used to mark mesh
         # facets. The string value of the int is used as the index.
@@ -154,14 +155,14 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                                 'ymax': ymaxIndx,
                                 }
 
-        mi2DCI.particle_boundary_dict = particleBoundaryDict
+        umi2DCI.particle_boundary_dict = particleBoundaryDict
 
         ## Create the 2D Cartesian mesh
 
         from UserMesh_FE_XYZ_Module import UserMesh_C
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        pmeshCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=False, plot_title=plotTitle)
+        pmeshCI = UserMesh_C(umi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=False, plot_title=plotTitle)
         # Add this to the particle object:
         particleCI.pmeshCI = pmeshCI
 
@@ -330,9 +331,9 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ## The mesh to be created is in an existing file
 
-        miCI = UserMeshInput_C()
-        miCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
-        miCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
+        umiCI = UserMeshInput_C()
+        umiCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
+        umiCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
         # These are the boundary-name -> int pairs used to mark mesh facets:
         rminIndx = 1
         rmaxIndx = 2
@@ -344,11 +345,11 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                                 'thmax': thmaxIndx,
                                 }
 
-        miCI.particle_boundary_dict = particleBoundaryDict
+        umiCI.particle_boundary_dict = particleBoundaryDict
 
         ## Create the particle mesh
         from UserMesh_y_Fields_FE2D_Module import UserMesh_C
-        pmeshCI = UserMesh_C(miCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmeshCI = UserMesh_C(umiCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
         # Add this to the particle object:
         particleCI.pmeshCI = pmeshCI

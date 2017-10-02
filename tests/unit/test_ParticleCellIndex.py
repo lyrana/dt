@@ -185,30 +185,30 @@ class TestParticleCellIndex(unittest.TestCase):
         # Create meshes that the particles can be tested against
 
         # 1d mesh input
-        mi1DCI = UserMeshInput_C()
-        mi1DCI.pmin = df_M.Point(-10.0)
-        mi1DCI.pmax = df_M.Point(10.0)
-        mi1DCI.cells_on_side = (4)
+        umi1DCI = UserMeshInput_C()
+        umi1DCI.pmin = df_M.Point(-10.0)
+        umi1DCI.pmax = df_M.Point(10.0)
+        umi1DCI.cells_on_side = (4,) # Need the comma to indicate a tuple
         # Create mesh
-        self.pmesh1DCI = UserMesh_C(mi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
+        self.pmesh1DCI = UserMesh_C(umi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
 
         # 2D mesh input
-        mi2DCI = UserMeshInput_C()
-        mi2DCI.pmin = df_M.Point(-0.03, -0.03)
-        mi2DCI.pmax = df_M.Point(0.03, 0.03)
-        mi2DCI.cells_on_side = (4, 4)
+        umi2DCI = UserMeshInput_C()
+        umi2DCI.pmin = df_M.Point(-0.03, -0.03)
+        umi2DCI.pmax = df_M.Point(0.03, 0.03)
+        umi2DCI.cells_on_side = (4, 4)
         # Create mesh
-        self.pmesh2DCI = UserMesh_C(mi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
+        self.pmesh2DCI = UserMesh_C(umi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag)
 #        self.mesh2DCI.compute_cell_vertex_dict()
 #        self.mesh2DCI.compute_cell_dict()
 
         # 3D mesh input
-        mi3DCI = UserMeshInput_C()
-        mi3DCI.pmin = df_M.Point(-0.03, -0.03, -0.03)
-        mi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
-        mi3DCI.cells_on_side = (4, 4, 4)
+        umi3DCI = UserMeshInput_C()
+        umi3DCI.pmin = df_M.Point(-0.03, -0.03, -0.03)
+        umi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
+        umi3DCI.cells_on_side = (4, 4, 4)
         # Create mesh
-        self.pmesh3DCI = UserMesh_C(mi3DCI, compute_tree=True, plot_flag=plotFlag)
+        self.pmesh3DCI = UserMesh_C(umi3DCI, compute_tree=True, plot_flag=plotFlag)
         self.pmesh3DCI.compute_cell_entity_index_dict('vertex')
         self.pmesh3DCI.compute_cell_dict()
 
