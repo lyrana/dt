@@ -37,19 +37,19 @@ class TestParticleNonuniformE(unittest.TestCase):
         # initializations for each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = ParticleInput_C()
+        pin = ParticleInput_C()
 
         # Initialize particles
-        pinCI.precision = numpy.float64
-#        pinCI.copy_field_mesh = False
-        pinCI.particle_integration_loop = 'loop-on-particles'
-        pinCI.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
-        pinCI.force_components = ['x', 'y',]
-        pinCI.force_precision = numpy.float64
+        pin.precision = numpy.float64
+#        pin.copy_field_mesh = False
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
+        pin.force_components = ['x', 'y',]
+        pin.force_precision = numpy.float64
 
         # Specify the particle properties
         # 1. electrons
-        # pinCI.particle_species = (('testelectrons',
+        # pin.particle_species = (('testelectrons',
         #                      {'initial_distribution_type' : 'listed',
         #                       'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
         #                       'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
@@ -62,13 +62,13 @@ class TestParticleNonuniformE(unittest.TestCase):
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
         dynamics = 'explicit'
-        testElectronsCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        testElectrons_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add these species to particle input
-        pinCI.particle_species = (testElectronsCI,
+        pin.particle_species = (testElectrons_S,
                                  )
-        # Make the particle object from pinCI
-        self.particleCI = Particle_C(pinCI, print_flag=False)
+        # Make the particle object from pin
+        self.particle_P = Particle_C(pin, print_flag=False)
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary conditions, source regions, etc.)
@@ -76,14 +76,14 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         # Import this module
         UPrt_M = im_M.import_module(userParticleModule)
-        self.particleCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+        self.particle_P.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
 
         ### test_electrons are present at t=0
 
         # Name the initialized species (it should be in species_names above)
         speciesName = 'test_electrons'
         # Check that this species has been defined above
-        if speciesName not in self.particleCI.species_names:
+        if speciesName not in self.particle_P.species_names:
             print fncName + "The species", speciesName, "has not been defined"
             sys.exit()
 
@@ -108,7 +108,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         initialParticlesDict = {'initial_test_electrons': (testElectronParams,),
                                 }
 
-        self.particleCI.initial_particles_dict = initialParticlesDict
+        self.particle_P.initial_particles_dict = initialParticlesDict
 
         # Create the initial particles
         for ip in initialParticlesDict:
@@ -118,15 +118,15 @@ class TestParticleNonuniformE(unittest.TestCase):
             initialDistributionType = ipParams['initial_distribution_type']
             if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
-                self.particleCI.create_from_list(s, False)
+                self.particle_P.create_from_list(s, False)
 
         ### Mesh creation
 
-        umiCI = UserMeshInput_C()
+        umi = UserMeshInput2DCirc_C()
 
         # Create mesh from a file
-        umiCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
-        umiCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
+        umi.mesh_file = 'mesh_quarter_circle_crossed.xml'
+        umi.particle_boundary_file='mesh_quarter_circle_crossed_Pbcs.xml'
 
         # These are the (int boundary-name) pairs used to mark mesh
         # facets. The string value of the int is used as the index.
@@ -140,11 +140,11 @@ class TestParticleNonuniformE(unittest.TestCase):
                                 'thmax': thmax_indx,
                                 }
 
-        umiCI.particle_boundary_dict = particleBoundaryDict
+        umi.particle_boundary_dict = particleBoundaryDict
 
-        pmesh2DCI = UserMesh_C(umiCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh2D_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
-        self.particleCI.pmeshCI = pmesh2DCI
+        self.particle_P.pmesh_M = pmesh2D_M
 
         ### Particle boundary-conditions
 
@@ -152,9 +152,9 @@ class TestParticleNonuniformE(unittest.TestCase):
         # functions are defined.
         userPBndFnsClass = UPrt_M.UserParticleBoundaryFunctions_C # abbreviation
 
-        spNames = self.particleCI.species_names
-        pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmesh2DCI, userPBndFnsClass, print_flag=False)
-        self.particleCI.pmesh_bcCI = pmeshBCCI
+        spNames = self.particle_P.species_names
+        pmeshBC = ParticleMeshBoundaryConditions_C(spNames, pmesh2D_M, userPBndFnsClass, print_flag=False)
+        self.particle_P.pmesh_bcCI = pmeshBC
 
         # The following value should correspond to the element degree
         # used in the potential from which negE was obtained
@@ -172,7 +172,7 @@ class TestParticleNonuniformE(unittest.TestCase):
             electric_field_element_type = "Lagrange"
 
         # Create the negative electric field directly on the particle mesh
-        self.neg_electric_field = Field_C(meshCI=pmesh2DCI,
+        self.neg_electric_field = Field_C(pmesh2D_M,
                                           element_type=electric_field_element_type,
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')
@@ -181,7 +181,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         file >> self.neg_electric_field.function
 
         # Get the initial cell index of each particle.
-        self.particleCI.compute_mesh_cell_indices()
+        self.particle_P.compute_mesh_cell_indices()
 
         return
 #    def setUp(self):ENDDEF
@@ -194,12 +194,12 @@ class TestParticleNonuniformE(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName, '('+__file__+')'
 
-        ctrlCI = DTcontrol_C()
+        ctrl = DTcontrol_C()
 
-        ctrlCI.dt = 1.0e-5
-        ctrlCI.n_timesteps = 1
+        ctrl.dt = 1.0e-5
+        ctrl.n_timesteps = 1
 
-        dt = ctrlCI.dt
+        dt = ctrl.dt
 
         # The expected results from ParticleNonuniformE.ods
         		
@@ -217,33 +217,33 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         p_expected = (p1, p2)
 
-#        species_names = self.particleCI.names
+#        species_names = self.particle_P.names
 
 # first particle:        
-#        getp = self.particleCI.pseg_arr['testelectrons'].get(0)
+#        getp = self.particle_P.pseg_arr['testelectrons'].get(0)
 #        print 'getp is a', type(getp)
 #        print '1st electron:', getp
 # second particle:
-#        getparticle = self.particleCI.pseg_arr['testelectrons'].get(1)
+#        getparticle = self.particle_P.pseg_arr['testelectrons'].get(1)
 #        print '2nd electron:', getparticle
 
         # Advance the particles one timestep
-        print "Moving", self.particleCI.get_total_particle_count(), "particles for one timestep"
-        ctrlCI.time_step = 0
-        ctrlCI.time = 0.0
+        print "Moving", self.particle_P.get_total_particle_count(), "particles for one timestep"
+        ctrl.time_step = 0
+        ctrl.time = 0.0
 
-        self.particleCI.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
+        self.particle_P.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
 
         # Check the results
-        ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
+        ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         isp = 0
-        for sp in self.particleCI.species_names:
-#            print 'species count = ', self.particleCI.get_species_particle_count(sp)
-            if self.particleCI.get_species_particle_count(sp) == 0: continue
+        for sp in self.particle_P.species_names:
+#            print 'species count = ', self.particle_P.get_species_particle_count(sp)
+            if self.particle_P.get_species_particle_count(sp) == 0: continue
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                getparticle = self.particleCI.pseg_arr[sp].get(ip)
+                getparticle = self.particle_P.pseg_arr[sp].get(ip)
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
                 for ic in range(ncoords):
@@ -263,10 +263,10 @@ class TestParticleNonuniformE(unittest.TestCase):
     #     fncname = sys._getframe().f_code.co_name
     #     print '\ntest: ', fncname
 
-    #     ctrlCI = DTcontrol_C()
+    #     ctrl = DTcontrol_C()
 
-    #     ctrlCI.dt = 1.0e-5
-    #     ctrlCI.n_timesteps = 10
+    #     ctrl.dt = 1.0e-5
+    #     ctrl.n_timesteps = 10
 
     #     return
 

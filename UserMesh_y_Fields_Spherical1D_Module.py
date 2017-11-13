@@ -2,10 +2,10 @@
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-__all__ = ['UserMesh_C',
-           'UserMeshInput_C', 
-           'UserPoissonSolve_C',           
-           'UserPoissonSolveInput_C',
+__all__ = ['UserMesh1DS_C',
+           'UserMeshInput1DS_C', 
+           'UserPoissonSolve1DS_C',           
+           'UserPoissonSolveInput1DS_C',
            ]
 
 
@@ -21,7 +21,7 @@ import sys
 import os
 #import numpy as np_m
 import math
-# !!! Direct invocation of dolfin. OK because UserMesh_C is a
+# !!! Direct invocation of dolfin. OK because UserMesh1DS_C is a
 # sub-class of Mesh_C !!!
 import dolfin as df_m
 
@@ -30,7 +30,8 @@ from Dolfin_Module import PoissonSolve_C
 
 import UserUnits_Module as U_M
 
-class UserMeshInput_C(object):
+#STARTCLASS
+class UserMeshInput1DS_C(object):
     """Input for the field mesh
        The user can modify this for different mesh specifications.
        Field mesh, field solve control?  Could use to pass control things to the field mesh
@@ -87,7 +88,26 @@ class UserMeshInput_C(object):
 
         return
         
-#class UserMeshInput_C(object):ENDCLASS
+#class UserMeshInput1DS_C(object):
+    def __str__(self):
+        """Print the class members.
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        print fncName
+
+        print_string = ' rmin = ' + str(self.rmin)
+        print_string += '\n rmax = ' + str(self.rmax)
+        print_string += '\n stretch = ' + str(self.stretch)
+        print_string += '\n nr = ' + str(self.nr)
+        print_string += '\n field_boundary_dict = ' + str(self.field_boundary_dict)
+        print_string += '\n particle_boundary_dict = ' + str(self.particle_boundary_dict)
+        print_string += '\n particle_boundary_file = ' + str(self.particle_boundary_file)
+
+        return print_string
+#     def __str__(self):ENDDEF
+
+#class UserMeshInput1DS_C(object):ENDCLASS
 
 
 # Define subdomain classes to test if points are on the boundaries
@@ -114,8 +134,9 @@ class XBoundary(df_m.SubDomain):
 # User exposes whatever mesh parameters are useful in __init__ and
 # these can be set in __main__
 
-class UserMesh_C(Mesh_C):
-    """UserMesh_C is derived from Mesh_C.  It is to be edited by the user to specify the simulation
+#STARTCLASS
+class UserMesh1DS_C(Mesh_C):
+    """UserMesh1DS_C is derived from Mesh_C.  It is to be edited by the user to specify the simulation
        mesh.  The units are MKS by default (i.e., if no conversion
        factor is applied), but any units can be used provided the
        conversion to MKS is available in the UserUnits_M.py module.
@@ -128,9 +149,10 @@ class UserMesh_C(Mesh_C):
     Convert = U_M.MyPlasmaUnits_C
 
 # Mesh_C constructor:
-    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
+#class UserMesh1DS_C(Mesh_C):
+    def __init__(self, mesh_input, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
         """
-            The class UserMesh_C contains these attributes:
+            The class UserMesh1DS_C contains these attributes:
                 1. A mesh.
                 2. A fieldBoundaryMarker (MeshFunction) that marks
                    mesh boundaries for field boundary-conditions.
@@ -138,21 +160,23 @@ class UserMesh_C(Mesh_C):
                    mesh boundaries for particle boundary-conditions.
         """
 
-        if meshInputCI.mesh_file is None:
-            self.create_mesh(meshInputCI, plot_flag=plot_flag, plot_title=plot_title)
+        self.coordinate_system = '1D-spherical-radius'
+
+        if mesh_input.mesh_file is None:
+            self.create_mesh(mesh_input, plot_flag=plot_flag, plot_title=plot_title)
             # Don't need another mesh plot
             plot_flag = False
 
         # Call the parent constructor to complete setting class variables.
-        mesh_file = meshInputCI.mesh_file
-        super(self.__class__, self).__init__(mesh_file=None, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag, plot_title=plot_title)
+        meshFile = mesh_input.mesh_file
+        super(self.__class__, self).__init__(mesh_file=meshFile, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag, plot_title=plot_title)
 
-        self.field_boundary_dict = meshInputCI.field_boundary_dict
-        self.particle_boundary_dict = meshInputCI.particle_boundary_dict
+        self.field_boundary_dict = mesh_input.field_boundary_dict
+        self.particle_boundary_dict = mesh_input.particle_boundary_dict
 
         # Read boundary markers from file, if provided
-        fieldBoundaryFile = meshInputCI.field_boundary_file
-        particleBoundaryFile = meshInputCI.particle_boundary_file
+        fieldBoundaryFile = mesh_input.field_boundary_file
+        particleBoundaryFile = mesh_input.particle_boundary_file
         if fieldBoundaryFile is not None:
             fieldBoundaryMarker = df_m.MeshFunctionSizet(self.mesh, fieldBoundaryFile)
         if particleBoundaryFile is not None:
@@ -160,25 +184,41 @@ class UserMesh_C(Mesh_C):
 # or:       particleBoundaryMarker = df_m.MeshFunctionSizet(self.mesh, "Pbcs_quarter_circle_mesh_crossed.xml")
 
         return
-#    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
+#    def __init__(self, mesh_input, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
+
+#class UserMesh1DS_C(Mesh_C):
+    def __str__(self):
+        """Print the class members.
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        print fncName
+
+        print_string = ' mesh_tdim = ' + str(self.mesh_tdim)
+        print_string += '\nmesh_gdim = ' + str(self.mesh_gdim)
+
+        return print_string
+#     def __str__(self):ENDDEF
+
 
 # Inherited from Mesh_C:
 #    def copy(self):
 #        return copy.deepcopy(self)
 
-#class UserMesh_C(Mesh_C):
-    def create_mesh(self, meshInputCI, plot_flag=False, plot_title=None):
+#class UserMesh1DS_C(Mesh_C):
+    def create_mesh(self, mesh_input, plot_flag=False, plot_title=None):
         """
            Create a mesh according to the user's specifications.
         """
-        rmin = meshInputCI.rmin
-        rmax = meshInputCI.rmax
 
-        fieldBoundaryDict = meshInputCI.field_boundary_dict
-        particleBoundaryDict = meshInputCI.particle_boundary_dict
+        rmin = mesh_input.rmin
+        rmax = mesh_input.rmax
 
-        stretch = meshInputCI.stretch
-        nr = meshInputCI.nr
+        fieldBoundaryDict = mesh_input.field_boundary_dict
+        particleBoundaryDict = mesh_input.particle_boundary_dict
+
+        stretch = mesh_input.stretch
+        nr = mesh_input.nr
 
         plotTitle = plot_title
 
@@ -286,9 +326,9 @@ class UserMesh_C(Mesh_C):
         self.particle_boundary_marker = particleBoundaryMarker
 
         return
-#    def __init__(self, meshInputCI=None, Mesh=None, meshToCopy=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
+#    def create_mesh(self, mesh_input, plot_flag=False, plot_title=None):ENDDEF
 
-#class UserMesh_C(Mesh_C):ENDCLASS
+#class UserMesh1DS_C(Mesh_C):ENDCLASS
 
 # The field-solve class could be in a different module file.  Here,
 # the connection between the field mesh and the field solve is close, so
@@ -296,7 +336,8 @@ class UserMesh_C(Mesh_C):
 
 # This isn't used anywhere: not enough args to bother with an input class?
 
-class UserPoissonSolveInput_C(object):
+#STARTCLASS
+class UserPoissonSolveInput1DS_C(object):
     """Input for the field solver(s).
        The user can modify this for different field solvers.
     """
@@ -324,13 +365,14 @@ class UserPoissonSolveInput_C(object):
 
         return
 
-#class UserPoissonSolveInput_C(object):ENDCLASS
+#class UserPoissonSolveInput1DS_C(object):ENDCLASS
 
 #
 # Solve the equations for the fields
 #
-class UserPoissonSolve_C(PoissonSolve_C):
-    """UserPoissonSolve_C solves equations to obtain physical fields from
+#STARTCLASS
+class UserPoissonSolve1DS_C(PoissonSolve_C):
+    """UserPoissonSolve1DS_C solves equations to obtain physical fields from
        sources.  It can be edited by the user to specify the field
        solvers and any tuning parameters.  The units are MKS by
        default (i.e., if no conversion factor is applied), but any
@@ -338,12 +380,15 @@ class UserPoissonSolve_C(PoissonSolve_C):
        in the UserUnits_M.py module.
     """
 
-# Select the unit system to be used for input parameters.
-    Convert = U_M.MyPlasmaUnits_C
-
     def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, assembled_charge=None, neg_electric_field=None):
-        """mesh argument is only needed if, e.g., using a SpatialCoordinate in the equations.
+        """Initialize a Poisson solver for 1D spherical coordinates
+
+           Generates the bilinear form a(u,v) for the variational form of Poisson's eq.
+
         """
+
+        # Select the unit system to be used for input parameters.
+        constants = U_M.MyPlasmaUnits_C
 
         self.u = phi.function
         V = phi.function_space
@@ -388,16 +433,17 @@ class UserPoissonSolve_C(PoissonSolve_C):
         # (for the volume-element needed to integrate over the domain).
 
 #        f = df_m.Constant(0.0)
+        epsilon = df_m.Constant(constants.epsilon_0)
         r = df_m.SpatialCoordinate(V.mesh())
 
-        self.a = df_m.inner(df_m.nabla_grad(w), df_m.nabla_grad(self.v))*r[0]**2*df_m.dx
+        self.a = epsilon*df_m.inner(df_m.nabla_grad(w), df_m.nabla_grad(self.v))*r[0]**2*df_m.dx
 
         # Specify whether 'a' has time-independent coefficients.
-        self.a_has_constant_coeffs = True
+        self.pde_has_constant_coeffs = True
 
         # If so, the A matrix only needs to be assembled once.
 # Moved
-        # if self.a_has_constant_coeffs is True:
+        # if self.pde_has_constant_coeffs is True:
         #     self.A = df_m.assemble(self.a)
         #     print "A is of type", type(self.A)
         #     for bc in self.bcs:
@@ -417,4 +463,19 @@ class UserPoissonSolve_C(PoissonSolve_C):
         return
 #    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):ENDDEF
 
-#class UserPoissonSolve_C(PoissonSolve_C):ENDCLASS
+#class UserPoissonSolve1DS_C(PoissonSolve_C):
+    def __str__(self):
+        """Print the class members.
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        print fncName
+
+        print_string = 'solver_parameters = ' + str(self.solver_parameters)
+        print_string += '\npde_has_constant_coeffs = ' + str(self.pde_has_constant_coeffs)
+        print_string += '\ncharge_density = ' + str(self.charge_density)
+
+        return print_string
+#    def __str__(self):ENDDEF
+
+#class UserPoissonSolve1DS_C(PoissonSolve_C):ENDCLASS

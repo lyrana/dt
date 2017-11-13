@@ -141,14 +141,11 @@ class SourceXrange(df_m.SubDomain):
 
 #STARTCLASS
 class UserMesh_C(Mesh_C):
-    """UserMesh_C is derived from Mesh_C.  It is to be edited by the user to specify the simulation
-       mesh.  The units are MKS by default (i.e., if no conversion
-       factor is applied), but any units can be used provided the
-       conversion to MKS is available in the UserUnits_M.py module.
+    """UserMesh_C is derived from Mesh_C and creates a 1D, 2D, or 3D Cartesian mesh.
 
-       This class creates a 2D or 3D rectangular mesh.  It was written
-       to test particle cell indexing, so no boundary-conditions are
-       set.
+       The units are MKS by default (i.e., if no conversion factor is applied), but
+       any units can be used provided the conversion to MKS is available in the
+       UserUnits_M.py module.
 
        Methods: 
            compute_cell_index() : Inherited from Mesh_C
@@ -156,41 +153,39 @@ class UserMesh_C(Mesh_C):
     """
 
 # Select the unit system to be used for input parameters.
-    Convert = U_M.MyPlasmaUnits_C
+#    Convert = U_M.MyPlasmaUnits_C
 
     # Constructor
-    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
+    def __init__(self, mesh_input, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
         """
             The class UserMesh_C contains these attributes:
                 1. A mesh.
                 2. A MeshFunction that marks mesh boundaries for boundary conditions.
         """
 
-        if meshInputCI is not None:
-            self.create_mesh(meshInputCI, plot_flag=plot_flag, plot_title=plot_title)
-        else:
-            error_msg = "UserMesh_C: no mesh input given"
-            sys.exit(error_msg)
+        self.coordinate_system = 'Cartesian'
+
+        self.create_mesh(mesh_input, plot_flag=plot_flag, plot_title=plot_title)
 
         # Call the parent constructor to complete setting class variables.
         super(UserMesh_C, self).__init__(mesh_file=None, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag, plot_title=plot_title)
 
-        self.field_boundary_dict = meshInputCI.field_boundary_dict
-        self.particle_boundary_dict = meshInputCI.particle_boundary_dict
+        self.field_boundary_dict = mesh_input.field_boundary_dict
+        self.particle_boundary_dict = mesh_input.particle_boundary_dict
 
         return
 
     # Methods
 
 #class UserMesh_C(Mesh_C):
-    def create_mesh(self, meshInputCI, plot_flag=False, plot_title=None):
+    def create_mesh(self, mesh_input, plot_flag=False, plot_title=None):
         """
            Create a mesh according to the user's specifications.
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
-        umiCI = meshInputCI
+        umiCI = mesh_input
 
 #        print 'umiCI.cells_on_side = ', umiCI.cells_on_side
 
@@ -418,7 +413,7 @@ class UserMesh_C(Mesh_C):
         self.particle_source_marker = particleSourceMarker
 
         return
-#    def create_mesh(self, meshInputCI):ENDDEF
+#    def create_mesh(self, mesh_input):ENDDEF
 
 #class UserMesh_C(Mesh_C):ENDCLASS
 
@@ -426,20 +421,21 @@ class UserMesh_C(Mesh_C):
 # Solve the equations for the fields
 #
 class UserPoissonSolve1D_C(PoissonSolve_C):
-    """UserPoissonSolve1D_C solves equations to obtain physical fields from
-       sources.  It can be edited by the user to specify the field solvers and
-       solver tuning parameters, if any.  The units are MKS by default (i.e., if
-       no conversion factor is applied), but any units can be used provided the
-       conversion to MKS is available in the UserUnits_M.py module.
-    """
+    """UserPoissonSolve1D_C solves the 1D Poisson equation in Cartesian coordinates to
+       obtain fields from sources.  
 
-# Select the unit system to be used for input parameters.
-    Convert = U_M.MyPlasmaUnits_C
+       It can be edited by the user to specify the field solvers and solver tuning
+       parameters, if any.  The units are MKS by default (i.e., if no conversion
+       factor is applied), but any units can be used provided the conversion to MKS
+       is available in the UserUnits_M.py module.
+    """
 
     def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, assembled_charge=None, neg_electric_field=None):
         """mesh argument is only needed if, e.g., using a SpatialCoordinate in the equations.
         """
 
+        # Select the unit system to be used for input parameters.
+        constants = U_M.MyPlasmaUnits_C
 
         ### Set class and local variables from the arguments ###
 
@@ -481,6 +477,8 @@ class UserPoissonSolve1D_C(PoissonSolve_C):
 
         w = df_m.TrialFunction(V) # A basis function of the trial-function space.
         self.v = df_m.TestFunction(V) # A basis function of the test-function space.
+
+        epsilon = df_m.Constant(constants.epsilon_0)
 #        f = df_m.Constant(0.0)
 #        r = df_m.SpatialCoordinate(V.mesh())
 
@@ -492,10 +490,10 @@ class UserPoissonSolve1D_C(PoissonSolve_C):
         # over the domain. The spherical-coordinate form has a coefficient r**2
         # (for the volume-element needed to integrate over the domain). This
         # Cartesian-coordinate form doesn't.
-        self.a = df_m.inner(df_m.nabla_grad(w), df_m.nabla_grad(self.v))*df_m.dx
+        self.a = epsilon*df_m.inner(df_m.nabla_grad(w), df_m.nabla_grad(self.v))*df_m.dx
 
-        # Specify whether 'a' has time-independent coefficients...
-        self.a_has_constant_coeffs = True
+        # Specify whether 'a' has time-independent coefficients.
+        self.pde_has_constant_coeffs = True
 
         ## Make the linear form 'L(v)' for the RHS ##
 

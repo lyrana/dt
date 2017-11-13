@@ -5,7 +5,8 @@
 #__author__ = 'Copyright (C) 2016 L. D. Hughes'
 #__all__ = []
 
-import numpy as np_M
+import sys
+import numpy as np_m
 
 #STARTCLASS
 class DTcontrol_C(object):
@@ -15,6 +16,9 @@ class DTcontrol_C(object):
     def __init__(self, use_mpi = False):
         """ Initialize variables
         """
+
+        # Known coordinate systems
+        self.coordinate_systems = ('Cartesian', '1D-spherical-radius')
 
         # MPI procid?
         if use_mpi:
@@ -29,6 +33,9 @@ class DTcontrol_C(object):
         # Timestep
         self.dt = None
 
+        # Spatial coordinates
+        self.coordinate_system = None
+
         # Dimensions
 #        self.particle_dimension = None
 
@@ -39,7 +46,7 @@ class DTcontrol_C(object):
         self.B0 = None
         
         # Random number seed
-        self.random_seed = np_M.random.seed(1)
+        self.random_seed = np_m.random.seed(1)
 
         # Diagnostics
 
@@ -57,8 +64,44 @@ class DTcontrol_C(object):
 #    def __init__(self, use_mpi = False):ENDDEF
 
 #class DTcontrol_C(object):
-    def write_variables():
-         pass
+    def __str__(self):
+        """Print the class members.
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        print fncName
+
+        print_string = ' title = ' + str(self.title)
+        print_string += '\n author = ' + str(self.author)
+        print_string += '\n dt = ' + str(self.dt)
+        print_string += '\n n_timesteps = ' + str(self.n_timesteps)
+        print_string += '\n particle_output_file = ' + str(self.particle_output_file)
+        print_string += '\n particle_output_attributes = ' + str(self.particle_output_attributes)
+
+        return print_string
+#     def __str__(self):ENDDEF
+
+#class DTcontrol_C(object):
+    def get_keyboard_input(self, callerName):
+        """
+           Reads input from the keyboard.
+
+           :param callerName: Name of the function calling this function
+           :param pauseAfterEmit: Boolean to pause after emitting output
+
+        """
+
+        inChar = raw_input("Press Enter to continue, q to quit, ! to stop pausing...")
+        if inChar == 'q':
+            infoMsg = "\n(DnT INFO) %s Exiting because %s was entered"  % (callerName, inChar)
+            sys.exit(infoMsg)
+        elif inChar == '!':
+            pauseAfterEmit = False
+        else:
+            pauseAfterEmit = True
+
+        return pauseAfterEmit
+#    def process_keyboard_input(self):ENDDEF
 
 #class DTcontrol_C(object):ENDCLASS
 
@@ -106,7 +149,7 @@ class DTsystem_C(object):
 
                 psa.init_segment_loop()
                 pseg = psa.get_next_segment()
-                while isinstance(pseg, np_M.ndarray):
+                while isinstance(pseg, np_m.ndarray):
 #                while pseg != None:
                     fpCI.compute_phi_at_particles(pseg)
                     pCI.move_particle_segment_in_uniform_fields(dt, qmdt, pseg, E0)
@@ -287,4 +330,15 @@ class DToutput_C(object):
 
         return
 
-#class DToutput_C(object):ENDCLASS
+#STARTCLASS
+class DTscratch_C(object):
+    """Contains scratch-pad values
+    """
+
+    def __init__(self):
+        """ Initialize variables
+        """
+    
+        return
+
+#class DTscratch_C(object):ENDCLASS

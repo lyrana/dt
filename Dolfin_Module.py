@@ -134,6 +134,20 @@ class Mesh_C(object):
 
 #   unsigned int cell_index = tree.compute_first_entity_collision(point, mesh);
 
+#class Mesh_C(object):
+    def __str__(self):
+        """Print the class members.
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        print fncName
+
+        print_string = ' mesh_tdim = ' + str(self.mesh_tdim)
+        print_string += '\nmesh_gdim = ' + str(self.mesh_gdim)
+
+        return print_string
+#     def __str__(self):ENDDEF
+
     def copy(self):
         """ The 'copy constructor'.
         """
@@ -142,7 +156,7 @@ class Mesh_C(object):
 
 #class Mesh_C(object):
     def compute_cell_dict(self):
-        """Create a dictionary where the keys are cell indices, and
+        """Create a dictionary where the keys are cell mesh-indices, and
            the values are the corresponding cell objects.
         """
 
@@ -230,7 +244,8 @@ class Mesh_C(object):
            The dictionary is indexed by cell index.
         
         """
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         tdim = self.tdim
 
@@ -411,7 +426,7 @@ class Mesh_C(object):
            Args: point is of dolfin type Point.
         """
 
-        fncName = sys._getframe().f_code.co_name + '():'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         for ip in xrange(points.shape[0]):
         # pseg[i] is a 'record' containing the 'x', 'y', 'z', 'vx', 'vy',... values of ith ithem
@@ -497,7 +512,8 @@ class Mesh_C(object):
                   fraction of the path that's in this cell.
         :rtype: int, float
         """
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         gDim = self.gdim # The geometric dimension of the mesh
 
@@ -729,7 +745,7 @@ class Field_C(object):
     """Field_C uses the DOLFIN library to represent
        fields defined on finite-element spaces.
 
-       :param meshCI: A Mesh_C object.  Contains the finite-element
+       :param mesh_M: A Mesh_C object.  Contains the finite-element
                       mesh where the field is defined.
        :param element_type: The name of the basis function family.
        :param element_degree: The order of the polynomial in the basis
@@ -738,16 +754,17 @@ class Field_C(object):
 
     """
 
-    def __init__(self, meshCI, element_type, element_degree, field_type):
+    def __init__(self, mesh_M, element_type, element_degree, field_type):
 
-        self.meshCI = meshCI
-        self.mesh_gdim = meshCI.mesh.geometry().dim()
-        self.mesh_tdim = meshCI.mesh.topology().dim()
+        self.mesh_M = mesh_M
+        self.mesh_gdim = mesh_M.mesh.geometry().dim()
+        self.mesh_tdim = mesh_M.mesh.topology().dim()
 
         if field_type is 'scalar':
-            self.function_space = df_m.FunctionSpace(self.meshCI.mesh, element_type, element_degree)
+            self.function_space = df_m.FunctionSpace(self.mesh_M.mesh, element_type, element_degree)
         elif field_type is 'vector':
-            self.function_space = df_m.VectorFunctionSpace(self.meshCI.mesh, element_type, element_degree)
+            self.function_space = df_m.VectorFunctionSpace(self.mesh_M.mesh, element_type, element_degree)
+        self.field_type = field_type
 
         # Create the finite-element function for this field
         self.function = df_m.Function(self.function_space)
@@ -761,7 +778,24 @@ class Field_C(object):
 # dofmap here?        
 
         return
-#    def __init__(self, meshCI, element_type, element_degree, field_type):END
+#    def __init__(self, mesh_M, element_type, element_degree, field_type):END
+
+#class Field_C(object):
+    def __str__(self):
+        """Print the class members.
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        print fncName
+
+        print_string = 'mesh_tdim = ' + str(self.mesh_tdim)
+        print_string += '\nmesh_gdim = ' + str(self.mesh_gdim)
+        print_string += '\nfield_type = ' + str(self.field_type)
+        print_string += '\nelement_type = ' + str(self.element_type)
+        print_string += '\nelement_degree = ' + str(self.element_degree)
+
+        return print_string
+#     def __str__(self):ENDDEF
 
 #class Field_C(object):
     def set_to_value(self, value):
@@ -770,7 +804,7 @@ class Field_C(object):
            :param value: Value to set the field to.
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Assignment to an FE function: FBook p. 25:
         self.function.vector()[:] = value
@@ -780,13 +814,17 @@ class Field_C(object):
 
 #class Field_C(object):
     def multiply_add(self, field_to_add, multiplier):
-        """Add multiplier*field_to_add to the existing field values
+        """Add multiplier*field_to_add to the field values in the current object.
 
-           :field_to_add: A Field_C object to be added to this Field_C
-           :param multiplier: Scalar value to multiply the field_to_add values
+            E.g., this is used to obtain charge-density on a mesh from number-density
+            on the mesh.
+
+           :param field_to_add: A Field_C object to be added to the current Field_C
+                                object.
+           :param multiplier: Scalar value that multiplies the field_to_add values
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Assignment to an FE function: FBook p. 25:
         self.function.vector()[:] += multiplier*field_to_add.function.vector()
@@ -877,9 +915,19 @@ class Field_C(object):
            distribution of delta-function particles.  The basis functions {u_i}
            are the "test" functions. The field rho is a scalar.
 
+           For non-Cartesian coordinates, the integral to obtain the inner product
+           will contain a non-unity Jacobian factor in order to obtain the correct
+           volume element.
+
            :param p: A point inside the domain of the function.
            :type p: An object with data fields 'x', ('y', 'z'),
                     'weight', e.g., a particle.
+
+           :cvar Jhat: XX A factor that comes from integrating the delta function times
+                       the volume element. The value is non-unity for non-Cartesian
+                       coordinates.  Factors like 2\pi and 4\pi are dropped if they
+                       appear on both sides of the field PDE. They should be put back
+                       to get the correct physical values of density, etc.
 
            :returns: None.  The DOFs of the field in the cell
                      containing the point are incremented by the value of the
@@ -891,11 +939,11 @@ class Field_C(object):
 # Another version of this function would loop on cells instead of looping on particles
 # Then coords wouldn't have to be retrieved multiple times
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         cellIndex = p['cell_index']
         el = self.function_space.element()
-        cell = df_m.Cell(self.meshCI.mesh, cellIndex)
+        cell = df_m.Cell(self.mesh_M.mesh, cellIndex)
 # QQQ: why is get_vertex_coordinates() used instead of get_coordinate_dofs()?
 # AAA: The DoFs are the same as the vertices for CG1 elements
 #      I tried both and they give the same output for CG1 elements.
@@ -921,6 +969,14 @@ class Field_C(object):
 
         w = p['weight']
 
+        # Compute the "normalized" Jacobian factor
+        # if self.mesh_M.coordinate_system == 'Cartesian':
+        #     Jhat = 1.0
+        # elif self.mesh_M.coordinate_system == '1D-spherical-radius':
+        #     radius = p['x']
+        #     Jhat = radius*radius # Drop the 4\pi factor.  Put it back where physical
+        #                       # density values are needed.
+
         el.evaluate_basis_all(basisValues, point, coordinate_dofs, cell.orientation()) 
 #        print fncName, basisValues
 
@@ -939,6 +995,7 @@ class Field_C(object):
 #            self.function.vector().array()[dofIndices[i]] += basisValues[i]
 # This works:
         # Sum the densities into these array locations
+#        self.function.vector()[dofIndices] += w*basisValues*Jhat
         self.function.vector()[dofIndices] += w*basisValues
 
 # Is something additional needed in parallel? .apply("add")?
@@ -1008,7 +1065,7 @@ class PoissonSolve_C(object):
 
     """
 
-    def __init__(self, a_has_constant_coeffs=False):
+    def __init__(self):
         """The problem-specific initialization is done in the child classes.
 
         """
@@ -1018,13 +1075,13 @@ class PoissonSolve_C(object):
 
         # A[i,j] is formed from {u[j]}, {v[i]}, and any coefficients in
         # a(u,v). Note the order of i, j here.
-        if self.a_has_constant_coeffs is True:
+        if self.pde_has_constant_coeffs is True:
             self.A = df_m.assemble(self.a)
             for bc in self.bcs:
                 bc.apply(self.A)
 
         return
-#    def __init__(self, a_has_constant_coeffs=False):ENDDEF
+#    def __init__(self, pde_has_constant_coeffs=False):ENDDEF
 
 #class PoissonSolve_C(object):
     def set_constant_source(self, charge_density_value):
@@ -1076,7 +1133,7 @@ class PoissonSolve_C(object):
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Check the type of 'source_density'
         if source_density is None:
@@ -1111,7 +1168,7 @@ class PoissonSolve_C(object):
            a(u,v) is a bilinear form in 'u' and 'v'
            'u' is the unknown solution ("trial function")
            L(v) is a linear form in 'v'
-           v is any function in the test function space.
+           v is any function in the "test function" space.
 
            The variational form is turned into a matrix equation:
                       Ax = b
@@ -1129,7 +1186,7 @@ class PoissonSolve_C(object):
         # If a(u,v) has coefficients that change, then it needs to be assembled
         # again. If the coefficients don't change, then the one-time assembly
         # takes place when UserPoissonSolve... is initialized.
-        if self.a_has_constant_coeffs is False:
+        if self.pde_has_constant_coeffs is False:
             self.A = df_m.assemble(self.a)
 #            print "A is of type", type(self.A)
             for bc in self.bcs:
@@ -1181,7 +1238,7 @@ class PoissonSolve_C(object):
     def compute_negE(self, plot_flag=False, plot_title="compute_negE"):
         """negE is the gradient of the electrostatic potential.
 
-           :cvar negE: the negative gradient of the electrostatic potential
+           :cvar negE: The negative gradient of the electrostatic potential
 
         """
 
@@ -1203,7 +1260,9 @@ class FacetSubDomain_C(df_m.SubDomain):
     """
        :param Mesh:
 
-       :cvar gdim: 
+       :cvar gdim: The number of coordinates needed to specify a point in the
+                   underlying configuration space
+
     """
 
     # Static class variables
@@ -1232,35 +1291,44 @@ class CellSet_C(object):
     # The SUBDOMAIN_INDEX is incremented for each new CellSet_C
 #needed?    CELL_SUBDOMAIN_INDEX = 0
 
-    def __init__(self, meshCI, plot_flag=False):
+    def __init__(self, mesh_M, plot_flag=False):
         """Create a CellSet_C from the given mesh.
-           :param meshCI: A Mesh_C object.
+           :param mesh_M: A Mesh_C object.
            :param plot_flag: Boolean flag to plot the subdomain
 
            :cvar cell_list: An iterable object containing a set of cells.
+           :cvar gdim: The number of coordinates needed to specify a point in the
+                       underlying configuration space
            :cvar ncell: Number of cells in the list
 
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
         plotFlag = plot_flag
 
         # Use gdim, e.g., for the x,y,z coordinates of a point
-        self.gdim = meshCI.gdim
+        self.gdim = mesh_M.gdim
 
         # If an inside() function is not defined, the cell list is the entire mesh.
         if hasattr(self, 'inside'):
             self.cell_list = []
-            for cell in df_m.cells(meshCI.mesh):
+            for cell in df_m.cells(mesh_M.mesh):
                 p = cell.midpoint()
                 if self.inside(p):      
                     self.cell_list.append(cell)
         else:
-            self.cell_list = [cell for cell in df_m.cells(meshCI.mesh)] # The whole mesh
+            self.cell_list = [cell for cell in df_m.cells(mesh_M.mesh)] # The whole mesh
 
         self.ncell = len(self.cell_list)
+        # Check that there's at least 1 cell in the list
+        if self.ncell == 0:
+            errorMsg = "(DnT ERROR) There are no cells in self.cell_list"
+            raise RuntimeError(errorMsg)
 
 # mid-point, circumradius, etc.
         # Allocate storage
+        self.cell_index = np_m.empty(self.ncell, dtype = np_m.int32)
         self.midpoint = np_m.empty(shape=(self.ncell, self.gdim), dtype = np_m.float64)
         self.volume = np_m.empty(self.ncell, dtype = np_m.float64)
         self.radius = np_m.empty(self.ncell, dtype = np_m.float64)
@@ -1269,9 +1337,11 @@ class CellSet_C(object):
         # One could instead create an Interator over the cells in the set.
         for icell in xrange(self.ncell):
             c = self.cell_list[icell]
+            c_index = c.index()
+            self.cell_index[icell] = c_index
 # 12aug17 note: now have precomputed vol for each cell in mesh
 #            self.volume[icell] = c.volume()
-            self.volume[icell] = meshCI.cell_volume_dict[c.index()]
+            self.volume[icell] = mesh_M.cell_volume_dict[c_index]
             midp = c.midpoint()
             for i in range(self.gdim):
                 self.midpoint[icell][i] = midp[i]
@@ -1280,18 +1350,20 @@ class CellSet_C(object):
         return
 #    def __init__(self, mesh, plot_flag=False):ENDDEF
 
-    def in_cell(self, point, cell_index):
-        """Test if point is in the cell with index cell_index.
+    def in_cell(self, point, index):
+        """Test if point is in cell[index].
 
            :param point: A numpy array containing x, y, z, or a subset
-           :param cell_index: The index into self.cell_list
+           :param index: The index into self.cell_list list
+
+           :cvar cell: A Dolfin Cell object
 
            :returns: True iff point is in cell cell_index
            :rtype: bool
 
         """
 
-        cell = self.cell_list[cell_index]
+        cell = self.cell_list[index]
 
         return cell.contains(df_m.Point(point))
 #    def in_cell(self, point, cell_index):ENDDEF
@@ -1306,11 +1378,11 @@ class RectangularRegion_C(CellSet_C):
     """The RectangularRegion_C class is a specialized CellSet_C for specifying
        (e.g.) cells that generate particles.
 
-       This should be generalized to 3D
+       This works in 1D, 2D, 3D
 
     """
 
-    def __init__(self, meshCI, pmin, pmax, plot_flag=False):
+    def __init__(self, mesh_M, pmin, pmax, print_flag=False):
         """Initialize a source with point or planar boundaries.
 
            :param float pmin: The lower corner of the source region. This is a scalar for 1D, and a tuple for 2D, 3D
@@ -1319,18 +1391,18 @@ class RectangularRegion_C(CellSet_C):
         """
 
         # Use gdim, e.g., for the x,y,z coordinates of a point
-        self.gdim = meshCI.gdim
+        self.gdim = mesh_M.gdim
 
         self.pmin = pmin
         self.pmax = pmax
 
-        plotFlag = plot_flag
+        plotFlag = print_flag
 
         # Call the base class constructor
-        super(self.__class__, self).__init__(meshCI, plot_flag=plotFlag)
+        super(self.__class__, self).__init__(mesh_M, plot_flag=plotFlag)
 
         return
-#    def __init__(self, meshCI, xmin, xmax):ENDDEF
+#    def __init__(self, mesh_M, xmin, xmax):ENDDEF
 
 #class RectangularRegion_C(CellSet_C):
     def inside(self, x):
@@ -1357,6 +1429,29 @@ class RectangularRegion_C(CellSet_C):
 # def inside(self, x):ENDDEF
 
 #class RectangularRegion_C(CellSet_C):ENDCLASS
+    def __str__(self):
+        """Print the class members.
+
+           :cvar gdim: Number of coordinates specifying a point in Cartesian space
+           :cvar ncell: Number of cells in the list
+
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():' # No \n to end this since it's printed on its own line
+        print fncName
+
+        print_string = ' gdim = ' + str(self.gdim)
+        print_string += '\n pmin = ' + str(self.pmin)
+        print_string += '\n pmax = ' + str(self.pmax)
+        print_string += '\n ncell = ' + str(self.ncell)
+        print_string += '\n cell_list(size) = ' + str(type(self.cell_list)) + '('+str(len(self.cell_list))+')'
+        print_string += '\n volume(size) = ' + str(type(self.volume)) + '('+str(len(self.cell_list))+')'
+        print_string += '\n midpoint(size) = ' + str(type(self.midpoint)) + '('+str(len(self.cell_list))+')'
+
+        return print_string
+#     def __str__(self):ENDDEF
+
+#class RectangularRegion_C(CellSet_C):ENDCLASS
 
 #STARTCLASS
 class SphericalRegion_C(CellSet_C):
@@ -1367,14 +1462,14 @@ class SphericalRegion_C(CellSet_C):
 
     """
 
-    def __init__(self, meshCI, center, radius, plot_flag=False):
+    def __init__(self, mesh_M, center, radius, plot_flag=False):
 
         self.center = center
         self.radius = radius
         plotFlag = plot_flag
 
         # Call the base class constructor
-        super(self.__class__, self).__init__(meshCI, plot_flag=plotFlag)
+        super(self.__class__, self).__init__(mesh_M, plot_flag=plotFlag)
 
         return
 #    def __init__(self, center, radius):ENDDEF
@@ -1402,10 +1497,10 @@ class WholeMesh_C(CellSet_C):
        Define a cell region that's the whole mesh
     """
 
-    def __init__(self, meshCI):
+    def __init__(self, mesh_M):
 
         # Call the base class constructor
-        super(self.__class__, self).__init__(meshCI)
+        super(self.__class__, self).__init__(mesh_M)
 
         return
 #    def __init__(self, center, radius):ENDDEF

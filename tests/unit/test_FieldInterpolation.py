@@ -21,17 +21,17 @@ class TestFieldInterpolation(unittest.TestCase):
         # initializations for each test go here...
 
         # Create mesh from a file
-        mesh2DCI = Mesh_C(mesh_file="quarter_circle_mesh_crossed.xml", compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh2D_M = Mesh_C(mesh_file="mesh_quarter_circle_crossed.xml", compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
 #        df_M.plot(self.mesh, title='cylindrical mesh', axes=True)
 #        df_M.interactive()
 
         phi_element_type = 'Lagrange'
         phi_element_degree = 1
-        self.phi = Field_C(meshCI=mesh2DCI,
-                                      element_type=phi_element_type,
-                                      element_degree=phi_element_degree,
-                                      field_type='scalar')
+        self.phi = Field_C(mesh2D_M,
+                           element_type=phi_element_type,
+                           element_degree=phi_element_degree,
+                           field_type='scalar')
 
         # Read the potential from a file
         file = df_M.File("phi2D_crossed.xml")
@@ -50,7 +50,7 @@ class TestFieldInterpolation(unittest.TestCase):
         else:
             electric_field_element_type = "Lagrange"
 
-        self.neg_electric_field = Field_C(meshCI=mesh2DCI,
+        self.neg_electric_field = Field_C(mesh2D_M,
                                           element_type=electric_field_element_type,
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')

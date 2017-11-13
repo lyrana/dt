@@ -56,6 +56,8 @@ class MyPlasmaUnits_C(object):
     proton_mass = 1.672621637e-27  # kg
     boltzmann_constant = 1.38064852e-23 # joules per Kelvin
 
+    epsilon_0 = 8.854187817e-12 # Farad/m
+
 #    eV = 11604.505 # Kelvin per eV
 
     m_per_s = 1.0 # m/s per user's velocity unit

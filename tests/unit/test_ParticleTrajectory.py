@@ -38,25 +38,25 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # initializations for each test go here...
 
-        self.ctrlCI = DTcontrol_C()
+        self.ctrl = DTcontrol_C()
 
-        self.ctrlCI.dt = 1.0e-6
+        self.ctrl.dt = 1.0e-6
 
         ### Particle species input
 
         # Create an instance of the DTparticleInput class
-        pinCI = ParticleInput_C()
+        pin = ParticleInput_C()
         # Initialize particles
-        pinCI.precision = numpy.float64
-        pinCI.particle_integration_loop = 'loop-on-particles'
-        pinCI.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
-        pinCI.force_components = ['x', 'y',]
-        pinCI.force_precision = numpy.float64
+        pin.precision = numpy.float64
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
+        pin.force_components = ['x', 'y',]
+        pin.force_precision = numpy.float64
 
         # Specify the particle-species properties
 
         # 1. electrons
-        # pinCI.particle_species = (('trajelectrons',
+        # pin.particle_species = (('trajelectrons',
         #                      {'initial_distribution_type' : 'listed',
         #                       'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
         #                       'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
@@ -71,13 +71,13 @@ class TestParticleTrajectory(unittest.TestCase):
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
         dynamics = 'explicit'
-        trajelectronsCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        trajelectrons_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add the electrons to particle input
-        pinCI.particle_species = (trajelectronsCI,
+        pin.particle_species = (trajelectrons_S,
                                  )
         ## Make the particle storage array for all species.
-        self.particleCI = Particle_C(pinCI, print_flag=False)
+        self.particle_P = Particle_C(pin, print_flag=False)
 
         ## Give the name of the .py file containing special particle data (lists of
         # particles, boundary conditions, source regions, etc.)
@@ -86,17 +86,17 @@ class TestParticleTrajectory(unittest.TestCase):
         # Import this module
         UPrt_M = im_M.import_module(userParticleModule)
 
-        self.particleCI.user_particle_module = userParticleModule
-        self.particleCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+        self.particle_P.user_particle_module = userParticleModule
+        self.particle_P.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
 
 
         ###  Mesh creation
 
-        umiCI = UserMeshInput_C()
+        umi = UserMeshInput2DCirc_C()
 
         # Make the mesh & fields from saved files
-        umiCI.mesh_file = 'quarter_circle_mesh_crossed.xml'
-        umiCI.particle_boundary_file='Pbcs_quarter_circle_mesh_crossed.xml'
+        umi.mesh_file = 'mesh_quarter_circle_crossed.xml'
+        umi.particle_boundary_file='mesh_quarter_circle_crossed_Pbcs.xml'
 
         ### Input for initial particles (i.e., particles present at t=0)
 
@@ -104,9 +104,9 @@ class TestParticleTrajectory(unittest.TestCase):
         speciesName = 'trajelectrons'
 
         # Check that this species has been defined above
-        if speciesName in self.particleCI.species_names:
-            charge = self.particleCI.charge[speciesName]
-            mass = self.particleCI.mass[speciesName]
+        if speciesName in self.particle_P.species_names:
+            charge = self.particle_P.charge[speciesName]
+            mass = self.particle_P.mass[speciesName]
         else:
             print "The species", speciesName, "has not been defined"
             sys.exit()
@@ -132,7 +132,7 @@ class TestParticleTrajectory(unittest.TestCase):
                                }
 
         # Add the initialized particles to the Particle_C object
-        self.particleCI.initial_particles_dict = initialParticlesDict
+        self.particle_P.initial_particles_dict = initialParticlesDict
 
         # Create the particle mesh object
 # 'crossed' diagonals
@@ -151,16 +151,16 @@ class TestParticleTrajectory(unittest.TestCase):
                                 'thmax': thmaxIndx,
                                 }
 
-        umiCI.particle_boundary_dict = particleBoundaryDict
+        umi.particle_boundary_dict = particleBoundaryDict
 
         # Read the mesh from an existing file
 
-#        pinCI.pmeshCI = UserMesh_C(meshFile='quarter_circle_mesh_crossed.xml', particleBoundaryFile='Pbcs_quarter_circle_mesh_crossed.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
+#        pin.pmesh_M = UserMesh_C(meshFile='quarter_circle_mesh_crossed.xml', particleBoundaryFile='Pbcs_quarter_circle_mesh_crossed.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
 
 # Can this be attached to Particle_C after Particle_C construction? YES
-        pmeshCI = UserMesh_C(umiCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
-        self.particleCI.pmeshCI = pmeshCI
+        self.particle_P.pmesh_M = pmesh_M
 
         ### Field creation
 
@@ -176,15 +176,15 @@ class TestParticleTrajectory(unittest.TestCase):
         else:
             electric_field_element_type = "Lagrange"
 
-        ## Create the electric field from an existing file
+        ## Create the electric field from a file written by test_FieldSolve.py.
 
         # Put the negative electric field directly on the particle mesh
-        self.neg_electric_field = Field_C(meshCI=pmeshCI,
+        self.neg_electric_field = Field_C(pmesh_M,
                                           element_type=electric_field_element_type,
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')
 
-        file = df_M.File("negE2D_crossed.xml")
+        file = df_M.File("negE2D_crossed-2016.xml") # Use a frozen version.
         file >> self.neg_electric_field.function
 
         ## Particle boundary-conditions
@@ -195,22 +195,22 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Make the particle-mesh boundary-conditions object and add it
         # to the particle object.
-        spNames = self.particleCI.species_names
-        pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmeshCI, userPBndFnsClass, print_flag=False)
-        self.particleCI.pmesh_bcCI = pmeshBCCI
+        spNames = self.particle_P.species_names
+        pmeshBC = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
+        self.particle_P.pmesh_bcCI = pmeshBC
 
         ### Create input for a particle trajectory object
 
         # Use an input object to collect initialization data for the trajectory object
-        self.trajinCI = TrajectoryInput_C()
+        self.trajin = TrajectoryInput_C()
 
-        self.trajinCI.maxpoints = None # Set to None to get every point
+        self.trajin.maxpoints = None # Set to None to get every point
 
         # Specify which particle variables to save.  This has the
         # form of a numpy dtype specification.
-        self.trajinCI.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
-        self.trajinCI.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
-        self.trajinCI.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
+        self.trajin.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
+        self.trajin.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
+        self.trajin.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
 
         return
 
@@ -225,15 +225,15 @@ class TestParticleTrajectory(unittest.TestCase):
         print '\ntest: ', fncName
 
         # Abbreviations
-        pCI = self.particleCI
+        p_P = self.particle_P
 
-        self.ctrlCI.n_timesteps = 13
+        self.ctrl.n_timesteps = 13
 
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
-        self.particleCI.trajCI = trajCI
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        self.particle_P.traj_T = traj_T
 
 
         # if os.environ.get('DISPLAY') is None:
@@ -242,28 +242,28 @@ class TestParticleTrajectory(unittest.TestCase):
         #     plotFlag=True
 
         # Create particles that are selected for trajectories.
-# Could call particleCI.initialize_distributions() instead?
+# Could call particle_P.initialize_distributions() instead?
 
-        pCI.create_from_list('trajelectrons', print_flag=True)
+        p_P.create_from_list('trajelectrons', print_flag=True)
 
         # Check that the trajectory parameters are correct by
         # reading them back from the Particle_C object.
 
-#        print "The explicit species with trajectory particles are", pCI.trajCI.explicit_species
-        expectedList = self.trajinCI.explicit_dict['names']
-        for sp in pCI.trajCI.explicit_species:
-#            print "  with particle indices", pCI.trajCI.ParticleIdList[sp]
-#            print "  and values", pCI.trajCI.DataList[sp][0].dtype.names
-            gotList = pCI.trajCI.DataList[sp][0].dtype.names
+#        print "The explicit species with trajectory particles are", p_P.traj_T.explicit_species
+        expectedList = self.trajin.explicit_dict['names']
+        for sp in p_P.traj_T.explicit_species:
+#            print "  with particle indices", p_P.traj_T.ParticleIdList[sp]
+#            print "  and values", p_P.traj_T.DataList[sp][0].dtype.names
+            gotList = p_P.traj_T.DataList[sp][0].dtype.names
             for i in range(len(expectedList)):
                 self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for and explicit particle")
 
-#        print "The implicit species are", pCI.trajCI.implicit_species
-        expectedList = self.trajinCI.implicit_dict['names']
-        for sp in pCI.trajCI.implicit_species:
-#            print "  with indices", pCI.trajCI.ParticleIdList[sp]
-#            print "  and values", pCI.trajCI.DataList[sp][0].dtype.names
-            gotList = pCI.trajCI.DataList[sp][0].dtype.names
+#        print "The implicit species are", p_P.traj_T.implicit_species
+        expectedList = self.trajin.implicit_dict['names']
+        for sp in p_P.traj_T.implicit_species:
+#            print "  with indices", p_P.traj_T.ParticleIdList[sp]
+#            print "  and values", p_P.traj_T.DataList[sp][0].dtype.names
+            gotList = p_P.traj_T.DataList[sp][0].dtype.names
             for i in range(len(expectedList)):
                 self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an implicit particle")
 #                self.assertAlmostEqual(getparticle[ix], p_expected[isp][ix], msg="Particle is not in correct position")
@@ -279,56 +279,54 @@ class TestParticleTrajectory(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName
 
-        pCI = self.particleCI
+        p_P = self.particle_P
 
-        self.ctrlCI.n_timesteps = 13
-        dt = self.ctrlCI.dt
+        self.ctrl.n_timesteps = 13
+        dt = self.ctrl.dt
 
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
-        self.particleCI.trajCI = trajCI
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        self.particle_P.traj_T = traj_T
 
         # Create particles that are selected for trajectories.
-        pCI.create_from_list('trajelectrons', print_flag=True)
+        p_P.create_from_list('trajelectrons', print_flag=True)
 
         # Get the initial cell index of each particle.
-        pCI.compute_mesh_cell_indices()
+        p_P.compute_mesh_cell_indices()
 
-        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.n_timesteps, "timesteps"
-        for istep in xrange(self.ctrlCI.n_timesteps):
+        print "Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps"
+        for istep in xrange(self.ctrl.n_timesteps):
             # needs dt; doesn't need n_timesteps
 
             # Gather particle trajectory data
             # First point is the initial particle condition at istep = 0
-            if pCI.trajCI is not None:
-#                print 'pCI.trajCI.skip:', pCI.trajCI.skip
-                if istep % pCI.trajCI.skip == 0:
-                    pCI.record_trajectory_data(neg_E_field=self.neg_electric_field)
+            if p_P.traj_T is not None:
+#                print 'p_P.traj_T.skip:', p_P.traj_T.skip
+                if istep % p_P.traj_T.skip == 0:
+                    p_P.record_trajectory_data(neg_E_field=self.neg_electric_field)
 # test for neg_E_field = None:
-#                    pCI.record_trajectory_data()
+#                    p_P.record_trajectory_data()
 
             # Do the implicit species first
-            if len(pCI.implicit_species) != 0:
-                self.iterate_implicit_electrostatic_particles(dt, pCI.implicit_species)
+            if len(p_P.implicit_species) != 0:
+                self.iterate_implicit_electrostatic_particles(dt, p_P.implicit_species)
 
             # Then move the explicit species
-            if len(pCI.explicit_species) != 0:
-                pCI.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
+            if len(p_P.explicit_species) != 0:
+                p_P.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
 
         # Record the LAST points on the particle trajectories
-        if pCI.trajCI is not None:
-                pCI.record_trajectory_data(neg_E_field=self.neg_electric_field)
+        if p_P.traj_T is not None:
+                p_P.record_trajectory_data(neg_E_field=self.neg_electric_field)
 
         # Check the results
 
-#        print 'trajelectrons data x:', pCI.trajCI.DataList['trajelectrons'][0][:]['x']
-#        print 'trajelectrons data ux:', pCI.trajCI.DataList['trajelectrons'][0][:]['ux']
-#        print 'trajelectrons data Ex:', pCI.trajCI.DataList['trajelectrons'][0][:]['Ex']
+#        print 'trajelectrons data x:', p_P.traj_T.DataList['trajelectrons'][0][:]['x']
+#        print 'trajelectrons data ux:', p_P.traj_T.DataList['trajelectrons'][0][:]['ux']
+#        print 'trajelectrons data Ex:', p_P.traj_T.DataList['trajelectrons'][0][:]['Ex']
 
-        # The expected results from ParticleNonuniformE.ods
-        		
         # First electron
         xp1 = 0.77759792; yp1 = 0.78651935; zp1 = 0.0
         p1 = (xp1,yp1,)
@@ -340,36 +338,36 @@ class TestParticleTrajectory(unittest.TestCase):
         p_expected = (p1, p2)
 
         # Check the results
-        ncoords = pCI.particle_dimension # number of particle coordinates to check
+        ncoords = p_P.particle_dimension # number of particle coordinates to check
         isp = 0
-        for sp in pCI.species_names:
-#            print 'pCI.get_species_particle_count(sp)', pCI.get_species_particle_count(sp)
-            if pCI.get_species_particle_count(sp) == 0: continue
+        for sp in p_P.species_names:
+#            print 'p_P.get_species_particle_count(sp)', p_P.get_species_particle_count(sp)
+            if p_P.get_species_particle_count(sp) == 0: continue
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                getparticle = pCI.pseg_arr[sp].get(ip)
-#                print 'calculated = ', getparticle
-#                print 'expected = ', p_expected[ip]
+                getparticle = p_P.pseg_arr[sp].get(ip)
+                print 'calculated = ', getparticle
+                print 'expected = ', p_expected[ip]
                 for ic in range(ncoords):
-#                    print "result:", getparticle[ic]/p_expected[ip][ic]
+                    print "result:", getparticle[ic]/p_expected[ip][ic]
 # Note: for different field solver, may have to reduce the places:
                     self.assertAlmostEqual(getparticle[ic]/p_expected[ip][ic], 1.0, places=6, msg="Particle is not in correct position")
-#                    print "ic", ic, "is OK"
+                    print "ic", ic, "is OK"
             isp += 1
 
         # Plot the trajectory onto the particle mesh
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
-        mesh = pCI.pmeshCI.mesh
+        mesh = p_P.pmesh_M.mesh
         holdPlot = False # Set to True to stop the plot from disappearing.
-        pCI.trajCI.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         # Plot the trajectory in phase-space
 
         plotFlag = False
         if os.environ.get('DISPLAY') is not None and plotFlag is True:
-            pCI.trajCI.plot_trajectories() # Phase-space plot of trajectory
+            p_P.traj_T.plot_trajectories() # Phase-space plot of trajectory
 
         return
 #    def test_2_record_trajectory(self):ENDDEF
@@ -383,52 +381,52 @@ class TestParticleTrajectory(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName
 
-        pCI = self.particleCI
+        p_P = self.particle_P
 
-        self.ctrlCI.n_timesteps = 14 # This puts the particle out-of-bounds
-        dt = self.ctrlCI.dt
+        self.ctrl.n_timesteps = 14 # This puts the particle out-of-bounds
+        dt = self.ctrl.dt
 
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
-        self.particleCI.trajCI = trajCI
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        self.particle_P.traj_T = traj_T
 
         # Create particles that are selected for trajectories.
-        pCI.create_from_list('trajelectrons', print_flag=True)
+        p_P.create_from_list('trajelectrons', print_flag=True)
 
         # Get the initial cell index of each particle.
-        pCI.compute_mesh_cell_indices()
+        p_P.compute_mesh_cell_indices()
 
-        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.n_timesteps, "timesteps"
-        for istep in xrange(self.ctrlCI.n_timesteps):
+        print "Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps"
+        for istep in xrange(self.ctrl.n_timesteps):
             # needs dt; doesn't need n_timesteps
 
             # Gather particle trajectory data
             # First point is the initial particle condition at istep = 0
-            if pCI.trajCI is not None:
-#                print 'pCI.trajCI.skip:', pCI.trajCI.skip
-                if istep % pCI.trajCI.skip == 0:
-                    pCI.record_trajectory_data(neg_E_field=self.neg_electric_field)
+            if p_P.traj_T is not None:
+#                print 'p_P.traj_T.skip:', p_P.traj_T.skip
+                if istep % p_P.traj_T.skip == 0:
+                    p_P.record_trajectory_data(neg_E_field=self.neg_electric_field)
 
             # Do the implicit species first
-            if len(pCI.implicit_species) != 0:
-                self.iterate_implicit_electrostatic_particles(dt, pCI.implicit_species)
+            if len(p_P.implicit_species) != 0:
+                self.iterate_implicit_electrostatic_particles(dt, p_P.implicit_species)
 
             # Then move the explicit species
-            if len(pCI.explicit_species) != 0:
-                pCI.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
+            if len(p_P.explicit_species) != 0:
+                p_P.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
 
         # Record the LAST points on the particle trajectory
-        if pCI.trajCI is not None:
-                pCI.record_trajectory_data(neg_E_field=self.neg_electric_field)
+        if p_P.traj_T is not None:
+                p_P.record_trajectory_data(neg_E_field=self.neg_electric_field)
 
         # Check the results
 
-#        print 'trajelectron 0 data x:', pCI.trajCI.DataList['trajelectrons'][0][:]['x']
-#        print 'trajelectron 1 data x:', pCI.trajCI.DataList['trajelectrons'][1][:]['x']
-#        print 'trajelectron 0 data ux:', pCI.trajCI.DataList['trajelectrons'][0][:]['ux']
-#        print 'trajelectron 1 data Ex:', pCI.trajCI.DataList['trajelectrons'][0][:]['Ex']
+#        print 'trajelectron 0 data x:', p_P.traj_T.DataList['trajelectrons'][0][:]['x']
+#        print 'trajelectron 1 data x:', p_P.traj_T.DataList['trajelectrons'][1][:]['x']
+#        print 'trajelectron 0 data ux:', p_P.traj_T.DataList['trajelectrons'][0][:]['ux']
+#        print 'trajelectron 1 data Ex:', p_P.traj_T.DataList['trajelectrons'][0][:]['Ex']
 
         # The expected results from ParticleNonuniformE.ods
         		
@@ -443,14 +441,14 @@ class TestParticleTrajectory(unittest.TestCase):
         p_expected = (p1, p2)
 
         # Check the results
-        ncoords = pCI.particle_dimension # number of particle coordinates to check
+        ncoords = p_P.particle_dimension # number of particle coordinates to check
         isp = 0
-        for sp in pCI.species_names:
-            if pCI.get_species_particle_count(sp) == 0: continue
+        for sp in p_P.species_names:
+            if p_P.get_species_particle_count(sp) == 0: continue
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                getparticle = pCI.pseg_arr[sp].get(ip)
+                getparticle = p_P.pseg_arr[sp].get(ip)
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
                 for ic in range(ncoords):
@@ -463,9 +461,9 @@ class TestParticleTrajectory(unittest.TestCase):
         # Plot the trajectory onto the particle mesh
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
-        mesh = pCI.pmeshCI.mesh
+        mesh = p_P.pmesh_M.mesh
         holdPlot = True # Set to True to stop the plot from disappearing.
-        pCI.trajCI.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         # Plot the trajectory in phase-space
 
@@ -474,7 +472,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         plotFlag = False
         if os.environ.get('DISPLAY') is not None and plotFlag is True:
-            pCI.trajCI.plot_trajectories()
+            p_P.traj_T.plot_trajectories()
 
         return
 #    def test_3_out_of_bounds(self):ENDDEF

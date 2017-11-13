@@ -123,11 +123,23 @@ class Trajectory_C(object):
         return
 #    def __init__(self, trajinCI, ctrlCI, explicit_species, implicit_species, neutral_species):ENDDEF
 
-    def create_trajectory(self, species_name, dynamics_type):
+    def create_trajectory(self, species_name, pindex, dynamics_type):
         """Add storage for another particle trajectory.
+
+           :param species_name: Name of the species that the marked
+                                particle belongs to.
+           :param pindex: Index of the marked particle in the particle
+                          storage array.
+
+
         """
 
-        # Add a numpy array for the data
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
+        self.ParticleIdList[species_name].append(pindex)
+        self.TrajectoryLength[species_name].append(0) # Set the count to 0
+
+        # Add a numpy array for the trajectory data
         if dynamics_type == 'explicit':
             self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.explicit_dict))
         elif dynamics_type == 'implicit':
@@ -135,8 +147,8 @@ class Trajectory_C(object):
         elif dynamics_type == 'neutral':
             self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.neutral_dict))
         else:
-            error_msg = "Trajectory_C:create_trajectory: dynamics_type %s is unknown" % dynamics_type
-            sys.exit(error_msg)
+            errorMsg = "(DnT ERROR) %s\tdynamics_type %s is unknown for species %s" % (fncName, dynamics_type, species_name)
+            raise RuntimeError(errorMsg)
 
         return
 #    def create_trajectory(self, species_name, dynamics_type):ENDDEF
@@ -145,7 +157,7 @@ class Trajectory_C(object):
     def plot_trajectories(self):
         """Plot the nth trajectory
         """
-        import matplotlib.pyplot as mplot_M
+        import matplotlib.pyplot as mplot_m
 
         tmin = 0.0
         tmax = tmin + (self.npoints-1)*self.data_interval
@@ -165,27 +177,27 @@ class Trajectory_C(object):
                 data_arr = self.DataList[sp][it]
                 # Plots vs. time
                 for comp in comps:
-                    mplot_M.plot(tvals, data_arr[comp])
-                    mplot_M.title("%s: Traj# %d Particle id %d" % (sp, it, ip))
-                    mplot_M.xlabel('time (s)')
-                    mplot_M.ylabel(comp)
-                    mplot_M.grid(True)
-                    mplot_M.show()
+                    mplot_m.plot(tvals, data_arr[comp])
+                    mplot_m.title("%s: Traj# %d Particle id %d" % (sp, it, ip))
+                    mplot_m.xlabel('time (s)')
+                    mplot_m.ylabel(comp)
+                    mplot_m.grid(True)
+                    mplot_m.show()
                 # Phase-space plots
                 # x vs. y
                 if 'x' in comps:
                     if 'y' in comps:
-                        mplot_M.plot(data_arr['x'], data_arr['y'])
-                        mplot_M.xlabel('x')
-                        mplot_M.ylabel('y')
-                        mplot_M.grid(True)
-                        mplot_M.show()
+                        mplot_m.plot(data_arr['x'], data_arr['y'])
+                        mplot_m.xlabel('x')
+                        mplot_m.ylabel('y')
+                        mplot_m.grid(True)
+                        mplot_m.show()
                     if 'ux' in comps:
-                        mplot_M.plot(data_arr['x'], data_arr['ux'])
-                        mplot_M.xlabel('x')
-                        mplot_M.ylabel('ux')
-                        mplot_M.grid(True)
-                        mplot_M.show()
+                        mplot_m.plot(data_arr['x'], data_arr['ux'])
+                        mplot_m.xlabel('x')
+                        mplot_m.ylabel('ux')
+                        mplot_m.grid(True)
+                        mplot_m.show()
                 
         return
 #    def plot_trajectories(self):ENDDEF

@@ -6,16 +6,16 @@ __author__ = 'Copyright (C) 2017 L. D. Hughes'
 
 import sys
 import os
-import numpy as np_M
-import importlib as im_M
+import numpy as np_m
+import importlib as im_m
 import unittest
 
-import dolfin as df_M
+import dolfin as df_m
 
 from DT_Module import DTcontrol_C
 
 from Dolfin_Module import *
-from UserMesh_FE_XYZ_Module import *
+from UserMesh_y_Fields_FE_XYZ_Module import *
 
 from SegmentedArrayPair_Module import SegmentedArray_C
 from Particle_Module import *
@@ -33,11 +33,11 @@ class TestParticleGeneration(unittest.TestCase):
         # Initialization code common to the tests go here...
 
         # Common particle inputs
-        self.pinCI = ParticleInput_C()
+        self.pin = ParticleInput_C()
 
-        self.pinCI.precision = np_M.float64
-        self.pinCI.particle_integration_loop = 'loop-on-particles'
-        self.pinCI.force_precision = np_M.float64
+        self.pin.precision = np_m.float64
+        self.pin.particle_integration_loop = 'loop-on-particles'
+        self.pin.force_precision = np_m.float64
 
         return
 
@@ -57,10 +57,10 @@ class TestParticleGeneration(unittest.TestCase):
         ctrlCI.dt = 1.0e-6
         ctrlCI.n_timesteps = 1
 
-        pinCI = self.pinCI
+        pin = self.pin
 
-        pinCI.position_coordinates = ['x',] # determines the particle-storage dimensions
-        pinCI.force_components = ['x',]
+        pin.position_coordinates = ['x',] # determines the particle-storage dimensions
+        pin.force_components = ['x',]
 
         ### Particle input
 
@@ -71,34 +71,34 @@ class TestParticleGeneration(unittest.TestCase):
         electronsCI = ParticleSpecies_C('electrons', charge, mass, dynamics)
 
         # Add the electrons to particle input
-        pinCI.particle_species = (electronsCI,
+        pin.particle_species = (electronsCI,
                                  )
 
         ## Make the particle storage array for all species.
-        particleCI = Particle_C(pinCI, print_flag=True)
+        particle_P = Particle_C(pin, print_flag=True)
 
         ## Give the name of the .py file containing special particle data (lists of
         # particles, boundary conditions, source regions, etc.)
         userParticleModule = "UserParticles_1D"
 
         # Import this module
-        UPrt_M = im_M.import_module(userParticleModule)
+        UPrt_M = im_m.import_module(userParticleModule)
 
-        particleCI.user_particle_module = userParticleModule
-        particleCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+        particle_P.user_particle_module = userParticleModule
+        particle_P.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
         
 
         ### Mesh input for a 1D mesh
 
         # Specify the mesh parameters
         umi1DCI = UserMeshInput_C()
-        umi1DCI.pmin = df_M.Point(-10.0)
-        umi1DCI.pmax = df_M.Point(10.0)
+        umi1DCI.pmin = df_m.Point(-10.0)
+        umi1DCI.pmax = df_m.Point(10.0)
         umi1DCI.cells_on_side = (20,) # Need the comma to indicate a tuple
 
         ### Create the 1D particle mesh and add to the Particle_C object
         pmesh1DCI = UserMesh_C(umi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
-        particleCI.pmeshCI = pmesh1DCI
+        particle_P.pmeshCI = pmesh1DCI
 
         ### Input for particle sources
         #   For each source:
@@ -108,7 +108,7 @@ class TestParticleGeneration(unittest.TestCase):
 
 
         # Create numpy storage needed below
-#        driftVelocity = np_M.empty(particleCI.particle_dimension, dtype=particleCI.precision)
+#        driftVelocity = np_m.empty(particle_P.particle_dimension, dtype=particle_P.precision)
         ## 1. Hot electron source on left side of the mesh
 
         # a. Provide the species name and physical parameters
@@ -116,9 +116,9 @@ class TestParticleGeneration(unittest.TestCase):
         speciesName = 'electrons'
 
         # Check that this species has been defined
-        if speciesName in particleCI.species_names:
-            charge = particleCI.charge[speciesName]
-            mass = particleCI.mass[speciesName]
+        if speciesName in particle_P.species_names:
+            charge = particle_P.charge[speciesName]
+            mass = particle_P.mass[speciesName]
         else:
             print "The species", speciesName, "has not been defined"
             sys.exit()
@@ -139,14 +139,16 @@ class TestParticleGeneration(unittest.TestCase):
         # Compute a value for thermalSpeed from the temperature in eV
         temperature_eV = 2.0
         temp_joule = temperature_eV*MyPlasmaUnits_C.elem_charge
-        thermalSpeed = np_M.sqrt(2.0*temp_joule/mass)
+        thermalSpeed = np_m.sqrt(2.0*temp_joule/mass)
 
+        velocity_coordinate_system = 'x_y_z' # This sets the interpretation of the
+                                             # following values
         # Set a drift velocity
-        vdrift_x = 1.0
-        vdrift_y = 2.0
-        vdrift_z = 3.0
+        vdrift_1 = 1.0
+        vdrift_2 = 2.0
+        vdrift_3 = 3.0
 
-        driftVelocity = (vdrift_x, vdrift_y, vdrift_z)
+        driftVelocity = (vdrift_1, vdrift_2, vdrift_3)
 
         # Set desired particles-per-cell
         numberPerCell = 1
@@ -156,12 +158,13 @@ class TestParticleGeneration(unittest.TestCase):
                              'source_distribution_type': sourceDistributionType,
                              'number_density': numberDensity,
                              'thermal_speed': thermalSpeed,
-                             'timestep_interval': timeStepInterval,
+                             'velocity_coordinate_system': velocity_coordinate_system,
                              'drift_velocity': driftVelocity,
+                             'timestep_interval': timeStepInterval,
                              'number_per_cell': numberPerCell}
 
         # b. Name the particle-creation function.
-        maxwellianGenerator = particleCI.create_maxwellian_particles
+        maxwellianGenerator = particle_P.create_maxwellian_particles
 
         # c. Source-region geometry
         xmin = -9.0
@@ -176,9 +179,9 @@ class TestParticleGeneration(unittest.TestCase):
         speciesName = 'electrons'
 
         # Check that this species has been defined above
-        if speciesName in particleCI.species_names:
-            charge = particleCI.charge[speciesName]
-            mass = particleCI.mass[speciesName]
+        if speciesName in particle_P.species_names:
+            charge = particle_P.charge[speciesName]
+            mass = particle_P.mass[speciesName]
         else:
             print "The species", speciesName, "has not been defined"
             sys.exit()
@@ -200,14 +203,16 @@ class TestParticleGeneration(unittest.TestCase):
         # Compute a value for thermalSpeed
         temperature_eV = 2.0
         temp_joule = temperature_eV*MyPlasmaUnits_C.elem_charge
-        thermalSpeed = np_M.sqrt(2.0*temp_joule/mass)
+        thermalSpeed = np_m.sqrt(2.0*temp_joule/mass)
 
+        velocity_coordinate_system = 'x_y_z' # This sets the interpretation of the
+                                             # following values
         # Set a drift velocity
-        vdrift_x = 0.5
-        vdrift_y = 1.5
-        vdrift_z = 2.5
+        vdrift_1 = 0.5
+        vdrift_2 = 1.5
+        vdrift_3 = 2.5
 
-        driftVelocity = (vdrift_x, vdrift_y, vdrift_z)
+        driftVelocity = (vdrift_1, vdrift_2, vdrift_3)
 
         # Set desired particles-per-cell
         numberPerCell = 10
@@ -217,6 +222,7 @@ class TestParticleGeneration(unittest.TestCase):
                                     'source_distribution_type': sourceDistributionType,
                                     'number_density': numberDensity,
                                     'thermal_speed': thermalSpeed,
+                                    'velocity_coordinate_system': velocity_coordinate_system,
                                     'drift_velocity': driftVelocity,
                                     'timestep_interval': timeStepInterval,
                                     'number_per_cell': numberPerCell}
@@ -240,7 +246,7 @@ class TestParticleGeneration(unittest.TestCase):
                               'background_electron_source': (backgroundElectronParams, maxwellianGenerator, wholeMesh),
                               }
 
-        particleCI.particle_source_dict = particleSourceDict
+        particle_P.particle_source_dict = particleSourceDict
 
         ### Create input for a particle trajectory object
 
@@ -248,14 +254,14 @@ class TestParticleGeneration(unittest.TestCase):
         self.trajinCI = TrajectoryInput_C()
 
         self.trajinCI.maxpoints = None # Set to None to get every point
-        self.trajinCI.explicit_dict = {'names': ['x', 'ux',], 'formats': [np_M.float32]*2}
+        self.trajinCI.explicit_dict = {'names': ['x', 'ux',], 'formats': [np_m.float32]*2}
 
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        pCI = particleCI
-        trajCI = Trajectory_C(self.trajinCI, ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
-        particleCI.trajCI = trajCI
+        p_P = particle_P
+        trajCI = Trajectory_C(self.trajinCI, ctrlCI, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        particle_P.trajCI = trajCI
 
         ## Invoke the source functions and write out the particles
         
@@ -273,15 +279,15 @@ class TestParticleGeneration(unittest.TestCase):
         ctrlCI.particle_output_attributes = ('species_index', 'x', 'ux', 'weight')
 
         # Check these values
-        particleCI.check_particle_output_parameters(ctrlCI)
+        particle_P.check_particle_output_parameters(ctrlCI)
 
-        particleCI.add_more_particles(ctrlCI, print_flag=True)        
+        particle_P.add_more_particles(ctrlCI, print_flag=True)        
 
         # Dump the particle data to a file
-        particleCI.initialize_particle_output_file(ctrlCI)
+        particle_P.initialize_particle_output_file(ctrlCI)
 
         # Write the particle attributes
-        particleCI.write_particle_attributes(ctrlCI)
+        particle_P.write_particle_attributes(ctrlCI)
 
         return
 #    def test_1D_particle_source_region(self):ENDDEF
@@ -294,13 +300,13 @@ class TestParticleGeneration(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName, '('+__file__+')'
 
-        from UserMesh_FE_XYZ_Module import UserMeshInput_C
+#        from UserMesh_y_Fields_FE_XYZ_Module import UserMeshInput_C
 
         umi2DCI = UserMeshInput_C()
 
-# Change these to TUPLES instead of Points (avoid df_M at toplevel)
-        umi2DCI.pmin = df_M.Point(-10.0, -10.0)
-        umi2DCI.pmax = df_M.Point(10.0, 10.0)
+# Change these to TUPLES instead of Points (avoid df_m at toplevel)
+        umi2DCI.pmin = df_m.Point(-10.0, -10.0)
+        umi2DCI.pmax = df_m.Point(10.0, 10.0)
         umi2DCI.cells_on_side = (4, 2)
 
         ## Boundary conditions for the particles on this mesh

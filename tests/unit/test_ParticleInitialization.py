@@ -17,7 +17,7 @@ from DT_Module import DTcontrol_C
 
 from Dolfin_Module import *
 from Particle_Module import *
-from UserMesh_FE_XYZ_Module import *
+from UserMesh_y_Fields_FE_XYZ_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
@@ -50,32 +50,6 @@ class TestParticleInitialization(unittest.TestCase):
         # are specified or computed in a separate file (see
         # user_particle_module below) giving the distribution
         # functions, and can vary from particle to particle.
-
-#         pinCI.particle_species = (('plasmaelectrons',
-#                              {'initial_distribution_type' : 'listed',
-#                               'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
-#                               'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
-#                               'dynamics' : 'implicit',
-# #                              'number_per_cell' : 12,
-#                               }
-#                              ),
-#                             ('Hplus', 
-#                              {'initial_distribution_type' : 'listed',
-#                               'charge' : 1.0*MyPlasmaUnits_C.elem_charge,
-#                               'mass' : 1.0*MyPlasmaUnits_C.AMU,
-#                               'dynamics' : 'implicit',
-# #                              'number_per_cell' : 6,
-#                               }
-#                              ),
-#                             ('He', 
-#                              {'initial_distribution_type' : None,
-#                               'charge' : 0.0,
-#                               'mass' : 4.0*MyPlasmaUnits_C.AMU,
-#                               'dynamics' : 'implicit',
-# #                              'number_per_cell' : 1,
-#                               }
-#                              ),
-#                             )
 
         speciesName = 'plasma_electrons'
         charge = -1.0*MyPlasmaUnits_C.elem_charge
@@ -273,7 +247,7 @@ class TestParticleInitialization(unittest.TestCase):
 
         ## Create a 2D particle mesh, since we're going to initialize particles
         ## on a region of a mesh.
-        # UserMesh_FE_XYZ_Module can make the mesh from the above input.
+        # UserMesh_y_Fields_FE_XYZ_Module can make the mesh from the above input.
         plotFlag = False
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": mesh"
         pmesh2d_UM = UserMesh_C(mi2d_UMI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
@@ -311,11 +285,13 @@ class TestParticleInitialization(unittest.TestCase):
 
         # Set a drift velocity
         # Set a drift velocity
-        vdrift_x = 1.0
-        vdrift_y = 2.0
-        vdrift_z = 3.0
+        vdrift_1 = 1.0
+        vdrift_2 = 2.0
+        vdrift_3 = 3.0
 
-        driftVelocity = (vdrift_x, vdrift_y, vdrift_z)
+        velocity_coordinate_system = 'x_y_z' # This sets the interpretation of the
+                                             # following values
+        driftVelocity = (vdrift_1, vdrift_2, vdrift_3)
 #        driftVelocity[:] = (1.0,)
 
         # Set desired particles-per-cell
@@ -326,6 +302,7 @@ class TestParticleInitialization(unittest.TestCase):
                              'initial_distribution_type': initialDistributionType,
                              'number_density': numberDensity,
                              'thermal_speed': thermalSpeed,
+                             'velocity_coordinate_system': velocity_coordinate_system,
                              'drift_velocity': driftVelocity,
                              'number_per_cell': numberPerCell}
 
@@ -381,7 +358,8 @@ class TestParticleInitialization(unittest.TestCase):
                 ipRegion_RR = ipTuple[2]
                 # Invoke the creation function
                 time = 0.0
-                ipFunc(time, ipRegion_RR, ipParams)
+                neg_E_field = None
+                ipFunc(time, ipRegion_RR, ipParams, neg_E_field)
 
                 # Check the number of stored particles for each species
 

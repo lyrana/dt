@@ -8,7 +8,7 @@ import sys
 import os
 import math
 import unittest
-import numpy as np_M
+import numpy as np_m
 
 import dolfin as df_m
 
@@ -18,7 +18,7 @@ from Dolfin_Module import Field_C
 from Particle_Module import *
 
 # Here's the user's mesh definition for the 2D test
-from UserMesh_FE_XYZ_Module import *
+from UserMesh_y_Fields_FE_XYZ_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
@@ -44,7 +44,7 @@ class TestChargeDensity(unittest.TestCase):
            No segmented-array particle storage is used for the particles, just
            one numpy array is used, with a particle dtype.
 
-           See test_ChargeDensity.ods:Test1 for calculated values of the density.
+           See test_ChargeDensity.ods:test_1 for calculated values of the density.
 
         """
 
@@ -86,15 +86,15 @@ class TestChargeDensity(unittest.TestCase):
 
         # Create the DT particle record type
         pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index']
-        pvartypes = [np_M.float64]*7
-        pvartypes.append(np_M.int32) # bitflags
-        pvartypes.append(np_M.int32) # cell_index
+        pvartypes = [np_m.float64]*7
+        pvartypes.append(np_m.int32) # bitflags
+        pvartypes.append(np_m.int32) # cell_index
 
         p_dtype = {'names' : pvars, 'formats': pvartypes}
 
         # Put the particles into an ndarray with the above type
         nparticles = 3
-        particles = np_M.empty(nparticles, dtype=p_dtype)
+        particles = np_m.empty(nparticles, dtype=p_dtype)
         particles[0] = p0
         particles[1] = p1
         particles[2] = p2
@@ -107,15 +107,15 @@ class TestChargeDensity(unittest.TestCase):
         numberDensityElementType = 'Lagrange'
         numberDensityElementDegree = 1
         numberDensityFieldType = 'scalar'
-        numberDensity_F = Field_C(meshCI=mesh1d_M,
-                                 element_type=numberDensityElementType,
-                                 element_degree=numberDensityElementDegree,
-                                 field_type=numberDensityFieldType)
+        numberDensity_F = Field_C(mesh1d_M,
+                                  element_type=numberDensityElementType,
+                                  element_degree=numberDensityElementDegree,
+                                  field_type=numberDensityFieldType)
 
 #        print "size of numberDensity:", numberDensity.function.vector().size()
 
         # The expected number-density values are put into a numpy array
-        numberDensityExpected = np_M.empty(numberDensity_F.function.vector().size(), dtype=np_M.float64)
+        numberDensityExpected = np_m.empty(numberDensity_F.function.vector().size(), dtype=np_m.float64)
 
         # Note that these are in the vertex numbering order, not DoF order. We will
         # need to compare numberDensityExpected[ivert] with numberDensityCalc[idof],
@@ -171,7 +171,7 @@ class TestChargeDensity(unittest.TestCase):
            No segmented-array particle storage is used for the particles, just
            one numpy array is used, with a particle dtype.
 
-           See test_ChargeDensity.ods:Test2 for calculated values of the
+           See test_ChargeDensity.ods:test_2 for calculated values of the
            density.
 
         """
@@ -224,15 +224,15 @@ class TestChargeDensity(unittest.TestCase):
 
         # Create the DT particle record type
         pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index']
-        pvartypes = [np_M.float64]*7
-        pvartypes.append(np_M.int32) # bitflags
-        pvartypes.append(np_M.int32) # cell_index
+        pvartypes = [np_m.float64]*7
+        pvartypes.append(np_m.int32) # bitflags
+        pvartypes.append(np_m.int32) # cell_index
 
         p_dtype = {'names' : pvars, 'formats': pvartypes}
 
         # Put the particles into an ndarray with the above type
         nparticles = 3
-        particles = np_M.empty(nparticles, dtype=p_dtype)
+        particles = np_m.empty(nparticles, dtype=p_dtype)
         particles[0] = p0
         particles[1] = p1
         particles[2] = p2
@@ -244,15 +244,15 @@ class TestChargeDensity(unittest.TestCase):
         numberDensityElementType = 'Lagrange'
         numberDensityElementDegree = 1
         numberDensityFieldType = 'scalar'
-        numberDensity_F = Field_C(meshCI=pmesh2d_M,
-                                 element_type=numberDensityElementType,
-                                 element_degree=numberDensityElementDegree,
-                                 field_type=numberDensityFieldType)
+        numberDensity_F = Field_C(pmesh2d_M,
+                                  element_type=numberDensityElementType,
+                                  element_degree=numberDensityElementDegree,
+                                  field_type=numberDensityFieldType)
 
 #        print "size of numberDensity:", numberDensity_F.function.vector().size()
 
-        # The expected number-density values from test_ChargeDensity.ods:Test2
-        numberDensityExpected = np_M.empty(numberDensity_F.function.vector().size(), dtype=np_M.float64)
+        # The expected number-density values from test_ChargeDensity.ods:test_2
+        numberDensityExpected = np_m.empty(numberDensity_F.function.vector().size(), dtype=np_m.float64)
 
         # Note that these are in the vertex numbering order, not DoF order. We will
         # need to compare numberDensityExpected[ivert] with numberDensityCalc[idof],
@@ -292,7 +292,7 @@ class TestChargeDensity(unittest.TestCase):
         df_m.plot(numberDensity_F.function, title=plotTitle)
         df_m.interactive()
 
-        ## Check the values vs. those computed in test_ChargeDensity.ods:Test2
+        ## Check the values vs. those computed in test_ChargeDensity.ods:test_2
 
         # Convert vertex indices to DoF indices.  For CG1 elements, there are
         # the same number of vertices as DoFs.
@@ -323,7 +323,7 @@ class TestChargeDensity(unittest.TestCase):
            Two species data are defined and segmented-array particle storage is
            used.
 
-           See test_ChargeDensity.ods:Test3 for calculated values of the
+           See test_ChargeDensity.ods:test_3 for calculated values of the
            charge-density.
 
         """
@@ -350,14 +350,14 @@ class TestChargeDensity(unittest.TestCase):
         ########## Kinetic particles ##########
 
         # Create an instance of the DTparticleInput class
-        pin_I = self.pin_I = ParticleInput_C()
+        pin = self.pin = ParticleInput_C()
         # Set up particle variables
-        pin_I.precision = np_M.float64
+        pin.precision = np_m.float64
 
-        pin_I.particle_integration_loop = 'loop-on-particles'
-        pin_I.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
-        pin_I.force_components = ['x', 'y', 'z']
-        pin_I.force_precision = np_M.float64
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.force_components = ['x', 'y', 'z']
+        pin.force_precision = np_m.float64
 
         ### Particle species input
 
@@ -378,13 +378,13 @@ class TestChargeDensity(unittest.TestCase):
         Hplus_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add these two species to particle input
-        pin_I.particle_species = (plasmaElectron_S, Hplus_S,)
+        pin.particle_species = (plasmaElectron_S, Hplus_S,)
 
-        # Make the particle object from pin_I...
-        particles_P = Particle_C(pin_I, print_flag=False)
+        # Make the particle object from pin...
+        particles_P = Particle_C(pin, print_flag=False)
 
         # ...and attach the particle mesh
-        particles_P.pmeshCI = mesh2d_M
+        particles_P.pmesh_M = mesh2d_M
 
         ### Create discrete particles
 
@@ -425,15 +425,15 @@ class TestChargeDensity(unittest.TestCase):
 
         # # Create the DT particle record type
         # pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index']
-        # pvartypes = [np_M.float64]*7
-        # pvartypes.append(np_M.int32) # bitflags
-        # pvartypes.append(np_M.int32) # cell_index
+        # pvartypes = [np_m.float64]*7
+        # pvartypes.append(np_m.int32) # bitflags
+        # pvartypes.append(np_m.int32) # cell_index
 
         # p_dtype = {'names' : pvars, 'formats': pvartypes}
 
         # # Put the particles into an ndarray with the above type
         # nparticles = 3
-        # particles = np_M.empty(nparticles, dtype=p_dtype)
+        # particles = np_m.empty(nparticles, dtype=p_dtype)
         # particles[0] = p0
         # particles[1] = p1
         # particles[2] = p2
@@ -447,22 +447,22 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arrSM = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arrSM.put(particle_list[i])
+            p, pindex = pseg_arr.put(particle_list[i])
 
         # Ions
         species_name = 'H_plus'
 
         number_of_macroparticles = 3
 
-        pseg_arrSM = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arrSM.put(particle_list[i])
+            p, pindex = pseg_arr.put(particle_list[i])
 
 
         ########## Source for the electric field ##########
@@ -476,7 +476,7 @@ class TestChargeDensity(unittest.TestCase):
         numberDensityFieldType = 'scalar'
 
         for s in particles_P.species_names:
-            particles_P.number_density_dict[s] = Field_C(meshCI=particles_P.pmeshCI,
+            particles_P.number_density_dict[s] = Field_C(particles_P.pmesh_M,
                                                          element_type=numberDensityElementType,
                                                          element_degree=numberDensityElementDegree,
                                                          field_type=numberDensityFieldType)
@@ -485,10 +485,10 @@ class TestChargeDensity(unittest.TestCase):
             particles_P.accumulate_number_density(s)
 
         ## Create a charge-density array on the field mesh ##
-        chargeDensity_F = Field_C(meshCI=mesh2d_M,
-                                element_type=numberDensityElementType,
-                                element_degree=numberDensityElementDegree,
-                                field_type=numberDensityFieldType)
+        chargeDensity_F = Field_C(mesh2d_M,
+                                  element_type=numberDensityElementType,
+                                  element_degree=numberDensityElementDegree,
+                                  field_type=numberDensityFieldType)
 
         ## Compute the charge-density
         particles_P.accumulate_charge_density_from_particles(chargeDensity_F)
@@ -496,11 +496,11 @@ class TestChargeDensity(unittest.TestCase):
         chargeDensityCalc = chargeDensity_F.function.vector().array()
 #        print fncName, numberDensityCalc
 
-        # The expected number-density values from test_ChargeDensity.ods:Test3
+        # The expected number-density values from test_ChargeDensity.ods:test_3
         # Note that these are in the vertex numbering order, not DoF order. We will
         # need to compare numberDensityExpected[ivert] with numberDensityCalc[idof],
         # where idof is the DoF number corresponding to ivert (see conversion below).
-        chargeDensityExpected = np_M.empty(chargeDensity_F.function.vector().size(), dtype=np_M.float64)
+        chargeDensityExpected = np_m.empty(chargeDensity_F.function.vector().size(), dtype=np_m.float64)
 
         # These are in vertex, not DOF order
         chargeDensityExpected[0] = 0.0
@@ -532,7 +532,7 @@ class TestChargeDensity(unittest.TestCase):
         df_m.plot(chargeDensity_F.function, title=plotTitle)
         df_m.interactive()
 
-        ## Check the values vs. those computed in test_ChargeDensity.ods:Test3
+        ## Check the values vs. those computed in test_ChargeDensity.ods:test_3
 
         # Convert vertex indices to DoF indices.  For CG1 elements, there are
         # the same number of vertices as DoFs.
@@ -562,7 +562,7 @@ class TestChargeDensity(unittest.TestCase):
            Two species data are defined and segmented-array particle storage is
            used.
 
-           See test_ChargeDensity.ods:Test3 for calculated values of the
+           See test_FieldSolve.ods:test_4 for calculated values of the
            charge-density.
 
         """
@@ -574,10 +574,10 @@ class TestChargeDensity(unittest.TestCase):
         ########## Numerical Mesh ##########
 
         # Describe a 1D mesh over [-0.5 ,0.5] with 2 cells.
-        mi1d_I = UserMeshInput_C()
-        mi1d_I.pmin = df_m.Point(-0.5)
-        mi1d_I.pmax = df_m.Point(0.5)
-        mi1d_I.cells_on_side = (2,)
+        umi1D = UserMeshInput_C()
+        umi1D.pmin = df_m.Point(-0.5)
+        umi1D.pmax = df_m.Point(0.5)
+        umi1D.cells_on_side = (2,)
 
         # Name the Dirichlet boundaries and assign integers to them.
         # These are the boundary-name -> int pairs used to mark mesh
@@ -588,24 +588,24 @@ class TestChargeDensity(unittest.TestCase):
                              'xmax': xmaxIndx,
                              }
 
-        mi1d_I.field_boundary_dict = fieldBoundaryDict
+        umi1D.field_boundary_dict = fieldBoundaryDict
 
         # UserMesh_FE_XYZ_Module can make the mesh from the above input.
         plotFlag = False
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        mesh1d_M = UserMesh_C(mi1d_I, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
+        mesh1d_M = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
 
         ########## Kinetic particles ##########
 
         # Create an instance of the DTparticleInput class
-        pin_I = self.pin_I = ParticleInput_C()
+        pin = self.pin = ParticleInput_C()
         # Set up particle variables
-        pin_I.precision = np_M.float64
+        pin.precision = np_m.float64
 
-        pin_I.particle_integration_loop = 'loop-on-particles'
-        pin_I.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
-        pin_I.force_components = ['x', 'y', 'z']
-        pin_I.force_precision = np_M.float64
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.force_components = ['x', 'y', 'z']
+        pin.force_precision = np_m.float64
 
         ### Particle species input
 
@@ -619,14 +619,14 @@ class TestChargeDensity(unittest.TestCase):
         dynamics = 'explicit'
         plasmaElectron_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
-        # Add these two species to particle input
-        pin_I.particle_species = (plasmaElectron_S,)
+        # Add this species to particle input
+        pin.particle_species = (plasmaElectron_S,)
 
-        # Make the particle object from pin_I...
-        particles_P = Particle_C(pin_I, print_flag=False)
+        # Make the particle object from pin...
+        particles_P = Particle_C(pin, print_flag=False)
 
         # ...and attach the particle mesh.
-        particles_P.pmeshCI = mesh1d_M
+        particles_P.pmesh_M = mesh1d_M
 
         ### Create discrete particles
 
@@ -642,7 +642,7 @@ class TestChargeDensity(unittest.TestCase):
         # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index']
         p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0,bitflags0,cell_index0)
 
-        particle_list = (p0, )
+        particle_list = (p0,)
 
         ### Put these particles into storage
 
@@ -651,11 +651,11 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arrSM = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arrSM.put(particle_list[i])
+            p, pindex = pseg_arr.put(particle_list[i])
 
         ########## Source for the electric field ##########
 
@@ -668,16 +668,16 @@ class TestChargeDensity(unittest.TestCase):
         numberDensityFieldType = 'scalar'
 
         for s in particles_P.species_names:
-            particles_P.number_density_dict[s] = Field_C(meshCI=particles_P.pmeshCI,
+            particles_P.number_density_dict[s] = Field_C(particles_P.pmesh_M,
                                                          element_type=numberDensityElementType,
                                                          element_degree=numberDensityElementDegree,
                                                          field_type=numberDensityFieldType)
 
         ## Create a charge-density vector ##
-        chargeDensity_F = Field_C(meshCI=mesh1d_M,
-                                element_type=numberDensityElementType,
-                                element_degree=numberDensityElementDegree,
-                                field_type=numberDensityFieldType)
+        chargeDensity_F = Field_C(mesh1d_M,
+                                  element_type=numberDensityElementType,
+                                  element_degree=numberDensityElementDegree,
+                                  field_type=numberDensityFieldType)
 
         ## Accumulate number-density from kinetic particles of this species
         ## and sum charge-density.
@@ -689,11 +689,11 @@ class TestChargeDensity(unittest.TestCase):
         chargeDensityCalc = chargeDensity_F.function.vector().array()
 #        print fncName, numberDensityCalc
 
-        # The expected charge-density values from test_ChargeDensity.ods:Test3
+        # The expected charge-density values from test_ChargeDensity.ods:test_4
         # Note that these are in the vertex numbering order, not DoF order. We will
         # need to compare numberDensityExpected[ivert] with numberDensityCalc[idof],
         # where idof is the DoF number corresponding to ivert (see conversion below).
-        chargeDensityExpected = np_M.empty(chargeDensity_F.function.vector().size(), dtype=np_M.float64)
+        chargeDensityExpected = np_m.empty(chargeDensity_F.function.vector().size(), dtype=np_m.float64)
 
         # These are in vertex, not DOF order
         chargeDensityExpected[0] = 0.0
@@ -716,7 +716,7 @@ class TestChargeDensity(unittest.TestCase):
         # the same number of vertices as DoFs.
         v2d=df_m.vertex_to_dof_map(functionSpace)
 
-        ## Check the charge source-vector values vs. those computed in test_ChargeDensity.ods:Test3
+        ## Check the charge source-vector values vs. those computed in test_ChargeDensity.ods:test_4
         for ivert in range(len(chargeDensityExpected)):
             idof = v2d[ivert]
 #            print "vertex", ivert, "is DoF index", idof
@@ -726,22 +726,222 @@ class TestChargeDensity(unittest.TestCase):
 
 
         # Write the mesh to a file:
-        mesh_file = df_m.File('mesh-2cell-1D.xml')
+        mesh_file = df_m.File('mesh_2cell_1D.xml')
         mesh_file << mesh1d_M.mesh
 
         # Write the boundary marker function to a file:
-        field_boundary_marker_file = df_m.File('mesh-2cell-1D_Fbcs.xml')
+        field_boundary_marker_file = df_m.File('mesh_2cell_1D_Fbcs.xml')
         field_boundary_marker_file << mesh1d_M.field_boundary_marker
 #        # Read back in:
 #        field_boundary_marker_file >> mesh1d_M.field_boundary_marker
 
         ## Write out the charge source-vector:
-        file = df_m.File("charge-1D.xml")
+        file = df_m.File("charge_1D.xml")
         file << chargeDensity_F.function
 
 
         return
 #    def test_4_compute_charge_density_on_1Dmesh(self):ENDDEF
+
+#class TestChargeDensity(unittest.TestCase):
+    def test_5_compute_charge_density_on_1D_spherical_mesh(self):
+        """Compute the charge-density generated by line particles on a 1D mesh
+
+           This test is based on the 1D number-density test above.
+
+           Positively and negatively-charged macroparticles are created within a
+           1D meshed region and are weighted to nodal points on the mesh.
+           The charge-density is then accumulated.
+           
+           Two species data are defined and segmented-array particle storage is
+           used.
+
+           See test_FieldSolve.ods:test_5 for calculated values of the
+           charge-density.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName, '('+__file__+')'
+        
+        coordinateSystem = '1D-spherical-radius'
+
+        ########## Numerical Mesh ##########
+
+        ### Specialized mesh and field-solver modules for this test ###
+
+        from UserMesh_y_Fields_Spherical1D_Module import UserMeshInput1DS_C
+        from UserMesh_y_Fields_Spherical1D_Module import UserMesh1DS_C
+        from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve1DS_C
+
+        umi1DS_I = UserMeshInput1DS_C()
+        umi1DS_I.mesh_file = 'mesh_1D_radial.xml'
+        umi1DS_I.field_boundary_marker_file = 'mesh_1D_radial_Fbcs.xml'
+
+        ### Set plot flag ###
+
+        if os.environ.get('DISPLAY') is None:
+            plotFlag=False
+        else:
+            plotFlag=True
+
+        ### Read the mesh and boundary-condition markers ###
+
+        # Create a mesh object and read in the mesh.
+        mesh1d_M = UserMesh1DS_C(umi1DS_I, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+
+        ########## Kinetic particles ##########
+
+        # Create an instance of the DTparticleInput class
+        pin = self.pin = ParticleInput_C()
+
+        pin.precision = np_m.float64
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = coordinateSystem
+        pin.position_coordinates = ['x',] # determines the particle-storage dimensions. This
+                                          # is doubled to get the phase-space coordinates
+        pin.force_components = ['x',]
+        pin.force_precision = np_m.float64
+
+        ### Particle species input
+
+        # Give the properties of the particle species.  The charges and masses
+        # are normally those of the physical particles, and not the
+        # computational macroparticles.
+
+        speciesName = 'plasma_electrons'
+        charge = -1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.electron_mass
+        dynamics = 'explicit'
+        plasmaElectron_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        # Add these two species to particle input
+        pin.particle_species = (plasmaElectron_S,)
+
+        # Make the particle object from pin...
+        particles_P = Particle_C(pin, print_flag=False)
+
+        # ...and attach the particle mesh.
+        particles_P.pmesh_M = mesh1d_M
+
+        ### Create discrete particles
+
+        # Put 1 plasma_electron in the first cell.
+#        x0 = 1.05
+#        cell_index0 = 0
+        # Put 1 plasma_electron at 2 m
+        x0 = 2.0
+        cell_index0 = 3 # This value is checked below.
+
+        ux0 = 0.0
+        weight0 = 1.0/MyPlasmaUnits_C.elem_charge # to get 1 C of charge
+        weight0 /= 4.0*np_m.pi # charge per steradian
+        bitflags0 = 0b0
+
+        # The particle tuple has to match the one in Particle_C:
+        # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index']
+        p0 = (x0, x0, ux0, weight0, bitflags0, cell_index0)
+
+        particle_list = (p0, )
+
+        ### Put these particles into storage
+
+        # Electrons
+        species_name = 'plasma_electrons'
+
+        number_of_macroparticles = len(particle_list)
+
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+
+        for i in range(number_of_macroparticles):
+#            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
+            p, pindex = pseg_arr.put(particle_list[i])
+
+        # Check that we set the right cell index above
+        computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)
+        if cell_index0 != computed_cell_index:
+            errorMsg = "%s Particle cell index should be %d, not %d" % (fncName, computed_cell_index, cell_index0)
+            sys.exit(errorMsg)
+
+        ########## Source for the electric field ##########
+
+        # Allocate storage for the number-density obtained from kinetic
+        # particles.  The number-density array stores the integral of the
+        # physical density-distribution times the element basis functions.
+
+        numberDensityElementType = 'Lagrange'
+        numberDensityElementDegree = 1
+        numberDensityFieldType = 'scalar'
+
+        for s in particles_P.species_names:
+            particles_P.number_density_dict[s] = Field_C(particles_P.pmesh_M,
+                                                         element_type=numberDensityElementType,
+                                                         element_degree=numberDensityElementDegree,
+                                                         field_type=numberDensityFieldType)
+
+        ## Create a charge-density vector ##
+        chargeDensity_F = Field_C(mesh1d_M,
+                                  element_type=numberDensityElementType,
+                                  element_degree=numberDensityElementDegree,
+                                  field_type=numberDensityFieldType)
+
+        ## Accumulate number-density from kinetic particles of this species
+        ## and sum charge-density.
+        for s in particles_P.species_names:
+            particles_P.accumulate_number_density(s)
+            q = particles_P.charge[s]
+            chargeDensity_F.multiply_add(particles_P.number_density_dict[s], q)
+
+#        print "numberDensityCalc =", particles_P.number_density_dict['plasma_electrons'].function.vector().array()
+
+        chargeDensityCalc = chargeDensity_F.function.vector().array()
+#        print fncName, numberDensityCalc
+
+        # The expected charge-density values from test_ChargeDensity.ods:test_5
+        # Note that these are in the vertex numbering order, not DoF order. We will
+        # need to compare numberDensityExpected[ivert] with numberDensityCalc[idof],
+        # where idof is the DoF number corresponding to ivert (see conversion below).
+        chargeDensityExpected = np_m.empty(chargeDensity_F.function.vector().size(), dtype=np_m.float64)
+
+        # These are in vertex, not DOF order
+        chargeDensityExpected[0:11] = 0.0
+#        chargeDensityExpected[0] = -5.97302e-2 # -1 C at 1.05 m
+#        chargeDensityExpected[1] = -1.98472e-2
+        chargeDensityExpected[3] = -4.52095e-2 # -1 C at 2 m
+        chargeDensityExpected[4] = -3.43680e-2
+ 
+        # Compare results
+        functionSpace = chargeDensity_F.function_space
+        gdim = chargeDensity_F.mesh_gdim
+        # Reshape the coordinates to get (x), or (x,y), or (x,y,z) tuples.
+        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
+            dofcoords = functionSpace.tabulate_dof_coordinates().reshape((-1, gdim))
+        else:
+            print '\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test"
+            return
+
+#        print "dofcoords=", dofcoords
+
+        # Convert vertex indices to DoF indices.  For CG1 elements, there are
+        # the same number of vertices as DoFs.
+        v2d=df_m.vertex_to_dof_map(functionSpace)
+
+        ## Check the charge source-vector values vs. those computed in test_ChargeDensity.ods:test_5
+#        print "chargeDensityCalc =", chargeDensityCalc
+#        print "chargeDensityExpected =", chargeDensityExpected
+        for ivert in range(len(chargeDensityExpected)):
+            idof = v2d[ivert]
+#            print "vertex", ivert, "is DoF index", idof
+#            print "chargeDensityCalc, chargeDensityExpected =", chargeDensityCalc[idof], chargeDensityExpected[ivert]
+            # "places" means numbers after the decimal point:
+            self.assertAlmostEqual(chargeDensityCalc[idof], chargeDensityExpected[ivert], places=4, msg="Wrong value of charge density")
+
+        ## Write out the charge source-vector:
+        file = df_m.File("charge_1DS.xml")
+        file << chargeDensity_F.function
+
+        return
+#    def test_5_compute_charge_density_on_1D_spherical_mesh(self):ENDDEF
 
 #class TestChargeDensity(unittest.TestCase):ENDCLASS
 

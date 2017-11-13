@@ -41,10 +41,10 @@ class TestParticleDeletion(unittest.TestCase):
 
         # initializations for each test go here...
 
-        self.ctrlCI = DT_M.DTcontrol_C()
+        self.ctrl = DT_M.DTcontrol_C()
 
-        self.ctrlCI.dt = 1.0e-5
-        self.ctrlCI.n_timesteps = 1
+        self.ctrl.dt = 1.0e-5
+        self.ctrl.n_timesteps = 1
 
         ### Create an instance of the DTparticleInput class
 
@@ -175,7 +175,7 @@ class TestParticleDeletion(unittest.TestCase):
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
         pCI = self.particleCI # abbreviation
-        trajCI = Trajectory_C(self.trajinCI, self.ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
+        trajCI = Trajectory_C(self.trajinCI, self.ctrl, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
         self.particleCI.trajCI = trajCI
 
         # Create the initial particles
@@ -205,8 +205,8 @@ class TestParticleDeletion(unittest.TestCase):
         # Set constant fields
         E0 = (1.0e-4, 2.0e-4, 3.0e-4)
 #        B0 = (0.0, 0.0, 0.0)
-        self.ctrlCI.E0 = Vec_C(pCI.particle_dimension, E0)
-#        ctrlCI.B0 = Vec_C(pCI.particle_dimension, B0)
+        self.ctrl.E0 = Vec_C(pCI.particle_dimension, E0)
+#        ctrl.B0 = Vec_C(pCI.particle_dimension, B0)
 
         print "SEGMENT_LENGTH is %d" % pCI.SEGMENT_LENGTH
 
@@ -242,7 +242,7 @@ class TestParticleDeletion(unittest.TestCase):
                         print 'pindex for trajectory = ', pindex
                         trajCI.ParticleIdList[sp].append(pindex)
                         dynamicsType = 'explicit'
-                        trajCI.create_trajectory(sp, dynamicsType)
+                        trajCI.create_trajectory(sp, pindex, dynamicsType)
                     else:
     # Instead of printing this message, a trajCI object could be created here.
                         print fncName, "*** DT Warning: A trajectory flag is on, but no trajectory object has been created yet. ***"
@@ -283,10 +283,10 @@ class TestParticleDeletion(unittest.TestCase):
 
         ncoords = pCI.particle_dimension # number of particle coordinates to check
 #        isp = 0
-        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrlCI.n_timesteps, "timesteps"
+        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps"
         for sp in pCI.species_names:
             if pCI.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
-            pCI.move_particles_in_uniform_fields(sp, self.ctrlCI)
+            pCI.move_particles_in_uniform_fields(sp, self.ctrl)
 
         # Now check on the arrays again
         print "\nAfter a particle move step:\n"

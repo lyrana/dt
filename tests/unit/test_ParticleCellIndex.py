@@ -16,7 +16,7 @@ from UserUnits_Module import MyPlasmaUnits_C
 from Dolfin_Module import Mesh_C
 from Particle_Module import *
 
-from UserMesh_FE_XYZ_Module import *
+from UserMesh_y_Fields_FE_XYZ_Module import *
 
 #STARTCLASS
 class TestParticleCellIndex(unittest.TestCase):

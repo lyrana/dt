@@ -2,21 +2,25 @@
 
 #__version__ = 0.1
 #__author__ = 'Copyright (C) 2016 L. D. Hughes'
-#__all__ = []
+__all__ = ['UserMesh2DCirc_C',
+           'UserMeshInput2DCirc_C', 
+           'UserPoissonSolve2DCirc_C',           
+#           'UserPoissonSolveInput2DCirc_C',
+           ]
 
 """UserMesh_y_Fields defines the mesh, marks boundaries for field and
    particle boundary-conditions (BCs), and creates the field solvers.
    The type of mesh may be FE or FD.  In this case, it's easiest to
    apply the BCs while the mesh is being created, since at first, the
    boundaries are Cartesian coordinate lines that are easy to specify.
-   The mesh is then stretched and transformed to a cylindrical shape.
+   The mesh is then stretched and transformed to a circular shape.
 """
 
 import sys
 import os
 import numpy as np_m
 import math
-# !!! Direct invocation of dolfin. OK because UserMesh_C is a
+# !!! Direct invocation of dolfin. OK because UserMesh2DCirc is a
 # sub-class of Mesh_C !!!
 import dolfin as df_m
 
@@ -25,7 +29,8 @@ from Dolfin_Module import PoissonSolve_C
 
 import UserUnits_Module as U_M
 
-class UserMeshInput_C(object):
+#STARTCLASS
+class UserMeshInput2DCirc_C(object):
 #class DTmeshInput_C(object):
     """Input for the field mesh
        The user can modify this for different mesh specifications.
@@ -75,11 +80,11 @@ class UserMeshInput_C(object):
 # May want things like this in order to call DT from a loop?
 # or spawn off many runs?
 # maybe don't need all of these:
-        self.meshCI = None
-        self.pmeshCI = None
+        self.mesh_M = None
+        self.pmesh_M = None
 
         # the particle mesh is a copy of the field mesh
-#        self.pmeshCI = df_m.Mesh(meshCI)
+#        self.pmesh_M = df_m.Mesh(mesh_M)
 
         return
 
@@ -125,11 +130,14 @@ class YBoundary(df_m.SubDomain):
         tol = 1.0e-10
         return on_boundary and abs(x[1]-self.y_boundary_value) < tol
 
+#class UserMeshInput2DCirc_C(object):ENDCLASS
+
 # User exposes whatever mesh parameters are useful in __init__ and
 # these can be set in __main__
 
-class UserMesh_C(Mesh_C):
-    """UserMesh_C is derived from Mesh_C, and includes marked
+#STARTCLASS
+class UserMesh2DCirc_C(Mesh_C):
+    """UserMesh2DCirc_C is derived from Mesh_C, and includes marked
        subdomains (e.g., Dirichlet boundaries).  It is to be edited by
        the user to specify the simulation mesh.
 
@@ -139,11 +147,11 @@ class UserMesh_C(Mesh_C):
     """
 
     # Select the unit system to be used for input parameters.
-    Convert = U_M.MyPlasmaUnits_C
+#    Convert = U_M.MyPlasmaUnits_C
 
-    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
+    def __init__(self, mesh_input, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
         """
-            The class UserMesh_C contains these attributes:
+            The class UserMesh2DCirc contains these attributes:
                 1. A mesh.
                 2. A fieldBoundaryMarker (MeshFunction) that marks
                    mesh boundaries for field boundary-conditions.
@@ -151,22 +159,24 @@ class UserMesh_C(Mesh_C):
                    mesh boundaries for particle boundary-conditions.
         """
 
-        if meshInputCI.mesh_file is None:
-            self.create_mesh(meshInputCI, plot_flag=plot_flag, plot_title=plot_title)
+        self.coordinate_system = 'Cartesian' # Mesh coordinates are Cartesian x-y.
+
+        if mesh_input.mesh_file is None:
+            self.create_mesh(mesh_input, plot_flag=plot_flag, plot_title=plot_title)
             # don't need another mesh plot
             plot_flag = False
 
         # Call the parent constructor to complete setting class variables.
-        mesh_file = meshInputCI.mesh_file
+        mesh_file = mesh_input.mesh_file
         super(self.__class__, self).__init__(mesh_file=mesh_file, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
         
-        self.field_boundary_dict = meshInputCI.field_boundary_dict
-        self.particle_boundary_dict = meshInputCI.particle_boundary_dict
+        self.field_boundary_dict = mesh_input.field_boundary_dict
+        self.particle_boundary_dict = mesh_input.particle_boundary_dict
 
         # Read boundary markers from file, if provided
-        fieldBoundaryFile = meshInputCI.field_boundary_file
-        particleBoundaryFile = meshInputCI.particle_boundary_file
-        if meshInputCI.field_boundary_file is not None:
+        fieldBoundaryFile = mesh_input.field_boundary_file
+        particleBoundaryFile = mesh_input.particle_boundary_file
+        if mesh_input.field_boundary_file is not None:
             fieldBoundaryMarker = df_m.MeshFunction("size_t", self.mesh, fieldBoundaryFile)
             self.field_boundary_marker = fieldBoundaryMarker
         if particleBoundaryFile is not None:
@@ -175,36 +185,36 @@ class UserMesh_C(Mesh_C):
             self.particle_boundary_marker = particleBoundaryMarker
 
         return  
-#    def __init__(self, meshInputCI=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
+#    def __init__(self, mesh_input=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
 
 # Inherited from Mesh_C:
 #    def copy(self):
 #        return copy.deepcopy(self)
 
-#class UserMesh_C(Mesh_C):
-    def create_mesh(self, meshInputCI, plot_flag=False, plot_title=None):
+#class UserMesh2DCirc(Mesh_C):
+    def create_mesh(self, mesh_input, plot_flag=False, plot_title=None):
         """Create a mesh and mark subdomains (e.g., Dirichlet
            boundaries and particle boundaries) according to the user's
            specifications.
         """
 
         # Radial limits of mesh
-        rmin = meshInputCI.rmin
-        rmax = meshInputCI.rmax
+        rmin = mesh_input.rmin
+        rmax = mesh_input.rmax
 
-        stretch = meshInputCI.stretch
-        nr = meshInputCI.nr
+        stretch = mesh_input.stretch
+        nr = mesh_input.nr
 
         # The final mesh will go from 0 to tmax:
-        tmax = meshInputCI.tmax
-        nt = meshInputCI.nt
+        tmax = mesh_input.tmax
+        nt = mesh_input.nt
 
         # Options: 'left, 'right', 'left/right', 'crossed'
-        diagonal = meshInputCI.diagonal
+        diagonal = mesh_input.diagonal
 
         # Boundary conditions for fields and particles
-        fieldBoundaryDict = meshInputCI.field_boundary_dict
-        particleBoundaryDict = meshInputCI.particle_boundary_dict
+        fieldBoundaryDict = mesh_input.field_boundary_dict
+        particleBoundaryDict = mesh_input.particle_boundary_dict
 
         plotTitle = plot_title
 
@@ -347,9 +357,9 @@ class UserMesh_C(Mesh_C):
 #mesh_copy = Mesh(mesh)
 
         return
-#    def create_mesh(self, meshInputCI, plot_flag):ENDDEF
+#    def create_mesh(self, mesh_input, plot_flag):ENDDEF
 
-#class UserMesh_C(Mesh_C): ENDCLASS
+#class UserMesh2DCirc(Mesh_C): ENDCLASS
 
 # The field-solve class could be in a different module file.  Here,
 # the connection between the field mesh and the field solve is close, so
@@ -358,23 +368,24 @@ class UserMesh_C(Mesh_C):
 #
 # Solve the equations for the fields
 #
-class UserPoissonSolve_C(PoissonSolve_C):
-    """UserPoissonSolve_C solves Poisson's equation to obtain the electric field from
-       the charge density.  It can be edited by the user to specify the field
-       solvers and any tuning parameters.  The units are MKS by
-       default (i.e., if no conversion factor is applied), but any
-       units can be used provided the conversion to MKS is available
-       in the UserUnits_M.py module.
+#STARTCLASS
+class UserPoissonSolve2DCirc_C(PoissonSolve_C):
+    """UserPoissonSolve2DCirc_C solves Poisson's equation on a 2D region that is a
+       segment of a circle to obtain the electric field from the charge density.  It
+       can be edited by the user to specify the field solvers and any tuning
+       parameters.  The units are MKS by default (i.e., if no conversion factor is
+       applied), but any units can be used provided the conversion to MKS is
+       available in the UserUnits_M.py module.
     """
-
-# Select the unit system to be used for input parameters.
-    Convert = U_M.MyPlasmaUnits_C
 
     def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, assembled_charge=None, neg_electric_field=None):
         """Constructor for a Poisson solver written by the user.
         """
 
         print "This is DOLFIN Version", df_m.DOLFIN_VERSION_STRING
+
+        # Select the unit system to be used for input parameters.
+        constants = U_M.MyPlasmaUnits_C
 
         self.u = phi.function
         V = phi.function_space
@@ -410,11 +421,22 @@ class UserPoissonSolve_C(PoissonSolve_C):
 # Define the variational problem
         w = df_m.TrialFunction(V)
         self.v = df_m.TestFunction(V)
+
         f = df_m.Constant(0.0)
-        self.a = df_m.inner(df_m.grad(w), df_m.grad(self.v))*df_m.dx
+
+        ## Make the bilinear form 'a(w,v)' ##
+
+        # The bilinear form 'a' is the LHS in the variational form of the
+        # Laplace/Poisson eq. It is the 'inner product' of grad(w) times
+        # grad(v), i.e., the integral of this product (times any coefficients)
+        # over the domain. The spherical-coordinate form has a coefficient r**2
+        # (for the volume-element needed to integrate over the domain). This
+        # Cartesian-coordinate form doesn't.
+        epsilon = df_m.Constant(constants.epsilon_0)
+        self.a = epsilon*df_m.inner(df_m.grad(w), df_m.grad(self.v))*df_m.dx
 
         # Specify whether 'a' has time-independent coefficients.
-        self.a_has_constant_coeffs = True
+        self.pde_has_constant_coeffs = True
 
         # If so, the A matrix only needs to be assembled once.
 
@@ -438,4 +460,4 @@ class UserPoissonSolve_C(PoissonSolve_C):
         return
 #    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, neg_electric_field=None):ENDDEF
 
-#class UserPoissonSolve_C(PoissonSolve_C):ENDCLASS
+#class UserPoissonSolve2DCirc_C(PoissonSolve_C):ENDCLASS

@@ -14,7 +14,7 @@ __all__ = ['ParticleInput_C',
 
 import sys
 import math
-import numpy as np_M
+import numpy as np_m
 import h5py
 
 from Dolfin_Module import Mesh_C
@@ -34,7 +34,10 @@ class ParticleInput_C(object):
         # Example: numpy.float64
         self.precision = None
 
-        # Force components acting on the particles
+        # The coordinate_system is usually the same as DTcontrol_C.coordinate_system
+        self.coordinate_system = None
+
+        # Strings that label the force components acting on the particles
         # e.g., ['x', 'y', 'z']
         self.force_components = None
 
@@ -56,13 +59,13 @@ class ParticleInput_C(object):
 
         # The initial particle mesh is a copy of the field mesh
 #        self.pmesh = df_M.Mesh(mesh)
-        self.pmeshCI = None
+#        self.pmesh_M = None
 
         # Module containing user-supplied particle distributions and
         # boundary-conditions.
-        self.user_particle_module = None
+        self.user_particles_module = None
         # The class containing distribution functions
-        self.user_particle_class = None
+        self.user_particles_class = None
         # The class containing particle boundary conditions
         self.user_particle_bcs_class = None
 
@@ -85,8 +88,7 @@ class ParticleSpecies_C(object):
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         self.name = name
         self.charge = charge
         self.mass = mass
@@ -95,58 +97,6 @@ class ParticleSpecies_C(object):
         return
 
 #class ParticleSpecies_C(object):ENDCLASS
-
-
-# This seems to be the same for all the particle classes used so far.
-class ParticleInput_C(object):
-    """Particle input class.
-
-       Contains the variables that describe the particles. The values are
-       usually set by the user in MAIN.py.
-
-    """
-
-    def __init__(self):
-
-        # Usually set from ctrlCI.precision
-        # Example: numpy.float64
-        self.precision = None
-
-        # Strings that label the force components acting on the particles
-        # e.g., ['x', 'y', 'z']
-        self.force_components = None
-
-        # Usually set from ctrlCI.precision
-        # Example: numpy.float64
-        self.force_precision = None
-
-        # Values: 'loop-on-particles', 'loop-on-cells'
-        self.particle_integration_loop = None
-
-        # Determines the particle-storage dimensions
-        # Example: ['x', 'y',]
-        self.position_coordinates = None
-
-# May want things like this in order to call DT from a loop?
-# or spawn off many runs?
-# maybe don't need all of these:
-        self.particle_species = None
-
-        # The initial particle mesh is a copy of the field mesh
-#        self.pmesh = df_M.Mesh(mesh)
-        self.pmeshCI = None
-
-        # Module containing user-supplied particle distributions and
-        # boundary-conditions.
-        self.user_particles_module = None
-        # The class containing distribution functions
-        self.user_particles_class = None
-        # The class containing particle boundary conditions
-        self.user_particle_bcs_class = None
-
-        return
-
-#class ParticleInput_C(object):ENDCLASS
 
 import SegmentedArrayPair_Module as SA_M
 
@@ -185,13 +135,14 @@ class Particle_C(object):
     def __init__(self, particleInputCI, print_flag = False):
         """Take a list of kinetic species provided by the user and create the initial plasma
         """
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Set local variables from passed parameters
         precision = particleInputCI.precision
-        particleSpecies = particleInputCI.particle_species
-
         self.precision = precision
+        self.coordinate_system = particleInputCI.coordinate_system
+        particleSpecies = particleInputCI.particle_species
 
         # The spatial coordinates of a particle
         self.position_coordinates = particleInputCI.position_coordinates
@@ -206,7 +157,7 @@ class Particle_C(object):
 #        print 'particle_c... phase_coords = ', phase_coordinates
 
         # This is for a reference to a UserMesh_C object for particles
-        self.pmeshCI = None
+        self.pmesh_M = None
         
         # This is for a reference to a ParticleMeshBoundaryConditions_C
         # object that handles particle boundary conditions.
@@ -214,7 +165,9 @@ class Particle_C(object):
 
         # Count the species
         self.number_of_species = len(particleSpecies)
-        if print_flag: print fncName, "(DnT INFO) There are:", self.number_of_species, " species"
+        if print_flag: 
+            print ""
+            print fncName, "(DnT INFO) There are:", self.number_of_species, " species"
 
         # Put the species names in a list called "species_names"
         self.species_names = [sp.name for sp in particleSpecies]
@@ -262,14 +215,14 @@ class Particle_C(object):
         pvartypes = [precision for var in pvars]
 
         pvars.append('bitflags')
-        pvartypes.append(np_M.int32)
+        pvartypes.append(np_m.int32)
 
         pvars.append('cell_index')
-        pvartypes.append(np_M.int32) # The size determines how many local cells you can have.
+        pvartypes.append(np_m.int32) # The size determines how many local cells you can have.
 
 #        self.particle_dtype = {'names' : pvars, 'formats': pvartypes}
         particleAttributes = {'names' : pvars, 'formats': pvartypes}
-        self.particle_dtype = np_M.dtype(particleAttributes)
+        self.particle_dtype = np_m.dtype(particleAttributes)
 
         if print_flag: print "(DnT INFO) Particle metadata = %s" % self.particle_dtype
 
@@ -278,34 +231,34 @@ class Particle_C(object):
 #            self.bitflag_index = self.particle_dtype['names'].index('bitflags')
 
         for sp in particleSpecies:
-            species_name = sp.name
+            speciesName = sp.name
 
             # Process user input for the defining constant values of this species
             # key: 'charge'
 #            if print_flag: print "(DnT INFO) sp_dict =", sp_dict
-            self.charge[species_name] = sp.charge
-            if print_flag: print "(DnT INFO) Charge for", species_name, "is", self.charge[species_name]
+            self.charge[speciesName] = sp.charge
+            if print_flag: print "(DnT INFO) Charge for", speciesName, "is", self.charge[speciesName]
             if sp.charge == 0.0:
-                self.neutral_species.append(species_name)
+                self.neutral_species.append(speciesName)
 
             # key: 'mass'
-            self.mass[species_name] = sp.mass
-            self.qom[species_name] = sp.charge/sp.mass
-            if print_flag: print "(DnT INFO) Charge-to-mass ratio for", species_name, "is", self.qom[species_name]
+            self.mass[speciesName] = sp.mass
+            self.qom[speciesName] = sp.charge/sp.mass
+            if print_flag: print "(DnT INFO) Charge-to-mass ratio for", speciesName, "is", self.qom[speciesName]
             # key: 'number_per_cell'
 
 # Should number_per_cell be here?  Eg if you have just some test particles
 # Put it as part of the user's description of the distribution function
-#            self.number_per_cell[species_name] = sp_dict['number_per_cell']
-#            if echoFlag: print 'Particle_C: number per cell for ', species_name, ' is ', self.number_per_cell[species_name]
+#            self.number_per_cell[speciesName] = sp_dict['number_per_cell']
+#            if echoFlag: print 'Particle_C: number per cell for ', speciesName, ' is ', self.number_per_cell[speciesName]
 
             # key: 'dynamics'
-            self.dynamics[species_name] = sp.dynamics
+            self.dynamics[speciesName] = sp.dynamics
 
             if sp.dynamics == 'explicit':
-                self.explicit_species.append(species_name)
+                self.explicit_species.append(speciesName)
             elif sp.dynamics == 'implicit':
-                self.implicit_species.append(species_name)
+                self.implicit_species.append(speciesName)
             else:
                 errorMsg = "Unknown type of dynamics " + sp.dynamics + ' for species ' + sp_name
 
@@ -314,17 +267,17 @@ class Particle_C(object):
             # for particles using segmented vectors indexed by the
             # species name.
 
-#            self.pseg_arr[species_name] = SA_M.SegmentedArray_C(segment_length, metadata)
-            self.pseg_arr[species_name] = SA_M.SegmentedArray_C(self.SEGMENT_LENGTH, self.particle_dtype)
+#            self.pseg_arr[speciesName] = SA_M.SegmentedArray_C(segment_length, metadata)
+            self.pseg_arr[speciesName] = SA_M.SegmentedArray_C(self.SEGMENT_LENGTH, self.particle_dtype)
 
             # Initialize particle count for each species
-            self.particle_count[species_name] = 0
+            self.particle_count[speciesName] = 0
 
 #        self.user_particle_class = userParticleClass
 
         ## Reference to particle initialization (add this after construction of
         ## Particle_C instance)
-        self.initial_particle_dict = None
+        self.initial_particles_dict = None
 
         ## Reference to particle sources (add this after construction of Particle_C
         ## instance)
@@ -339,28 +292,28 @@ class Particle_C(object):
         # that have the TRAJECTORY_FLAG bit turned on.  A Trajectory_C object
         # needs to be created before such particles are encountered (e.g., when
         # initial particles are created.)
-        self.trajCI = None
+        self.traj_T = None
 
         # An scratch ndarray for one particle is used for trajectories
-        self.one_particle_arr = np_M.empty(1, dtype=self.particle_dtype)
+        self.one_particle_arr = np_m.empty(1, dtype=self.particle_dtype)
 
         # A scratch array that can hold: x,y,z, (or subset)
-        self.pcoord = np_M.empty(self.particle_dimension, dtype=precision)
+        self.pcoord = np_m.empty(self.particle_dimension, dtype=precision)
         # A scratch array that can hold: ux,uy,uz, (or subset)
-        self.pvel = np_M.empty(self.particle_dimension, dtype=precision)
+        self.pvel = np_m.empty(self.particle_dimension, dtype=precision)
         # A scratch array that can hold: x,y,z, x0,y0,z0 (or subset)
-        self.pcoord2 = np_M.empty(2*self.particle_dimension, dtype=precision)
+        self.pcoord2 = np_m.empty(2*self.particle_dimension, dtype=precision)
         # A scratch array for random numbers
-        self.random_vals = np_M.empty(self.particle_dimension, dtype=precision)
+        self.random_vals = np_m.empty(self.particle_dimension, dtype=precision)
         # A scratch array that can hold: dx,dy,dz (or subset)
-        self.dx = np_M.empty(self.particle_dimension, dtype=precision)
-        self.dx_in_cell = np_M.empty(self.particle_dimension, dtype=precision)
+        self.dx = np_m.empty(self.particle_dimension, dtype=precision)
+        self.dx_in_cell = np_m.empty(self.particle_dimension, dtype=precision)
 
         # Initialize the counter for H5Part particle writes
         self.h5_step_counter = 0
         # A scratch buffer for H5Part. It's length may need to increase later
         self.h5_buffer_length = self.number_of_species*self.SEGMENT_LENGTH
-        self.h5_buffer = np_M.empty(self.h5_buffer_length, dtype=np_M.float64)
+        self.h5_buffer = np_m.empty(self.h5_buffer_length, dtype=np_m.float64)
 
         # Make a reusable array "self.negE" for computing -E at particle positions
         if particleInputCI.force_components is not None:
@@ -368,14 +321,14 @@ class Particle_C(object):
             force_precision = particleInputCI.force_precision
             Etypes = [force_precision for comp in Ecomps]
             Eseg_dict = {'names': Ecomps, 'formats': Etypes}
-            self.negE = np_M.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
+            self.negE = np_m.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
             # self.negE1 is used for one-particle field data for a trajectory
             # Make an explicit name like 'Ex', 'Ey', 'Ez'
             E1comps = ['E'+comp for comp in Ecomps]
             E1seg_dict = {'names': E1comps, 'formats': Etypes}
-            self.negE1 = np_M.empty(1, dtype=E1seg_dict)
+            self.negE1 = np_m.empty(1, dtype=E1seg_dict)
             # Create an E with all components zero
-            self.zeroE = np_M.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
+            self.zeroE = np_m.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
 
         # Not used yet
         self.particle_integration_loop = particleInputCI.particle_integration_loop
@@ -383,7 +336,7 @@ class Particle_C(object):
         return
 
 #class Particle_C(object):
-    def initialize_particles(self, print_flags):
+    def initialize_particles(self, print_flags, neg_E_field=None):
         """Generate initial particle distributions.
 
            This function is similar to 'add_more_particles()', which loops on
@@ -392,7 +345,7 @@ class Particle_C(object):
         """
 #    pCI = runCI.particles # abbrev for particle Class Instance
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Loop on initial_particles_dict
 
@@ -419,7 +372,7 @@ class Particle_C(object):
                 ipRegion = ipTuple[2]
                 # Invoke the creation function
                 time = 0.0
-                ipFunc(time, ipRegion, ipParams)
+                ipFunc(time, ipRegion, ipParams, neg_E_field)
             else:
                 errorMsg = "(DnT ERROR) %s Unknown initial_distribution_type %s for species %s" % (fncName, initial_distribution_type, s)
                 sys.exit(errorMsg)
@@ -448,8 +401,7 @@ class Particle_C(object):
         """Generates particles for a species from a list provided by the user.
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         userParticleClass = self.user_particle_class
 
         pseg_arrCI = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
@@ -475,31 +427,18 @@ class Particle_C(object):
 #        print self.particle_dtype['names']
 #        print 'index = ', self.particle_dtype['names'].index('bitflags')
 
-        # The dynamics type determines what trajectory variables are available
-        if self.trajCI is not None:
-            if species_name in self.trajCI.explicit_species:
-                dynamicsType = 'explicit'
-            elif species_name in self.trajCI.implicit_species:
-                dynamicsType = 'implicit'
-            elif species_name in self.trajCI.neutral_species:
-                dynamicsType = 'neutral'
-            else:
-                errorMsg = "(DnT ERROR) Particle_C:create_from_list: dynamicsType is unknown for species %s" % species_name
-                sys.exit(errorMsg)
-
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
             p, pindex = pseg_arrCI.put(particle_list[i])
             # Check if this particle has the trajectory flag turned on
             if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
 # or: p['bitflags'] should work?
-                if self.trajCI is not None:
+                if self.traj_T is not None:
 #                    print 'pindex for trajectory = ', pindex
-                    self.trajCI.ParticleIdList[species_name].append(pindex)
-                    self.trajCI.TrajectoryLength[species_name].append(0) # Set the count to 0
-                    self.trajCI.create_trajectory(species_name, dynamicsType)
+                    dynamicsType = self.dynamics[species_name]
+                    self.traj_T.create_trajectory(species_name, pindex, dynamicsType)
                 else:
-# Instead of printing this message, a trajCI object could be created here.
+# Instead of printing this message, a traj_T object could be created here.
                     print fncName, "(DnT WARNING) A trajectory flag is on, but no trajectory object has been created yet."
 
 #        if (print_flag): print fncName, "weight for ", species_name, " is ", weight
@@ -513,8 +452,8 @@ class Particle_C(object):
     def create_from_functions(self, species_name, print_flag = False):
         """Generates particles for a species from a list provided by the user.
         """
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         pseg_arrCI = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
 
         p_list_method = self.initial_distribution_function[species_name]
@@ -554,14 +493,14 @@ class Particle_C(object):
 #    def create_from_functions(self, species_name, print_flag = False):ENDDEF
 
 #class Particle_C(object):
-    def add_more_particles(self, ctrlCI, print_flag=False):
+    def add_more_particles(self, ctrlCI, neg_E_field=None, print_flag=False):
         """Add particles to the existing particle distributions.
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         if print_flag is True:
-            print "DnT has entered", fncName, "at timestep_count", ctrlCI.timestep_count, "time", ctrlCI.time
+            print "(DnT INFO) %s\tFunction entered at timestep_count %d, time %.3g" % (fncName, ctrlCI.timestep_count, ctrlCI.time)
 
         particleSourceDict = self.particle_source_dict
 
@@ -573,17 +512,18 @@ class Particle_C(object):
             if ctrlCI.timestep_count % srcParams['timestep_interval'] == 0:
                 # Invoke the creation function
                 if print_flag is True:
-                    print fncName, "Creating new particles for source", srcName
-                srcFunc(ctrlCI.time, srcRegion, srcParams)
+                    print "(DnT INFO) %s\t Creating new particles for source %s" % (fncName, srcName)
+                srcFunc(ctrlCI.time, srcRegion, srcParams, neg_E_field)
 
         return
 #    def add_more_particles(self, ctrlCI, print_flag=False):ENDDEF
 
 #class Particle_C(object):
-    def get_species_particle_count(self, species_name, print_flag = False):
+    def get_species_particle_count(self, species_name, print_flag=False):
         """Counts the particles for a given species.
         """
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         pseg_arrCI = self.pseg_arr[species_name] # storage array for this species
         number_of_particles = pseg_arrCI.get_number_of_items()
@@ -599,8 +539,7 @@ class Particle_C(object):
         """Counts all the particles.
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         psum = 0
         for sn in self.species_names:
             pseg_arrCI = self.pseg_arr[sn] # storage array for this species
@@ -620,34 +559,34 @@ class Particle_C(object):
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-
-        if self.pmeshCI is not None:
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+        if self.pmesh_M is not None:
             for sn in self.species_names:
                 psaCI = self.pseg_arr[sn] # segmented array for this species
                 (npSeg, pseg) = psaCI.init_out_loop()
 
-                while isinstance(pseg, np_M.ndarray):
+                while isinstance(pseg, np_m.ndarray):
     #                for ip in xrange(pseg.size):
                     for ip in xrange(npSeg):
-                        pseg[ip]['cell_index'] = self.pmeshCI.compute_cell_index(pseg[ip])
+                        pseg[ip]['cell_index'] = self.pmesh_M.compute_cell_index(pseg[ip])
     #                    print 'ip, index =', ip, pseg[ip]['cell_index']
 # Check that is_inside() confirms the cell index:
-                        if not self.pmeshCI.is_inside(pseg[ip], pseg[ip]['cell_index']):
+                        if not self.pmesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']):
                             errorMsg = "%s (DnT ERROR) is_inside() check failed for particle %d" % (fncName, ip)
                             sys.exit(errorMsg)
 #                        else:
 #                            print fncName, "*** is_inside check passes for particle", pseg[ip], "***"
                     (npSeg, pseg) = psaCI.get_next_segment('out')
         else:
-            print fncName, "(DnT WARNING) The reference to pmeshCI is None"
+            print fncName, "(DnT WARNING) The reference to pmesh_M is None"
 
         return
 #    def compute_mesh_cell_indices(self):ENDDEF
 
 #class Particle_C(object):
     def accumulate_number_density(self, species_name):
-        """Add contributions to the number density for the given species.
+        """Add contributions to the number density for the specified kinetic-particle
+           species.
 
            This implementation doesn't generate an actual number-density, but
            rather the vector {n*u_i*dx}, where the {u_i} are the shape functions
@@ -656,16 +595,17 @@ class Particle_C(object):
 
            Loops on particles, not on cells.
 
+           :param species_name: The string name of a kinetic-particle species
            :returns: None
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         psaCI = self.pseg_arr[species_name] # segmented array for this species
         (npSeg, pseg) = psaCI.init_out_loop()
 
-        while isinstance(pseg, np_M.ndarray):
+        while isinstance(pseg, np_m.ndarray):
             for p in pseg:
                 self.number_density_dict[species_name].interpolate_delta_function_to_dofs(p)
             (npSeg, pseg) = psaCI.get_next_segment('out')
@@ -685,7 +625,7 @@ class Particle_C(object):
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         self.number_density_dict[species_name].set_to_value(value)
 
@@ -694,21 +634,21 @@ class Particle_C(object):
 
 #class Particle_C(object):
     def move_particles_in_electrostatic_field(self, dt, neg_electric_field):
-        """Apply electric force to particles.  Compute the change in
-           velocity and position in time dt. Use an explicit
+        """Apply interpolated electric force to particles.  Compute the
+           change in velocity and position in time dt. Use an explicit
            method to integrate the orbit.
 
-           Arguments:
-               dt: time interval.
+           :param str dt: time interval.
+           :param neg_electric_field: A Field_C object containing the vector -E.
 
-               neg_electric_field: a Field_C object
+           :cvar pDim: Number of spatial coordinates in the particle location.
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
 #        meshCI = neg_electric_field.meshCI
-        pmeshCI = self.pmeshCI
+        pmesh_M = self.pmesh_M
 
         # Scratch space
         pCoord2 = self.pcoord2 # x,y,z, x0,y0,z0 (or subset)
@@ -744,7 +684,7 @@ class Particle_C(object):
                                # changed.  This affects, e.g., trajectories,
                                # which use SA indices to identify particles
                                # chosen for trajectory plots.
-            while isinstance(psegIn, np_M.ndarray):
+            while isinstance(psegIn, np_m.ndarray):
 #            print pseg['z']
 #                print 'particles_mod: particles module: pseg = ', pseg
                 # Compute electric field for each particle
@@ -824,7 +764,7 @@ class Particle_C(object):
 
                     ## If particle indexing is disturbed, update things that depend on it.
                     # E.g., if this is a trajectory particle, update its SA index
-                    if self.trajCI is not None:
+                    if self.traj_T is not None:
                         if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0:
                             if indxChange is True:
                             # Update the index in the trajectectory
@@ -871,10 +811,10 @@ class Particle_C(object):
 #                    print 'ip, index =', ip, pseg[ip]['cell_index']
                     pCellIndex = psegOut[ipOut]['cell_index']
 
-#                    print fncName, ": ip, pindex", ip, pCellIndex, "cell index:", pmeshCI.compute_cell_index(pseg[ip])
-                    mLastFacet = pmeshCI.NO_FACET
+#                    print fncName, ": ip, pindex", ip, pCellIndex, "cell index:", pmesh_M.compute_cell_index(pseg[ip])
+                    mLastFacet = pmesh_M.NO_FACET
                     facetCrossCount = 0
-                    while not pmeshCI.is_inside(psegOut[ipOut], pCellIndex):
+                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
                         # there's a boundary-condition on that facet.
@@ -903,11 +843,11 @@ class Particle_C(object):
                         dx = pCoord2[0:pDim] - pCoord2[pDim:2*pDim] # Move vector
 
 # See save10/Particle_Module.py for a different search, where only nearby cells are looked at.
-                        (cFacet, pathFraction) = pmeshCI.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
-                        if cFacet != pmeshCI.NO_FACET:
+                        (cFacet, pathFraction) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
+                        if cFacet != pmesh_M.NO_FACET:
 
 #                        if found_cell != True: print "Particle is not in nearby cells; using BB search"
-#                        ci = pmeshCI.compute_cell_index(pseg[ip])
+#                        ci = pmesh_M.compute_cell_index(pseg[ip])
 #                        print "Found particle is in cell", ci        
 #                        pseg[ip]['cell_index'] = ci
 
@@ -921,7 +861,7 @@ class Particle_C(object):
 #                            print "After truncation p =", psegOut[ipOut]
 
                             # Look up the mesh-level index of this facet...
-                            mFacet = pmeshCI.cell_entity_index_dict['facet'][pCellIndex][cFacet]
+                            mFacet = pmesh_M.cell_entity_index_dict['facet'][pCellIndex][cFacet]
 # mFacet should never be the same as the last facet crossed: check this
                             if mFacet == mLastFacet:
                                 errorMsg = "%s The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!" % (fncName, mFacet)
@@ -931,7 +871,7 @@ class Particle_C(object):
                             # ...and get the value of the facet marker.
 # mFacet is a numpy.uint32 (size_t), but the FacetFunction wants an int argument.
 #                            print "type is:", type(mFacet)
-                            facValue = pmeshCI.particle_boundary_marker[mFacet]
+                            facValue = pmesh_M.particle_boundary_marker[mFacet]
                             # Check if this facet has a non-zero marker
                             if facValue != 0:
                                 # Call the function associated with this value.
@@ -943,19 +883,19 @@ class Particle_C(object):
 # Not sure if this else is needed:                            else:
 
                             # Update the cell index to the new cell
-                            pCellIndex = pmeshCI.cell_neighbor_dict[pCellIndex][cFacet]
+                            pCellIndex = pmesh_M.cell_neighbor_dict[pCellIndex][cFacet]
                             psegOut[ipOut]['cell_index'] = pCellIndex
                             # If the particle has left the grid, exit this 'while' loop.
-                            if pCellIndex == pmeshCI.NO_CELL: break # Exit the 'while' loop
+                            if pCellIndex == pmesh_M.NO_CELL: break # Exit the 'while' loop
                             # If pathFraction is zero, this is a flag
                             # to verify that the index is correct
 #                            if pathFraction == 0.0:
                         else:
                             errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
                             sys.exit(errorMsg)
-#                       END:if cFacet != pmeshCI.NO_FACET:
+#                       END:if cFacet != pmesh_M.NO_FACET:
 #
-#                   END:while not pmeshCI.is_inside(psegOut[ipOut], pCellIndex)
+#                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
 
                     # Don't need this since we just look up the cell
                     # index when computing negE above
@@ -966,9 +906,9 @@ class Particle_C(object):
                     if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 0:
                         ipOut += 1
                     else:
-                        print "Particle", ipIn, "of species", sn, "has been deleted."
+#                        print "Particle", ipIn, "of species", sn, "has been deleted."
                         # Remove the particle from the trajectory list if it was tagged
-                        if self.trajCI is not None:
+                        if self.traj_T is not None:
                             if psegIn[ipIn]['bitflags'] & self.TRAJECTORY_FLAG != 0:
                                 self.remove_trajectory_particleId(sn, ipIn, psegOut[ipOut])
 
@@ -1008,14 +948,14 @@ class Particle_C(object):
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Scratch space
         pCoord2 = self.pcoord2 # x,y,z, x0,y0,z0 (or subset)
         dx = self.dx # dx is the distance moved in one step.
 #        p_arr = self.one_particle_arr[0]
 
-        pmeshCI = self.pmeshCI
+        pmesh_M = self.pmesh_M
         pDim = self.particle_dimension
 
         for sn in self.neutral_species:
@@ -1041,7 +981,7 @@ class Particle_C(object):
                                # changed.  This affects, e.g., trajectories,
                                # which use SA indices to identify particles
                                # chosen for trajectory plots.
-            while isinstance(psegIn, np_M.ndarray): # Keep looping until we run
+            while isinstance(psegIn, np_m.ndarray): # Keep looping until we run
                                                     # out of 'in' segments
                 for ipIn in xrange(npSeg): # Loop on the particles in this 'in'
                                            # segment
@@ -1080,7 +1020,7 @@ class Particle_C(object):
                     ## If particle indexing is disturbed, update things that depend on it.
 
                     # E.g., if this is a trajectory particle, update its SA index
-                    if self.trajCI is not None:
+                    if self.traj_T is not None:
                         if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0:
                             if indxChange is True:
                             # Update the index in the trajectectory
@@ -1111,12 +1051,12 @@ class Particle_C(object):
 
 #                    print 'ip, index =', ipOut, psegOut[ipOut]['cell_index']
                     pCellIndex = psegOut[ipOut]['cell_index']
-#                    print fncName, ": ip, pindex", ipOut, pCellIndex, "cell index:", pmeshCI.compute_cell_index(psegOut[ipOut])
+#                    print fncName, ": ip, pindex", ipOut, pCellIndex, "cell index:", pmesh_M.compute_cell_index(psegOut[ipOut])
 
                     # Loop until the particle is in the current cell
-                    mLastFacet = pmeshCI.NO_FACET
+                    mLastFacet = pmesh_M.NO_FACET
                     facetCrossCount = 0
-                    while not pmeshCI.is_inside(psegOut[ipOut], pCellIndex):
+                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
                         # there's a boundary-condition on that facet.
@@ -1140,8 +1080,8 @@ class Particle_C(object):
                         dx = pCoord2[0:pDim] - pCoord2[pDim:2*pDim] # Move vector
 
 # could return the crossing-point in pCoord2[]
-                        (cFacet, pathFraction) = pmeshCI.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
-                        if cFacet != pmeshCI.NO_FACET:
+                        (cFacet, pathFraction) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
+                        if cFacet != pmesh_M.NO_FACET:
 #                            print "facet crossed is", cFacet
 
                             # Compute the crossing point
@@ -1154,7 +1094,7 @@ class Particle_C(object):
 #                            print "After truncation p =", psegOut[ipOut]
 
                             # Look up the mesh-level index of this facet...
-                            mFacet = pmeshCI.cell_entity_index_dict['facet'][pCellIndex][cFacet]
+                            mFacet = pmesh_M.cell_entity_index_dict['facet'][pCellIndex][cFacet]
 # mFacet should never be the same as the last facet crossed: check this
                             if mFacet == mLastFacet:
                                 errorMsg = "%s The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!" % (fncName, mFacet)
@@ -1164,7 +1104,7 @@ class Particle_C(object):
                             # ...and get the value of the facet marker.
 # mFacet is a of type 'size_t' or numpy.uint32, but the FacetFunction wants an int argument.
 #                            print "type is:", type(mFacet)
-                            facValue = pmeshCI.particle_boundary_marker[mFacet]
+                            facValue = pmesh_M.particle_boundary_marker[mFacet]
                             # Check if this facet has a non-zero marker
                             if facValue != 0:
                                 # Call the function associated with this value.
@@ -1176,20 +1116,20 @@ class Particle_C(object):
 # Not sure if this else is needed:                            else:
 
 #                            # Update the cell index to the new cell
-#                                pCellIndex = pmeshCI.cell_neighbor_dict[pCellIndex][facet]
+#                                pCellIndex = pmesh_M.cell_neighbor_dict[pCellIndex][facet]
 #                                psegOut[ipOut]['cell_index'] = pCellIndex
 #                                print "cell_index updated to", psegOut[ipOut]['cell_index']
                             # Update the cell index to the new cell
-                            pCellIndex = pmeshCI.cell_neighbor_dict[pCellIndex][cFacet]
+                            pCellIndex = pmesh_M.cell_neighbor_dict[pCellIndex][cFacet]
                             psegOut[ipOut]['cell_index'] = pCellIndex
                             # If the particle has left the grid, exit this 'while' loop.
-                            if pCellIndex == pmeshCI.NO_CELL: break # Exit the 'while' loop
+                            if pCellIndex == pmesh_M.NO_CELL: break # Exit the 'while' loop
                                 
                         else:
                             errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
                             sys.exit(errorMsg)
-#                       END:if cFacet != pmeshCI.NO_FACET:
-#                   END:while not pmeshCI.is_inside(psegOut[ipOut], pCellIndex)
+#                       END:if cFacet != pmesh_M.NO_FACET:
+#                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
 
                     # Don't need this since we just look up the cell
                     # index when computing negE above
@@ -1200,7 +1140,8 @@ class Particle_C(object):
                     if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 0:
                         ipOut += 1
                     else:
-                        print "Particle", ipIn, "of species", sn, "has been deleted."
+#                        print "Particle", ipIn, "of species", sn, "has been deleted."
+                        pass
 
                     # Check if we've reached the end of this segment.  If
                     # so, we need to start writing on a new segment.
@@ -1250,7 +1191,7 @@ class Particle_C(object):
             psaCI.init_segment_loop()
             pseg = psaCI.get_next_segment()
 #            while pseg != None:
-            while isinstance(pseg, np_M.ndarray):
+            while isinstance(pseg, np_m.ndarray):
 #            print pseg['z']
 #            print pseg
                 # Compute electric field for each particle
@@ -1311,7 +1252,7 @@ class Particle_C(object):
         particleCount = 0
         # ipOut counts through the 'out' array
         ipOut = 0
-        while isinstance(psegIn, np_M.ndarray):
+        while isinstance(psegIn, np_m.ndarray):
 #            print "type pseg = ", type(pseg)
 #            print pseg['z']
 #            print pseg
@@ -1325,7 +1266,7 @@ class Particle_C(object):
 
                 ## Skip deleted particles
                 if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0:
-                    print "Deleting particle with ipIn =", ipIn
+#                    print "Deleting particle with ipIn =", ipIn
                     indxChange = True # Particle SA indices are stale past
                                       # this point due to deleted items.
                     continue # skip to the next particle
@@ -1342,7 +1283,7 @@ class Particle_C(object):
                 ## If particle indexing is disturbed, update things that depend on it.
 
                 # E.g., if this is a trajectory particle, update its SA index
-                if self.trajCI is not None:
+                if self.traj_T is not None:
                     if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0:
                         if indxChange is True:
                         # Update the index in the trajectectory
@@ -1421,26 +1362,31 @@ class Particle_C(object):
         (full_index_in, full_index_out) = psaCI.get_full_indices(i_in, i_out)
 
         # Find the position of full_index_in:
-        indx = self.trajCI.ParticleIdList[sn].index(full_index_in)
+        indx = self.traj_T.ParticleIdList[sn].index(full_index_in)
         # Replace this with the new full index
-        self.trajCI.ParticleIdList[sn][indx] = full_index_out
+        self.traj_T.ParticleIdList[sn][indx] = full_index_out
 
         return full_index_in, full_index_out
 #    def update_trajectory_particleId(self, sn, i_in, i_out):ENDDEF
 
 #class Particle_C(object):
     def remove_trajectory_particleId(self, sn, i_in, p):
-        """Remove a particle from the trajectory list.
+        """Record the last data for a particle and remove it from the trajectory
+           list.
 
            When a particle that is tagged as a trajectory particle is deleted,
-           it has to be removed for the trajectory list.
+           it has to be removed for the trajectory list.  Record the last datum
+           for this particle, and then change the particle index to NO_PINDEX to
+           skip it in subsequent looping over trajectory particles.
 
            :param str sn: The name of the current species being advanced.
-           :param p: The current attributes of the particle being deleted.
            :param int i_in: The particle's index in the current 'in' segment.
+           :param p: The current attributes of the particle being deleted.
+
+           :cvar NO_PINDEX: a flag indicating the particle no longer exists.
         """
 
-        trajCI = self.trajCI
+        traj_T = self.traj_T
         psaCI = self.pseg_arr[sn] # The segmented array for this species
         p_arr = self.one_particle_arr
 
@@ -1455,48 +1401,105 @@ class Particle_C(object):
         # Copy the particle values into the trajectory
 
         # Find the position of full_index_in:
-        indx = self.trajCI.ParticleIdList[sn].index(full_index_in)
+        indx = self.traj_T.ParticleIdList[sn].index(full_index_in)
 
-        count = self.trajCI.TrajectoryLength[sn][indx]
-        for comp in trajCI.explicit_dict['names']:
+        count = self.traj_T.TrajectoryLength[sn][indx]
+        for comp in traj_T.explicit_dict['names']:
             if comp in p_arr.dtype.names:
-                trajCI.DataList[sn][indx][comp][count] = p_arr[0][comp]
+                traj_T.DataList[sn][indx][comp][count] = p_arr[0][comp]
                 # The particle has been deleted and may be out-of-bounds, so set
                 # E to zero instead of interpolating.
                 # This isn't right: 'Ex' never passes this test.
             if comp in self.negE.dtype.names:
                 Ecomp = 'E'+comp
-                trajCI.DataList[sn][indx][Ecomp][count] = 0.0
+                traj_T.DataList[sn][indx][Ecomp][count] = 0.0
         
-        self.trajCI.TrajectoryLength[sn][indx] += 1 # Increment the trajectory length
+        self.traj_T.TrajectoryLength[sn][indx] += 1 # Increment the trajectory length
 
         # Mark this as a trajectory where the particle no longer exists.
-        self.trajCI.ParticleIdList[sn][indx] = self.trajCI.NO_PINDEX
+        self.traj_T.ParticleIdList[sn][indx] = self.traj_T.NO_PINDEX
 
         return full_index_in
 #    def remove_trajectory_particleId(self, sn, i_in):ENDDEF
 
 #class Particle_C(object):
-#    def record_trajectory_data(self, field=neg_electric_field):
-    def record_trajectory_data(self, neg_E_field=None):
-        """Save one trajectory data-record for the marked particles of all species.
+    def record_trajectory_datum(self, species_name, p, neg_E_field):
+        """Save a single data-record of a particle trajectory.
+
+           :param species_name: Name of the species that the marked
+                                particle belongs to.
+           :param p: One particle record, as defined by particle_dtype in Particle_C.__init__
+           :param neg_E_field: A Field_C object containing the vector -E.
+
         """
 
-        trajCI = self.trajCI
+        traj_T = self.traj_T
+        p_arr = self.one_particle_arr
+
+
+        # Copy the values
+        p_arr[0] = p
+
+        # print "record_trajectory_datum: p_arr[0] = ", p_arr[0]
+
+        # Compute the force on this single particle
+        if neg_E_field is None:
+            self.negE1[0] = self.zeroE[0]
+        else:
+            neg_E_field.interpolate_field_to_points(p_arr, self.negE1)
+
+        E_arr = self.negE1[0:p_arr.size] # Need this syntax, even though there's
+                                        # just one particle, to make E_arr an array.
+
+        # Flip the sign to get correct E. (This is a vector
+        # operation on each component of E.)
+        for n in E_arr.dtype.names:
+            E_arr[n] *= -1.0
+
+        # print "E_arr.dtype.names =", E_arr.dtype.names
+
+        # Copy the particle values into the new trajectory, which is the last one
+        # added onto the list of trajectories for this species.
+
+        inew = len(traj_T.ParticleIdList[species_name]) - 1 # 
+        count = traj_T.TrajectoryLength[species_name][inew]
+        for comp in traj_T.explicit_dict['names']:
+            # print 'comp = ', comp
+            if comp in p_arr.dtype.names:
+            # traj_T.DataList[species_name][inew][count][comp] = p_arr[0][comp]
+                traj_T.DataList[species_name][inew][comp][count] = p_arr[0][comp]
+            if comp in E_arr.dtype.names:
+                traj_T.DataList[species_name][inew][comp][count] = E_arr[0][comp]
+
+        traj_T.TrajectoryLength[species_name][inew] += 1 # Increment the trajectory length
+
+        return
+#    def record_trajectory_datum(self, neg_E_field=None):ENDDEF
+
+#class Particle_C(object):
+    def record_trajectory_data(self, neg_E_field=None):
+        """Save one trajectory data-record for all the marked particles of all
+           species.
+
+           :param neg_E_field: A Field_C object containing the vector -E.
+
+        """
+
+        traj_T = self.traj_T
         p_arr = self.one_particle_arr
 #        print 'p_arr.dtype.names = ', p_arr.dtype.names
-        count = self.trajCI.count
+#        count = self.traj_T.count
 
         # Loop on trajectories of explicit particles
-        for sp in trajCI.explicit_species:
+        for sp in traj_T.explicit_species:
             pseg_arrCI = self.pseg_arr[sp] # The SA for this species
-            for i in xrange(len(trajCI.ParticleIdList[sp])): # i loops on
-                                                             # particle indices
-#            for ip in trajCI.ParticleIdList[sp]:
-                ip = trajCI.ParticleIdList[sp][i] # Look up the full particle index
+            for i in xrange(len(traj_T.ParticleIdList[sp])): # i loops on
+                                                             # particle-index array
+#            for ip in traj_T.ParticleIdList[sp]:
+                ip = traj_T.ParticleIdList[sp][i] # Look up the full particle index
 
                 # If a particle no longer exists, skip
-                if ip == trajCI.NO_PINDEX: continue
+                if ip == traj_T.NO_PINDEX: continue
 
                 # Retrieve particle using its full index
                 p_arr[0] = pseg_arrCI.get(ip) # pulls value from the 'out' array.
@@ -1521,18 +1524,18 @@ class Particle_C(object):
 
                 # Copy the particle values into the trajectory
 
-                count = trajCI.TrajectoryLength[sp][i]
-                for comp in trajCI.explicit_dict['names']:
+                count = traj_T.TrajectoryLength[sp][i]
+                for comp in traj_T.explicit_dict['names']:
 #                    print 'comp = ', comp
                     if comp in p_arr.dtype.names:
-#                        trajCI.DataList[sp][i][count][comp] = p_arr[0][comp]
-                        trajCI.DataList[sp][i][comp][count] = p_arr[0][comp]
+#                        traj_T.DataList[sp][i][count][comp] = p_arr[0][comp]
+                        traj_T.DataList[sp][i][comp][count] = p_arr[0][comp]
                     if comp in E_arr.dtype.names:
-                        trajCI.DataList[sp][i][comp][count] = E_arr[0][comp]
+                        traj_T.DataList[sp][i][comp][count] = E_arr[0][comp]
 
-#        print 'trajCI.DataList: ', trajCI.DataList['testelectrons'][0]
+#        print 'traj_T.DataList: ', traj_T.DataList['testelectrons'][0]
 
-                trajCI.TrajectoryLength[sp][i] += 1 # Increment the trajectory length
+                traj_T.TrajectoryLength[sp][i] += 1 # Increment the trajectory length
 
         # Loop on trajectories of implicit particles
 
@@ -1550,16 +1553,16 @@ class Particle_C(object):
                
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         ## Loop over species
-        if self.pmeshCI is not None:
+        if self.pmesh_M is not None:
             for s in self.species_names:
                 charge = self.charge[s]
                 # Loop over the number-density arrays
                 charge_density.multiply_add(self.number_density_dict[s], charge)
         else:
-            print fncName, "(DnT WARNING) The reference to pmeshCI is None"
+            print fncName, "(DnT WARNING) The reference to pmesh_M is None"
             
         return
 #    def accumulate_charge_density_from_particles(self, charge_density):ENDDEF
@@ -1568,7 +1571,7 @@ class Particle_C(object):
 # Standard particle distribution types
 
 #class Particle_C(object):
-    def create_maxwellian_particles(self, time, domain, paramDict):
+    def create_maxwellian_particles(self, time, domain, paramDict, neg_E_field):
         """Generates particles with a Maxwellian velocty distribution and adds
            them to particle storage.
 
@@ -1599,7 +1602,7 @@ class Particle_C(object):
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         cellList = domain.cell_list
         nCell = domain.ncell
@@ -1608,15 +1611,15 @@ class Particle_C(object):
         numberDensity = paramDict['number_density']
         thermalSpeed = paramDict['thermal_speed']
         driftVelocity = paramDict['drift_velocity']
+        velocityCoordinateSystem = paramDict['velocity_coordinate_system']
         numberPerCell = paramDict['number_per_cell']
         
         # Get the storage for this species
         pseg_arrCI = self.pseg_arr[speciesName] # The SegmentedArray_C object for this species
         pDim = self.particle_dimension
 
-        # Scratch space
+        # References to scratch space
         particle = self.one_particle_arr[0]
-
         pCoord = self.pcoord # x, y, z (or subset)
         pVel = self.pvel # ux, uy, uz (or subset)
         random_vals = self.random_vals
@@ -1629,13 +1632,14 @@ class Particle_C(object):
 
         # Multiplier for particle weight
         weightMult = numberDensity/numberPerCell
-
+        if self.coordinate_system == '1D-spherical-radius':
+            weightMult /= 4.0*np_m.pi # 4 \pi radians in a sphere
+            
         for icell in xrange(nCell):
-
             # Compute the particle weight (number of particles per macroparticle)
             weight = domain.volume[icell]*weightMult
 
-            cell_index = Mesh_C.NO_CELL
+            cellIndex = domain.cell_index[icell]
 
             # Set positions and velocities
             cellRad = domain.radius[icell]
@@ -1654,7 +1658,7 @@ class Particle_C(object):
                 else:
                     while True:
                         # Put the particle in a sphere
-                        random_vals = np_M.random.uniform(-1.0, 1.0, gDim)
+                        random_vals = np_m.random.uniform(-1.0, 1.0, gDim)
                         for i in range(gDim):
                             pCoord[i] = cellMid[i]+random_vals[i]*cellRad
                         # Check if its in the cell    
@@ -1662,7 +1666,10 @@ class Particle_C(object):
                             break
 
                 # Generate a velocity vector
-                pVel = np_M.random.normal(0.0, thermalSpeed, pDim) + driftVelocity
+
+# For 'r_theta_z' this needs to change?
+
+                pVel = np_m.random.normal(0.0, thermalSpeed, pDim) + driftVelocity
 
                 # Fill a particle record: (x,y,z, x0,y0,z0, ux,uy,uz, weight,
                 #                         bitflags, cell_index)
@@ -1676,7 +1683,7 @@ class Particle_C(object):
                 # Fill in the rest of the data for this particle
                 particle[3*pDim] = weight
                 particle[3*pDim+1] = bitflags
-                particle[3*pDim+2] = cell_index
+                particle[3*pDim+2] = cellIndex
             
                 # Store the particle
                 p, pindex = pseg_arrCI.put(particle)
@@ -1684,23 +1691,14 @@ class Particle_C(object):
                 # If the particle is tagged as a trajectory particle, initialize
                 # its trajectory information.
                 if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
-                    if self.trajCI is not None:
+                    if self.traj_T is not None:
 #                    print 'pindex for trajectory = ', pindex
-                        self.trajCI.ParticleIdList[speciesName].append(pindex)
-                        self.trajCI.TrajectoryLength[speciesName].append(0) # Set the point count to 0
-                        # The dynamics type determines what trajectory variables are available
-                        if speciesName in self.trajCI.explicit_species:
-                            dynamicsType = 'explicit'
-                        elif speciesName in self.trajCI.implicit_species:
-                            dynamicsType = 'implicit'
-                        elif speciesName in self.trajCI.neutral_species:
-                            dynamicsType = 'neutral'
-                        else:
-                            errorMsg = "(DnT ERROR) Particle_C:create_from_list: dynamicsType is unknown for species %s" % speciesName
-                            sys.exit(errorMsg)
-                        self.trajCI.create_trajectory(speciesName, dynamicsType)
+                        dynamicsType = self.dynamics[speciesName]
+                        self.traj_T.create_trajectory(speciesName, pindex, dynamicsType)
+                        # Record the initial datum for this new trajectory
+                        self.record_trajectory_datum(speciesName, p, neg_E_field)
                     else:
-# Instead of printing this message, a trajCI object could be created here?
+# Instead of printing this message, a traj_T object could be created here?
                         print fncName, "(DnT WARNING) A trajectory flag is on, but no trajectory object has been created yet."
 
 #        if (print_flag): print fncName, "weight for ", speciesName, " is ", weight
@@ -1717,7 +1715,7 @@ class Particle_C(object):
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Check the particle output attributes requested against those that have been defined
 
@@ -1737,7 +1735,7 @@ class Particle_C(object):
 
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         self.particle_output_file = h5File = h5py.File(ctrlCI.particle_output_file,"w")
         
@@ -1768,7 +1766,7 @@ class Particle_C(object):
         """Writes out particle attributes for one timestep.
         """
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         groupName = "Step#" + str(self.h5_step_counter)
         group = self.particle_output_file.create_group(groupName)
@@ -1782,7 +1780,7 @@ class Particle_C(object):
 #            print "newNumSegs =", newNumSegs
             # Allocate a new buffer
             self.h5_buffer_length = newNumSegs*self.SEGMENT_LENGTH
-            self.h5_buffer = np_M.empty(self.h5_buffer_length, dtype=np_M.float64)
+            self.h5_buffer = np_m.empty(self.h5_buffer_length, dtype=np_m.float64)
         h5Buf = self.h5_buffer
 
         ### Loop on the particle attributes to be written out
@@ -1791,12 +1789,12 @@ class Particle_C(object):
             # Make the dtype of h5Buf match the dtype of the attribute
             # H5Part seems to be all 64-bit
             if pA == 'species_index':
-                h5Buf.dtype = np_M.int64
+                h5Buf.dtype = np_m.int64
             else:
-                if np_M.issubdtype(self.particle_dtype[pA], np_M.float):
-                    h5Buf.dtype = np_M.float64
-                elif np_M.issubdtype(self.particle_dtype[pA], np_M.integer):
-                    h5Buf.dtype = np_M.int64
+                if np_m.issubdtype(self.particle_dtype[pA], np_m.float):
+                    h5Buf.dtype = np_m.float64
+                elif np_m.issubdtype(self.particle_dtype[pA], np_m.integer):
+                    h5Buf.dtype = np_m.int64
                 else:
                     errorMsg = fncName + "The type of particle attribute " + pA + " is not float or integer. It is " + str(self.particle_dtype[pA])
                     sys.exit(errorMsg)
@@ -1821,7 +1819,7 @@ class Particle_C(object):
                     psaCI = self.pseg_arr[s] # segmented array for this species
                     (npSeg, pseg) = psaCI.init_out_loop()
                     particleCount = 0
-                    while isinstance(pseg, np_M.ndarray):
+                    while isinstance(pseg, np_m.ndarray):
 #                        print "Array for", pA, "is: ", pseg[pA], "shape = ", pseg.shape
 #                        print "Range of h5Buf is:", aOff, aOff+npSeg, "shape =", h5Buf.shape
                         h5Buf[aOff:aOff+npSeg] = pseg[pA]
@@ -1866,7 +1864,7 @@ class ParticleMeshBoundaryConditions_C(object):
 
 #class ParticleMeshBoundaryConditions_C(object):
 # Look for specific boundary conditions
-    def __init__(self, speciesNames, pmeshCI, userParticleMeshFunctionsClass, print_flag = False):
+    def __init__(self, speciesNames, pmesh_M, userParticleMeshFunctionsClass, print_flag = False):
         """Initialize particle callback functions (boundary conditions).
 
            The following function naming-scheme is used:
@@ -1882,7 +1880,7 @@ class ParticleMeshBoundaryConditions_C(object):
 
         """
         # Set local names from passed parameters
-        pBDict = pmeshCI.particle_boundary_dict
+        pBDict = pmesh_M.particle_boundary_dict
 
         # We want to associate the names of the user-supplied boundary
         # functions with the int values of the facet tags.  First, we
@@ -1959,12 +1957,12 @@ class ParticleMeshSources_C(object):
     # Static class variables
 
 #class ParticleMeshSources_C(object):
-    def __init__(self, speciesNames, pmeshCI, userParticleMeshSourceFunctionsClass, print_flag = False):
+    def __init__(self, speciesNames, pmesh_M, userParticleMeshSourceFunctionsClass, print_flag = False):
         """Initialize particle source functions.
 
         """
         # Set local names from passed parameters
-        pSrcDict = pmeshCI.particle_source_dict
+        pSrcDict = pmesh_M.particle_source_dict
 
         # We want to associate the names of the user-supplied cell functions with the int
         # values of the cell tags.  First, we swap the source dictionary keys and values:
@@ -2019,4 +2017,3 @@ class ParticleMeshSources_C(object):
 #    def __init__(self, particleInputCI, particleCI, print_flag = False):ENDDEF
 
 #class ParticleMeshSources_C(object):ENDCLASS
-

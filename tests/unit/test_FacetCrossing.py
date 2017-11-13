@@ -16,7 +16,7 @@ from Dolfin_Module import Mesh_C
 from UserUnits_Module import MyPlasmaUnits_C
 from Particle_Module import *
 
-from UserMesh_FE_XYZ_Module import *
+from UserMesh_y_Fields_FE_XYZ_Module import *
 
 class TestFacetCrossing(unittest.TestCase):
     """Test of finding the facet crossed and desination cell due to a
@@ -233,7 +233,7 @@ class TestFacetCrossing(unittest.TestCase):
                 # and make sure the two cells with this facet (the
                 # cells are entities having dimension 1) are the start
                 # and end cells.
-                print 'facet is connected to cell', facet.entities(1)
+#                print 'facet is connected to cell', facet.entities(1)
 
                 self.assertTrue(cell.index() in facet.entities(1) and cell2_index in facet.entities(1), msg = "1D: facet given by find_facet is not correct")
 #            if cell2_index != Mesh_C.NO_CELL:ENDIF
@@ -262,7 +262,7 @@ class TestFacetCrossing(unittest.TestCase):
                 # and make sure the two cells with this facet (the
                 # cells are entities having dimension 1) are the start
                 # and end cells.
-                print 'facet is connected to cell', facet.entities(1)
+#                print 'facet is connected to cell', facet.entities(1)
 
                 self.assertTrue(cell.index() in facet.entities(1) and cell2_index in facet.entities(1), msg = "1D: facet given by find_facet is not correct")
 #            if cell2_index != Mesh_C.NO_CELL:ENDDIF
