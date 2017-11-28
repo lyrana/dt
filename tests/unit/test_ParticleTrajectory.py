@@ -42,6 +42,10 @@ class TestParticleTrajectory(unittest.TestCase):
 
         self.ctrl.dt = 1.0e-6
 
+        # Initialize time counters
+        self.ctrl.timestep_count = 0
+        self.ctrl.time = 0.0
+
         ### Particle species input
 
         # Create an instance of the DTparticleInput class
@@ -206,11 +210,11 @@ class TestParticleTrajectory(unittest.TestCase):
 
         self.trajin.maxpoints = None # Set to None to get every point
 
-        # Specify which particle variables to save.  This has the
-        # form of a numpy dtype specification.
-        self.trajin.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
-        self.trajin.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
-        self.trajin.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
+        # Specify which particle variables to save.  This has the form of a numpy
+        # dtype specification.
+        self.trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [int, numpy.float32, numpy.float32, numpy.float32, numpy.float32, numpy.float32, numpy.float32, numpy.float32]}
+        self.trajin.implicit_dict = {'names': ['step', 't', 'x', 'ux', 'phi'], 'formats': [int, numpy.float32, numpy.float32, numpy.float32, numpy.float32]}
+        self.trajin.neutral_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy'], 'formats': [int, numpy.float32, numpy.float32, numpy.float32, numpy.float32, numpy.float32]}
 
         return
 
@@ -296,16 +300,23 @@ class TestParticleTrajectory(unittest.TestCase):
         # Get the initial cell index of each particle.
         p_P.compute_mesh_cell_indices()
 
+        # Record the first point on trajectories of marked particles
+        if p_P.traj_T is not None:
+            p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
+
         print "Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps"
         for istep in xrange(self.ctrl.n_timesteps):
-            # needs dt; doesn't need n_timesteps
 
-            # Gather particle trajectory data
-            # First point is the initial particle condition at istep = 0
+            self.ctrl.timestep_count += 1
+            self.ctrl.time += self.ctrl.dt
+            # XX needs dt; doesn't need n_timesteps
+
+            # Record particle trajectory data
             if p_P.traj_T is not None:
 #                print 'p_P.traj_T.skip:', p_P.traj_T.skip
-                if istep % p_P.traj_T.skip == 0:
-                    p_P.record_trajectory_data(neg_E_field=self.neg_electric_field)
+                if self.ctrl.timestep_count % p_P.traj_T.skip == 0:
+                    p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
+
 # test for neg_E_field = None:
 #                    p_P.record_trajectory_data()
 
@@ -319,7 +330,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Record the LAST points on the particle trajectories
         if p_P.traj_T is not None:
-                p_P.record_trajectory_data(neg_E_field=self.neg_electric_field)
+            p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
         # Check the results
 
@@ -398,16 +409,25 @@ class TestParticleTrajectory(unittest.TestCase):
         # Get the initial cell index of each particle.
         p_P.compute_mesh_cell_indices()
 
+        # Record the first point on trajectories of marked particles
+        if p_P.traj_T is not None:
+            p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
+
         print "Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps"
         for istep in xrange(self.ctrl.n_timesteps):
-            # needs dt; doesn't need n_timesteps
+
+            self.ctrl.timestep_count += 1
+            self.ctrl.time += self.ctrl.dt
+
+            # XX needs dt; doesn't need n_timesteps
 
             # Gather particle trajectory data
             # First point is the initial particle condition at istep = 0
             if p_P.traj_T is not None:
 #                print 'p_P.traj_T.skip:', p_P.traj_T.skip
-                if istep % p_P.traj_T.skip == 0:
-                    p_P.record_trajectory_data(neg_E_field=self.neg_electric_field)
+                if self.ctrl.timestep_count % p_P.traj_T.skip == 0:
+                    p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
+
 
             # Do the implicit species first
             if len(p_P.implicit_species) != 0:
@@ -419,7 +439,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Record the LAST points on the particle trajectory
         if p_P.traj_T is not None:
-                p_P.record_trajectory_data(neg_E_field=self.neg_electric_field)
+            p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
         # Check the results
 

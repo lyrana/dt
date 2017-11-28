@@ -397,7 +397,7 @@ class TestParticleInitialization(unittest.TestCase):
         p_P.initialize_particle_output_file(ctrl)
 
         # Write the particle attributes
-        p_P.write_particle_attributes(ctrl)
+        p_P.write_particles_to_file(ctrl)
 
         return
 #    def test_function_initialized_particles(self):ENDDEF

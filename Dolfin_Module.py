@@ -58,13 +58,13 @@ class Mesh_C(object):
         # This section will also execute if this __init__ is called by a
         # child class.
         if self.mesh is not None:
-            if plot_flag == True:
+            if plot_flag is True:
                 df_m.plot(self.mesh, title=plot_title, axes=True)
                 df_m.interactive()
             # Compute the search tree. Uses:
             #     Evaluating field probes at a point.
             #     Computing the cell index of a particle.
-            if compute_tree == True:
+            if compute_tree is True:
                 self.bbtree = self.mesh.bounding_box_tree()
 
             self.gdim = self.mesh.geometry().dim()
@@ -90,7 +90,7 @@ class Mesh_C(object):
             self.cell_volume_dict = {}
 
             # Compute lookup dictionaries
-            if compute_dictionaries == True:
+            if compute_dictionaries is True:
                 self.compute_cell_dict()
                 self.compute_cell_entity_index_dict('vertex') # Get vertex indices from a cell index
                 self.compute_cell_entity_index_dict('facet') # Get facet indices from a cell index
@@ -1210,7 +1210,7 @@ class PoissonSolve_C(object):
         df_m.solve(self.A, U, self.b)
 
 # Plot the electric potential
-        if plot_flag == True:
+        if plot_flag is True:
             df_m.plot(self.u, title=plot_title+": phi")
             df_m.interactive()
 
@@ -1246,7 +1246,7 @@ class PoissonSolve_C(object):
 
         function_space = self.neg_electric_field.function_space
         self.neg_electric_field.function = df_m.project(negE, function_space)
-        if plot_flag == True:
+        if plot_flag is True:
             df_m.plot(self.neg_electric_field.function, title=plot_title+": -E")
             df_m.interactive()
 

@@ -317,7 +317,7 @@ class UserMesh1DS_C(Mesh_C):
 # Make a plot of the mesh
         if (plot_flag):
             if plot_title is None: plotTitle = "1D radial"
-            df_m.plot(mesh, title=plotTitle + ": mesh", axes=True)
+            df_m.plot(mesh, title=plotTitle + " mesh", axes=True)
             df_m.interactive()
 
         # Save the class attributes

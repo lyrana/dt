@@ -52,7 +52,7 @@ class Trajectory_C(object):
     # Value signalling that the particle index does not exist.  E.g., particle was deleted
     NO_PINDEX = -1
 
-    def __init__(self, trajinCI, ctrlCI, explicit_species, implicit_species, neutral_species):
+    def __init__(self, trajinCI, ctrl, explicit_species, implicit_species, neutral_species):
         """Set up the initial storage.  
 
            :var trajinCI.maxpoints: Maximum number of trajectory data points to be
@@ -80,20 +80,25 @@ class Trajectory_C(object):
         """
 
         # Counter for the number of datapoints stored
-        self.count = 0
+        self.count = 0 # XX Not used?
+
+        self.last_step = None # This variable can be used to check if the simulation
+                              # step in the current call is the same as the step in
+                              # the last call, and avoid storing the same data twice.
 
         # Compute a skip interval to stay within the maximum number of
         # datapoints (if specified).
         if trajinCI.maxpoints == None:
             self.skip = 1
         else:
-            self.skip = ctrlCI.n_timesteps/trajinCI.maxpoints + 1
+            self.skip = ctrl.n_timesteps/trajinCI.maxpoints + 1
 
         # Length of trajectory data arrays
-        self.npoints = ctrlCI.n_timesteps/self.skip + 1
+#        self.npoints = ctrl.n_timesteps/self.skip + 2 # Add 2 because a newly-created trajectory particle automatically gets recorded, and may then be recorded again 
+        self.npoints = ctrl.n_timesteps/self.skip + 1
 
         # Time interval between datapoints
-        self.data_interval = self.skip * ctrlCI.dt
+        self.data_interval = self.skip * ctrl.dt
 
         # Need these to get the right trajectory variables
         self.explicit_species = explicit_species
@@ -121,7 +126,7 @@ class Trajectory_C(object):
             self.TrajectoryLength[sp] = []
 
         return
-#    def __init__(self, trajinCI, ctrlCI, explicit_species, implicit_species, neutral_species):ENDDEF
+#    def __init__(self, trajinCI, ctrl, explicit_species, implicit_species, neutral_species):ENDDEF
 
     def create_trajectory(self, species_name, pindex, dynamics_type):
         """Add storage for another particle trajectory.
@@ -159,9 +164,11 @@ class Trajectory_C(object):
         """
         import matplotlib.pyplot as mplot_m
 
-        tmin = 0.0
-        tmax = tmin + (self.npoints-1)*self.data_interval
-        tvals = np_M.linspace(tmin, tmax, self.npoints)
+#        tmin = 0.0
+#        tmax = tmin + (self.npoints-1)*self.data_interval
+#        tvals = np_M.linspace(tmin, tmax, self.npoints)
+
+
 #        print 'tval = ', tvals
 
         # Temporary array for plotting
@@ -170,11 +177,12 @@ class Trajectory_C(object):
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
 #            self.ParticleIdList[sp] = []
 #            self.DataList[sp] = []
-            comps = self.DataList[sp][0][0].dtype.names
+            comps = self.DataList[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
 #            print 'comps =', comps
             for it in xrange(len(self.ParticleIdList[sp])):
                 ip = self.ParticleIdList[sp][it]
                 data_arr = self.DataList[sp][it]
+                tvals = self.DataList[sp][it]['t']
                 # Plots vs. time
                 for comp in comps:
                     mplot_m.plot(tvals, data_arr[comp])
@@ -214,7 +222,7 @@ class Trajectory_C(object):
         plotter=df_M.plot(mesh, title=plot_title)
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
-            comps = self.DataList[sp][0][0].dtype.names
+            comps = self.DataList[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
             # Loop on trajectories for this species
             for it in xrange(len(self.ParticleIdList[sp])):
 #                ip = self.ParticleIdList[sp][it] # Not used

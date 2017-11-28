@@ -89,20 +89,20 @@ class TestFieldSolve(unittest.TestCase):
         phiElementDegree = 2
         phiFieldType = 'scalar'
 
-        phi = Field_C(mesh_M=mesh_M,
+        phi_F = Field_C(mesh_M=mesh_M,
                            element_type=phiElementType,
                            element_degree=phiElementDegree,
                            field_type=phiFieldType)
 
         if phiElementDegree == 1:
-            # For linear elements, grad(phi) is discontinuous across
+            # For linear elements, grad(phi_F) is discontinuous across
             # elements. To represent this field, we need Discontinuous Galerkin
             # elements.
             electricFieldElementType = 'DG'
         else:
             electricFieldElementType = 'Lagrange'
 
-        negElectricField = Field_C(mesh_M=mesh_M,
+        negElectricField_F = Field_C(mesh_M=mesh_M,
                                       element_type=electricFieldElementType,
                                       element_degree=phiElementDegree-1,
                                       field_type='vector')
@@ -123,10 +123,10 @@ class TestFieldSolve(unittest.TestCase):
         phiBCs = dict( (bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
 
         # Compute the electrostatic field from phi
-        laplacesolve = UserPoissonSolve1DS_C(phi,
+        laplacesolve = UserPoissonSolve1DS_C(phi_F,
                                                linearSolver, preconditioner,
                                                fieldBoundaryMarker, phiBCs,
-                                               neg_electric_field=negElectricField)
+                                               neg_electric_field=negElectricField_F)
 
         # Set the source term: it's zero for Laplace's equation.
         # This sets the b vector
@@ -140,25 +140,23 @@ class TestFieldSolve(unittest.TestCase):
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
 
         # Write the potential to a file in VTK and XML formats
-        file = df_m.File('phi1D.pvd')
+        file = df_m.File('phi_test_1_1D.pvd')
         # phi_name goes into the output file; phi_label doesn't
-        phi.function.rename("phi1D", "phi_label")
-        file << phi.function
-        file = df_m.File('phi1D.xml')
-        file << phi.function
+        phi_F.function.rename("phi1D", "phi_label")
+        file << phi_F.function
+        file = df_m.File('phi_test_1_1D.xml')
+        file << phi_F.function
         
         # Write -E to a file in VTK and XML formats
-        # if (fsiCI.computeEflag == True):
-        #     file = df_m.File('negE1D.pvd')
-        #     file << fieldsolveCI.negE
-        #     file = df_m.File('negE1D.xml')
-        #     file << fieldsolveCI.negE
-        # Doesn't work for a 1D vector field!
-
+        # !!! VTK cannot write a vector field on a 1D grid.
+        # file = df_m.File('negE_test_1_1D.pvd')
+        # file << fieldsolveCI.negE
+        file = df_m.File('negE_test_1_1D.xml')
+        file << negElectricField_F.function
+        
         # Check the 1/r^2 fall-off in E:
 
-        Emin, Emax = negElectricField.function(umi.rmin), negElectricField.function(umi.rmax)
-
+        (Emin, Emax) = (negElectricField_F.function(umi.rmin), negElectricField_F.function(umi.rmax))
 #        print "Emin, Emax =", Emin, Emax
         ratio = Emin*umi.rmin**2/(Emax*umi.rmax**2)
 #        print "ratio:", ratio
@@ -167,7 +165,7 @@ class TestFieldSolve(unittest.TestCase):
         self.assertAlmostEqual(ratio, 1.0, places=decimal_places, msg="Falloff in E is not 1/r^2 to %d decimals" % decimal_places)
 
         r_arr = mesh_M.mesh.coordinates()[:,0]
-        phi_arr = phi.function.vector().array()
+        phi_arr = phi_F.function.vector().array()
         nnodes = len(phi_arr)
         nvertices = len(r_arr)
 #        print "nnode =", nnodes
@@ -265,7 +263,7 @@ class TestFieldSolve(unittest.TestCase):
         phiElementDegree = 1
         phiFieldType = 'scalar'
 
-        phi = Field_C(mesh_M=mesh_M,
+        phi_F = Field_C(mesh_M=mesh_M,
                       element_type=phiElementType,
                       element_degree=phiElementDegree,
                       field_type=phiFieldType)
@@ -278,7 +276,7 @@ class TestFieldSolve(unittest.TestCase):
         else:
             electricFieldElementType = "Lagrange"
 
-        negElectricField = Field_C(mesh_M=mesh_M,
+        negElectricField_F = Field_C(mesh_M=mesh_M,
                                    element_type=electricFieldElementType,
                                    element_degree=phiElementDegree-1,
                                    field_type='vector')
@@ -305,10 +303,10 @@ class TestFieldSolve(unittest.TestCase):
 
         computeEflag = True
 
-        laplacesolve = UserPoissonSolve2DCirc_C(phi,
+        laplacesolve = UserPoissonSolve2DCirc_C(phi_F,
                                             linearSolver, preconditioner,
                                             fieldBoundaryMarker, phiBCs,
-                                            neg_electric_field=negElectricField)
+                                            neg_electric_field=negElectricField_F)
 
         laplacesolve.assemble_source_expression(0.0)
 
@@ -319,19 +317,19 @@ class TestFieldSolve(unittest.TestCase):
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
 
         # Write the potential to a file in VTK and XML formats
-        file = df_m.File("phi2D_crossed.pvd")
-        phi.function.rename("phi2D", "phi_label")
-        file << phi.function
-        file = df_m.File("phi2D_crossed.xml")
-        file << phi.function
+        file = df_m.File("phi_test_2_2D.pvd")
+        phi_F.function.rename("phi2D", "phi_label")
+        file << phi_F.function
+        file = df_m.File("phi_test_2_2D.xml")
+        file << phi_F.function
         
         # Write -E to a file in VTK and XML formats
-        if negElectricField is not None:
-            negElectricField.function.rename("E2D", "E_label")
-            file = df_m.File("negE2D_crossed.pvd")
-            file << negElectricField.function
-            file = df_m.File("negE2D_crossed.xml")
-            file << negElectricField.function
+        if negElectricField_F is not None:
+            negElectricField_F.function.rename("E2D", "E_label")
+            file = df_m.File("negE_test_2_2D.pvd")
+            file << negElectricField_F.function
+            file = df_m.File("negE2D_test_2_2D.xml")
+            file << negElectricField_F.function
 
         return
 #    def test_2_2D_cyl_laplace_solver(self):ENDDEF
@@ -433,7 +431,7 @@ class TestFieldSolve(unittest.TestCase):
         else:
             electricFieldElementType = "Lagrange"
 
-        negElectricField = Field_C(mesh_M=mesh1d_M,
+        negElectricField_F = Field_C(mesh_M=mesh1d_M,
                                    element_type=electricFieldElementType,
                                    element_degree=phiElementDegree-1,
                                    field_type='vector')
@@ -445,7 +443,7 @@ class TestFieldSolve(unittest.TestCase):
                                               fieldBoundaryMarker,
                                               phiBCs,
                                               assembled_charge=chargeDensity_F.function,
-                                              neg_electric_field=negElectricField)
+                                              neg_electric_field=negElectricField_F)
 
         # Create the source term from a given density
         # (In this test, the charge comes from kinetic point particles, rather
@@ -464,14 +462,21 @@ class TestFieldSolve(unittest.TestCase):
 
 #class TestFieldSolve(unittest.TestCase):
     def test_4_1D_poisson_solver(self):
-        """Test a 1D Poisson equation in spherical coordinates.
+        """Test a Poisson solve in 1D radial spherical coordinates.
 
-           Note: the mesh and mesh BC markers used here read from files written by
-           test_1D_spherical_mesh in test_UserMesh.py.  Boundary values are specified
-           here.  The charge-density is from a file written by
+           The mesh and mesh BC markers used here read from files written by
+           test_1D_spherical_mesh in test_UserMesh.py.  
+
+           The charge-density is from a file written by
            test_5_compute_charge_density_on_1Dmesh() in test_ChargeDensity.py.
 
-           XX See Calc file test_FieldSolve.ods for calculation of electric field.
+           Boundary values are specified here.  The potential is set to zero at the
+           outer radius at 5 meters.  The potential at the inner radius (1 meter) is
+           set to the analytic potential due to the charge.  If the solution is
+           correct, then the potential inside the radial location of the particle
+           should be flat.
+
+           See Calc file test_FieldSolve.ods:test_4 for calculation of potential
 
         """
 
@@ -562,7 +567,7 @@ class TestFieldSolve(unittest.TestCase):
         else:
             electricFieldElementType = "Lagrange"
 
-        negElectricField = Field_C(mesh_M=mesh1d_M,
+        negElectricField_F = Field_C(mesh_M=mesh1d_M,
                                    element_type=electricFieldElementType,
                                    element_degree=phiElementDegree-1,
                                    field_type='vector')
@@ -574,7 +579,7 @@ class TestFieldSolve(unittest.TestCase):
                                              fieldBoundaryMarker,
                                              phiBCs,
                                              assembled_charge=chargeDensity_F.function,
-                                             neg_electric_field=negElectricField)
+                                             neg_electric_field=negElectricField_F)
 
         # Create the source term from a given density
         # (In this test, the charge comes from kinetic point particles, rather
@@ -587,6 +592,23 @@ class TestFieldSolve(unittest.TestCase):
         # Solve for the potential
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         poissonsolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
+
+        # Write the potential to a file in VTK and XML formats
+        file = df_m.File('phi_test_4_1D.pvd')
+        # phi_name goes into the output file; phi_label doesn't
+        phi_F.function.rename("phi1D", "phi_label")
+        file << phi_F.function
+        file = df_m.File('phi_test_4_1D.xml')
+        file << phi_F.function
+
+        # Write -E to a file in VTK and XML formats
+        if negElectricField_F is not None:
+            negElectricField_F.function.rename("E1D", "E_label")
+            # !!! VTK cannot write a vector field on a 1D grid.
+#            file = df_m.File("negE_test_4_1D.pvd")
+#            file << negElectricField_F.function
+            file = df_m.File("negE_test_4_1D.xml")
+            file << negElectricField_F.function
 
         return
 #    def test_4_1D_poisson_solver(self):ENDDEF

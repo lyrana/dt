@@ -25,7 +25,7 @@ from UserUnits_Module import MyPlasmaUnits_C
 
 #STARTCLASS
 class TestParticleGeneration(unittest.TestCase):
-    """Test user-specified boundary conditions on particles.
+    """Test particle-generation functions.
     """
     
     def setUp(self):
@@ -287,7 +287,7 @@ class TestParticleGeneration(unittest.TestCase):
         particle_P.initialize_particle_output_file(ctrlCI)
 
         # Write the particle attributes
-        particle_P.write_particle_attributes(ctrlCI)
+        particle_P.write_particles_to_file(ctrlCI)
 
         return
 #    def test_1D_particle_source_region(self):ENDDEF

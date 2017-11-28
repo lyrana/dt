@@ -7,8 +7,8 @@ __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
 __all__ = ['ParticleInput_C',
            'ParticleSpecies_C',
-           'Particle_C', 
-           'ParticleMeshBoundaryConditions_C', 
+           'Particle_C',
+           'ParticleMeshBoundaryConditions_C',
            'ParticleMeshSources_C',
           ]
 
@@ -24,13 +24,13 @@ class ParticleInput_C(object):
     """Particle input class.
 
        Contains the variables that describe the particles. The values are
-       usually set by the user in MAIN.py.
+       usually set by the user in the top-level source file.
 
     """
 
     def __init__(self):
 
-        # Usually set from ctrlCI.precision
+        # Usually set from ctrl.precision
         # Example: numpy.float64
         self.precision = None
 
@@ -41,7 +41,7 @@ class ParticleInput_C(object):
         # e.g., ['x', 'y', 'z']
         self.force_components = None
 
-        # Usually set from ctrlCI.precision
+        # Usually set from ctrl.precision
         # Example: numpy.float64
         self.force_precision = None
 
@@ -83,8 +83,10 @@ class ParticleSpecies_C(object):
         """Initialize a ParticleSpecies_C instance.
 
            :cvar str name: An arbitrary name but unique for the species
-           :cvar double charge: An arbitrary name for the species
-           :vartype position_coordinates: string array
+           :cvar double charge: The electric charge of a single physical particle.
+           :cvar double mass: The mass of a single physical particle.
+           :cvar str dynamics: A string identifying how particles are pushed.  Valid
+                               values are 'explicit' and 'implicit'.
 
         """
 
@@ -158,14 +160,14 @@ class Particle_C(object):
 
         # This is for a reference to a UserMesh_C object for particles
         self.pmesh_M = None
-        
+
         # This is for a reference to a ParticleMeshBoundaryConditions_C
         # object that handles particle boundary conditions.
         self.pmesh_bcCI = None
 
         # Count the species
         self.number_of_species = len(particleSpecies)
-        if print_flag: 
+        if print_flag:
             print ""
             print fncName, "(DnT INFO) There are:", self.number_of_species, " species"
 
@@ -405,10 +407,10 @@ class Particle_C(object):
         userParticleClass = self.user_particle_class
 
         pseg_arrCI = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
-        
+
         # The function that has the list of particles
         p_list_method = getattr(userParticleClass, species_name)
-        
+
         # Create the particles
         number_of_macroparticles, particle_list = p_list_method(type='listed')
 
@@ -468,7 +470,7 @@ class Particle_C(object):
             new_p = p_vec[0]
             new_p['x'] = mp.x()
             new_p['y'] = mp.y()
-            
+
         weight = number_of_real_particles/num_per_cell
 
         if (print_flag): print fncName, "(DnT INFO) Weight for", species_name, "is", weight
@@ -493,14 +495,14 @@ class Particle_C(object):
 #    def create_from_functions(self, species_name, print_flag = False):ENDDEF
 
 #class Particle_C(object):
-    def add_more_particles(self, ctrlCI, neg_E_field=None, print_flag=False):
+    def add_more_particles(self, ctrl, neg_E_field=None, print_flag=False):
         """Add particles to the existing particle distributions.
 
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         if print_flag is True:
-            print "(DnT INFO) %s\tFunction entered at timestep_count %d, time %.3g" % (fncName, ctrlCI.timestep_count, ctrlCI.time)
+            print "(DnT INFO) %s\tFunction entered at timestep_count %d, time %.3g" % (fncName, ctrl.timestep_count, ctrl.time)
 
         particleSourceDict = self.particle_source_dict
 
@@ -509,14 +511,14 @@ class Particle_C(object):
             # Get the physical parameters, the creation function, and the source
             # region.
             (srcParams, srcFunc, srcRegion) = srcTuple
-            if ctrlCI.timestep_count % srcParams['timestep_interval'] == 0:
+            if ctrl.timestep_count % srcParams['timestep_interval'] == 0:
                 # Invoke the creation function
                 if print_flag is True:
                     print "(DnT INFO) %s\t Creating new particles for source %s" % (fncName, srcName)
-                srcFunc(ctrlCI.time, srcRegion, srcParams, neg_E_field)
+                srcFunc(ctrl.timestep_count, ctrl.time, srcRegion, srcParams, neg_E_field)
 
         return
-#    def add_more_particles(self, ctrlCI, print_flag=False):ENDDEF
+#    def add_more_particles(self, ctrl, print_flag=False):ENDDEF
 
 #class Particle_C(object):
     def get_species_particle_count(self, species_name, print_flag=False):
@@ -662,7 +664,7 @@ class Particle_C(object):
             # Invariant parameters
 #            print 'sn = ', sn
             qmdt = self.qom[sn]*dt
-        
+
 #        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
             psaCI = self.pseg_arr[sn] # segmented array for this species
 
@@ -696,7 +698,7 @@ class Particle_C(object):
                 # Interpolate the electric field to the particle positions
                 # This is the negative electric field
                 neg_electric_field.interpolate_field_to_points(psegIn, self.negE)
-                
+
                 # Truncate negE to the number of particles to get the
                 # += operations below to work: These operations need
                 # the vectors to be the same length.
@@ -742,11 +744,11 @@ class Particle_C(object):
                     # Can't use slice syntax here, because the array data are not homogeneous.
 
                     # skip deleted particles
-                    if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0: 
+                    if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0:
                         indxChange = True # Particle SA indices are stale past
                                           # this point due to deletions.
                         continue
-                    
+
                     # Get the next 'out' segment if the current 'out' segment is
                     # full.
                     if ipOut == self.SEGMENT_LENGTH:
@@ -777,11 +779,11 @@ class Particle_C(object):
                         psegOut[ipOut][ucomp] += qmdt*Eseg[ipIn][comp] # Index OK?
 
 # Instead of this, could do ifs on the dimension of Eseg
-                    """                    
+                    """
                     psegOut[ipOut]['ux'] = psegIn[ipIn]['ux'] + qmdt*Eseg[ipIn]['x']
                     psegOut[ipOut]['uy'] = psegIn[ipIn]['uy'] + qmdt*Eseg[ipIn]['y']
                     psegOut[ipOut]['uz'] = psegIn[ipIn]['uz'] + qmdt*Eseg[ipIn]['z']
-                    """                    
+                    """
 
 # Need the dim value
 
@@ -796,7 +798,7 @@ class Particle_C(object):
 #                        psegOut[ipOut][coord] = psegIn[ipIn][coord] + psegIn[ipIn][ucomp]*dt
                         psegOut[ipOut][coord] += psegOut[ipOut][ucomp]*dt
 
-                    """                    
+                    """
                     psegOut[ipOut]['x0'] = psegIn[ipIn]['x']
                     psegOut[ipOut]['y0'] = psegIn[ipIn]['y']
                     psegOut[ipOut]['z0'] = psegIn[ipIn]['z']
@@ -848,7 +850,7 @@ class Particle_C(object):
 
 #                        if found_cell != True: print "Particle is not in nearby cells; using BB search"
 #                        ci = pmesh_M.compute_cell_index(pseg[ip])
-#                        print "Found particle is in cell", ci        
+#                        print "Found particle is in cell", ci
 #                        pseg[ip]['cell_index'] = ci
 
                             # Compute the crossing point
@@ -939,9 +941,9 @@ class Particle_C(object):
 #class Particle_C(object):
     def move_neutral_particles(self, dt):
         """Move neutral particles on a mesh.
-           
-           Compute change in position in time dt. Use an explicit
-           method to integrate the orbit.
+
+           Compute change in position in time dt. Use an explicit method to integrate
+           the orbit.
 
            Arguments:
                dt: time interval.
@@ -962,7 +964,7 @@ class Particle_C(object):
 
             # Invariant parameters
 #            print 'sn = ', sn
-        
+
 #        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
             psaCI = self.pseg_arr[sn] # segmented array for this species
 
@@ -994,7 +996,7 @@ class Particle_C(object):
                         indxChange = True # Particle SA indices are stale past
                                           # this point due to deletions.
                         continue # skip to the next particle
-                    
+
                     # If this 'out segment is full, get the next 'out' segment,
                     # provided there are still some 'in' particles to advance.
                     if ipOut == self.SEGMENT_LENGTH:
@@ -1033,7 +1035,7 @@ class Particle_C(object):
                         psegOut[ipOut][coord0] = psegOut[ipOut][coord] # Save the starting positions
                         ucomp = 'u'+coord
                         psegOut[ipOut][coord] += psegOut[ipOut][ucomp]*dt
-                        
+
 #                    print "x0=", psegOut[ipOut]['x0'],"x=", psegOut[ipOut]['x']
 #                    print "psegOut", psegOut[ipOut]
 
@@ -1124,7 +1126,7 @@ class Particle_C(object):
                             psegOut[ipOut]['cell_index'] = pCellIndex
                             # If the particle has left the grid, exit this 'while' loop.
                             if pCellIndex == pmesh_M.NO_CELL: break # Exit the 'while' loop
-                                
+
                         else:
                             errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
                             sys.exit(errorMsg)
@@ -1176,7 +1178,7 @@ class Particle_C(object):
 
             # Invariant parameters
             qmdt = self.qom[sn]*dt
-        
+
 #        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
             psaCI = self.pseg_arr[sn] # segmented array for this species
 
@@ -1220,18 +1222,18 @@ class Particle_C(object):
 
 
 #class Particle_C(object):
-    def move_particles_in_uniform_fields(self, species_name, ctrlCI, print_flag = False):
-        """Apply electric field ctrlCI.E0 to particles.  Compute the
+    def move_particles_in_uniform_fields(self, species_name, ctrl, print_flag = False):
+        """Apply electric field ctrl.E0 to particles.  Compute the
            resulting change in particle velocities and positions in time
-           ctrlCI.dt.
+           ctrl.dt.
         """
 # Use numpy array syntax to do this, instead of loops; see Susie; See HPL Sec 4.2.2
 
-        dt = ctrlCI.dt
-        E0 = ctrlCI.E0
+        dt = ctrl.dt
+        E0 = ctrl.E0
 
         # Invariant parameters
-        
+
         qmdt = self.qom[species_name]*dt
 
 #        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
@@ -1319,7 +1321,7 @@ class Particle_C(object):
         psaCI.set_number_of_items('out', particleCount)
 
         return
-#    def move_particles_in_uniform_fields(self, species_name, ctrlCI, print_flag = False):ENDDEF
+#    def move_particles_in_uniform_fields(self, species_name, ctrl, print_flag = False):ENDDEF
 
 # Just push one segment:
 
@@ -1341,7 +1343,7 @@ class Particle_C(object):
 #            print pseg['z']
 
         return
-#    def move_particles_in_uniform_fields(self, species_name, ctrlCI, print_flag = False):ENDDEF
+#    def move_particles_in_uniform_fields(self, species_name, ctrl, print_flag = False):ENDDEF
 
 #class Particle_C(object):
     def update_trajectory_particleId(self, sn, i_in, i_out):
@@ -1370,7 +1372,7 @@ class Particle_C(object):
 #    def update_trajectory_particleId(self, sn, i_in, i_out):ENDDEF
 
 #class Particle_C(object):
-    def remove_trajectory_particleId(self, sn, i_in, p):
+    def remove_trajectory_particleId(self, sn, i_in, p, step, time):
         """Record the last data for a particle and remove it from the trajectory
            list.
 
@@ -1400,6 +1402,8 @@ class Particle_C(object):
 
         # Copy the particle values into the trajectory
 
+HERE
+
         # Find the position of full_index_in:
         indx = self.traj_T.ParticleIdList[sn].index(full_index_in)
 
@@ -1413,7 +1417,7 @@ class Particle_C(object):
             if comp in self.negE.dtype.names:
                 Ecomp = 'E'+comp
                 traj_T.DataList[sn][indx][Ecomp][count] = 0.0
-        
+
         self.traj_T.TrajectoryLength[sn][indx] += 1 # Increment the trajectory length
 
         # Mark this as a trajectory where the particle no longer exists.
@@ -1423,21 +1427,23 @@ class Particle_C(object):
 #    def remove_trajectory_particleId(self, sn, i_in):ENDDEF
 
 #class Particle_C(object):
-    def record_trajectory_datum(self, species_name, p, neg_E_field):
+    def record_trajectory_datum(self, species_name, p, step, time, neg_E_field):
         """Save a single data-record of a particle trajectory.
 
-           :param species_name: Name of the species that the marked
-                                particle belongs to.
-           :param p: One particle record, as defined by particle_dtype in Particle_C.__init__
+           :param species_name: Name of the species that the marked particle belongs
+                                to.
+           :param p: One particle record, as defined by particle_dtype in
+                     Particle_C.__init__
            :param neg_E_field: A Field_C object containing the vector -E.
 
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
         traj_T = self.traj_T
         p_arr = self.one_particle_arr
 
-
-        # Copy the values
+        # Copy the particle into an array, since an array must be passed below.
         p_arr[0] = p
 
         # print "record_trajectory_datum: p_arr[0] = ", p_arr[0]
@@ -1449,10 +1455,10 @@ class Particle_C(object):
             neg_E_field.interpolate_field_to_points(p_arr, self.negE1)
 
         E_arr = self.negE1[0:p_arr.size] # Need this syntax, even though there's
-                                        # just one particle, to make E_arr an array.
+                                         # just one particle, to make E_arr an array.
 
-        # Flip the sign to get correct E. (This is a vector
-        # operation on each component of E.)
+        # Flip the sign to get correct E. (This is a vector operation on each
+        # component of E.)
         for n in E_arr.dtype.names:
             E_arr[n] *= -1.0
 
@@ -1461,14 +1467,17 @@ class Particle_C(object):
         # Copy the particle values into the new trajectory, which is the last one
         # added onto the list of trajectories for this species.
 
-        inew = len(traj_T.ParticleIdList[species_name]) - 1 # 
+        inew = len(traj_T.ParticleIdList[species_name]) - 1 #
         count = traj_T.TrajectoryLength[species_name][inew]
         for comp in traj_T.explicit_dict['names']:
             # print 'comp = ', comp
-            if comp in p_arr.dtype.names:
-            # traj_T.DataList[species_name][inew][count][comp] = p_arr[0][comp]
+            if comp == 'step':
+                traj_T.DataList[species_name][inew][comp][count] = step
+            elif comp == 't':
+                traj_T.DataList[species_name][inew][comp][count] = time
+            elif comp in p_arr.dtype.names:
                 traj_T.DataList[species_name][inew][comp][count] = p_arr[0][comp]
-            if comp in E_arr.dtype.names:
+            elif comp in E_arr.dtype.names:
                 traj_T.DataList[species_name][inew][comp][count] = E_arr[0][comp]
 
         traj_T.TrajectoryLength[species_name][inew] += 1 # Increment the trajectory length
@@ -1477,18 +1486,29 @@ class Particle_C(object):
 #    def record_trajectory_datum(self, neg_E_field=None):ENDDEF
 
 #class Particle_C(object):
-    def record_trajectory_data(self, neg_E_field=None):
+    def record_trajectory_data(self, step, time, neg_E_field=None):
         """Save one trajectory data-record for all the marked particles of all
            species.
 
-           :param neg_E_field: A Field_C object containing the vector -E.
+           :param int step: The current timestep
+           :param float time: The current physical time
+           :param neg_E_field: A Field_C object containing the vector -E
 
         """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
+        # Avoid a second call if the timestep hasn't changed
+        if step == self.traj_T.last_step:
+            print fncName, "(DnT INFO) Second call on timestep %d: return without storing the data." % step
+            return
 
         traj_T = self.traj_T
         p_arr = self.one_particle_arr
 #        print 'p_arr.dtype.names = ', p_arr.dtype.names
 #        count = self.traj_T.count
+
+        print 'step = ', step
 
         # Loop on trajectories of explicit particles
         for sp in traj_T.explicit_species:
@@ -1513,24 +1533,26 @@ class Particle_C(object):
                     neg_E_field.interpolate_field_to_points(p_arr, self.negE1)
 
                 E_arr = self.negE1[0:p_arr.size] # Need this syntax, even though there's
-                                                # just one particle, to make E_arr an array.
+                                                 # just one particle, to make E_arr an array.
 
-                # Flip the sign to get correct E. (This is a vector
-                # operation on each component of E.)
+                # Flip the sign to get correct E. (This is a vector operation on each
+                # component of E.)
                 for n in E_arr.dtype.names:
                     E_arr[n] *= -1.0
 
 #                print "E_arr.dtype.names =", E_arr.dtype.names
 
                 # Copy the particle values into the trajectory
-
                 count = traj_T.TrajectoryLength[sp][i]
                 for comp in traj_T.explicit_dict['names']:
 #                    print 'comp = ', comp
-                    if comp in p_arr.dtype.names:
-#                        traj_T.DataList[sp][i][count][comp] = p_arr[0][comp]
+                    if comp == 'step':
+                        traj_T.DataList[sp][i][comp][count] = step
+                    elif comp == 't':
+                        traj_T.DataList[sp][i][comp][count] = time
+                    elif comp in p_arr.dtype.names:
                         traj_T.DataList[sp][i][comp][count] = p_arr[0][comp]
-                    if comp in E_arr.dtype.names:
+                    elif comp in E_arr.dtype.names:
                         traj_T.DataList[sp][i][comp][count] = E_arr[0][comp]
 
 #        print 'traj_T.DataList: ', traj_T.DataList['testelectrons'][0]
@@ -1538,6 +1560,9 @@ class Particle_C(object):
                 traj_T.TrajectoryLength[sp][i] += 1 # Increment the trajectory length
 
         # Loop on trajectories of implicit particles
+
+        # Update "last_step" before returning
+        self.traj_T.last_step = step
 
         return
 #    def record_trajectory_data(self, neg_E_field=None):ENDDEF
@@ -1550,7 +1575,7 @@ class Particle_C(object):
            :param charge_density: Storage into which charge-density is accumulated.
 
            :returns: None
-               
+
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
@@ -1563,7 +1588,7 @@ class Particle_C(object):
                 charge_density.multiply_add(self.number_density_dict[s], charge)
         else:
             print fncName, "(DnT WARNING) The reference to pmesh_M is None"
-            
+
         return
 #    def accumulate_charge_density_from_particles(self, charge_density):ENDDEF
 
@@ -1571,20 +1596,23 @@ class Particle_C(object):
 # Standard particle distribution types
 
 #class Particle_C(object):
-    def create_maxwellian_particles(self, time, domain, paramDict, neg_E_field):
+    def create_maxwellian_particles(self, step, time, domain, paramDict, neg_E_field):
         """Generates particles with a Maxwellian velocty distribution and adds
            them to particle storage.
 
            This function loops over the cells in the given domain and generates
            particles in each one according to the parameters provided.
 
-           :param time: The physical time of the simulation.
+           Note: If a new particle is tagged as a trajectory particle, the first
+           datum is recorded.
+
+           :param time: The physical time of the simulation
 
            :param domain: The spatial domain in which the Maxwellian particles are added.
                           This can be the entire mesh, or a subset of it. In either case,
                           it's a list of cells.
 
-           :param str paramDict.species_name: The name of the species getting a 
+           :param str paramDict.species_name: The name of the species getting a
                                               Maxwellian velocity distribution
 
            :param float paramDict.number_density: The desired number-density created in
@@ -1593,12 +1621,12 @@ class Particle_C(object):
            :param float paramDict.thermal_velocity: The isotropic Maxwellian thermal
                                                     velocity
 
-           :param float[] paramDict.drift_velocity: A velocity 3-vector.
+           :param float[] paramDict.drift_velocity: A velocity 3-vector
 
            :param int paramDict.timestep_interval: Number of timesteps between calls to
-                                         this function
+                                                   this function
 
-           :param int paramDict.number_per_cell: Number of particles per cell in the domain.
+           :param int paramDict.number_per_cell: Number of particles per cell in the domain
 
         """
 
@@ -1613,7 +1641,7 @@ class Particle_C(object):
         driftVelocity = paramDict['drift_velocity']
         velocityCoordinateSystem = paramDict['velocity_coordinate_system']
         numberPerCell = paramDict['number_per_cell']
-        
+
         # Get the storage for this species
         pseg_arrCI = self.pseg_arr[speciesName] # The SegmentedArray_C object for this species
         pDim = self.particle_dimension
@@ -1625,7 +1653,7 @@ class Particle_C(object):
         random_vals = self.random_vals
 
         # Loop over the domain creating particles in each cell
-      
+
         pCoord[:] = 0.0 # Zero out this array for the case where there are more
                         # particle spatial dimensions than mesh spatial
                         # dimensions
@@ -1634,7 +1662,7 @@ class Particle_C(object):
         weightMult = numberDensity/numberPerCell
         if self.coordinate_system == '1D-spherical-radius':
             weightMult /= 4.0*np_m.pi # 4 \pi radians in a sphere
-            
+
         for icell in xrange(nCell):
             # Compute the particle weight (number of particles per macroparticle)
             weight = domain.volume[icell]*weightMult
@@ -1661,7 +1689,7 @@ class Particle_C(object):
                         random_vals = np_m.random.uniform(-1.0, 1.0, gDim)
                         for i in range(gDim):
                             pCoord[i] = cellMid[i]+random_vals[i]*cellRad
-                        # Check if its in the cell    
+                        # Check if its in the cell
                         if domain.in_cell(pCoord, icell):
                             break
 
@@ -1679,24 +1707,25 @@ class Particle_C(object):
                     particle[i] = pCoord[i]
                     particle[i+pDim] = pCoord[i]
                     particle[i+2*pDim] = pVel[i]
-                
+
                 # Fill in the rest of the data for this particle
                 particle[3*pDim] = weight
                 particle[3*pDim+1] = bitflags
                 particle[3*pDim+2] = cellIndex
-            
+
                 # Store the particle
                 p, pindex = pseg_arrCI.put(particle)
-                
-                # If the particle is tagged as a trajectory particle, initialize
-                # its trajectory information.
+
+                # If the particle is tagged as a trajectory particle, initialize its
+                # trajectory information. Note: if this is being called by
+                # initialize_particles(), the E-field has not been computed yet.
                 if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
                     if self.traj_T is not None:
 #                    print 'pindex for trajectory = ', pindex
                         dynamicsType = self.dynamics[speciesName]
                         self.traj_T.create_trajectory(speciesName, pindex, dynamicsType)
                         # Record the initial datum for this new trajectory
-                        self.record_trajectory_datum(speciesName, p, neg_E_field)
+                        self.record_trajectory_datum(speciesName, p, step, time, neg_E_field)
                     else:
 # Instead of printing this message, a traj_T object could be created here?
                         print fncName, "(DnT WARNING) A trajectory flag is on, but no trajectory object has been created yet."
@@ -1708,10 +1737,10 @@ class Particle_C(object):
 #    def create_maxwellian_particles(self,):ENDDEF
 
 #class Particle_C(object):
-    def check_particle_output_parameters(self, ctrlCI):
+    def check_particle_output_parameters(self, ctrl):
         """Check the values provided by the user
 
-           :param ctrlCI: A DTcontrol_C object
+           :param ctrl: A DTcontrol_C object
 
         """
 
@@ -1719,29 +1748,29 @@ class Particle_C(object):
 
         # Check the particle output attributes requested against those that have been defined
 
-        for pA in ctrlCI.particle_output_attributes:
+        for pA in ctrl.particle_output_attributes:
             if pA != 'species_index' and pA not in self.particle_dtype.names:
                 errorMsg = fncName + "Particle attribute '" + pA + "' is not available. Available attributes are: " + str(self.particle_dtype.names)
                 sys.exit(errorMsg)
-        
+
         return
-#    def check_particle_output_parameters(self, ctrlCI):ENDDEF
+#    def check_particle_output_parameters(self, ctrl):ENDDEF
 
 #class Particle_C(object):
-    def initialize_particle_output_file(self, ctrlCI):
+    def initialize_particle_output_file(self, ctrl):
         """Open a H5Part files and write the header.
 
-           :param ctrlCI: A DTcontrol_C object
+           :param ctrl: A DTcontrol_C object
 
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        self.particle_output_file = h5File = h5py.File(ctrlCI.particle_output_file,"w")
-        
+        self.particle_output_handle = h5File = h5py.File(ctrl.particle_output_file,"w")
+
         # A file is also a group: attach the following attributes
-        h5File.attrs["Title:"] = ctrlCI.title
-        h5File.attrs["Author:"] = ctrlCI.author
+        h5File.attrs["Title:"] = ctrl.title
+        h5File.attrs["Author:"] = ctrl.author
 
         h5File.attrs["NumParticleTypes:"] = self.number_of_species
         for s in self.species_names:
@@ -1758,18 +1787,21 @@ class Particle_C(object):
 
         self.h5_step_counter = 0
 
+        # Flush the buffer
+        self.particle_output_handle.flush()
+
         return
-#    def initialize_particle_output_file(self, ctrlCI):ENDDEF
+#    def initialize_particle_output_file(self, ctrl):ENDDEF
 
 #class Particle_C(object):
-    def write_particle_attributes(self, ctrlCI):
+    def write_particles_to_file(self, ctrl, close_flag=False):
         """Writes out particle attributes for one timestep.
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         groupName = "Step#" + str(self.h5_step_counter)
-        group = self.particle_output_file.create_group(groupName)
+        group = self.particle_output_handle.create_group(groupName)
 
         ### Count the total number of particles and see if h5_buffer_length needs to
         ### be increased
@@ -1784,7 +1816,7 @@ class Particle_C(object):
         h5Buf = self.h5_buffer
 
         ### Loop on the particle attributes to be written out
-        for pA in ctrlCI.particle_output_attributes:
+        for pA in ctrl.particle_output_attributes:
 
             # Make the dtype of h5Buf match the dtype of the attribute
             # H5Part seems to be all 64-bit
@@ -1804,7 +1836,7 @@ class Particle_C(object):
             for s in self.species_names:
                 # Skip to next species if there are no particles of this species
                 if self.get_species_particle_count(s) == 0: continue
-            
+
                 if pA == 'species_index':
                     # The 'species_index' is the same for every particle in this
                     # species, so load the value into the buffer in one go.
@@ -1833,11 +1865,14 @@ class Particle_C(object):
 
         self.h5_step_counter += 1
 
-# temporary:
-        self.particle_output_file.close()
-        
+        # Flush the buffer
+        self.particle_output_handle.flush()
+
+        if close_flag is True:
+            self.particle_output_handle.close()
+
         return
-#    def write_particle_attributes(self):ENDDEF
+#    def write_particles_to_file(self):ENDDEF
 
 #class Particle_C(object):ENDCLASS
 
