@@ -265,7 +265,7 @@ class TestParticleGeneration(unittest.TestCase):
 
         ## Invoke the source functions and write out the particles
         
-        ctrlCI.timestep_count = 0
+        ctrlCI.timeloop_count = 0
         ctrlCI.time = 0.0
 
         # Run identifier

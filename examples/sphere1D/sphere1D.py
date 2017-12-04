@@ -154,7 +154,7 @@ ctrl.n_timesteps = 1
 
 
 # Initialize time counters
-ctrl.timestep_count = 0
+ctrl.timeloop_count = 0
 ctrl.time = 0.0
 
 ### Set parameters for writing particle output to an h5part file
@@ -714,7 +714,7 @@ if particle_P.initial_particles_dict is not None:
     # This will capture the FIRST point on the trajectories of marked particles
     if particle_P.initial_particles_dict is not None:
         if particle_P.traj_T is not None:
-            particle_P.record_trajectory_data(ctrl.timestep_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
+            particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
 
     ##### INIT:2.2. Recompute the initial electrostatic field in the presence of these particles
     ## Accumulate number-density from kinetic particles
@@ -738,19 +738,23 @@ else:
 
 ############################## RUN: Integrate forward in time ##############################
 
+print ""
+print "********** Integrate for %d timesteps from step %d, time %.3g, starting with %d particles **********" % (ctrl.n_timesteps, ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count())
+#print ""
+
 for istep in xrange(ctrl.n_timesteps):
 
     ########## RUN:0. Increment the time counters
-    ctrl.timestep_count += 1
+    ctrl.timeloop_count += 1
     ctrl.time += ctrl.dt
 
     ########## RUN:1. Advance the particles one timestep
-    particle_P.move_particles_in_electrostatic_field(ctrl.dt, poissonsolve.neg_electric_field)
+    particle_P.move_particles_in_electrostatic_field(ctrl, poissonsolve.neg_electric_field)
 
     ## Record trajectory data for all marked particles
     if particle_P.traj_T is not None:
-        if (ctrl.timestep_count % particle_P.traj_T.skip == 0):
-            particle_P.record_trajectory_data(ctrl.timestep_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
+        if (ctrl.timeloop_count % particle_P.traj_T.skip == 0):
+            particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
 
     ########## RUN:2. Add particles from source regions
     # Note: if a new particle gets marked for a trajectory, the first datum is
@@ -759,7 +763,7 @@ for istep in xrange(ctrl.n_timesteps):
         particle_P.add_more_particles(ctrl, neg_E_field=poissonsolve.neg_electric_field, print_flag=True)
 
     # Write a snapshot of the particles
-    if ctrl.timestep_count % ctrl.particle_output_interval == 0:
+    if ctrl.timeloop_count % ctrl.particle_output_interval == 0:
         particle_P.write_particles_to_file(ctrl)
 
     ########## RUN:3. Update the electric charge density
@@ -771,22 +775,34 @@ for istep in xrange(ctrl.n_timesteps):
     particle_P.accumulate_charge_density_from_particles(chargeDensity_F)
 
     ########## RUN:4. Update the electric field
-    plotTitle = os.path.basename(__file__) + ": n=%d " % (ctrl.timestep_count)
+    plotTitle = os.path.basename(__file__) + ": n=%d " % (ctrl.timeloop_count)
     if plotFieldsEveryTimestep is True:
         print ""
-        print "********** Plot field at timestep %d **********" % ctrl.timestep_count
+        print "********** Plot field at timestep %d **********" % ctrl.timeloop_count
     poissonsolve.solve_for_phi(plot_flag=plotFieldsEveryTimestep, plot_title=plotTitle)
+
+print ""
+print "********** Exited the time loop at step %d, time %.3g, with %d particles **********" % (ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count())
+#print ""
+
+#print fncName, "Exited the time loop", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
 
 
 ############################## FIN: Finish the simulation ##############################
 
 # Write the last particle data and close the output file
 if ctrl.particle_output_file is not None:
+    print ""
+    print "********** Write final particle data to %s and close the file **********" % (ctrl.particle_output_file)
+#    print ""
     particle_P.write_particles_to_file(ctrl, close_flag=True)
 
 # Record the LAST point on the particle trajectories
 if particle_P.traj_T is not None:
-    particle_P.record_trajectory_data(ctrl.timestep_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
+    print ""
+    print "********** Record final particle trajectory data **********"
+#    print ""
+    particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
 
 # Plot the trajectory onto the particle mesh
 
@@ -809,4 +825,4 @@ if os.environ.get('DISPLAY') is not None and plotTrajectoriesInPhaseSpace is Tru
     particle_P.traj_T.plot_trajectories()
 
 print ""
-print "********** Simulation ended normally at end of timestep %d, time %.3g **********" % (ctrl.timestep_count, ctrl.time)
+print "********** Simulation ended normally at end of timestep %d, time %.3g **********" % (ctrl.timeloop_count, ctrl.time)

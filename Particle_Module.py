@@ -321,21 +321,23 @@ class Particle_C(object):
         if particleInputCI.force_components is not None:
             Ecomps = particleInputCI.force_components
             force_precision = particleInputCI.force_precision
-            Etypes = [force_precision for comp in Ecomps]
+            Etypes = [force_precision for comp in Ecomps] # variable type
             Eseg_dict = {'names': Ecomps, 'formats': Etypes}
             self.negE = np_m.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
-            # self.negE1 is used for one-particle field data for a trajectory
+            # self.negE1 is a reusable array for one-particle field data for a
+            # trajectory
             # Make an explicit name like 'Ex', 'Ey', 'Ez'
             E1comps = ['E'+comp for comp in Ecomps]
             E1seg_dict = {'names': E1comps, 'formats': Etypes}
             self.negE1 = np_m.empty(1, dtype=E1seg_dict)
-            # Create an E with all components zero
+            # Create a reusable E array with all components zero
             self.zeroE = np_m.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
 
         # Not used yet
         self.particle_integration_loop = particleInputCI.particle_integration_loop
 
         return
+#    def __init__(self, particleInputCI, print_flag = False):ENDDEF
 
 #class Particle_C(object):
     def initialize_particles(self, print_flags, neg_E_field=None):
@@ -502,7 +504,7 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         if print_flag is True:
-            print "(DnT INFO) %s\tFunction entered at timestep_count %d, time %.3g" % (fncName, ctrl.timestep_count, ctrl.time)
+            print "(DnT INFO) %s\tFunction entered at timeloop_count %d, time %.3g" % (fncName, ctrl.timeloop_count, ctrl.time)
 
         particleSourceDict = self.particle_source_dict
 
@@ -511,11 +513,11 @@ class Particle_C(object):
             # Get the physical parameters, the creation function, and the source
             # region.
             (srcParams, srcFunc, srcRegion) = srcTuple
-            if ctrl.timestep_count % srcParams['timestep_interval'] == 0:
+            if ctrl.timeloop_count % srcParams['timestep_interval'] == 0:
                 # Invoke the creation function
                 if print_flag is True:
                     print "(DnT INFO) %s\t Creating new particles for source %s" % (fncName, srcName)
-                srcFunc(ctrl.timestep_count, ctrl.time, srcRegion, srcParams, neg_E_field)
+                srcFunc(ctrl.timeloop_count, ctrl.time, srcRegion, srcParams, neg_E_field)
 
         return
 #    def add_more_particles(self, ctrl, print_flag=False):ENDDEF
@@ -635,12 +637,12 @@ class Particle_C(object):
 #    def set_number_density(self, species_name, value):ENDDEF
 
 #class Particle_C(object):
-    def move_particles_in_electrostatic_field(self, dt, neg_electric_field):
+    def move_particles_in_electrostatic_field(self, ctrl, neg_electric_field):
         """Apply interpolated electric force to particles.  Compute the
            change in velocity and position in time dt. Use an explicit
            method to integrate the orbit.
 
-           :param str dt: time interval.
+           :param ctrl: A DTcontrol_C object
            :param neg_electric_field: A Field_C object containing the vector -E.
 
            :cvar pDim: Number of spatial coordinates in the particle location.
@@ -648,6 +650,11 @@ class Particle_C(object):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
+        # Set local names for the passed parameters
+        dt = ctrl.dt
+        step = ctrl.timeloop_count
+        time = ctrl.time
 
 #        meshCI = neg_electric_field.meshCI
         pmesh_M = self.pmesh_M
@@ -912,7 +919,7 @@ class Particle_C(object):
                         # Remove the particle from the trajectory list if it was tagged
                         if self.traj_T is not None:
                             if psegIn[ipIn]['bitflags'] & self.TRAJECTORY_FLAG != 0:
-                                self.remove_trajectory_particleId(sn, ipIn, psegOut[ipOut])
+                                self.remove_trajectory_particleId(sn, ipIn, psegOut[ipOut], step, time, dt)
 
                     # Check if we've reached the end of this segment.  If
                     # so, we need to start writing on a new segment.
@@ -1363,16 +1370,16 @@ class Particle_C(object):
         # Obtain the full indices of this particle in the 'in' and 'out' arrays.
         (full_index_in, full_index_out) = psaCI.get_full_indices(i_in, i_out)
 
-        # Find the position of full_index_in:
-        indx = self.traj_T.ParticleIdList[sn].index(full_index_in)
+        # Find the position of full_index_in in the trajectory storage list:
+        p_indx = self.traj_T.ParticleIdList[sn].index(full_index_in)
         # Replace this with the new full index
-        self.traj_T.ParticleIdList[sn][indx] = full_index_out
+        self.traj_T.ParticleIdList[sn][p_indx] = full_index_out
 
         return full_index_in, full_index_out
 #    def update_trajectory_particleId(self, sn, i_in, i_out):ENDDEF
 
 #class Particle_C(object):
-    def remove_trajectory_particleId(self, sn, i_in, p, step, time):
+    def remove_trajectory_particleId(self, sn, i_in, p, step, time, dt):
         """Record the last data for a particle and remove it from the trajectory
            list.
 
@@ -1381,14 +1388,34 @@ class Particle_C(object):
            for this particle, and then change the particle index to NO_PINDEX to
            skip it in subsequent looping over trajectory particles.
 
-           :param str sn: The name of the current species being advanced.
-           :param int i_in: The particle's index in the current 'in' segment.
-           :param p: The current attributes of the particle being deleted.
+           Since this particle has been deleted, and may be out-of-bounds, the
+           electric field is set to zero instead of trying to interpolate it.
+
+           :param str sn: The name of the current species being advanced
+           :param int i_in: The particle's index in the current 'in' segment
+           :param p: The current attributes of the particle being deleted. These are
+                     recorded as the last point on the trajectory.
+           :param int step: The current simulation step
+           :param float time: The current simulation time
+           :param float dt: The simulation timestep
 
            :cvar NO_PINDEX: a flag indicating the particle no longer exists.
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+        
+        finalStep = step
+        finalTime = time
+
         traj_T = self.traj_T
+        if finalStep == self.traj_T.last_step:
+            # This particle was recorded at the beginning of this step, and has now
+            # gone out of bounds after being advanced by dt, so increment the step
+            # count and time for the trajectory datum.
+            print fncName, "(DnT INFO) Particle has gone out-of-bounds after the advance on timestep %d: recording its last position." % finalStep
+            finalStep += 1
+            finalTime += dt
+            
         psaCI = self.pseg_arr[sn] # The segmented array for this species
         p_arr = self.one_particle_arr
 
@@ -1402,26 +1429,30 @@ class Particle_C(object):
 
         # Copy the particle values into the trajectory
 
-HERE
+        # Find the position of full_index_in in the trajectory storage list:
+        p_indx = self.traj_T.ParticleIdList[sn].index(full_index_in)
 
-        # Find the position of full_index_in:
-        indx = self.traj_T.ParticleIdList[sn].index(full_index_in)
-
-        count = self.traj_T.TrajectoryLength[sn][indx]
+        newpoint = self.traj_T.TrajectoryLength[sn][p_indx]
         for comp in traj_T.explicit_dict['names']:
-            if comp in p_arr.dtype.names:
-                traj_T.DataList[sn][indx][comp][count] = p_arr[0][comp]
+            if comp == 'step':
+                traj_T.DataList[sn][p_indx][comp][newpoint] = finalStep
+            elif comp == 't':
+                traj_T.DataList[sn][p_indx][comp][newpoint] = finalTime
+            elif comp in p_arr.dtype.names:
+                traj_T.DataList[sn][p_indx][comp][newpoint] = p_arr[0][comp]
                 # The particle has been deleted and may be out-of-bounds, so set
                 # E to zero instead of interpolating.
-                # This isn't right: 'Ex' never passes this test.
-            if comp in self.negE.dtype.names:
-                Ecomp = 'E'+comp
-                traj_T.DataList[sn][indx][Ecomp][count] = 0.0
 
-        self.traj_T.TrajectoryLength[sn][indx] += 1 # Increment the trajectory length
+                # Fixed by using E1? This isn't right: 'Ex' never passes this test.
+
+            elif comp in self.negE1.dtype.names:
+#                Ecomp = 'E'+comp
+                traj_T.DataList[sn][p_indx][comp][newpoint] = 0.0
+
+        self.traj_T.TrajectoryLength[sn][p_indx] += 1 # Increment the trajectory length
 
         # Mark this as a trajectory where the particle no longer exists.
-        self.traj_T.ParticleIdList[sn][indx] = self.traj_T.NO_PINDEX
+        self.traj_T.ParticleIdList[sn][p_indx] = self.traj_T.NO_PINDEX
 
         return full_index_in
 #    def remove_trajectory_particleId(self, sn, i_in):ENDDEF
@@ -1455,7 +1486,7 @@ HERE
             neg_E_field.interpolate_field_to_points(p_arr, self.negE1)
 
         E_arr = self.negE1[0:p_arr.size] # Need this syntax, even though there's
-                                         # just one particle, to make E_arr an array.
+                                         # just one particle, to make E_arr an array!
 
         # Flip the sign to get correct E. (This is a vector operation on each
         # component of E.)
@@ -1468,17 +1499,17 @@ HERE
         # added onto the list of trajectories for this species.
 
         inew = len(traj_T.ParticleIdList[species_name]) - 1 #
-        count = traj_T.TrajectoryLength[species_name][inew]
+        newpoint = traj_T.TrajectoryLength[species_name][inew]
         for comp in traj_T.explicit_dict['names']:
             # print 'comp = ', comp
             if comp == 'step':
-                traj_T.DataList[species_name][inew][comp][count] = step
+                traj_T.DataList[species_name][inew][comp][newpoint] = step
             elif comp == 't':
-                traj_T.DataList[species_name][inew][comp][count] = time
+                traj_T.DataList[species_name][inew][comp][newpoint] = time
             elif comp in p_arr.dtype.names:
-                traj_T.DataList[species_name][inew][comp][count] = p_arr[0][comp]
+                traj_T.DataList[species_name][inew][comp][newpoint] = p_arr[0][comp]
             elif comp in E_arr.dtype.names:
-                traj_T.DataList[species_name][inew][comp][count] = E_arr[0][comp]
+                traj_T.DataList[species_name][inew][comp][newpoint] = E_arr[0][comp]
 
         traj_T.TrajectoryLength[species_name][inew] += 1 # Increment the trajectory length
 
@@ -1506,9 +1537,9 @@ HERE
         traj_T = self.traj_T
         p_arr = self.one_particle_arr
 #        print 'p_arr.dtype.names = ', p_arr.dtype.names
-#        count = self.traj_T.count
+#        newpoint = self.traj_T.count
 
-        print 'step = ', step
+#        print fncName, 'step = ', step
 
         # Loop on trajectories of explicit particles
         for sp in traj_T.explicit_species:
@@ -1543,17 +1574,17 @@ HERE
 #                print "E_arr.dtype.names =", E_arr.dtype.names
 
                 # Copy the particle values into the trajectory
-                count = traj_T.TrajectoryLength[sp][i]
+                newpoint = traj_T.TrajectoryLength[sp][i]
                 for comp in traj_T.explicit_dict['names']:
 #                    print 'comp = ', comp
                     if comp == 'step':
-                        traj_T.DataList[sp][i][comp][count] = step
+                        traj_T.DataList[sp][i][comp][newpoint] = step
                     elif comp == 't':
-                        traj_T.DataList[sp][i][comp][count] = time
+                        traj_T.DataList[sp][i][comp][newpoint] = time
                     elif comp in p_arr.dtype.names:
-                        traj_T.DataList[sp][i][comp][count] = p_arr[0][comp]
+                        traj_T.DataList[sp][i][comp][newpoint] = p_arr[0][comp]
                     elif comp in E_arr.dtype.names:
-                        traj_T.DataList[sp][i][comp][count] = E_arr[0][comp]
+                        traj_T.DataList[sp][i][comp][newpoint] = E_arr[0][comp]
 
 #        print 'traj_T.DataList: ', traj_T.DataList['testelectrons'][0]
 

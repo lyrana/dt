@@ -10,7 +10,7 @@ import numpy as np_m
 
 #STARTCLASS
 class DTcontrol_C(object):
-    """Top-level control of the run
+    """A class containing user input to control the numerical simulation.
     """
 
     def __init__(self, use_mpi = False):
@@ -57,7 +57,7 @@ class DTcontrol_C(object):
 
         # Run information
 
-        self.timestep_count = None
+        self.timeloop_count = None
         self.time = None
 
         return

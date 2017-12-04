@@ -43,7 +43,7 @@ class TestParticleTrajectory(unittest.TestCase):
         self.ctrl.dt = 1.0e-6
 
         # Initialize time counters
-        self.ctrl.timestep_count = 0
+        self.ctrl.timeloop_count = 0
         self.ctrl.time = 0.0
 
         ### Particle species input
@@ -277,7 +277,7 @@ class TestParticleTrajectory(unittest.TestCase):
 #class TestParticleTrajectory(unittest.TestCase):
     def test_2_record_trajectory(self):
         """ Record and plot the requested trajectory data.
-            Checks the final particle position.
+            Check the final particle position.
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -302,23 +302,16 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Record the first point on trajectories of marked particles
         if p_P.traj_T is not None:
-            p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
+            p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
-        print "Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps"
+        print "\n(DnT INFO) %s\t Run for %d timesteps from step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.n_timesteps, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count())
+
         for istep in xrange(self.ctrl.n_timesteps):
 
-            self.ctrl.timestep_count += 1
+            self.ctrl.timeloop_count += 1
             self.ctrl.time += self.ctrl.dt
-            # XX needs dt; doesn't need n_timesteps
 
-            # Record particle trajectory data
-            if p_P.traj_T is not None:
-#                print 'p_P.traj_T.skip:', p_P.traj_T.skip
-                if self.ctrl.timestep_count % p_P.traj_T.skip == 0:
-                    p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
-
-# test for neg_E_field = None:
-#                    p_P.record_trajectory_data()
+            print fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
 
             # Do the implicit species first
             if len(p_P.implicit_species) != 0:
@@ -326,11 +319,24 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Then move the explicit species
             if len(p_P.explicit_species) != 0:
-                p_P.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
+                p_P.move_particles_in_electrostatic_field(self.ctrl, self.neg_electric_field)
+
+            # XX needs dt; doesn't need n_timesteps
+
+            # Record particle trajectory data
+            if p_P.traj_T is not None:
+#                print 'p_P.traj_T.skip:', p_P.traj_T.skip
+                if self.ctrl.timeloop_count % p_P.traj_T.skip == 0:
+                    p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
+
+# test for neg_E_field = None:
+#                    p_P.record_trajectory_data()
+
+        print "\n(DnT INFO) %s\t Exited the time loop at step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count())
 
         # Record the LAST points on the particle trajectories
         if p_P.traj_T is not None:
-            p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
+            p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
         # Check the results
 
@@ -394,7 +400,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         p_P = self.particle_P
 
-        self.ctrl.n_timesteps = 14 # This puts the particle out-of-bounds
+        self.ctrl.n_timesteps = 20 # The particle goes out-of-bounds on step 14
         dt = self.ctrl.dt
 
         ## Create the trajectory object and attach it to the particle object.
@@ -411,13 +417,16 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Record the first point on trajectories of marked particles
         if p_P.traj_T is not None:
-            p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
+            p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
-        print "Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps"
+        print "\n(DnT INFO) %s\t Advance for %d timesteps from step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.n_timesteps, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count())
+
         for istep in xrange(self.ctrl.n_timesteps):
 
-            self.ctrl.timestep_count += 1
+            self.ctrl.timeloop_count += 1
             self.ctrl.time += self.ctrl.dt
+
+            print fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
 
             # XX needs dt; doesn't need n_timesteps
 
@@ -425,9 +434,8 @@ class TestParticleTrajectory(unittest.TestCase):
             # First point is the initial particle condition at istep = 0
             if p_P.traj_T is not None:
 #                print 'p_P.traj_T.skip:', p_P.traj_T.skip
-                if self.ctrl.timestep_count % p_P.traj_T.skip == 0:
-                    p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
-
+                if self.ctrl.timeloop_count % p_P.traj_T.skip == 0:
+                    p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
             # Do the implicit species first
             if len(p_P.implicit_species) != 0:
@@ -435,11 +443,13 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Then move the explicit species
             if len(p_P.explicit_species) != 0:
-                p_P.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
+                p_P.move_particles_in_electrostatic_field(self.ctrl, self.neg_electric_field)
+
+        print "\n(DnT INFO) %s\t Exited the time loop at step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count())
 
         # Record the LAST points on the particle trajectory
         if p_P.traj_T is not None:
-            p_P.record_trajectory_data(self.ctrl.timestep_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
+            p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
         # Check the results
 

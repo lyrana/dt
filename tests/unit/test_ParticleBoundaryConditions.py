@@ -50,10 +50,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # else:
         #     plotFlag=True
 
-        ctrlCI = DTcontrol_C()
+        ctrl = DTcontrol_C()
 
-        ctrlCI.dt = 0.5
-        ctrlCI.n_timesteps = 100
+        ctrl.dt = 0.5
+        ctrl.n_timesteps = 100
 
         # Create an instance of the DTparticleInput class
         pinCI = ParticleInput_C()
@@ -119,7 +119,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # Add a traj_T reference to the particle object
         pCI = particle_P # abbreviation
-        pCI.traj_T = Trajectory_C(trajinCI, ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
+        pCI.traj_T = Trajectory_C(trajinCI, ctrl, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
 
         ##  Mesh input for the particle mesh, including particle boundary conditions.
 
@@ -231,15 +231,15 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
 # Advance the particles for n_timesteps
 
-        ctrlCI.time_step = 0
-        ctrlCI.time = 0.0
+        ctrl.timeloop_count = 0
+        ctrl.time = 0.0
 
-        print "Moving", pCI.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "timesteps"
-        for istep in xrange(ctrlCI.n_timesteps):
-            particle_P.move_neutral_particles(ctrlCI.dt)
+        print "Moving", pCI.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
+        for istep in xrange(ctrl.n_timesteps):
+            particle_P.move_neutral_particles(ctrl.dt)
 
-            ctrlCI.time_step += 1
-            ctrlCI.time += ctrlCI.dt
+            ctrl.timeloop_count += 1
+            ctrl.time += ctrl.dt
 
         return
 #    def test_1_2D_x_y_absorbing_boundary(self):ENDDEF
@@ -426,15 +426,15 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ## Set control variables
 
-        ctrlCI = DTcontrol_C()
+        ctrl = DTcontrol_C()
 
         # These are fast electrons, so the timestep is small
-        ctrlCI.dt = 1.0e-6
-        ctrlCI.n_timesteps = 14
+        ctrl.dt = 1.0e-6
+        ctrl.n_timesteps = 14
 
         # The trajectory object can now be created and added to particle_P
         pCI = particle_P
-        pCI.traj_T = Trajectory_C(trajinCI, ctrlCI, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
+        pCI.traj_T = Trajectory_C(trajinCI, ctrl, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
 
 
         # Initialize the particles
@@ -447,25 +447,26 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ### Particle loop
 
-        print "Moving", pCI.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "timesteps"
+        print "Moving", pCI.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
 
-        ctrlCI.time_step = 0
-        ctrlCI.time = 0.0
-        for istep in xrange(ctrlCI.n_timesteps):
+        ctrl.timeloop_count = 0
+#        ctrl.time_step = 0
+        ctrl.time = 0.0
+        for istep in xrange(ctrl.n_timesteps):
 
             if pCI.traj_T is not None:
 #                print 'pCI.traj_T.skip:', pCI.traj_T.skip
                 if istep % pCI.traj_T.skip == 0:
-                    pCI.record_trajectory_data(neg_E_field=negElectricField)
+                    pCI.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=negElectricField)
 
-            pCI.move_particles_in_electrostatic_field(ctrlCI.dt, negElectricField)
+            pCI.move_particles_in_electrostatic_field(ctrl, negElectricField)
 
-            ctrlCI.time_step += 1
-            ctrlCI.time += ctrlCI.dt
+            ctrl.timeloop_count += 1
+            ctrl.time += ctrl.dt
 
         # Record the LAST point on the particle trajectory
         if pCI.traj_T is not None:
-                pCI.record_trajectory_data(neg_E_field=negElectricField)
+                pCI.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=negElectricField)
 
         # Plot the trajectory onto the particle mesh
 

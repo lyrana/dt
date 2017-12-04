@@ -357,9 +357,10 @@ class TestParticleInitialization(unittest.TestCase):
                 ipFunc = ipTuple[1]
                 ipRegion_RR = ipTuple[2]
                 # Invoke the creation function
+                step = 0
                 time = 0.0
                 neg_E_field = None
-                ipFunc(time, ipRegion_RR, ipParams, neg_E_field)
+                ipFunc(step, time, ipRegion_RR, ipParams, neg_E_field)
 
                 # Check the number of stored particles for each species
 
@@ -377,7 +378,7 @@ class TestParticleInitialization(unittest.TestCase):
 
         # Write out the particles to an HDF5 file
 
-        ctrl.timestep_count = 0
+        ctrl.timeloop_count = 0
         ctrl.time = 0.0
 
         # Run identifier

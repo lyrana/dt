@@ -232,7 +232,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         ctrl.time_step = 0
         ctrl.time = 0.0
 
-        self.particle_P.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
+        self.particle_P.move_particles_in_electrostatic_field(ctrl, self.neg_electric_field)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check

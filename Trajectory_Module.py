@@ -85,6 +85,9 @@ class Trajectory_C(object):
         self.last_step = None # This variable can be used to check if the simulation
                               # step in the current call is the same as the step in
                               # the last call, and avoid storing the same data twice.
+                              # If the particle is deleted just after being pushed,
+                              # there's special handling to allow its last data to be
+                              # recorded.
 
         # Compute a skip interval to stay within the maximum number of
         # datapoints (if specified).
