@@ -328,7 +328,7 @@ class TestFieldSolve(unittest.TestCase):
             negElectricField_F.function.rename("E2D", "E_label")
             file = df_m.File("negE_test_2_2D.pvd")
             file << negElectricField_F.function
-            file = df_m.File("negE2D_test_2_2D.xml")
+            file = df_m.File("negE_test_2_2D.xml")
             file << negElectricField_F.function
 
         return

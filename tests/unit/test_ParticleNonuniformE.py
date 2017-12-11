@@ -177,7 +177,7 @@ class TestParticleNonuniformE(unittest.TestCase):
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')
 
-        file = df_M.File("negE2D_crossed.xml")
+        file = df_M.File("negE_test_2_2D.xml")
         file >> self.neg_electric_field.function
 
         # Get the initial cell index of each particle.

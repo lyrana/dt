@@ -34,7 +34,7 @@ class TestFieldInterpolation(unittest.TestCase):
                            field_type='scalar')
 
         # Read the potential from a file
-        file = df_M.File("phi2D_crossed.xml")
+        file = df_M.File("phi_test_2_2D.xml")
         file >> self.phi.function
 
         # Plot phi
@@ -56,7 +56,7 @@ class TestFieldInterpolation(unittest.TestCase):
                                           field_type='vector')
 
         # Read the electric field from a file
-        file = df_M.File("negE2D_crossed.xml")
+        file = df_M.File("negE_test_2_2D.xml")
         file >> self.neg_electric_field.function
 
 

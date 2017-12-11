@@ -374,7 +374,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                                    element_degree=phiElementDegree-1,
                                    field_type='vector')
 
-        file = df_M.File('negE2D_crossed.xml')
+        file = df_M.File('negE_test_2_2D.xml')
         file >> negElectricField.function
 
 
