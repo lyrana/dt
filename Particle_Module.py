@@ -313,6 +313,8 @@ class Particle_C(object):
 
         # Initialize the counter for H5Part particle writes
         self.h5_step_counter = 0
+        # This is used to avoid a second write on the same timestep
+        self.h5_last_write_step = -1
         # A scratch buffer for H5Part. It's length may need to increase later
         self.h5_buffer_length = self.number_of_species*self.SEGMENT_LENGTH
         self.h5_buffer = np_m.empty(self.h5_buffer_length, dtype=np_m.float64)
@@ -1827,12 +1829,31 @@ class Particle_C(object):
 #class Particle_C(object):
     def write_particles_to_file(self, ctrl, close_flag=False):
         """Writes out particle attributes for one timestep.
+
+           A new group is created when a snaphot of the particles is written.  Each
+           attribute of the particles has to be in a contiguous block, so you have to
+           loop through all the particles once for each attribute.
+
+           :cvar h5Buf: Local name of the buffer used to hold the particle attributes
+                        before they're written to a file
+
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
+        # Avoid a second call if the timestep hasn't changed since the last call
+        # (e.g., on exiting the time loop)
+        step = ctrl.timeloop_count
+        if step == self.h5_last_write_step:
+            print fncName, "(DnT INFO) Second call on timestep %d: return without writing the data." % step
+            return
+
+        # Create a new group for this timestep
         groupName = "Step#" + str(self.h5_step_counter)
         group = self.particle_output_handle.create_group(groupName)
+
+        # Write the simulation time
+        group.attrs["TimeValue"] = ctrl.time
 
         ### Count the total number of particles and see if h5_buffer_length needs to
         ### be increased
@@ -1885,8 +1906,9 @@ class Particle_C(object):
                     while isinstance(pseg, np_m.ndarray):
 #                        print "Array for", pA, "is: ", pseg[pA], "shape = ", pseg.shape
 #                        print "Range of h5Buf is:", aOff, aOff+npSeg, "shape =", h5Buf.shape
-                        h5Buf[aOff:aOff+npSeg] = pseg[pA]
-                        aOff += npSeg
+                        h5Buf[aOff:aOff+npSeg] = pseg[pA] # Copy all the values of attribute pA to
+                                                          # contiguous locations in the buffer.
+                        aOff += npSeg # Advance the offset by the number of values just copied.
                         (npSeg, pseg) = psaCI.get_next_segment('out')
 
 #            print "h5Buf is:", h5Buf[0:aOff]
@@ -1895,6 +1917,9 @@ class Particle_C(object):
 #                    d2 = group.create_dataset("y",data=y[:], dtype='f')
 
         self.h5_step_counter += 1
+
+        # Update "last_write_step" before returning
+        self.h5_last_write_step = step
 
         # Flush the buffer
         self.particle_output_handle.flush()
