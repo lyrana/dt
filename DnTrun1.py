@@ -202,7 +202,7 @@ if ctrlCI.use_particles == True:
     # masses are normally those of the physical plasma particles, and
     # not the computational macroparticles.  Macroparticle weights are
     # specified or computed in a separate file (see
-    # user_particle_module below) giving the distribution functions,
+    # user_particles_module below) giving the distribution functions,
     # and can vary from particle to particle.
 
     pinCI.particle_species = (('plasmaelectrons',
@@ -230,11 +230,11 @@ if ctrlCI.use_particles == True:
                         )
 
 # Specify the module where the user has given the particle distributions:
-    pinCI.user_particle_module = "UserParticles_H_He_e"
+    pinCI.user_particles_module = "UserParticles_H_He_e"
 
-    UPrt_M = im_M.import_module(user_particle_module)
+    userParticlesModule = im_M.import_module(user_particles_module)
 # Could use this variable if we need to import this module elsewhere:
-    pinCI.user_particle_class = UPrt_C = UPrt_M.ParticleDistributions_C
+    pinCI.user_particles_class = userParticlesClass = userParticlesModule.ParticleDistributions_C
 
 #    ph = PH_M.Particles_Mesh(allSpecies)
 
@@ -248,7 +248,7 @@ if ctrlCI.use_particles == True:
 # Create the object that initializes and stores the particle species
 # Don't need a seg_len here: Could be using storage that's not a segmented array.
 # Pass DnTrun?, or storage info? Or just put seg_len in the SV class? Or a global?
-#    DnTrun.particles = Part_M.Particles_C(particle_species, phase_coords, prec, seg_len, UPrt_C, echoFlag=True)
+#    DnTrun.particles = Part_M.Particles_C(particle_species, phase_coords, prec, seg_len, userParticlesClass, echoFlag=True)
     systemCI.particleCI = Part_M.Particle_C(pinCI, printFlag=True)
 
 # ??Generate the initial particle distributions

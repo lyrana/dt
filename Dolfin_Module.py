@@ -826,7 +826,7 @@ class Field_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        # Assignment to an FE function: FBook p. 25:
+        # Assignment to a Dolfin mesh function: FBook p. 25:
         self.function.vector()[:] += multiplier*field_to_add.function.vector()
 
         return

@@ -12,6 +12,8 @@ __all__ = ['UserParticleDistributions_C.initial_electrons',
            ]
 
 import sys
+from Dolfin_Module import Mesh_C
+from Particle_Module import Particle_C
 import UserUnits_Module as U_M
 
 #
@@ -59,9 +61,11 @@ class UserParticleDistributions_C(object):
         weight0 = 1.0 # number of electrons per macroparticle
         bitflags0 = 0b00 # bit flags variable
         bitflags0 = bitflags0 | Particles_C.TRAJECTORY_FLAG # use low bit for trajectory flag.
-
+        cell_index = Mesh_C.NO_CELL
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        
         # Trim the number of coordinates here to match "position_coordinates" class variable above
-        p0 = (x0,y0, ux0,uy0, weight0, bitflags0)
+        p0 = (x0,y0, ux0,uy0, weight0, bitflags0, cell_index, unique_ID)
 
         # Image particle with different weight
         (x1, y1, z1) = (4.75, 0.0, 0.0)
@@ -70,9 +74,11 @@ class UserParticleDistributions_C(object):
         bitflags1 = 0b00 # bit flags variable
 #        TRAJECTORY_FLAG = 0b1
         bitflags1 = bitflags1 | Particles_C.TRAJECTORY_FLAG # set trajectory bit to 1.
+        cell_index = Mesh_C.NO_CELL
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
         # Trim the number of coordinates here to match "position_coordinates" class variable above
-        p1 = (x1,y1, ux1,uy1, weight1, bitflags1)
+        p1 = (x1,y1, ux1,uy1, weight1, bitflags1, cell_index, unique_ID)
 
         particle_list = (p0, p1)
         np = len(particle_list)
@@ -100,13 +106,13 @@ class UserParticleBoundaryConditions_C(object):
 #    ISEE    = 0b1 << 2        # Ion-stimulated electron emission
 #    SEE     = 0b1 << 3        # Secondary-electron emission
 
-    if hasattr(user_particle_class, species_name):
+    if hasattr(user_particles_class, species_name):
         # store the name of the distribution function
-        self.initial_distribution_function[species_name] = getattr(user_particle_class, species_name)
-        if printFlag: print 'Particle_C: Initial distribution for', species_name, ' is the function of that name in ', user_particle_class
+        self.initial_distribution_function[species_name] = getattr(user_particles_class, species_name)
+        if printFlag: print 'UserParticleBoundaryConditions_C: Initial distribution for', species_name, ' is the function of that name in ', user_particles_class
     # Write error message and exit if no distribution function exists
     else:
-        error_msg = "Particle_C: Need to define a particle distribution function %s in UserParticle.py for species %s " % (species_name, species_name)
+        error_msg = "UserParticleBoundaryConditions_C: Need to define a particle distribution function %s in UserParticles_2D_H_He_e.py for species %s " % (species_name, species_name)
         sys.exit(error_msg)
 
     def absorb(self):

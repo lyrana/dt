@@ -6,10 +6,10 @@ __author__ = 'Copyright (C) 2016 L. D. Hughes'
 
 import sys
 import numpy
-import importlib as im_M
+import importlib as im_m
 import unittest
 
-import DT_Module as DT_M
+import DT_Module as DT_m
 
 from UserUnits_Module import MyPlasmaUnits_C
 from Particle_Module import *
@@ -41,7 +41,7 @@ class TestParticleDeletion(unittest.TestCase):
 
         # initializations for each test go here...
 
-        self.ctrl = DT_M.DTcontrol_C()
+        self.ctrl = DT_m.DTcontrol_C()
 
         self.ctrl.dt = 1.0e-5
         self.ctrl.n_timesteps = 1
@@ -117,13 +117,13 @@ class TestParticleDeletion(unittest.TestCase):
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary conditions, source regions, etc.)
-        userParticleModule = "UserParticles_H_He_e"
+        userParticlesModuleName = "UserParticles_H_He_e"
 
         # Import this module
-        UPrt_M = im_M.import_module(userParticleModule)
+        userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        self.particleCI.user_particle_module = userParticleModule
-        self.particleCI.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+        self.particleCI.user_particles_module_name = userParticlesModuleName
+        self.particleCI.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### one_electron is present at t=0
 
@@ -138,11 +138,11 @@ class TestParticleDeletion(unittest.TestCase):
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
-        if hasattr(userParticleClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        if hasattr(userParticlesClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
         # Write error message and exit if no distribution function exists
         else:
-            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticleModule, speciesName)
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticlesModuleName, speciesName)
             sys.exit(errorMsg)
 
         # Collect the parameters into a dictionary

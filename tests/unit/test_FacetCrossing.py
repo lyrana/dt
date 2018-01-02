@@ -7,7 +7,7 @@ __author__ = 'Copyright (C) 2016 L. D. Hughes'
 import sys
 import os
 import numpy as np_M
-import importlib as im_M
+import importlib as im_m
 import unittest
 
 import dolfin as df_M

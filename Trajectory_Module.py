@@ -49,7 +49,9 @@ class Trajectory_C(object):
 
     ### Static class variables
 
-    # Value signalling that the particle index does not exist.  E.g., particle was deleted
+    # Value signaling that the particle no longer exists.  E.g., the particle hit a
+    # wall and was deleted.  Trajectory data for the particle exist up to the point
+    # where it was deleted.
     NO_PINDEX = -1
 
     def __init__(self, trajinCI, ctrl, explicit_species, implicit_species, neutral_species):
@@ -145,6 +147,9 @@ class Trajectory_C(object):
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         self.ParticleIdList[species_name].append(pindex)
+
+#        print "create_traj: The current particle indices are:", self.ParticleIdList[species_name]
+        
         self.TrajectoryLength[species_name].append(0) # Set the count to 0
 
         # Add a numpy array for the trajectory data
@@ -186,9 +191,11 @@ class Trajectory_C(object):
                 ip = self.ParticleIdList[sp][it]
                 data_arr = self.DataList[sp][it]
                 tvals = self.DataList[sp][it]['t']
+                nlength = self.TrajectoryLength[sp][it]
+#                print 'tvals = ', tvals[0:nlength]
                 # Plots vs. time
                 for comp in comps:
-                    mplot_m.plot(tvals, data_arr[comp])
+                    mplot_m.plot(tvals[0:nlength], data_arr[comp][0:nlength])
                     mplot_m.title("%s: Traj# %d Particle id %d" % (sp, it, ip))
                     mplot_m.xlabel('time (s)')
                     mplot_m.ylabel(comp)
@@ -198,13 +205,13 @@ class Trajectory_C(object):
                 # x vs. y
                 if 'x' in comps:
                     if 'y' in comps:
-                        mplot_m.plot(data_arr['x'], data_arr['y'])
+                        mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength])
                         mplot_m.xlabel('x')
                         mplot_m.ylabel('y')
                         mplot_m.grid(True)
                         mplot_m.show()
                     if 'ux' in comps:
-                        mplot_m.plot(data_arr['x'], data_arr['ux'])
+                        mplot_m.plot(data_arr['x'][0:nlength], data_arr['ux'][0:nlength])
                         mplot_m.xlabel('x')
                         mplot_m.ylabel('ux')
                         mplot_m.grid(True)
@@ -234,16 +241,15 @@ class Trajectory_C(object):
                     print fncName, "*** DT Warning: Trajectory", it, "for species", sp, "has only one point. Not plotting it.***"
                     continue
                 data_arr = self.DataList[sp][it]
+#                print "data_arr[x] =", data_arr['x'][0:nlength]
                 # x vs. y
                 if 'x' in comps:
                     if 'y' in comps:
-#                        path = np_M.empty(2*data_arr['x'].size, dtype=np_M.float64) # dtype has to be double for add_polygon()
-                        path = np_M.empty(2*nlength, dtype=np_M.float64) # dtype has to be double for add_polygon()
+                        path = np_M.empty(2*nlength, dtype=np_M.float64) # NB: dtype has to be double for add_polygon()
                         path[0::2] = data_arr['x'][0:nlength] # Start at 0, with stride 2
                         path[1::2] = data_arr['y'][0:nlength] # Start at 1, with stride 2
 #                        print fncName, 'path =', path
 #                        print fncName, 'Trajectory', it, 'has ', path.size, 'points'
-                        print fncName, 'Trajectory', it, 'has ', nlength, 'points'
                         plotter.add_polygon(path)
 
         plotter.plot()

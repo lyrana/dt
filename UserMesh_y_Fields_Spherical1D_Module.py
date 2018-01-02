@@ -291,6 +291,8 @@ class UserMesh1DS_C(Mesh_C):
             rmax_indx = particleBoundaryDict['rmax']
             Gamma_rmin.mark(particleBoundaryMarker, rmin_indx)
             Gamma_rmax.mark(particleBoundaryMarker, rmax_indx)
+        else:
+            particleBoundaryMarker = None
         #END:if particleBoundaryDict is not None:
 
 # Now transform the unit interval mesh to its desired shape
@@ -397,9 +399,6 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
         (rmin_indx, phi_rmin) = phi_BCs['rmin']
         (rmax_indx, phi_rmax) = phi_BCs['rmax']
 
-        u_rmin = df_m.Constant(phi_rmin)
-        u_rmax = df_m.Constant(phi_rmax)
-
         self.charge_density = charge_density
         self.assembled_charge = assembled_charge
         self.neg_electric_field = neg_electric_field
@@ -417,8 +416,15 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
         # set.
         #       args: DirichletBC(FunctionSpace, GenericFunction, MeshFunction, int, method="topological")
 
-        self.bcs = [df_m.DirichletBC(V, u_rmin, field_boundary_marker, rmin_indx), df_m.DirichletBC(V, u_rmax, field_boundary_marker, rmax_indx)]
-
+        u_rmax = df_m.Constant(phi_rmax)
+        if phi_rmin == 'unset':
+            # grad phi = 0 at rmin: natural BC.
+            self.bcs = [df_m.DirichletBC(V, u_rmax, field_boundary_marker, rmax_indx), ]
+        else:
+            # phi is set explicitly at both boundaries
+            u_rmin = df_m.Constant(phi_rmin)
+            self.bcs = [df_m.DirichletBC(V, u_rmin, field_boundary_marker, rmin_indx), df_m.DirichletBC(V, u_rmax, field_boundary_marker, rmax_indx)]
+            
         ### Set up the variational problem ###
 
         w = df_m.TrialFunction(V)

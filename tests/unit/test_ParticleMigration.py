@@ -7,7 +7,7 @@ __author__ = 'Copyright (C) 2016 L. D. Hughes'
 import sys
 import os
 import numpy as np_M
-import importlib as im_M
+import importlib as im_m
 import unittest
 
 import dolfin as df_M
@@ -51,7 +51,7 @@ class TestParticleMigration(unittest.TestCase):
         # and masses are normally those of the physical particles, and
         # not the computational macroparticles.  Macroparticle weights
         # are specified or computed in a separate file (see
-        # user_particle_module below) giving the distribution
+        # user_particles_module_name below) giving the distribution
         # functions, and can vary from particle to particle.
 
 #         pin.particle_species = (('neutral_H',
@@ -65,9 +65,9 @@ class TestParticleMigration(unittest.TestCase):
 #                             )
 
         speciesName = 'neutral_H'
-        charge = 0.0
+        charge = 1.0
         mass = 1.0*MyPlasmaUnits_C.AMU
-        dynamics = 'explicit'
+        dynamics = 'neutral'
         neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add these species to particle input
@@ -79,14 +79,14 @@ class TestParticleMigration(unittest.TestCase):
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary-condition callbacks, source regions, etc.)
         # Particles have a 3D/3D phase-space even though mesh is just 2D
-        userParticleModule = "UserParticles_3D"
-#        print "setUp: UserParticle module is", userParticleModule
+        userParticlesModuleName = "UserParticles_3D"
+#        print "setUp: UserParticle module is", userParticlesModuleName
 
         # Import this module
-        UPrt_M = im_M.import_module(userParticleModule)
+        userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        self.particle_P.user_particle_module = userParticleModule
-        self.particle_P.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+        self.particle_P.user_particles_module_name = userParticlesModuleName
+        self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### neutral H atoms are present at t=0
         speciesName = 'neutral_H'
@@ -99,8 +99,8 @@ class TestParticleMigration(unittest.TestCase):
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
-        if hasattr(userParticleClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        if hasattr(userParticlesClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -254,11 +254,12 @@ class TestParticleMigration(unittest.TestCase):
         xsp0 = -9.5; ysp0 =  -9.5; zsp0 = 0.0
         vxsp0 = -2.0; vysp0 = 0.0; vzsp0 = 0.0
 
-        weight0=2.0
+        weight0 = 2.0
         bitflag0 = 2
         cell_index0 = 0
+        unique_ID0 = 0
 
-        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0)
+        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0)
 
         # Second particle
 
@@ -268,15 +269,16 @@ class TestParticleMigration(unittest.TestCase):
         weight1 = 3.0
         bitflag1 = 2
         cell_index1 = 0
+        unique_ID1 = 1
 
-        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1)
+        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1)
 
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
         print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "timesteps"
         for istep in xrange(ctrlCI.n_timesteps):
-            self.particle_P.move_neutral_particles(ctrlCI.dt)
+            self.particle_P.move_neutral_particles(ctrlCI)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -287,9 +289,9 @@ class TestParticleMigration(unittest.TestCase):
 #                print 'calculated = ', getparticle
                 for ic in range(ncoords):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
-                # The cell index is in last position: [-1]
-#                print fncname, "expected cell =", p_expected[ip][-1], "computed cell =", getparticle[-1]
-                self.assertEqual(p_expected[ip][-1], getparticle[-1], msg="Particle is not in correct cell")
+                # The cell index is in last position: [-2]
+#                print fncName, "expected cell =", p_expected[ip][-2], "computed cell =", getparticle[-2]
+                self.assertEqual(p_expected[ip][-2], getparticle[-2], msg="Particle is not in correct cell")
 
         return
 #    def test_1D_particle_migration(self):ENDDEF
@@ -334,8 +336,9 @@ class TestParticleMigration(unittest.TestCase):
         weight0=2.0
         bitflag0 = 2
         cell_index0 = 0
+        unique_ID0 = 0
 
-        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0)
+        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0)
 
         # Second particle
 
@@ -345,15 +348,16 @@ class TestParticleMigration(unittest.TestCase):
         weight1 = 3.0
         bitflag1 = 2
         cell_index1 = 0
+        unique_ID1 = 0
 
-        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1)
+        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1)
 
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
         print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "timesteps"
         for istep in xrange(ctrlCI.n_timesteps):
-            self.particle_P.move_neutral_particles(ctrlCI.dt)
+            self.particle_P.move_neutral_particles(ctrlCI)
 
         # Create a mesh plotter to display the trajectory
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": First & last positions"
@@ -371,9 +375,9 @@ class TestParticleMigration(unittest.TestCase):
 
                 for ic in range(ncoords):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
-                # The cell index is in last position: [-1]
-#                print fncname, "expected cell =", p_expected[ip][-1], "computed cell =", getparticle[-1]
-                self.assertEqual(p_expected[ip][-1], getparticle[-1], msg="Particle is not in correct cell")
+                # The cell index is in last position: [-2]
+#                print fncName, "expected cell =", p_expected[ip][-2], "computed cell =", getparticle[-2]
+                self.assertEqual(p_expected[ip][-2], getparticle[-2], msg="Particle is not in correct cell")
 
         plotter.plot()
 #        df_M.interactive() # Stops the plot from disappearing
@@ -418,8 +422,9 @@ class TestParticleMigration(unittest.TestCase):
         weight0=2.0
         bitflag0 = 2
         cell_index0 = 98
+        unique_ID0 = 0
 
-        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0)
+        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0)
 
         # Second particle
 
@@ -429,15 +434,16 @@ class TestParticleMigration(unittest.TestCase):
         weight1 = 3.0
         bitflag1 = 2
         cell_index1 = 0
+        unique_ID1 = 0
 
-        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1)
+        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1)
 
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
         print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "steps"
         for istep in xrange(ctrlCI.n_timesteps):
-            self.particle_P.move_neutral_particles(ctrlCI.dt)
+            self.particle_P.move_neutral_particles(ctrlCI)
 
         # Create a mesh plotter to display the trajectory (just the
         # first and last positions)
@@ -458,9 +464,9 @@ class TestParticleMigration(unittest.TestCase):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
                 # The index of the cell containing the particle is in the
                 # last position of the stored particle attributes,
-                # i.e., at location [-1]
-#                print fncname, "expected cell =", p_expected[ip][-1], "computed cell =", getparticle[-1]
-                self.assertEqual(p_expected[ip][-1], getparticle[-1], msg="Particle is not in correct cell")
+                # i.e., at location [-2]
+#                print fncName, "expected cell =", p_expected[ip][-2], "computed cell =", getparticle[-2]
+                self.assertEqual(p_expected[ip][-2], getparticle[-2], msg="Particle is not in correct cell")
 
         plotter.plot()
         df_M.interactive() # Stops the plot from disappearing

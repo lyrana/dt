@@ -72,10 +72,11 @@ class UserParticleDistributions_C(object):
         # Turn trajectory flag ON.
         bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG
         cell_index = Mesh_C.NO_CELL
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
         # Trim the number of coordinates here to match
         # "position_coordinates" variable in ParticleInput_C
-        p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index)
+        p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index, unique_ID)
 
         # Second particle
         # An electron along the 22.5-degree line
@@ -94,10 +95,11 @@ class UserParticleDistributions_C(object):
         bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG
 #        cell_index = -1
         cell_index = Mesh_C.NO_CELL
-
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        
         # Trim the number of coordinates here to match
         # "position_coordinates" variable in ParticleInput_C
-        p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index)
+        p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index, unique_ID)
 
         particle_list = (p0, p1)
         np = len(particle_list)
@@ -136,10 +138,11 @@ class UserParticleDistributions_C(object):
         # Turn on trajectory flag.
         bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG
         cell_index = Mesh_C.NO_CELL
-
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        
         # Trim the number of coordinates here to match
         # "position_coordinates" variable in ParticleInput_C
-        p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index)
+        p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index, unique_ID)
 
         # Second particle
         (x1, y1, z1) = (1.1, 0.0, 10.0)
@@ -158,10 +161,11 @@ class UserParticleDistributions_C(object):
 #        TRAJECTORY_FLAG = 0b1
         # Turn on trajectory flag.
 #        bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG 
-
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        
         # Trim the number of coordinates here to to match
         # "position_coordinates" variable in ParticleInput_C
-        p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index)
+        p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index, unique_ID)
 
         particle_list = (p0, p1)
         np = len(particle_list)

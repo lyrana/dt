@@ -6,7 +6,7 @@ __author__ = 'Copyright (C) 2016 L. D. Hughes'
 
 import sys
 import os
-import importlib as im_M
+import importlib as im_m
 import unittest
 
 import numpy as np_M
@@ -48,7 +48,7 @@ class TestParticleInitialization(unittest.TestCase):
         # and masses are normally those of the physical particles, and
         # not the computational macroparticles.  Macroparticle weights
         # are specified or computed in a separate file (see
-        # user_particle_module below) giving the distribution
+        # user_particles_module_name below) giving the distribution
         # functions, and can vary from particle to particle.
 
         speciesName = 'plasma_electrons'
@@ -78,13 +78,13 @@ class TestParticleInitialization(unittest.TestCase):
         # Give the name of the .py file containing special particle data (lists
         # of particles, boundary conditions, particle-initialization regions,
         # particle source regions, etc.)
-        userParticleModule = "UserParticles_H_He_e"
+        userParticlesModuleName = "UserParticles_H_He_e"
 
         # Import this module
-        UPrt_M = im_M.import_module(userParticleModule)
+        userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        p_P.user_particle_module = userParticleModule
-        p_P.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+        p_P.user_particles_module_name = userParticlesModuleName
+        p_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### Provide input for particles present at t=0
 
@@ -102,11 +102,11 @@ class TestParticleInitialization(unittest.TestCase):
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
-        if hasattr(userParticleClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        if hasattr(userParticlesClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
         # Write error message and exit if no distribution function exists
         else:
-            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticleModule, speciesName)
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticlesModuleName, speciesName)
             sys.exit(errorMsg)
 
         # Collect the parameters into a dictionary
@@ -129,8 +129,8 @@ class TestParticleInitialization(unittest.TestCase):
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
-        if hasattr(userParticleClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        if hasattr(userParticlesClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -153,7 +153,7 @@ class TestParticleInitialization(unittest.TestCase):
 #    def setUp(self):ENDDEF
 
 #class TestParticleInitialization(unittest.TestCase):
-    def test_species_names(self):
+    def test_1_species_names(self):
         """ Check that the species names are those specified by the user.
         """
 
@@ -170,7 +170,7 @@ class TestParticleInitialization(unittest.TestCase):
 #    def test_species_names(self):ENDDEF
 
 #class TestParticleInitialization(unittest.TestCase):
-    def test_listed_particles(self):
+    def test_2_listed_particles(self):
         """ 1. Check that the stored particles have the values listed by the user.
             2. Check the methods that count the particles.
         """
@@ -178,7 +178,7 @@ class TestParticleInitialization(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName, '('+__file__+')'
 
-        userParticleClass = self.particle_P.user_particle_class
+        userParticlesClass = self.particle_P.user_particles_class
 
         ninput_total = 0
 
@@ -194,14 +194,14 @@ class TestParticleInitialization(unittest.TestCase):
             if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
                 self.particle_P.create_from_list(s, False)
-                # Get the original listed-particle input data by calling the
-                # user-provided function in 'user_particle_file'.
+                # Get the original listed-particle input data from the
+                # user-provided function in 'user_particles_file'.
                 # The function name is the species name, and the
                 # argument for the particles used in this particular
                 # test is 'listed'
-                ninput, particles = getattr(userParticleClass, s)(initialDistributionType)
+                ninput, particles = getattr(userParticlesClass, s)(initialDistributionType)
                 ninput_total += ninput
-                # Check that the particles has the user-input values
+                # Check that the particles stored in the SA have the user-input values
                 for i in range(ninput):
                     putparticle = particles[i]
                     # Get the stored particle data
@@ -224,7 +224,7 @@ class TestParticleInitialization(unittest.TestCase):
 #    def test_listed_particles(self):ENDDEF
 
 #class TestParticleInitialization(unittest.TestCase):
-    def test_function_initialized_particles(self):
+    def test_3_function_initialized_particles(self):
         """ Test initialization of particles using a function over a region of
             the mesh.
 
@@ -254,7 +254,7 @@ class TestParticleInitialization(unittest.TestCase):
 
         p_P = self.particle_P
 
-        userParticleClass = p_P.user_particle_class
+        userParticlesClass = p_P.user_particles_class
 
         ## 1. Initial hot electrons on bottom-left side of the mesh
 

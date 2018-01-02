@@ -79,13 +79,13 @@ class TestParticleGeneration(unittest.TestCase):
 
         ## Give the name of the .py file containing special particle data (lists of
         # particles, boundary conditions, source regions, etc.)
-        userParticleModule = "UserParticles_1D"
+        userParticlesModuleName = "UserParticles_1D"
 
         # Import this module
-        UPrt_M = im_m.import_module(userParticleModule)
+        userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        particle_P.user_particle_module = userParticleModule
-        particle_P.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+        particle_P.user_particles_module_name = userParticlesModuleName
+        particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
         
 
         ### Mesh input for a 1D mesh

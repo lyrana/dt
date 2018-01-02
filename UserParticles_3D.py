@@ -65,9 +65,10 @@ class UserParticleDistributions_C(object):
         bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG
         cell_index = Mesh_C.NO_CELL
 #        cell_index = -1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
         # Trim the number of coordinates here if needed to match "position_coordinates" variable in ParticleInput_C
-        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index)
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index, unique_ID)
 
         # Second particle
         # Particle moves diagonally across the mesh:
@@ -77,9 +78,10 @@ class UserParticleDistributions_C(object):
         bitflags1 = 0b0 # bit flags variable
         # Turn ON trajectory flag.
         bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG 
-
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        
         # Trim the number of coordinates here to match "position_coordinates" variable in ParticleInput_C
-        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index)
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index, unique_ID)
 
 #        particle_list = (p0,) # Need the final comma , for one particle.
 #        particle_list = (p1,) # Need the final comma , for one particle.

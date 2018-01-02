@@ -9,7 +9,7 @@ import os
 import math
 import unittest
 
-import importlib as im_M
+import importlib as im_m
 
 import numpy as np_M
 import dolfin as df_m
@@ -58,7 +58,7 @@ class TestFieldSolve(unittest.TestCase):
 
         # For this calculation, we use the Dolfin framework for finite-element fields.
 #        field_infrastructure_module = 'Dolfin_Module'
-#        fI_M = im_M.import_module(field_infrastructure_module)
+#        fI_M = im_m.import_module(field_infrastructure_module)
 
         umi = UserMeshInput1DS_C()
 
@@ -227,7 +227,7 @@ class TestFieldSolve(unittest.TestCase):
 
         # For this calculation, we use the Dolfin framework for finite-element fields.
 #        field_infrastructure_module = 'Dolfin_Module'
-#        fI_M = im_M.import_module(field_infrastructure_module)
+#        fI_M = im_m.import_module(field_infrastructure_module)
 
         umi = UserMeshInput2DCirc_C()
 
@@ -462,7 +462,7 @@ class TestFieldSolve(unittest.TestCase):
 
 #class TestFieldSolve(unittest.TestCase):
     def test_4_1D_poisson_solver(self):
-        """Test a Poisson solve in 1D radial spherical coordinates.
+        """Test a Poisson solve in 1D radial spherical coordinates starting at r = 1.
 
            The mesh and mesh BC markers used here read from files written by
            test_1D_spherical_mesh in test_UserMesh.py.  
@@ -612,6 +612,160 @@ class TestFieldSolve(unittest.TestCase):
 
         return
 #    def test_4_1D_poisson_solver(self):ENDDEF
+
+#class TestFieldSolve(unittest.TestCase):
+    def test_5_1D_poisson_solver(self):
+        """Test a Poisson solve in 1D radial spherical coordinates starting at r = 0.
+
+           The mesh and mesh BC markers used here read from files written by
+           test_1D_spherical_mesh in test_UserMesh.py.  
+
+           The charge-density is from a file written by
+           test_6_compute_charge_density_on_1Dmesh() in test_ChargeDensity.py.
+
+           Boundary values are specified here.  The potential is set to zero at the
+           outer radius at 5 meters.  The potential at the inner radius (1 meter) is
+           set to the analytic potential due to the charge.  If the solution is
+           correct, then the potential inside the radial location of the particle
+           should be flat.
+
+           See Calc file test_FieldSolve.ods:test_5 for calculation of potential
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName, '('+__file__+')'
+
+        ### Specialized mesh and field-solver modules for this test ###
+
+        from UserMesh_y_Fields_Spherical1D_Module import UserMesh1DS_C
+        from UserMesh_y_Fields_Spherical1D_Module import UserMeshInput1DS_C
+        from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve1DS_C
+
+        ### Set plot flag ###
+
+        if os.environ.get('DISPLAY') is None:
+            plotFlag=False
+        else:
+            plotFlag=True
+
+        ### Read the mesh and boundary-condition markers ###
+
+        # Create a mesh object and read in the mesh.
+        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial_r0.xml', field_boundary_marker_file='mesh_1D_radial_r0_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
+
+        ### Create the charge-density vector ###
+
+        chargeDensityElementType = 'Lagrange'
+        chargeDensityElementDegree = 1
+        chargeDensityFieldType = 'scalar'
+
+        chargeDensity_F = Field_C(mesh_M=mesh1d_M,
+                                  element_type=chargeDensityElementType,
+                                  element_degree=chargeDensityElementDegree,
+                                  field_type=chargeDensityFieldType)
+
+        ### Set the charge density values ###
+
+        # Read in the charge-density written by
+        # test_ChargeDensity.py:test_5_compute_charge_density_on_1Dmesh
+        file = df_m.File("charge_1DS_r0.xml")
+        file >> chargeDensity_F.function
+
+        ### Set the Poisson solver parameters ###
+
+        linearSolver = 'lu'
+        preconditioner = None
+
+        ### Set the field boundary conditions ###
+
+        # Copy over from test_ChargeDensity.py:test_5 for convenience in using the
+        # integer markers to set boundary values.
+        # 
+        # This associates the field marker integers with boundary names.
+        rminIndx = 1
+        rmaxIndx = 2
+        fieldBoundaryDict = {'rmin': rminIndx,
+                             'rmax': rmaxIndx,
+                             }
+
+        # Dirichlet boundaries are applied using a mesh function that marks the outer
+        # edges of the mesh.
+        fieldBoundaryMarker = mesh1d_M.field_boundary_marker
+       
+        # Specify the boundary values of the potential
+        phiVals = {'rmin': 'unset', # Analytic potential inside the particle radius
+                   'rmax': 0.0,
+                   }
+
+        phiBCs = dict((bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
+
+        ### Create vectors for for the potential and electric field ###
+
+        phiElementType = 'Lagrange'
+        phiElementDegree = 1
+        phiFieldType = 'scalar'
+
+        phi_F = Field_C(mesh_M=mesh1d_M,
+                      element_type=phiElementType,
+                      element_degree=phiElementDegree,
+                      field_type=phiFieldType)
+
+        if phiElementDegree == 1:
+            # For linear elements, grad(phi) is discontinuous across
+            # elements. To get these values, we need Discontinuous Galerkin
+            # elements.
+            electricFieldElementType = "DG"
+        else:
+            electricFieldElementType = "Lagrange"
+
+        negElectricField_F = Field_C(mesh_M=mesh1d_M,
+                                   element_type=electricFieldElementType,
+                                   element_degree=phiElementDegree-1,
+                                   field_type='vector')
+
+        ### Create the Poisson-solver object ###
+
+        poissonsolve = UserPoissonSolve1DS_C(phi_F,
+                                             linearSolver, preconditioner,
+                                             fieldBoundaryMarker,
+                                             phiBCs,
+                                             assembled_charge=chargeDensity_F.function,
+                                             neg_electric_field=negElectricField_F)
+
+        # Create the source term from a given density
+        # (In this test, the charge comes from kinetic point particles, rather
+        # than from a density function, so the following isn't needed.)
+#        poissonsolve.assemble_source_expression(charge_density)
+
+#        self.b = df_m.assemble(self.L)
+
+
+        # Solve for the potential
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
+        poissonsolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
+
+        # Write the potential to a file in VTK and XML formats
+        file = df_m.File('phi_test_5_1D.pvd')
+        # phi_name goes into the output file; phi_label doesn't
+        phi_F.function.rename("phi1D", "phi_label")
+        file << phi_F.function
+        file = df_m.File('phi_test_5_1D.xml')
+        file << phi_F.function
+
+        # Write -E to a file in VTK and XML formats
+        if negElectricField_F is not None:
+            negElectricField_F.function.rename("E1D", "E_label")
+            # !!! VTK cannot write a vector field on a 1D grid.
+#            file = df_m.File("negE_test_5_1D.pvd")
+#            file << negElectricField_F.function
+            file = df_m.File("negE_test_5_1D.xml")
+            file << negElectricField_F.function
+
+        return
+#    def test_5_1D_poisson_solver(self):ENDDEF
+
+
 #class TestFieldSolve(unittest.TestCase):ENDCLASS
 
 if __name__ == '__main__':

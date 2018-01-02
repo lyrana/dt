@@ -63,8 +63,9 @@ class TestChargeDensity(unittest.TestCase):
         weight0 = 2.0e10 # number of electrons per macroparticle
         bitflags0 = 0b0
         cell_index0 = 0
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        p0 = (x0,y0,z0, ux0,uy0,uz0, weight0,bitflags0,cell_index0)
+        p0 = (x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID)
 
         # 2nd particle
         x1 = 0.25; y1 = 0.0; z1 = 1.0
@@ -72,23 +73,26 @@ class TestChargeDensity(unittest.TestCase):
         weight1 = 3.0e10
         bitflags1 = 0b0
         cell_index1 = 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1,bitflags1,cell_index1)
+        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID)
 
         # 3nd particle
         x2 = 0.0; y2 = 0.0; z2 = 1.0
         ux2 = uy2 = 0.0; uz2 = -uz0
         weight2 = 4.0e10
         bitflags2 = 0b0
-        cell_index2 = 0 # Particle lies on boundary between 0 and 1 
+        cell_index2 = 0 # Particle lies on boundary between 0 and 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        p2 = (x2,y2,z2, ux2,uy2,uz2, weight2,bitflags2,cell_index2)
+        p2 = (x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID)
 
         # Create the DT particle record type
-        pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index']
+        pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
         pvartypes = [np_m.float64]*7
         pvartypes.append(np_m.int32) # bitflags
         pvartypes.append(np_m.int32) # cell_index
+        pvartypes.append(np_m.int32) # unique_ID
 
         p_dtype = {'names' : pvars, 'formats': pvartypes}
 
@@ -201,8 +205,9 @@ class TestChargeDensity(unittest.TestCase):
         weight0 = 2.0e10 # number of electrons per macroparticle
         bitflags0 = 0b0
         cell_index0 = 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        p0 = (x0,y0,z0, ux0,uy0,uz0, weight0,bitflags0,cell_index0)
+        p0 = (x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID)
 
         # 2nd particle
         x1 = 1.0; y1 = 1.0; z1 = 1.0
@@ -210,23 +215,26 @@ class TestChargeDensity(unittest.TestCase):
         weight1 = 3.0e10
         bitflags1 = 0b0
         cell_index1 = 6
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1,bitflags1,cell_index1)
+        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID)
 
         # 3nd particle
         x2 = -9.0; y2 = 1.0; z2 = 1.0
         ux2 = uy2 = 0.0; uz2 = -uz0
         weight2 = 4.0e10
         bitflags2 = 0b0
-        cell_index2 = 4 # Particle lies on boundary between 0 and 1 
+        cell_index2 = 4 # Particle lies on boundary between 0 and 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        p2 = (x2,y2,z2, ux2,uy2,uz2, weight2,bitflags2,cell_index2)
+        p2 = (x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID)
 
         # Create the DT particle record type
-        pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index']
+        pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
         pvartypes = [np_m.float64]*7
         pvartypes.append(np_m.int32) # bitflags
         pvartypes.append(np_m.int32) # cell_index
+        pvartypes.append(np_m.int32) # unique_ID
 
         p_dtype = {'names' : pvars, 'formats': pvartypes}
 
@@ -399,11 +407,12 @@ class TestChargeDensity(unittest.TestCase):
         weight0 = 2.0e10 # number of physical particles per macroparticle
         bitflags0 = 0b0
         cell_index0 = 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
         # Unlike the previous tests, we're using a Particle_C object here, so
         # the particle tuple has to match the one in Particle_C:
-        # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index']
-        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0,bitflags0,cell_index0)
+        # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID)
 
         # 2nd particle
         x1 = 1.0; y1 = 1.0; z1 = 1.0
@@ -411,20 +420,22 @@ class TestChargeDensity(unittest.TestCase):
         weight1 = 3.0e10
         bitflags1 = 0b0
         cell_index1 = 6
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1,bitflags1,cell_index1)
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID)
 
         # 3nd particle
         x2 = -9.0; y2 = 1.0; z2 = 1.0
         ux2 = uy2 = 0.0; uz2 = -uz0
         weight2 = 4.0e10
         bitflags2 = 0b0
-        cell_index2 = 4 # Particle lies on boundary between 0 and 1 
+        cell_index2 = 4 # Particle lies on boundary between 0 and 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2,bitflags2,cell_index2)
+        p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID)
 
         # # Create the DT particle record type
-        # pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index']
+        # pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
         # pvartypes = [np_m.float64]*7
         # pvartypes.append(np_m.int32) # bitflags
         # pvartypes.append(np_m.int32) # cell_index
@@ -637,10 +648,11 @@ class TestChargeDensity(unittest.TestCase):
         weight0 = 5.52623e7 # to get 1 V/m jump in E prev: 4.0e10 # number of electrons per macroparticle
         bitflags0 = 0b0
         cell_index0 = 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
         # The particle tuple has to match the one in Particle_C:
-        # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index']
-        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0,bitflags0,cell_index0)
+        # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID)
 
         particle_list = (p0,)
 
@@ -838,10 +850,11 @@ class TestChargeDensity(unittest.TestCase):
         weight0 = 1.0/MyPlasmaUnits_C.elem_charge # to get 1 C of charge
         weight0 /= 4.0*np_m.pi # charge per steradian
         bitflags0 = 0b0
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
         # The particle tuple has to match the one in Particle_C:
-        # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index']
-        p0 = (x0, x0, ux0, weight0, bitflags0, cell_index0)
+        # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
+        p0 = (x0, x0, ux0, weight0, bitflags0, cell_index0, unique_ID)
 
         particle_list = (p0, )
 
@@ -947,6 +960,210 @@ class TestChargeDensity(unittest.TestCase):
 
         return
 #    def test_5_compute_charge_density_on_1D_spherical_mesh(self):ENDDEF
+
+#class TestChargeDensity(unittest.TestCase):
+    def test_6_compute_charge_density_on_1D_spherical_mesh(self):
+        """Compute the charge-density generated by a particle at r = 0 on a spherical 1D
+           radial mesh.
+
+           One macroparticle with -1C of charge is placed at r = 0 and weighted
+           to nodal points on the mesh.  The charge-density is then accumulated, and
+           written to a file.
+           
+           The values calculated below are compared to the values computed by hand in
+           test_FieldSolve.ods:test_6.
+
+           :cvar str speciesName: An unique name for the species.
+           :cvar double x0: The radial location of the test particle.
+
+           :cvar int places: The number of digits after the decimal point used in
+                             comparing values.
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName, '('+__file__+')'
+        
+        coordinateSystem = '1D-spherical-radius'
+
+        ########## Numerical Mesh ##########
+
+        ### Specialized mesh and field-solver modules for this test ###
+
+        from UserMesh_y_Fields_Spherical1D_Module import UserMeshInput1DS_C
+        from UserMesh_y_Fields_Spherical1D_Module import UserMesh1DS_C
+        from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve1DS_C
+
+        umi1DS_I = UserMeshInput1DS_C()
+        umi1DS_I.mesh_file = 'mesh_1D_radial_r0.xml'
+        umi1DS_I.field_boundary_marker_file = 'mesh_1D_radial_r0_Fbcs.xml'
+
+        ### Set plot flag ###
+
+        if os.environ.get('DISPLAY') is None:
+            plotFlag=False
+        else:
+            plotFlag=True
+
+        ### Read the mesh and boundary-condition markers ###
+
+        # Create a mesh object and read in the mesh.
+        mesh1d_M = UserMesh1DS_C(umi1DS_I, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+
+        ########## Kinetic particles ##########
+
+        # Create an instance of the DTparticleInput class
+        pin = self.pin = ParticleInput_C()
+
+        pin.precision = np_m.float64
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = coordinateSystem
+        pin.position_coordinates = ['x',] # determines the particle-storage dimensions. This
+                                          # is doubled to get the phase-space coordinates
+        pin.force_components = ['x',]
+        pin.force_precision = np_m.float64
+
+        ### Particle species input
+
+        # Give the properties of the particle species.  The charges and masses
+        # are normally those of the physical particles, and not the
+        # computational macroparticles.
+
+        speciesName = 'plasma_electrons'
+        charge = -1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.electron_mass
+        dynamics = 'explicit'
+        plasmaElectron_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        # Add these two species to particle input
+        pin.particle_species = (plasmaElectron_S,)
+
+        # Make the particle object from pin...
+        particles_P = Particle_C(pin, print_flag=False)
+
+        # ...and attach the particle mesh.
+        particles_P.pmesh_M = mesh1d_M
+
+        ### Create discrete particles
+
+        # Put 1 plasma_electron in the first cell.
+#        x0 = 1.05
+#        cell_index0 = 0
+        # Put 1 plasma_electron at r = 0
+        x0 = 0.0
+        cell_index0 = 0 # This value is checked below.
+
+        ux0 = 0.0
+        weight0 = 1.0/MyPlasmaUnits_C.elem_charge # to get 1 C of charge
+        weight0 /= 4.0*np_m.pi # charge per steradian
+        bitflags0 = 0b0
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+
+        # The particle tuple has to match the one in Particle_C:
+        # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
+        p0 = (x0, x0, ux0, weight0, bitflags0, cell_index0, unique_ID)
+
+        particle_list = (p0, )
+
+        ### Put the particle into storage
+
+        # Electrons
+        species_name = 'plasma_electrons'
+
+        number_of_macroparticles = len(particle_list)
+
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+
+        for i in range(number_of_macroparticles):
+#            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
+            p, pindex = pseg_arr.put(particle_list[i])
+
+        # Check that we set the right cell index above
+        computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)
+        if cell_index0 != computed_cell_index:
+            errorMsg = "%s Particle cell index should be %d, not %d" % (fncName, computed_cell_index, cell_index0)
+            sys.exit(errorMsg)
+
+        ########## Source for the electric field ##########
+
+        # Allocate storage for the number-density obtained from kinetic
+        # particles.  The number-density array stores the integral of the
+        # physical density-distribution times the element basis functions.
+
+        numberDensityElementType = 'Lagrange'
+        numberDensityElementDegree = 1
+        numberDensityFieldType = 'scalar'
+
+        for s in particles_P.species_names:
+            particles_P.number_density_dict[s] = Field_C(particles_P.pmesh_M,
+                                                         element_type=numberDensityElementType,
+                                                         element_degree=numberDensityElementDegree,
+                                                         field_type=numberDensityFieldType)
+
+        ## Create a charge-density vector ##
+        chargeDensity_F = Field_C(mesh1d_M,
+                                  element_type=numberDensityElementType,
+                                  element_degree=numberDensityElementDegree,
+                                  field_type=numberDensityFieldType)
+
+        ## Accumulate number-density from kinetic particles of this species
+        ## and sum charge-density.
+        for s in particles_P.species_names:
+            particles_P.accumulate_number_density(s)
+            q = particles_P.charge[s]
+            chargeDensity_F.multiply_add(particles_P.number_density_dict[s], q)
+
+#        print "numberDensityCalc =", particles_P.number_density_dict['plasma_electrons'].function.vector().array()
+
+        chargeDensityCalc = chargeDensity_F.function.vector().array()
+#        print fncName, numberDensityCalc
+
+        # The expected charge-density values are computed in
+        # test_ChargeDensity.ods:test_6. Note that these are in the vertex numbering
+        # order, not DoF order. As a result we need to compare
+        # numberDensityExpected[ivert] with numberDensityCalc[idof], where idof is
+        # the DoF number corresponding to ivert (see conversion below).
+
+        # Create a numpy array for the charge density values.
+        chargeDensityExpected = np_m.empty(chargeDensity_F.function.vector().size(), dtype=np_m.float64)
+
+        chargeDensityExpected[0:11] = 0.0 # First, zero out the values
+        # Set the values computed in test_ChargeDensity.ods:test_6
+        chargeDensityExpected[0] = -7.95775e-2 # -1 C at r = 0 m
+        chargeDensityExpected[1] = 0.0
+ 
+        functionSpace = chargeDensity_F.function_space
+
+        # Get the (x,y,z) coordinates of the DoFs for inspection (only).
+        # Reshape the coordinates to get (x), or (x,y), or (x,y,z) tuples.
+        gdim = chargeDensity_F.mesh_gdim
+        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
+            dofcoords = functionSpace.tabulate_dof_coordinates().reshape((-1, gdim))
+        else:
+            print '\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test"
+            return
+#        print "dofcoords=", dofcoords
+
+        # Convert vertex indices to DoF indices.  For CG1 elements, there are the
+        # same number of vertices as DoFs.
+        v2d=df_m.vertex_to_dof_map(functionSpace)
+
+        ## Check the charge source-vector values vs. those computed in
+        ## test_ChargeDensity.ods:test_6
+#        print "chargeDensityCalc =", chargeDensityCalc
+#        print "chargeDensityExpected =", chargeDensityExpected
+        for ivert in range(len(chargeDensityExpected)):
+            idof = v2d[ivert]
+#            print "vertex", ivert, "is DoF index", idof
+#            print "chargeDensityCalc, chargeDensityExpected =", chargeDensityCalc[idof], chargeDensityExpected[ivert]
+            # "places" means numbers after the decimal point:
+            self.assertAlmostEqual(chargeDensityCalc[idof], chargeDensityExpected[ivert], places=4, msg="Wrong value of charge density")
+
+        ## Write out the charge source-vector:
+        file = df_m.File("charge_1DS_r0.xml")
+        file << chargeDensity_F.function
+
+        return
+#    def test_6_compute_charge_density_on_1D_spherical_mesh(self):ENDDEF
 
 #class TestChargeDensity(unittest.TestCase):ENDCLASS
 

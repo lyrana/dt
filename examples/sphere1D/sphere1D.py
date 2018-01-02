@@ -12,7 +12,11 @@ __all__ = ['Example_C',]
    electrons are hot and the ions are cold.  The electrons pull the
    ions radially outward.
 """
-#### Major Section Index:
+
+#### Section Index
+### Type a space after the colon to go to the main Section. Type a space
+### after the period to go to a subsection.
+
 ## IM: Imported Modules
 ## OF: Terminal output flags
 ## PC: Physical constants
@@ -20,9 +24,19 @@ __all__ = ['Example_C',]
 ## SC: Simulation Control
 ## FM: Field Mesh
 ## PS: Particle Species
+##     PS:1. Define the species and provide storage.
+##     PS:1.2. Allocate particle storage.
+##     PS:1.3. Specify the name of the UserParticlesModule
+##     PS:2. Particle boundary conditions, particle mesh
+##     PS:2.1. Mark boundaries to apply BCs on particles
+##     PS:2.2. Make the particle mesh and add it to the particle object
+##     PS:2.3. Connect the boundary-condition callback functions
+##     PS:3. Particle source regions
 ## TRJ: Particle Trajectories
 ## SRC: Source terms for the electric potential
 ## FS: Field Solver
+##     FS:1.1. Set boundary values of the potential
+## CHECK: Checks on input
 ## INIT: Initialization
 ## RUN: Integrate forward in time
 ####
@@ -56,8 +70,10 @@ emitInputOnly = False # Write input values to standard output and then quit.
 pauseAfterEmit = True # Wait for user input before continuing.  Can be changed to
                       # False by using ctrl.get_keyboard_input()
 
-plotInitialFields = True
-plotFieldsEveryTimestep = True # Plot phi and -E each timestep
+#plotInitialFields = True
+plotInitialFields = False
+#plotFieldsEveryTimestep = True # Plot phi and -E each timestep
+plotFieldsEveryTimestep = False # Plot phi and -E each timestep
 
 plotTrajectoriesOnMesh = False # Plot the trajectory particles on top of the mesh
 plotTrajectoriesInPhaseSpace = False # 2D phase-space plots of trajectory particles
@@ -85,8 +101,9 @@ if emitInput is True:
 scr = DTscratch_C()
 
 # Start with the size of the domain
-scr.rmin = 1.0
-scr.rmax = 5.0
+#scr.rmin = 1.0
+scr.rmin = 0.0
+scr.rmax = 4.0
 # Set the spatial resolution
 scr.nr = 10
 
@@ -145,17 +162,23 @@ ctrl.title = "sphere1D"
 # Run author
 ctrl.author = "tph"
 
-# Timesteps
+# Timestepping
+ctrl.n_timesteps = 100
+
 ctrl.dt = 4.0e-7 # from sphere1D.ods
 if ctrl.dt > scr.dt_max:
     print "%s\n(DnT WARNING) Timestep exceeds stability limit by %.3g" % (fileName, ctrl.dt/scr.dt_max)
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
-ctrl.n_timesteps = 1
 
 
 # Initialize time counters
 ctrl.timeloop_count = 0
 ctrl.time = 0.0
+
+# Set random seed
+ctrl.random_seed = 1
+
+np_m.random.seed(ctrl.random_seed)
 
 ### Set parameters for writing particle output to an h5part file
 ctrl.particle_output_file = "sphere1D.h5part"
@@ -279,16 +302,16 @@ particle_P = Particle_C(pin, print_flag=True)
 ##### PS:1.3. Name the particular "UserParticles" module to use
 # Give the name of the Python module file containing special particle
 # data (lists of particles, boundary conditions, source regions, etc.)
-userParticleModule = "UserParticles_1D"
+userParticlesModuleName = "UserParticles_1D"
 
 # Import the module
-UPrt_M = im_M.import_module(userParticleModule)
+userParticlesModule = im_M.import_module(userParticlesModuleName)
 
 # Add it to the particle object
-particle_P.user_particle_module = userParticleModule
-particle_P.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+particle_P.user_particles_module = userParticlesModuleName
+##particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
-############### PS:2. Particle boundary conditions, mesh, sources ###############
+############### PS:2. Particle boundary conditions and mesh ###############
 
 ##### PS:2.1. Mark boundaries to apply BCs on particles
 # In some cases, it's easier to mark boundaries before the final mesh is created.
@@ -334,6 +357,19 @@ mesh_M = UserMesh1DS_C(umi, compute_dictionaries=True, compute_tree=False, plot_
 
 # In this simulation, the particle mesh is the same object as the field mesh
 particle_P.pmesh_M = mesh_M
+
+##### PS:2.3. Connect the boundary-condition callback functions
+
+# See UserParticleBoundaryFunctions_C in userParticlesModule (defined above) for the
+# definitions of the facet-crossing callback functions.
+userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # abbreviation
+
+# Make the particle-mesh boundary-conditions object and add it to the particle
+# object.
+spNames = particle_P.species_names
+pmeshBCS = ParticleMeshBoundaryConditions_C(spNames, mesh_M, userPBndFnsClass, print_flag=False)
+particle_P.pmesh_bcs = pmeshBCS
+
 
 ########## PS:3. Particle source regions
 
@@ -383,7 +419,8 @@ velocity_coordinate_system = 'r_theta_z' # This sets the interpretation of the
 # vdrift_r = 2.64e4 # 1.1 times the sound speed
 # vdrift_theta = 0.0
 # vdrift_z = 0.0
-vdrift_1 = 1.1*scr.ion_sound_speed # 1.1 times the sound speed
+#vdrift_1 = 1.1*scr.ion_sound_speed # 1.1 times the sound speed
+vdrift_1 = 10.0*scr.ion_sound_speed
 vdrift_2 = 0.0
 vdrift_3 = 0.0
 
@@ -533,7 +570,7 @@ if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
-# Check the values set for particle output files
+# Check the particle attributes selected for output
 particle_P.check_particle_output_parameters(ctrl)
 
 
@@ -593,10 +630,13 @@ chargeDensity_F = Field_C(mesh_M=mesh_M,
 
 ########## FS:1. The scalar electric potential
 
-##### FS:1.1. Boundary values of the potential
-phiVals = {'rmin':  0.0,
+##### FS:1.1. Set boundary values of the potential
+phiVals = {'rmin':  'unset',
            'rmax': -1.5,
            }
+# phiVals = {'rmin':  0.0,
+#            'rmax': -1.5,
+#            }
 
 if emitInput is True:
     print ""
@@ -684,6 +724,13 @@ if emitInputOnly is True:
     sys.exit(infoMsg)
 
 
+############################## CHECK: Check the simulation setup ##############################
+
+if particleBoundaryDict is not None and particle_P.pmesh_M.particle_boundary_marker is None:
+    print "A particleBoundaryDict was set, but particle_P.pmesh_M.particle_boundary_marker is None"
+    sys.exit()
+    
+
 ############################## INIT: Initialization ##############################
 
 ########## INIT:1. Do an initial field solve without particles
@@ -749,6 +796,8 @@ for istep in xrange(ctrl.n_timesteps):
     ctrl.time += ctrl.dt
 
     ########## RUN:1. Advance the particles one timestep
+    print ""
+    print "***** Advance %d particles to step %d, time %.3g *****" % (particle_P.get_total_particle_count(), ctrl.timeloop_count, ctrl.time)
     particle_P.move_particles_in_electrostatic_field(ctrl, poissonsolve.neg_electric_field)
 
     ## Record trajectory data for all marked particles
@@ -758,7 +807,7 @@ for istep in xrange(ctrl.n_timesteps):
 
     ########## RUN:2. Add particles from source regions
     # Note: if a new particle gets marked for a trajectory, the first datum is
-    # recorded by the particle generator
+    # recorded inside the particle generator.
     if particle_P.particle_source_dict is not None:
         particle_P.add_more_particles(ctrl, neg_E_field=poissonsolve.neg_electric_field, print_flag=True)
 

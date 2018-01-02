@@ -70,9 +70,10 @@ class UserParticleDistributions_C(object):
         # Turn ON trajectory flag.
         bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG
         cell_index = Mesh_C.NO_CELL
-
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        
         # Trim the number of coordinates here if needed to match "position_coordinates" variable in ParticleInput_C
-        p0 = (x0, x0, ux0, weight0, bitflags0, cell_index)
+        p0 = (x0, x0, ux0, weight0, bitflags0, cell_index, unique_ID)
 
         ## Second particle
 
@@ -83,9 +84,10 @@ class UserParticleDistributions_C(object):
         bitflags1 = 0b0 # bit flags variable
         # Turn ON trajectory flag.
         bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG 
-
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        
         # Trim the number of coordinates here to match "position_coordinates" variable in ParticleInput_C
-        p1 = (x1, x1, ux1, weight1, bitflags1, cell_index)
+        p1 = (x1, x1, ux1, weight1, bitflags1, cell_index, unique_ID)
 
 #        particle_list = (p0,) # Need the final comma , for one particle.
 #        particle_list = (p1,) # Need the final comma , for one particle.
@@ -110,12 +112,26 @@ class UserParticleBoundaryFunctions_C(object):
     @staticmethod
     def default_bc(p, speciesName, facetIndex):
         """Global default boundary condition for all species.
+
+           :param p: the record of the particle that crossed xmin.
+           :param speciesName: the species that particle p belongs to.
+           :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print "Called", fncName
+        print "Particle is", p, "at facet", facetIndex
+
+        # Set the delete flag
+        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
+
+        # Count the number/charge/energy of deleted particles
 
         return
+#    def default_bc(p, speciesName, facetIndex):ENDDEF
 
+    # For Cartesian coordinates
+
+#class UserParticleBoundaryFunctions_C(object):
     @staticmethod
     def default_bc_at_xmin(p, speciesName, facetIndex):
         """Default boundary condition for particles incident on xmin.
@@ -135,9 +151,14 @@ class UserParticleBoundaryFunctions_C(object):
         return
 #    def default_bc_at_xmin(p, speciesName, facetIndex):ENDDEF
     
+#class UserParticleBoundaryFunctions_C(object):
     @staticmethod
     def default_bc_at_xmax(p, speciesName, facetIndex):
         """Default boundary condition for particles incident on xmax.
+
+           :param p: the record of the particle that crossed xmin.
+           :param speciesName: the species that particle p belongs to.
+           :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print "Called", fncName
@@ -145,35 +166,70 @@ class UserParticleBoundaryFunctions_C(object):
         return
 #    def default_bc_at_xmax(p, speciesName, facetIndex):ENDDEF
     
-    @staticmethod
-    def default_bc_at_ymin(p, speciesName, facetIndex):
-        """Default boundary condition for particles incident on ymin.
-        """
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-        print fncName, "invoked by particle", p, "of species", speciesName
-
-        # Set the delete flag
-        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
-
-        # Count the number/charge/energy of deleted particles
-
-        return
-#    def default_bc_at_ymin(p, speciesName, facetIndex):ENDDEF
-    
-    @staticmethod
-    def default_bc_at_ymax(p, speciesName, facetIndex):
-        """Default boundary condition for particles incident on ymax.
-        """
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print "Called", fncName
-
-        return
-#    def default_bc_at_ymax(p, speciesName, facetIndex):ENDDEF
-    
+#class UserParticleBoundaryFunctions_C(object):
     @staticmethod
     def bc_at_xmin_for_neutral_H(p, speciesName, facetIndex):
         """Boundary condition for neutral_H incident on xmin.
 
+           :param p: the record of the particle that crossed xmin.
+           :param speciesName: the species that particle p belongs to.
+           :param facetIndex: the facet crossed by particle p.
+        """
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+        print fncName, "invoked by particle", p, "of species", speciesName
+
+        # Set the delete flag
+        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
+
+
+    # For spherical coordinates
+
+#class UserParticleBoundaryFunctions_C(object):
+    @staticmethod
+    def default_bc_at_rmin(p, speciesName, facetIndex):
+        """Default boundary condition for particles incident on rmin.
+
+           :param p: the record of the particle that crossed rmin.
+           :param speciesName: the species that particle p belongs to.
+           :param facetIndex: the facet crossed by particle p.
+        """
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+#        print fncName, "invoked by particle", p, "of species", speciesName
+
+        # Set the delete bit
+        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
+
+        # Count the number/charge/energy of deleted particles
+
+        return
+#    def default_bc_at_rmin(p, speciesName, facetIndex):ENDDEF
+    
+#class UserParticleBoundaryFunctions_C(object):
+    @staticmethod
+    def default_bc_at_rmax(p, speciesName, facetIndex):
+        """Default boundary condition for particles incident on rmax.
+
+           :param p: the record of the particle that crossed rmin.
+           :param speciesName: the species that particle p belongs to.
+           :param facetIndex: the facet crossed by particle p.
+        """
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+#        print "Called", fncName
+
+        # Set the delete flag
+        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
+
+        return
+#    def default_bc_at_rmax(p, speciesName, facetIndex):ENDDEF
+    
+#class UserParticleBoundaryFunctions_C(object):
+    @staticmethod
+    def bc_at_rmin_for_neutral_H(p, speciesName, facetIndex):
+        """Boundary condition for neutral_H incident on rmin.
+
+           :param p: the record of the particle that crossed rmin.
+           :param speciesName: the species that particle p belongs to.
+           :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
         print fncName, "invoked by particle", p, "of species", speciesName
@@ -184,7 +240,7 @@ class UserParticleBoundaryFunctions_C(object):
         # Count the number/charge/energy of deleted particles
 
         return
-#    def bc_at_xmin_for_neutral_H(p, speciesName, facetIndex):ENDDEF
+#    def bc_at_rmin_for_neutral_H(p, speciesName, facetIndex):ENDDEF
 
 #class UserParticleBoundaryFunctions_C(object): ENDCLASS
 
@@ -195,15 +251,23 @@ class UserParticleSourceFunctions_C(object):
        scheme.
     """
 
+## XX these are supposed to be SOURCE functions.
+    
+#class UserParticleSourceFunctions_C(object):
     @staticmethod
     def default_bc(p, speciesName, facetIndex):
         """Global default boundary condition for all species.
+
+           :param p: the record of the particle that crossed xmin.
+           :param speciesName: the species that particle p belongs to.
+           :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print "Called", fncName
 
         return
 
+#class UserParticleSourceFunctions_C(object):
     @staticmethod
     def default_bc_at_xmin(p, speciesName, facetIndex):
 #    def default_bc_at_xmin(self, p, facetIndex):
@@ -242,6 +306,7 @@ class SpecialElectrons_C(ParticleSpecies_C):
         return
 #    def __init__(self, charge, mass, dynamics):ENDDEF
 
+#class SpecialElectrons_C(ParticleSpecies_C):
     def add_particles(self, cell_list):
         """Adds electrons to a subdomain defined by a cell list.
 
@@ -255,7 +320,5 @@ class SpecialElectrons_C(ParticleSpecies_C):
 
         return
 #    def add_particles(self, cell_list):ENDDEF
-
-
 
 #class SpecialElectrons_C(object):ENDCLASS

@@ -77,11 +77,17 @@ class UserParticleDistributions_C(object):
         weight0 = 1.0 # number of electrons per macroparticle
         bitflags0 = 0b00 # initialize all bits to 0
         bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG # turn on trajectory flag
+#        print "plasma_ele... Particle_C.TRAJECTORY_FLAG, bitflags0 = ", Particle_C.TRAJECTORY_FLAG, bitflags0
 #        cell_index = -1
         cell_index = Mesh_C.NO_CELL
-#        print "plasma_ele... Particle_C.TRAJECTORY_FLAG, bitflags0 = ", Particle_C.TRAJECTORY_FLAG, bitflags0
 
-        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0,bitflags0,cell_index)
+        # Don't use the following line, because this function is called twice in the
+        # test, and different unique_ID's will be assigned.
+#        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        # Instead, assign a fixed unique_ID
+        unique_ID = 0
+
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index, unique_ID)
 
         # Image particle with different weight
         x1 = y1 = 0.0; z1 = -z0
@@ -93,7 +99,10 @@ class UserParticleDistributions_C(object):
         bitflags1 = 0b00 # initialize all bits to 0
 #        bitflags1 = bitflags0 | Particle_C.TRAJECTORY_FLAG # use low bit for trajectory flag.
 
-        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1,bitflags1,cell_index)
+        #unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        unique_ID = 1
+
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index, unique_ID)
 
         particle_list = (p0, p1)
         np = len(particle_list)
@@ -127,8 +136,11 @@ class UserParticleDistributions_C(object):
         cell_index = Mesh_C.NO_CELL
 #        cell_index = -1
 
+#        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        unique_ID = 2
+
         # Trim the number of coordinates here to match "position_coordinates" variable in ParticleInput_C
-        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index)
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index, unique_ID)
 
         # Image particle with different weight
         x1 = -x0; y1 = -y0; z1 = -z0
@@ -136,9 +148,11 @@ class UserParticleDistributions_C(object):
         weight1 = 4.0
         bitflags1 = 0b01 # initialize all bits to 0
 #        bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG # use low bit for trajectory flag.
+#        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        unique_ID = 3
 
         # Trim the number of coordinates here to match "position_coordinates" variable in ParticleInput_C
-        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index)
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index, unique_ID)
 
         particle_list = (p0, p1)
         np = len(particle_list)
@@ -166,8 +180,9 @@ class UserParticleDistributions_C(object):
         bitflags = bitflags | Particle_C.TRAJECTORY_FLAG # turn on trajectory flag
         cell_index = Mesh_C.NO_CELL
 #        cell_index = -1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        p = (x,y,z, x,y,z, ux,uy,uz, weight,bitflags,cell_index)
+        p = (x,y,z, x,y,z, ux,uy,uz, weight, bitflags, cell_index, unique_ID)
 
         particle_list = (p,)
         np = len(particle_list)

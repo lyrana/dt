@@ -27,7 +27,7 @@ class TestUserMesh(unittest.TestCase):
 
         ## Make the mesh
 
-        # radial
+        # radial, r = 1 to 5 (Changed in one of the tests to r = 0 to 4)
         umi1DS.rmin, umi1DS.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
         umi1DS.nr = 10 # Number of divisions in r direction
         umi1DS.stretch = 1.3 # Stretch parameter
@@ -42,6 +42,18 @@ class TestUserMesh(unittest.TestCase):
                              }
 
         umi1DS.field_boundary_dict = fieldBoundaryDict
+
+        # Name the boundaries used to apply particle
+        # boundary-conditions and assign integers to them.  These are
+        # the boundary-name -> int pairs used to mark particle-mesh
+        # facets:
+        rmin_indx = 1
+        rmax_indx = 2
+        particleBoundaryDict = {'rmin': rmin_indx,
+                                'rmax': rmax_indx,
+                                }
+
+        umi1DS.particle_boundary_dict = particleBoundaryDict
 
         self.umi1DS = umi1DS
 
@@ -98,6 +110,8 @@ class TestUserMesh(unittest.TestCase):
 #class TestUserMesh(unittest.TestCase):
     def test_1D_spherical_mesh(self):
         """At the moment, this just writes mesh files for other tests.
+
+           The mesh starts at r = 1.
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -128,6 +142,45 @@ class TestUserMesh(unittest.TestCase):
 
         return
 #    def test_1D_spherical_mesh(self):ENDDEF
+
+#class TestUserMesh(unittest.TestCase):
+    def test_1D_spherical_mesh_r0(self):
+        """At the moment, this just writes mesh files for other tests.
+
+           The mesh starts at r = 0.
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print '\ntest: ', fncName, '('+__file__+')'
+
+        from UserMesh_y_Fields_Spherical1D_Module import UserMesh1DS_C
+
+        if os.environ.get('DISPLAY') is None:
+            plotFlag=False
+        else:
+            plotFlag=True
+
+
+        self.umi1DS.rmin, self.umi1DS.rmax = 0.0, 4.0 # Mesh goes from rmin to rmax in radius
+        
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
+        mesh_M = UserMesh1DS_C(self.umi1DS, compute_tree=False, plot_flag=plotFlag, plot_title=plotTitle)
+
+        # Write the mesh to a file:
+        mesh_file = df_m.File('mesh_1D_radial_r0.xml')
+        mesh_file << mesh_M.mesh
+
+        # Write the boundary marker function to a file:
+        # Field boundaries
+        field_boundary_marker_file = df_m.File('mesh_1D_radial_r0_Fbcs.xml')
+        field_boundary_marker_file << mesh_M.field_boundary_marker
+
+        # Particle boundaries
+        particle_boundary_marker_file = df_m.File('mesh_1D_radial_r0_Pbcs.xml')
+        particle_boundary_marker_file << mesh_M.particle_boundary_marker
+
+        return
+#    def test_1D_spherical_mesh_r0(self):ENDDEF
 
 #class TestUserMesh(unittest.TestCase):
     def test_quarter_circle_plot_false(self):

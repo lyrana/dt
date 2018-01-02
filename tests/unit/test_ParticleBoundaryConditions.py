@@ -7,7 +7,7 @@ __author__ = 'Copyright (C) 2016 L. D. Hughes'
 import sys
 import os
 import numpy
-import importlib as im_M
+import importlib as im_m
 import unittest
 
 import dolfin as df_M
@@ -82,7 +82,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                                   # species.
         charge = 0.0
         mass = 1.0*MyPlasmaUnits_C.AMU
-        dynamics = 'explicit'
+        dynamics = 'neutral'
         neutralHCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add the neutral hydrogen to particle input
@@ -94,15 +94,15 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # Provide the particle distributions for the above species
         # This could be done more like how the mesh is specified:
-        # import UserParticles_3D as UPrt_M
+        # import UserParticles_3D as userParticlesModule
         # Particles have a 3D/3D phase-space even though mesh is just 2D
-        userParticleModule = 'UserParticles_3D'
+        userParticlesModuleName = 'UserParticles_3D'
 
         # Import this module
-        UPrt_M = im_M.import_module(userParticleModule)
+        userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        particle_P.user_particle_module = userParticleModule
-        particle_P.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+        particle_P.user_particles_module_name = userParticlesModuleName
+        particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### Create a trajectory object and add it to particle_P
 
@@ -180,8 +180,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
-        if hasattr(userParticleClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        if hasattr(userParticlesClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -205,8 +205,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # UserParticleBoundaryFunctions_C is where the facet-crossing callback
         # functions are defined.
-#        user_particle_bcs_class = UPrt_M.UserParticleMeshBoundaryConditions_C
-        userPBndFnsClass = UPrt_M.UserParticleBoundaryFunctions_C # abbreviation
+#        user_particles_bcs_class = userParticlesModule.UserParticleMeshBoundaryConditions_C
+        userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # abbreviation
 
         # Make the particle-mesh boundary-conditions object and add it
         # to the particle object.  The user has to supply the
@@ -214,8 +214,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # UserParticleBoundaryFunctions_C object above.
 
         spNames = particle_P.species_names
-        pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
-        particle_P.pmesh_bcCI = pmeshBCCI
+        pmeshBCS = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
+        particle_P.pmesh_bcs = pmeshBCS
 
         # Create the initial particles
         printFlags = {}
@@ -236,11 +236,20 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         print "Moving", pCI.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
         for istep in xrange(ctrl.n_timesteps):
-            particle_P.move_neutral_particles(ctrl.dt)
+            
+            if pCI.traj_T is not None:
+                if istep % pCI.traj_T.skip == 0:
+                    pCI.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
+                    
+            particle_P.move_neutral_particles(ctrl)
 
             ctrl.timeloop_count += 1
             ctrl.time += ctrl.dt
 
+        # Record the LAST point on the particle trajectory
+        if pCI.traj_T is not None:
+                pCI.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
+            
         return
 #    def test_1_2D_x_y_absorbing_boundary(self):ENDDEF
 
@@ -297,13 +306,13 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ## Give the name of the .py file containing special particle data (lists of
         # particles, boundary conditions, source regions, etc.)
-        userParticleModule = "UserParticles_2D_e"
+        userParticlesModuleName = "UserParticles_2D_e"
 
         # Import this module
-        UPrt_M = im_M.import_module(userParticleModule)
+        userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        particle_P.user_particle_module = userParticleModule
-        particle_P.user_particle_class = userParticleClass = UPrt_M.UserParticleDistributions_C
+        particle_P.user_particles_module_name = userParticlesModuleName
+        particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
 
         ### Add a ref to a Trajectory_C object to particle_P
@@ -391,8 +400,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
-        if hasattr(userParticleClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticleClass
+        if hasattr(userParticlesClass, speciesName):
+            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -416,13 +425,13 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # UserParticleBoundaryFunctions_C is where the facet-crossing callback
         # functions are defined.
-        userPBndFnsClass = UPrt_M.UserParticleBoundaryFunctions_C # abbreviation
+        userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # abbreviation
 
         # Make the particle-mesh boundary-conditions object and add it
         # to the particle object.
         spNames = particle_P.species_names
-        pmeshBCCI = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
-        particle_P.pmesh_bcCI = pmeshBCCI
+        pmeshBCS = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
+        particle_P.pmesh_bcs = pmeshBCS
 
         ## Set control variables
 
