@@ -11,6 +11,7 @@ import unittest
 import numpy as np_m
 
 import dolfin as df_m
+import matplotlib.pyplot as mplot_m
 
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
@@ -133,7 +134,7 @@ class TestChargeDensity(unittest.TestCase):
 #            numberDensity_F.interpolate_delta_function_to_dofs(p)
 
         # array() returns a numpy array that has a copy of the values in vector().
-        numberDensityCalc = numberDensity_F.function.vector().array()
+        numberDensityCalc = numberDensity_F.function.vector().get_local()
 #        print numberDensityCalc
 
         # Compare results
@@ -279,7 +280,7 @@ class TestChargeDensity(unittest.TestCase):
 #            numberDensity_M.integrate_delta_function(p)
             numberDensity_F.interpolate_delta_function_to_dofs(p)
 
-        numberDensityCalc = numberDensity_F.function.vector().array()
+        numberDensityCalc = numberDensity_F.function.vector().get_local()
 #        print fncName, numberDensityCalc
 
         # Compare results
@@ -298,7 +299,8 @@ class TestChargeDensity(unittest.TestCase):
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": number density"
         df_m.plot(numberDensity_F.function, title=plotTitle)
-        df_m.interactive()
+        mplot_m.show()
+#        yesno = raw_input("Just called show() in test_2_interpolate_particle_density_to_2Dmesh")
 
         ## Check the values vs. those computed in test_ChargeDensity.ods:test_2
 
@@ -504,7 +506,7 @@ class TestChargeDensity(unittest.TestCase):
         ## Compute the charge-density
         particles_P.accumulate_charge_density_from_particles(chargeDensity_F)
 
-        chargeDensityCalc = chargeDensity_F.function.vector().array()
+        chargeDensityCalc = chargeDensity_F.function.vector().get_local()
 #        print fncName, numberDensityCalc
 
         # The expected number-density values from test_ChargeDensity.ods:test_3
@@ -541,8 +543,9 @@ class TestChargeDensity(unittest.TestCase):
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": charge density"
         df_m.plot(chargeDensity_F.function, title=plotTitle)
-        df_m.interactive()
-
+        mplot_m.show()
+#        yesno = raw_input("Just called show() in test_3_compute_charge_density_on_2Dmesh")
+        
         ## Check the values vs. those computed in test_ChargeDensity.ods:test_3
 
         # Convert vertex indices to DoF indices.  For CG1 elements, there are
@@ -698,7 +701,7 @@ class TestChargeDensity(unittest.TestCase):
             q = particles_P.charge[s]
             chargeDensity_F.multiply_add(particles_P.number_density_dict[s], q)
 
-        chargeDensityCalc = chargeDensity_F.function.vector().array()
+        chargeDensityCalc = chargeDensity_F.function.vector().get_local()
 #        print fncName, numberDensityCalc
 
         # The expected charge-density values from test_ChargeDensity.ods:test_4
@@ -908,7 +911,7 @@ class TestChargeDensity(unittest.TestCase):
 
 #        print "numberDensityCalc =", particles_P.number_density_dict['plasma_electrons'].function.vector().array()
 
-        chargeDensityCalc = chargeDensity_F.function.vector().array()
+        chargeDensityCalc = chargeDensity_F.function.vector().get_local()
 #        print fncName, numberDensityCalc
 
         # The expected charge-density values are computed in
@@ -1114,7 +1117,7 @@ class TestChargeDensity(unittest.TestCase):
 
 #        print "numberDensityCalc =", particles_P.number_density_dict['plasma_electrons'].function.vector().array()
 
-        chargeDensityCalc = chargeDensity_F.function.vector().array()
+        chargeDensityCalc = chargeDensity_F.function.vector().get_local()
 #        print fncName, numberDensityCalc
 
         # The expected charge-density values are computed in

@@ -10,7 +10,8 @@ import sys
 import numpy as np_M
 
 # !!! Direct invocation of dolfin for trajectory plots!!!
-import dolfin as df_M
+import dolfin as df_m
+import matplotlib.pyplot as mplot_m
 
 #STARTCLASS
 class TrajectoryInput_C(object):
@@ -99,7 +100,7 @@ class Trajectory_C(object):
             self.skip = ctrl.n_timesteps/trajinCI.maxpoints + 1
 
         # Length of trajectory data arrays
-#        self.npoints = ctrl.n_timesteps/self.skip + 2 # Add 2 because a newly-created trajectory particle automatically gets recorded, and may then be recorded again 
+        # If the location of boundary-crossings is recorded, then you can run out of space
         self.npoints = ctrl.n_timesteps/self.skip + 1
 
         # Time interval between datapoints
@@ -121,38 +122,43 @@ class Trajectory_C(object):
         #    2. a list of trajectory data arrays, one for each marked particle.
         #    3. a list of trajectory lengths, one for each marked particle.
         # These lists are indexed by species name, so they are dictionaries:
-        self.ParticleIdList = {} # List of particle IDs
+        self.ParticleIdList = {} # List of particle storage indices
+        self.ParticleUniqueIdList = {} # List of particle unique_IDs
         self.DataList = {}
         self.TrajectoryLength = {}
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
             self.ParticleIdList[sp] = []
+            self.ParticleUniqueIdList[sp] = []
             self.DataList[sp] = []
             self.TrajectoryLength[sp] = []
 
         return
 #    def __init__(self, trajinCI, ctrl, explicit_species, implicit_species, neutral_species):ENDDEF
 
-    def create_trajectory(self, species_name, pindex, dynamics_type):
+    def create_trajectory(self, species_name, pindex, dynamics_type, unique_id_int=None):
         """Add storage for another particle trajectory.
 
            :param species_name: Name of the species that the marked
                                 particle belongs to.
            :param pindex: Index of the marked particle in the particle
                           storage array.
-
+           :param int unique_ID: The unique ID integer of this particle.
 
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
+        # Add the particle's index to the list of marked particles for this species.
         self.ParticleIdList[species_name].append(pindex)
+        self.ParticleUniqueIdList[species_name].append(unique_id_int)
 
 #        print "create_traj: The current particle indices are:", self.ParticleIdList[species_name]
         
-        self.TrajectoryLength[species_name].append(0) # Set the count to 0
+        self.TrajectoryLength[species_name].append(0) # Set the trajectory point-count for this
+                                                      # particle to 0
 
-        # Add a numpy array for the trajectory data
+        # Add a numpy array for this particles's trajectory data
         if dynamics_type == 'explicit':
             self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.explicit_dict))
         elif dynamics_type == 'implicit':
@@ -183,40 +189,51 @@ class Trajectory_C(object):
 #        yvals = np_M.empty(self.npoints)
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
-#            self.ParticleIdList[sp] = []
-#            self.DataList[sp] = []
+            if len(self.DataList[sp]) == 0: continue
             comps = self.DataList[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
 #            print 'comps =', comps
             for it in xrange(len(self.ParticleIdList[sp])):
-                ip = self.ParticleIdList[sp][it]
+                if self.ParticleUniqueIdList[sp][it] is None:
+                    ip = self.ParticleIdList[sp][it]
+                    plot_title = "%s: Traj# %d Particle id %d" % (sp, it, ip)
+                else:
+                    ip = self.ParticleUniqueIdList[sp][it]
+                    plot_title = "%s: Traj# %d Particle uid %d" % (sp, it, ip)
                 data_arr = self.DataList[sp][it]
                 tvals = self.DataList[sp][it]['t']
                 nlength = self.TrajectoryLength[sp][it]
 #                print 'tvals = ', tvals[0:nlength]
                 # Plots vs. time
+                x_label = "'time (s)"
                 for comp in comps:
+                    mplot_m.figure()
                     mplot_m.plot(tvals[0:nlength], data_arr[comp][0:nlength])
-                    mplot_m.title("%s: Traj# %d Particle id %d" % (sp, it, ip))
-                    mplot_m.xlabel('time (s)')
+                    mplot_m.title(plot_title)
+                    mplot_m.xlabel(x_label)
                     mplot_m.ylabel(comp)
                     mplot_m.grid(True)
-                    mplot_m.show()
+#                    mplot_m.show()
                 # Phase-space plots
                 # x vs. y
                 if 'x' in comps:
                     if 'y' in comps:
+                        mplot_m.figure()
                         mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength])
+                        mplot_m.title(plot_title)
                         mplot_m.xlabel('x')
                         mplot_m.ylabel('y')
                         mplot_m.grid(True)
-                        mplot_m.show()
+#                        mplot_m.show()
                     if 'ux' in comps:
+                        mplot_m.figure()
                         mplot_m.plot(data_arr['x'][0:nlength], data_arr['ux'][0:nlength])
+                        mplot_m.title(plot_title)
                         mplot_m.xlabel('x')
                         mplot_m.ylabel('ux')
                         mplot_m.grid(True)
-                        mplot_m.show()
+#                        mplot_m.show()
                 
+                mplot_m.show()
         return
 #    def plot_trajectories(self):ENDDEF
 
@@ -229,13 +246,13 @@ class Trajectory_C(object):
 
         # Create a plotter to display the trajectory.
         # !!! Direct call to dolfin!!!
-        plotter=df_M.plot(mesh, title=plot_title)
+        plotter=df_m.plot(mesh, title=plot_title)
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
+            if len(self.DataList[sp]) == 0: continue
             comps = self.DataList[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
             # Loop on trajectories for this species
             for it in xrange(len(self.ParticleIdList[sp])):
-#                ip = self.ParticleIdList[sp][it] # Not used
                 nlength = self.TrajectoryLength[sp][it]
                 if nlength == 1:
                     print fncName, "*** DT Warning: Trajectory", it, "for species", sp, "has only one point. Not plotting it.***"
@@ -250,10 +267,11 @@ class Trajectory_C(object):
                         path[1::2] = data_arr['y'][0:nlength] # Start at 1, with stride 2
 #                        print fncName, 'path =', path
 #                        print fncName, 'Trajectory', it, 'has ', path.size, 'points'
-                        plotter.add_polygon(path)
+                        # Replace with a point plot:
+                        # plotter.add_polygon(path)
 
-        plotter.plot()
-        if hold_plot is True: df_M.interactive() # Stops the plot from disappearing
+#        if hold_plot is True: mplot_m.show() # Stops the plot from disappearing
+        mplot_m.show() # Display the plot
 
         return
 #    def plot_trajectories_on_mesh(self):ENDDEF

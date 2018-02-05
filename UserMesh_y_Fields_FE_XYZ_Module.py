@@ -17,6 +17,7 @@ import math
 # !!! Direct invocation of dolfin. OK because UserMesh_C is a
 # sub-class of Mesh_C !!!
 import dolfin as df_m
+import matplotlib.pyplot as mplot_m
 
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import CellSet_C
@@ -399,8 +400,11 @@ class UserMesh_C(Mesh_C):
         if (plot_flag):
             df_m.plot(mesh_df, title=plotTitle, axes=True)
 #            df_m.plot(fieldBoundaryMarker, title='field boundary marks', axes=True)
-            df_m.plot(particleBoundaryMarker, title='particle boundary marks', axes=True)
-            df_m.interactive()
+            mplot_m.show()
+#            yesno = raw_input("Just called show() in create_mesh")
+
+#            df_m.plot(particleBoundaryMarker, title='particle boundary marks', axes=True)
+#            df_m.interactive()
 
         # Write the mesh to a VTK file for plotting
         meshFile = df_m.File(meshFileName)

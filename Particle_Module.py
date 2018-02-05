@@ -329,7 +329,8 @@ class Particle_C(object):
         # A scratch array that can hold: dx,dy,dz (or subset)
         self.dx = np_m.empty(self.particle_dimension, dtype=precision)
         self.dx_in_cell = np_m.empty(self.particle_dimension, dtype=precision)
-
+# Not scratch and not a needed class variable        self.dxFraction = 0.0 # The fraction of dx lying in the current cell
+        
         # Initialize the counter for H5Part particle writes
         self.h5_step_counter = 0
         # This is used to avoid a second write on the same timestep
@@ -461,7 +462,7 @@ class Particle_C(object):
                 if self.traj_T is not None:
 #                    print 'pindex for trajectory = ', pindex
                     dynamicsType = self.dynamics[species_name]
-                    self.traj_T.create_trajectory(species_name, pindex, dynamicsType)
+                    self.traj_T.create_trajectory(species_name, pindex, dynamicsType, unique_id_int=p['unique_ID'])
                 else:
 # Instead of printing this message, a traj_T object could be created here.
                     print fncName, "(DnT WARNING) A trajectory flag is on, but no trajectory object has been created yet."
@@ -666,13 +667,15 @@ class Particle_C(object):
            :param ctrl: A DTcontrol_C object
            :param neg_electric_field: A Field_C object containing the vector -E.
 
-           :cvar pDim: Number of spatial coordinates in the particle location.
+           :cvar int cFacet: The cell-level (not mesh-level) index number of the
+                             facet crossed by a particle during the move.
+           :cvar int pDim: Number of spatial coordinates in the particle location.
 
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        # Set local names for the passed parameters
+        # Use local names for the passed parameters
         dt = ctrl.dt
         step = ctrl.timeloop_count
         time = ctrl.time
@@ -683,7 +686,6 @@ class Particle_C(object):
         # Scratch space
         pCoord2 = self.pcoord2 # x,y,z, x0,y0,z0 (or subset)
         dx = self.dx # dx is the distance moved in one step.
-#        p_arr = self.one_particle_arr[0]
 
         for sn in self.explicit_species:
 
@@ -814,7 +816,7 @@ class Particle_C(object):
                     psegOut[ipOut]['z'] = psegIn[ipIn]['z'] + psegOut[ipOut]['uz']*dt
                     """
 
-                    # Check if the particle is still on the meshed region
+                    # Check if the particle has left this cell.
 
 #                    print 'ip, index =', ip, pseg[ip]['cell_index']
                     pCellIndex = psegOut[ipOut]['cell_index']
@@ -848,24 +850,36 @@ class Particle_C(object):
                         for i in range(2*pDim):
                             pCoord2[i] = psegOut[ipOut][i]
 
-                        dx = pCoord2[0:pDim] - pCoord2[pDim:2*pDim] # Move vector
+# NB: if you write "dx = pCoord2" here, then this reassigns dx, so it's not pointing
+# at self.dx any more.
+                        dx[:] = pCoord2[0:pDim] - pCoord2[pDim:2*pDim] # the particle move
+                                                                       # vector starting in
+                                                                       # the current cell.
 
 # See save10/Particle_Module.py for a different search, where only nearby cells are looked at.
-                        (cFacet, pathFraction) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
-                        if cFacet != pmesh_M.NO_FACET:
+
+                        # Since the particle is no longer in the current cell, find which
+                        # facet of the current cell it crossed.  Get (1) the cell-level index
+                        # of the crossed facet, (2) the fraction of the move that's in the
+                        # current cell, and (3) the vector normal to the crossed facet.
+                        (cFacet, dxFraction, facetNormal) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
+                        if cFacet != pmesh_M.NO_FACET: # The value NO_FACET means the
+                                                       # particle didn't cross any facet.
 
 #                        if found_cell != True: print "Particle is not in nearby cells; using BB search"
 #                        ci = pmesh_M.compute_cell_index(pseg[ip])
 #                        print "Found particle is in cell", ci
 #                        pseg[ip]['cell_index'] = ci
 
-                            # Compute the coordinates where the particle crosses into
-                            # the neighboring cell.
+                            # Compute the coordinates of the point where the particle
+                            # crossed into the neighboring cell.  These become the
+                            # new 'initial' coordinates of the particle for further
+                            # tracking across facets.
 #                            print fncName, "Before truncation p =", psegOut[ipOut]
                             i=0 # i indexes the move-vector coordinates (dx[i])
                             for coord in self.position_coordinates:
                                 coord0 = coord+'0'
-                                psegOut[ipOut][coord0] = psegOut[ipOut][coord0] + pathFraction*dx[i]
+                                psegOut[ipOut][coord0] = psegOut[ipOut][coord0] + dxFraction*dx[i]
                                 i+=1
 #                            print "After truncation p =", psegOut[ipOut]
 
@@ -881,24 +895,47 @@ class Particle_C(object):
 # mFacet is a numpy.uint32 (size_t), but the FacetFunction wants an int argument.
 #                            print "type is:", type(mFacet)
                             facValue = pmesh_M.particle_boundary_marker[mFacet]
-                            # Check if this facet has a non-zero marker
+                            # Check if this facet has a non-zero marker, indicating that,
+                            # e.g., the facet is a boundary.
                             if facValue != 0:
                                 # Call the function associated with this value.
 # Maybe this needs the whole particle object?  It could be the end-of-the line for the particle.
 # Need to decide what needs to be in the following arg list:
-                                self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet)
 
-                            # Update the cell index to the new cell
-                            pCellIndex = pmesh_M.cell_neighbor_dict[pCellIndex][cFacet]
-                            psegOut[ipOut]['cell_index'] = pCellIndex
-                            # If the particle has left the mesh, end the search.
-                            if pCellIndex == pmesh_M.NO_CELL:
-                                break # Breaks out of the facet-crossing 'while' loop.
-                        else:
+                                # !! A reference to dx[] exists in the BC function class.
+                                if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0: # If this is a trajectory particle.
+
+                                    print "Recording boundary-crossing for particle", psegOut[ipOut]['unique_ID']
+
+                                    # Get the storage index that currently identifies this
+                                    # particle in the trajectory list.
+                                    fullIndex = psaCI.get_full_index(ipIn, 'in')
+                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, time, None, facet_crossing=True)
+                                self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
+
+                            # Look up the cell index of the new cell.
+                            pCellIndexNew = pmesh_M.cell_neighbor_dict[pCellIndex][cFacet]
+                            
+#                            psegOut[ipOut]['cell_index'] = pCellIndex
+                            
+                            # If the particle has left the mesh, and has been deleted, end
+                            # the search.  If it hasn't been deleted (e.g., reflected),
+                            # continue tracking it.
+#                            if pCellIndex == pmesh_M.NO_CELL:
+                            if pCellIndexNew == pmesh_M.NO_CELL:
+                                if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 1:
+                                    psegOut[ipOut]['cell_index'] = pmesh_M.NO_CELL
+                                    break # Breaks out of the facet-crossing 'while' loop.
+                                # else: The boundary did not absorb the particle, so the
+                                # particle is now at the cell boundary and the cell index
+                                # is unchanged.
+                            else:
+                                psegOut[ipOut]['cell_index'] = pCellIndexNew
+                                pCellIndex = pCellIndexNew # Needed for the next iteration of the while loop.
+                        else: # The crossed faced is NO_FACET, which shouldn't happen.
                             errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
                             sys.exit(errorMsg)
 #                       END:if cFacet != pmesh_M.NO_FACET:
-#
 #                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
 
                     # Don't need this since we just look up the cell
@@ -976,7 +1013,6 @@ class Particle_C(object):
         # Scratch space
         pCoord2 = self.pcoord2 # Can hold x,y,z, x0,y0,z0 (or a subset of these)
         dx = self.dx # dx is the distance moved in one step.
-#        p_arr = self.one_particle_arr[0]
 
         for sn in self.neutral_species:
 
@@ -1091,7 +1127,7 @@ class Particle_C(object):
                         dx = pCoord2[0:pDim] - pCoord2[pDim:2*pDim] # Move vector
 
 # could return the crossing-point in pCoord2[]
-                        (cFacet, pathFraction) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
+                        (cFacet, dxFraction, facetNormal) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
                         if cFacet != pmesh_M.NO_FACET:
 #                            print "facet crossed is", cFacet
 
@@ -1100,7 +1136,7 @@ class Particle_C(object):
                             i=0
                             for coord in self.position_coordinates:
                                 coord0 = coord+'0'
-                                psegOut[ipOut][coord0] = psegOut[ipOut][coord0] + pathFraction*dx[i]
+                                psegOut[ipOut][coord0] = psegOut[ipOut][coord0] + dxFraction*dx[i]
                                 i+=1
 #                            print "After truncation p =", psegOut[ipOut]
 
@@ -1408,6 +1444,8 @@ class Particle_C(object):
 
         """
 
+        printWarningIndex = True
+
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         
         finalStep = step
@@ -1443,7 +1481,18 @@ class Particle_C(object):
 #        print "remove_traj: The position of particle", full_index_in, "in the traj array is", p_index
 #        print "remove_traj: The current particle indices are:", self.traj_T.ParticleIdList[sn]
 
+        # Copy the particle values into the trajectory arrays for this particle
+        # (The index for the new point is equal to the existing number of points
+        # in the trajectory.)
         newpoint = self.traj_T.TrajectoryLength[sn][p_index]
+        # If the trajectory array length is exceeded, return, after marking the
+        # trajectory as ended.
+        if newpoint > traj_T.npoints - 1:
+            if printWarningIndex is True:
+                print "(DnT WARNING) %s Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, sn, finalStep, traj_T.npoints)
+                # Mark this as a trajectory where the particle no longer exists.
+            self.traj_T.ParticleIdList[sn][p_index] = self.traj_T.NO_PINDEX
+            return full_index_in
 
 #        print "remove_traj: This particle is ", self.dynamics[sn]
         if self.dynamics[sn] == 'explicit':
@@ -1491,16 +1540,28 @@ class Particle_C(object):
 #    def remove_trajectory_particleId(self, sn, i_in):ENDDEF
 
 #class Particle_C(object):
-    def record_trajectory_datum(self, species_name, p, step, time, neg_E_field):
+    def record_trajectory_datum(self, species_name, p, full_index, step, time, neg_E_field, facet_crossing=False):
         """Save a single data-record of a particle trajectory.
+
+           NB: It is assumed that TRAJECTORY_FLAG has been checked before this
+           function is called.
 
            :param species_name: Name of the species that the marked particle belongs
                                 to.
            :param p: One particle record, as defined by particle_dtype in
                      Particle_C.__init__
+
+           :param int full_index: The full storage index of the particle.
+
            :param neg_E_field: A Field_C object containing the vector -E.
 
+           :param bool facet_crossing: If True, this is a facet-crossing call, and the initial
+                                       particle coordinates are recorded instead of the final
+                                       coordinates.
+
         """
+
+        printWarningIndex = True
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
@@ -1528,23 +1589,34 @@ class Particle_C(object):
 
         # print "E_arr.dtype.names =", E_arr.dtype.names
 
-        # Copy the particle values into the new trajectory, which is the last one
-        # added onto the list of trajectories for this species.
+        # Look up the trajectory index for this particle
+        if traj_T is not None:
+            t_idx = traj_T.ParticleIdList[species_name].index(full_index)
 
-        inew = len(traj_T.ParticleIdList[species_name]) - 1 #
-        newpoint = traj_T.TrajectoryLength[species_name][inew]
-        for comp in traj_T.explicit_dict['names']:
-            # print 'comp = ', comp
-            if comp == 'step':
-                traj_T.DataList[species_name][inew][comp][newpoint] = step
-            elif comp == 't':
-                traj_T.DataList[species_name][inew][comp][newpoint] = time
-            elif comp in p_arr.dtype.names:
-                traj_T.DataList[species_name][inew][comp][newpoint] = p_arr[0][comp]
-            elif comp in E_arr.dtype.names:
-                traj_T.DataList[species_name][inew][comp][newpoint] = E_arr[0][comp]
+            # Copy the particle values into the trajectory arrays for this particle
+            # (The index for the new point is equal to the existing number of points
+            # in the trajectory.)
+            newpoint = traj_T.TrajectoryLength[species_name][t_idx]
+            if newpoint > traj_T.npoints - 1:
+                if printWarningIndex is True:
+                    print "(DnT WARNING) %s Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, species_name, step, traj_T.npoints)
+                return
 
-        traj_T.TrajectoryLength[species_name][inew] += 1 # Increment the trajectory length
+            for comp in traj_T.explicit_dict['names']:
+                # print 'comp = ', comp
+                if comp == 'step':
+                    traj_T.DataList[species_name][t_idx][comp][newpoint] = step
+                elif comp == 't':
+                    traj_T.DataList[species_name][t_idx][comp][newpoint] = time
+                elif comp in p_arr.dtype.names:
+                    if facet_crossing is True and comp in self.position_coordinates:
+                        traj_T.DataList[species_name][t_idx][comp][newpoint] = p_arr[0][comp+'0']
+                    else:
+                        traj_T.DataList[species_name][t_idx][comp][newpoint] = p_arr[0][comp]
+                elif comp in E_arr.dtype.names:
+                    traj_T.DataList[species_name][t_idx][comp][newpoint] = E_arr[0][comp]
+
+            traj_T.TrajectoryLength[species_name][t_idx] += 1 # Increment the trajectory length
 
         return
 #    def record_trajectory_datum(self, neg_E_field=None):ENDDEF
@@ -1564,15 +1636,22 @@ class Particle_C(object):
 
         """
 
+        printInfoSecond = True
+        printWarningIndex = True
+        
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Avoid a second call if the timestep hasn't changed
         if step == self.traj_T.last_step:
-            print fncName, "(DnT INFO) Second call on timestep %d: return without storing the data." % step
+            if printInfoSecond is True:
+                print fncName, "(DnT INFO) Second call on timestep %d: return without storing the data." % step
             return
 
         traj_T = self.traj_T
+
+        # Scratch space
         p_arr = self.one_particle_arr
+        
 #        print 'p_arr.dtype.names = ', p_arr.dtype.names
 #        newpoint = self.traj_T.count
 
@@ -1581,15 +1660,16 @@ class Particle_C(object):
         # Record a trajectory data-point for particles with explicit dynamics
         for sp in traj_T.explicit_species:
             pseg_arrCI = self.pseg_arr[sp] # The SA for this species
-            for i in xrange(len(traj_T.ParticleIdList[sp])): # i loops on
-                                                             # particle-index array
+            for i in xrange(len(traj_T.ParticleIdList[sp])): # i loops over the list of
+                                                             # trajectory-particles for
+                                                             # this species
                 ip = traj_T.ParticleIdList[sp][i] # Look up the full particle index
 #                print "Recording data for particle", ip, "of species", sp
                 
-                # If a particle no longer exists, skip
+                # If a particle no longer exists, skip it.
                 if ip == traj_T.NO_PINDEX: continue
 
-                # Retrieve particle using its full index
+                # Retrieve the particle using its full index
                 p_arr[0] = pseg_arrCI.get(ip) # pulls value from the 'out' array.
 
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
@@ -1612,6 +1692,11 @@ class Particle_C(object):
 
                 # Copy the particle values into the trajectory
                 newpoint = traj_T.TrajectoryLength[sp][i]
+                if newpoint > traj_T.npoints - 1:
+                    if printWarningIndex is True:
+                        print "(DnT WARNING) %s Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, sp, step, traj_T.npoints)
+                    return
+                
                 for comp in traj_T.explicit_dict['names']:
 #                    print 'comp = ', comp
                     if comp == 'step':
@@ -1624,7 +1709,6 @@ class Particle_C(object):
                         traj_T.DataList[sp][i][comp][newpoint] = E_arr[0][comp]
                         
                 traj_T.TrajectoryLength[sp][i] += 1 # Increment the trajectory length
-                        
 
         # Record a trajectory data-point for particles with implicit dynamics
         for sp in traj_T.implicit_species:

@@ -14,35 +14,40 @@ __all__ = ['Example_C',]
 """
 
 #### Section Index
-### Type a space after the colon to go to the main Section. Type a space
-### after the period to go to a subsection.
 
-## IM: Imported Modules
-## OF: Terminal output flags
-## PC: Physical constants
-## SP: Scratch-pad
-## SC: Simulation Control
-## FM: Field Mesh
-## PS: Particle Species
-##     PS:1. Define the species and provide storage.
-##     PS:1.2. Allocate particle storage.
-##     PS:1.3. Specify the name of the UserParticlesModule
-##     PS:2. Particle boundary conditions, particle mesh
-##     PS:2.1. Mark boundaries to apply BCs on particles
-##     PS:2.2. Make the particle mesh and add it to the particle object
-##     PS:2.3. Connect the boundary-condition callback functions
-##     PS:3. Particle source regions
-## TRJ: Particle Trajectories
-## SRC: Source terms for the electric potential
-## FS: Field Solver
-##     FS:1.1. Set boundary values of the potential
-## CHECK: Checks on input
-## INIT: Initialization
-## RUN: Integrate forward in time
+### To search for a section: type a space after the last period of the section
+### number below, e.g., PS.<space>, or PS.1.3.<space>
+
+## IM. Imported Modules
+## OF. Terminal output flags
+## PC. Physical constants
+## SP. Scratch-pad
+## SC. Simulation Control
+## FM. Field Mesh
+## PS. Particle Species
+##     PS.1. Define the species and provide storage.
+##           PS.1.2. Allocate particle storage.
+##           PS.1.3. Specify the name of the UserParticlesModule
+##     PS.2. Particle boundary conditions, particle mesh
+##           PS.2.1. Mark boundaries to apply BCs on particles
+##           PS.2.2. Make the particle mesh and add it to the particle object
+##           PS.2.3. Connect the boundary-condition callback functions
+##     PS.3. Particle source regions
+##           PS.3.1. Hplus source near r=0
+##           PS.3.2. Electron source near r=0
+##           PS.3.3. Put all the particle source data into a dictionary
+## TRJ. Particle Trajectories
+## SRC. Source terms for the electric potential
+## FS. Field Solver
+##     FS.1. The scalar electric potential
+##           FS.1.1. Set boundary values of the potential
+## CHECK. Checks on input
+## INIT. Initialization
+## RUN. Integrate forward in time
 ####
 
 
-############################## IM: Imported Modules ##############################
+############################## IM. Imported Modules ##############################
 import sys
 import os
 import numpy as np_m
@@ -63,7 +68,7 @@ from UserUnits_Module import MyPlasmaUnits_C
 
 fileName = __file__+':'
 
-############################## OF: Terminal output flags ##############################
+############################## OF. Terminal output flags ##############################
 
 emitInput = True # Write input values to standard output.
 emitInputOnly = False # Write input values to standard output and then quit.
@@ -78,7 +83,7 @@ plotFieldsEveryTimestep = False # Plot phi and -E each timestep
 plotTrajectoriesOnMesh = False # Plot the trajectory particles on top of the mesh
 plotTrajectoriesInPhaseSpace = False # 2D phase-space plots of trajectory particles
 
-############################## PC: Physical constants ##############################
+############################## PC. Physical constants ##############################
 
 m_e = 1.0*MyPlasmaUnits_C.electron_mass
 q_e = 1.0*MyPlasmaUnits_C.elem_charge
@@ -89,7 +94,7 @@ eps_0 = MyPlasmaUnits_C.epsilon_0
 k_B = MyPlasmaUnits_C.boltzmann_constant
 
 
-############################## SP: Scratch-pad ##############################
+############################## SP. Scratch-pad ##############################
 
 # Use the scratch-pad to compute values needed to set up the simulation
 
@@ -155,7 +160,7 @@ if emitInput is True:
 
 
 
-############################## SC: Simulation Control ##############################
+############################## SC. Simulation Control ##############################
 
 # Run identifier
 ctrl.title = "sphere1D"
@@ -195,9 +200,9 @@ if emitInput is True:
 #    print ctrl.__dict__
 
 
-############################## FM: Field Mesh ##############################
+############################## FM. Field Mesh ##############################
 
-########## FM:1. Provide parameters for a 1D mesh in the radial coordinate
+########## FM.1. Provide parameters for a 1D mesh in the radial coordinate
 #from UserMesh_y_Fields_Spherical1D_Module import *
 umi = UserMeshInput1DS_C()
 
@@ -207,7 +212,7 @@ umi.stretch = 1.3 # Stretch parameter
 
 #Note: more attributes are added below
 
-########## FM:2. Mark boundaries for BCs on fields
+########## FM.2. Mark boundaries for BCs on fields
 
 # Name the Dirichlet boundaries and assign integers to them.
 # This is done before the mesh is created because sometimes it's
@@ -237,10 +242,10 @@ if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 ##FM1 Create the mesh after the particle boundary-conditions are set
-## below. See PS:2.1 below.
+## below. See PS.2.1 below.
 
 
-############################## PS: Particle Species ##############################
+############################## PS. Particle Species ##############################
 
 # Create an instance of the DTparticleInput class
 pin = ParticleInput_C()
@@ -252,9 +257,9 @@ pin.position_coordinates = ['x',] # determines the particle-storage dimensions. 
 pin.force_components = ['x',]
 pin.force_precision = np_m.float64
 
-############### PS:1. Define the species and provide storage ###############
+############### PS.1. Define the species and provide storage ###############
 
-##### PS:1.1. Basic properties and storage
+##### PS.1.1. Basic properties and storage
 speciesName = 'electrons'
 charge = -1.0*q_e
 mass = 1.0*m_e
@@ -268,8 +273,7 @@ dynamics = 'explicit'
 Hplus_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
 # Add the two species to particle input:
-pin.particle_species = (electron_S, Hplus_S,
-                        )
+pin.particle_species = (electron_S, Hplus_S,)
 
 if emitInput is True:
     print ""
@@ -296,10 +300,10 @@ if emitInput is True:
 #        print '', k, '=', v
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-##### PS:1.2. Make particle storage for the species defined above
+##### PS.1.2. Make particle storage for the species defined above
 particle_P = Particle_C(pin, print_flag=True)
 
-##### PS:1.3. Name the particular "UserParticles" module to use
+##### PS.1.3. Name the particular "UserParticles" module to use
 # Give the name of the Python module file containing special particle
 # data (lists of particles, boundary conditions, source regions, etc.)
 userParticlesModuleName = "UserParticles_1D"
@@ -311,9 +315,9 @@ userParticlesModule = im_M.import_module(userParticlesModuleName)
 particle_P.user_particles_module = userParticlesModuleName
 ##particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
-############### PS:2. Particle boundary conditions and mesh ###############
+############### PS.2. Particle boundary conditions and mesh ###############
 
-##### PS:2.1. Mark boundaries to apply BCs on particles
+##### PS.2.1. Mark boundaries to apply BCs on particles
 # In some cases, it's easier to mark boundaries before the final mesh is created.
 
 # These are the (boundary-name, int) pairs used to mark mesh facets:
@@ -345,7 +349,7 @@ if emitInput is True:
 #    print umi.__dict__
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-##### PS:2.2. Make the mesh and add it to the particle object
+##### PS.2.2. Make the mesh and add it to the particle object
 
 # First complete the mesh setup now that particle boundary-conditions have been
 # set (see #FM1 above).
@@ -358,7 +362,7 @@ mesh_M = UserMesh1DS_C(umi, compute_dictionaries=True, compute_tree=False, plot_
 # In this simulation, the particle mesh is the same object as the field mesh
 particle_P.pmesh_M = mesh_M
 
-##### PS:2.3. Connect the boundary-condition callback functions
+##### PS.2.3. Connect the boundary-condition callback functions
 
 # See UserParticleBoundaryFunctions_C in userParticlesModule (defined above) for the
 # definitions of the facet-crossing callback functions.
@@ -367,24 +371,24 @@ userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # abbrevi
 # Make the particle-mesh boundary-conditions object and add it to the particle
 # object.
 spNames = particle_P.species_names
-pmeshBCS = ParticleMeshBoundaryConditions_C(spNames, mesh_M, userPBndFnsClass, print_flag=False)
-particle_P.pmesh_bcs = pmeshBCS
+pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, mesh_M, userPBndFnsClass, print_flag=False)
+particle_P.pmesh_bcs = pmeshBCs
 
 
-########## PS:3. Particle source regions
+########## PS.3. Particle source regions
 
         ### Input for particle sources
         #   For each source 'n':
-        #     PS:3.n.1 Give name and physical properties of the species for this source
-        #     PS:3.n.2 Give the source-region geometry
-        #     PS:3.n.3 Provide the particle-generating function and
+        #     PS.3.n.1 Give name and physical properties of the species for this source
+        #     PS.3.n.2 Give the source-region geometry
+        #     PS.3.n.3 Provide the particle-generating function and
         #              the physical parameters
-        #     PS:3.n.4 Collect the input for this source into a dictionary
+        #     PS.3.n.4 Collect the input for this source into a dictionary
         #   Collect all the sources in a dictionary
 
-##### PS:3.1. Hplus source near r=0
+##### PS.3.1. Hplus source near r=0
 
-## PS:3.1.1. The species created in this source
+## PS.3.1.1. The species created in this source
 ionSpeciesName = 'Hplus'
 # Check that this species has been defined
 if ionSpeciesName in particle_P.species_names:
@@ -394,7 +398,7 @@ else:
     errorMsg = "(DnT ERROR) %s The species %s has not been defined" % (fncName, ionSpeciesName)
     sys.exit(errorMsg)
 
-## PS:3.1.2. Geometry of Hplus source region
+## PS.3.1.2. Geometry of Hplus source region
 rminHplus = scr.rmin
 rmaxHplus = rminHplus + 2.0*scr.dr_av
 HplusSourceRegion = RectangularRegion_C(particle_P.pmesh_M, rminHplus, rmaxHplus)
@@ -406,7 +410,7 @@ if emitInput is True:
     print HplusSourceRegion
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-## PS:3.1.3. Define the Hplus generating function & parameters
+## PS.3.1.3. Define the Hplus generating function & parameters
 
 # Name the particle-generating function:
 particleGenerator = particle_P.create_maxwellian_particles
@@ -452,7 +456,7 @@ driftVelocityHplus = (vdrift_1, vdrift_2, vdrift_3)
 # Set desired particles-per-cell
 numberPerCell = 1
 
-## PS:3.1.3. Collect the parameters for this source in a dictionary
+## PS.3.1.3. Collect the parameters for this source in a dictionary
 HplusSourceParams = {'species_name': ionSpeciesName,
 #                     'source_distribution_type': sourceDistributionType,
                      'number_density': numberDensityIncrementHplus,
@@ -474,10 +478,10 @@ if emitInput is True:
             print '', k, '=', v
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-##### PS:3.2. Electron source near r=0
+##### PS.3.2. Electron source near r=0
 
 
-## PS:3.2.1. The species created in this source
+## PS.3.2.1. The species created in this source
 speciesName = 'electrons'
 
 # Check that this species has been defined
@@ -488,7 +492,7 @@ else:
     print "The species", speciesName, "has not been defined"
     sys.exit()
 
-## PS:3.2.2. Source geometry for electrons: same as Hplus
+## PS.3.2.2. Source geometry for electrons: same as Hplus
 rmin = rminHplus
 rmax = rmaxHplus
 electronSourceRegion = RectangularRegion_C(particle_P.pmesh_M, rmin, rmax)
@@ -501,7 +505,7 @@ if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
-## PS:3.2.3. Define the electron distribution function & parameters
+## PS.3.2.3. Define the electron distribution function & parameters
 
 # Name the particle-creation function:
 particleGenerator = particle_P.create_maxwellian_particles
@@ -524,7 +528,7 @@ driftVelocity = driftVelocityHplus
 # Set desired particles-per-cell
 numberPerCell = 10
 
-## PS:3.2.4. Collect the parameters for this source in a dictionary
+## PS.3.2.4. Collect the parameters for this source in a dictionary
 electronSourceParams = {'species_name': speciesName,
                         #                     'source_distribution_type': sourceDistributionType,
                         'number_density': numberDensityIncrement,
@@ -546,7 +550,7 @@ if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
-##### PS:3.3. Put all the particle source data into a dictionary
+##### PS.3.3. Put all the particle source data into a dictionary
 
 # The dictionary keys are mnemonic source names.
 # The dictionary values are lists of tuples giving the
@@ -554,7 +558,7 @@ if emitInput is True:
 #   b. particle creation function and
 #   c. source region
 
-## Note: the names here are source-region names, NOT species names!
+## Note: the dictionary keys here are source-region names, NOT species names!
 particleSourceDict = {'electron_source': (electronSourceParams, particleGenerator, electronSourceRegion),
                       'Hplus_source': (HplusSourceParams, particleGenerator, HplusSourceRegion),
                       }
@@ -574,7 +578,7 @@ if emitInput is True:
 particle_P.check_particle_output_parameters(ctrl)
 
 
-############################## TRJ: Particle Trajectories ##############################
+############################## TRJ. Particle Trajectories ##############################
 
 ########## TRJ.1. Create input for a particle trajectory object
 
@@ -585,7 +589,7 @@ trajin.maxpoints = None # Set to None to get every point
 
 # Specify which particle variables to save.  This has the
 # form of a numpy dtype specification.
-# TODO: Use real 1D spherical coordinates(?).
+# TODO. Use real 1D spherical coordinates(?).
 trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'Ex'], 'formats': [int, np_m.float32, np_m.float32, np_m.float32, np_m.float32]}
 
 ########## TRJ.2. Create the trajectory object and attach it to the particle object.
@@ -599,7 +603,7 @@ particle_P.traj_T = traj_T
 
 
 
-############################## SRC: Source terms for the electric potential ##############################
+############################## SRC. Source terms for the electric potential ##############################
 
 ########## SRC.1. Charge-density obtained from kinetic particles
 
@@ -626,11 +630,11 @@ chargeDensity_F = Field_C(mesh_M=mesh_M,
 #particle_P.charge_density = chargeDensity_F
 
 
-############################## FS: Field Solver ##############################
+############################## FS. Field Solver ##############################
 
-########## FS:1. The scalar electric potential
+########## FS.1. The scalar electric potential
 
-##### FS:1.1. Set boundary values of the potential
+##### FS.1.1. Set boundary values of the potential
 phiVals = {'rmin':  'unset',
            'rmax': -1.5,
            }
@@ -654,12 +658,12 @@ if emitInput is True:
 ## Save these in a boundary-condition dictionary
 phiBCs = dict( (bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
 
-##### FS:1.2. Properties of the electric potential trial function
+##### FS.1.2. Properties of the electric potential trial function
 phiElementType = 'Lagrange'
 phiElementDegree = 1
 phiFieldType = 'scalar'
 
-##### FS:1.3. Storage for the electric potential solution
+##### FS.1.3. Storage for the electric potential solution
 phi_F = Field_C(mesh_M=mesh_M,
                 element_type=phiElementType,
                 element_degree=phiElementDegree,
@@ -672,9 +676,9 @@ if emitInput is True:
     print phi_F
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-########## FS:2. The electric field (gradient of scalar potential)
+########## FS.2. The electric field (gradient of scalar potential)
 
-##### FS:2.1. Properties of the electric field
+##### FS.2.1. Properties of the electric field
 if phiElementDegree == 1:
     # For linear elements, grad(phi) is discontinuous across
     # elements. To represent this field, we need Discontinuous Galerkin
@@ -683,7 +687,7 @@ if phiElementDegree == 1:
 else:
     electricFieldElementType = 'Lagrange'
 
-##### FS:2.2. Storage for the electric field
+##### FS.2.2. Storage for the electric field
 negElectricField_F = Field_C(mesh_M=mesh_M,
                              element_type=electricFieldElementType,
                              element_degree=phiElementDegree-1,
@@ -696,11 +700,11 @@ if emitInput is True:
     print negElectricField_F
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-########## FS:3.1. The Poisson solver parameters
+########## FS.3.1. The Poisson solver parameters
 linearSolver = 'lu'
 preconditioner = None
 
-########## FS:3.2. Create the Poisson solver object
+########## FS.3.2. Create the Poisson solver object
 fieldBoundaryMarker = mesh_M.field_boundary_marker
 if emitInput is True:
     print ""
@@ -724,16 +728,16 @@ if emitInputOnly is True:
     sys.exit(infoMsg)
 
 
-############################## CHECK: Check the simulation setup ##############################
+############################## CHECK. Check the simulation setup ##############################
 
 if particleBoundaryDict is not None and particle_P.pmesh_M.particle_boundary_marker is None:
     print "A particleBoundaryDict was set, but particle_P.pmesh_M.particle_boundary_marker is None"
     sys.exit()
     
 
-############################## INIT: Initialization ##############################
+############################## INIT. Initialization ##############################
 
-########## INIT:1. Do an initial field solve without particles
+########## INIT.1. Do an initial field solve without particles
 
 if plotInitialFields is True:
     print ""
@@ -741,13 +745,13 @@ if plotInitialFields is True:
 plotTitle = fileName + " initial field (no particles)"
 poissonsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 
-########## INIT:2. Initialize the particles
+########## INIT.2. Initialize the particles
 
 # Open the particle output file and write the header
 if ctrl.particle_output_file is not None:
     particle_P.initialize_particle_output_file(ctrl)
 
-##### INIT:2.1. Loop on initialized particle species
+##### INIT.2.1. Loop on initialized particle species
 if particle_P.initial_particles_dict is not None:
     printFlags = {}
     for s in particle_P.species_names:
@@ -763,7 +767,7 @@ if particle_P.initial_particles_dict is not None:
         if particle_P.traj_T is not None:
             particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
 
-    ##### INIT:2.2. Recompute the initial electrostatic field in the presence of these particles
+    ##### INIT.2.2. Recompute the initial electrostatic field in the presence of these particles
     ## Accumulate number-density from kinetic particles
     ## and sum charge-density.
     for s in particles_P.species_names:
@@ -783,7 +787,7 @@ else:
     print "(DnT INFO) %s\n\tThere are no initial particles in this simulation" % fileName
 
 
-############################## RUN: Integrate forward in time ##############################
+############################## RUN. Integrate forward in time ##############################
 
 print ""
 print "********** Integrate for %d timesteps from step %d, time %.3g, starting with %d particles **********" % (ctrl.n_timesteps, ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count())
@@ -791,11 +795,11 @@ print "********** Integrate for %d timesteps from step %d, time %.3g, starting w
 
 for istep in xrange(ctrl.n_timesteps):
 
-    ########## RUN:0. Increment the time counters
+    ########## RUN.0. Increment the time counters
     ctrl.timeloop_count += 1
     ctrl.time += ctrl.dt
 
-    ########## RUN:1. Advance the particles one timestep
+    ########## RUN.1. Advance the particles one timestep
     print ""
     print "***** Advance %d particles to step %d, time %.3g *****" % (particle_P.get_total_particle_count(), ctrl.timeloop_count, ctrl.time)
     particle_P.move_particles_in_electrostatic_field(ctrl, poissonsolve.neg_electric_field)
@@ -805,7 +809,7 @@ for istep in xrange(ctrl.n_timesteps):
         if (ctrl.timeloop_count % particle_P.traj_T.skip == 0):
             particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
 
-    ########## RUN:2. Add particles from source regions
+    ########## RUN.2. Add particles from source regions
     # Note: if a new particle gets marked for a trajectory, the first datum is
     # recorded inside the particle generator.
     if particle_P.particle_source_dict is not None:
@@ -815,7 +819,7 @@ for istep in xrange(ctrl.n_timesteps):
     if ctrl.timeloop_count % ctrl.particle_output_interval == 0:
         particle_P.write_particles_to_file(ctrl)
 
-    ########## RUN:3. Update the electric charge density
+    ########## RUN.3. Update the electric charge density
     for s in particle_P.species_names:
         particle_P.accumulate_number_density(s)
         q = particle_P.charge[s]
@@ -823,7 +827,7 @@ for istep in xrange(ctrl.n_timesteps):
 
     particle_P.accumulate_charge_density_from_particles(chargeDensity_F)
 
-    ########## RUN:4. Update the electric field
+    ########## RUN.4. Update the electric field
     plotTitle = os.path.basename(__file__) + ": n=%d " % (ctrl.timeloop_count)
     if plotFieldsEveryTimestep is True:
         print ""
@@ -837,7 +841,7 @@ print "********** Exited the time loop at step %d, time %.3g, with %d particles 
 #print fncName, "Exited the time loop", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
 
 
-############################## FIN: Finish the simulation ##############################
+############################## FIN. Finish the simulation ##############################
 
 # Write the last particle data and close the output file
 if ctrl.particle_output_file is not None:

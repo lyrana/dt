@@ -9,7 +9,8 @@ import os
 import math
 import unittest
 
-import dolfin as df_M
+import dolfin as df_m
+import matplotlib.pyplot as mplot_m
 
 from UserMesh_y_Fields_FE2D_Module import *
 
@@ -27,7 +28,7 @@ class TestMeshFunctions(unittest.TestCase):
            http://fenicsproject.org/qa/3843/cell-neighbours
         """
 
-        mesh = df_M.UnitSquareMesh(2, 2)
+        mesh = df_m.UnitSquareMesh(2, 2)
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": mesh"
 
         # Init facet-cell connectivity
@@ -45,12 +46,12 @@ class TestMeshFunctions(unittest.TestCase):
         # cell(index) is the local index of the cell.
         # facets(cell) are the facets of a cell.
         # facet.entities(tdim) are the entities of dimension 2 touching that facet
-        cell_neighbors = {cell.index(): sum((filter(lambda ci: ci != cell.index(), facet.entities(tdim)) for facet in df_M.facets(cell)), []) for cell in df_M.cells(mesh)}
+        cell_neighbors = {cell.index(): sum((filter(lambda ci: ci != cell.index(), facet.entities(tdim)) for facet in df_m.facets(cell)), []) for cell in df_m.cells(mesh)}
 
 #        print cell_neighbors
 
-        df_M.plot(mesh, title=plotTitle)
-        df_M.interactive()
+        df_m.plot(mesh, title=plotTitle)
+        mplot_m.show()
 
 #        self.assertEqual(len(shared_items), len(expected_neighbors), msg="Cell neighbor list is not correct")
         self.assertEqual(cmp(cell_neighbors, expected_neighbors), 0, msg="Cell neighbor list is not correct")

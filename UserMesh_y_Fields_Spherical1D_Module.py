@@ -24,6 +24,7 @@ import math
 # !!! Direct invocation of dolfin. OK because UserMesh1DS_C is a
 # sub-class of Mesh_C !!!
 import dolfin as df_m
+import matplotlib.pyplot as mplot_m
 
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import PoissonSolve_C
@@ -319,8 +320,8 @@ class UserMesh1DS_C(Mesh_C):
 # Make a plot of the mesh
         if (plot_flag):
             if plot_title is None: plotTitle = "1D radial"
-            df_m.plot(mesh, title=plotTitle + " mesh", axes=True)
-            df_m.interactive()
+            df_m.plot(mesh, title=plotTitle + " mesh")
+            mplot_m.show()
 
         # Save the class attributes
         self.mesh = mesh

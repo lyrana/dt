@@ -12,7 +12,7 @@ __all__ = ['UserParticleDistributions_C',
 
 import sys
 import math
-import numpy as np_M
+import numpy as np_m
 
 from Dolfin_Module import Mesh_C
 from Particle_Module import Particle_C
@@ -100,7 +100,7 @@ class UserParticleDistributions_C(object):
 
 #class UserParticleDistributions_C(object):ENDCLASS
 
-class UserParticleBoundaryFunctions_C(object):
+class UserParticleBoundaryFunctions_C(Particle_C):
     """UserParticleBoundaryFunctions_C implements callback functions
        (boundary conditions) for kinetic particles crossing marked
        mesh facets.
@@ -110,7 +110,7 @@ class UserParticleBoundaryFunctions_C(object):
     """
 
     @staticmethod
-    def default_bc(p, speciesName, facetIndex):
+    def default_bc(p, speciesName, facetIndex, facet_normal=None):
         """Global default boundary condition for all species.
 
            :param p: the record of the particle that crossed xmin.
@@ -129,11 +129,12 @@ class UserParticleBoundaryFunctions_C(object):
         return
 #    def default_bc(p, speciesName, facetIndex):ENDDEF
 
-    # For Cartesian coordinates
 
-#class UserParticleBoundaryFunctions_C(object):
+########## Cartesian coordinates ##########
+
+#class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def default_bc_at_xmin(p, speciesName, facetIndex):
+    def default_bc_at_xmin(p, speciesName, facetIndex, facet_normal=None):
         """Default boundary condition for particles incident on xmin.
 
            :param p: the record of the particle that crossed xmin.
@@ -151,9 +152,9 @@ class UserParticleBoundaryFunctions_C(object):
         return
 #    def default_bc_at_xmin(p, speciesName, facetIndex):ENDDEF
     
-#class UserParticleBoundaryFunctions_C(object):
+#class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def default_bc_at_xmax(p, speciesName, facetIndex):
+    def default_bc_at_xmax(p, speciesName, facetIndex, facet_normal=None):
         """Default boundary condition for particles incident on xmax.
 
            :param p: the record of the particle that crossed xmin.
@@ -166,9 +167,9 @@ class UserParticleBoundaryFunctions_C(object):
         return
 #    def default_bc_at_xmax(p, speciesName, facetIndex):ENDDEF
     
-#class UserParticleBoundaryFunctions_C(object):
+#class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def bc_at_xmin_for_neutral_H(p, speciesName, facetIndex):
+    def bc_at_xmin_for_neutral_H(p, speciesName, facetIndex, facet_normal=None):
         """Boundary condition for neutral_H incident on xmin.
 
            :param p: the record of the particle that crossed xmin.
@@ -182,12 +183,79 @@ class UserParticleBoundaryFunctions_C(object):
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 
 
-    # For spherical coordinates
+########## Spherical coordinates ##########
 
-#class UserParticleBoundaryFunctions_C(object):
+#class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def default_bc_at_rmin(p, speciesName, facetIndex):
+    def default_bc_at_rmin(p, speciesName, facetIndex, facet_normal=None):
         """Default boundary condition for particles incident on rmin.
+           Reflect the particle after accounting for it.
+
+           :param p: the data record of the particle that crossed rmin.
+           :param speciesName: the species that particle p belongs to.
+
+           :param facetIndex: the mesh-level index of the facet crossed by
+                              particle p.
+
+           :cvar double[] dxOutside: the part of the move-vector beyond the
+                                     reflecting surface
+           :cvar double n_dot_dxOutside: the component of dxOutside normal to the
+                                         reflecting surface.
+           :cvar double n_dot_u: the component of the velocity normal to the
+                                 reflecting surface.
+
+        """
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+#        print fncName, "invoked by particle", p, "of species", speciesName
+
+        pDim = self.particle_dimension
+
+        # Scratch space
+        # self.pcoord can hold: x,y,z, (or subset)
+        dxOutside = self.pcoord
+        # self.pvel can hold: ux,uy,uz, (or subset)
+        u = self.pvel
+
+        # Local names for class variables
+        dx = self.dx # The the move-vector
+        dxFraction = self.dxFraction # The fraction of the move distance traveled in
+                                     # the current cell.
+       
+        # Compute the move-vector past the reflecting surface
+        for i in range(pDim):
+            dxOutside[i] = (1.0 - dxFraction)*dx[i]
+        # Compute the component in the direction normal to the reflecting surface
+        n_dot_dxOutside = np_m.dot(facet_normal, dxOutside)
+
+        # Compute the component of velocity normal to the reflecting surface
+        for i in range(pDim):
+            u[i] = p[2*pDim:3*pDim]
+        n_dot_u = np_m.dot(facet_normal, u)
+
+        # Reflect the particle position in the surface to get its new final
+        # position. Reflect the particle velocity too.
+        i=0
+        for coord in self.position_coordinates:
+            p[coord] -= 2.0*n_dot_dxOutside*dxOutside[i]
+            ucomp = 'u'+coord
+            p[ucomp] -= 2.0*n_dot_u*u[i]
+            i+=1
+        
+        # Count the number/charge/energy of deleted particles
+        
+# Set the delete bit
+#        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
+
+
+
+        return
+#    def default_bc_at_rmin(p, speciesName, facetIndex):ENDDEF
+    
+#class UserParticleBoundaryFunctions_C(Particle_C):
+    @staticmethod
+    def INACTIVE_default_bc_at_rmin(p, speciesName, facetIndex, facet_normal=None):
+        """Default boundary condition for particles incident on rmin.
+           Delete the particle after accounting for it.
 
            :param p: the record of the particle that crossed rmin.
            :param speciesName: the species that particle p belongs to.
@@ -203,10 +271,10 @@ class UserParticleBoundaryFunctions_C(object):
 
         return
 #    def default_bc_at_rmin(p, speciesName, facetIndex):ENDDEF
-    
-#class UserParticleBoundaryFunctions_C(object):
+
+#class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def default_bc_at_rmax(p, speciesName, facetIndex):
+    def default_bc_at_rmax(p, speciesName, facetIndex, facet_normal=None):
         """Default boundary condition for particles incident on rmax.
 
            :param p: the record of the particle that crossed rmin.
@@ -222,9 +290,9 @@ class UserParticleBoundaryFunctions_C(object):
         return
 #    def default_bc_at_rmax(p, speciesName, facetIndex):ENDDEF
     
-#class UserParticleBoundaryFunctions_C(object):
+#class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def bc_at_rmin_for_neutral_H(p, speciesName, facetIndex):
+    def bc_at_rmin_for_neutral_H(p, speciesName, facetIndex, facet_normal=None):
         """Boundary condition for neutral_H incident on rmin.
 
            :param p: the record of the particle that crossed rmin.
@@ -242,7 +310,7 @@ class UserParticleBoundaryFunctions_C(object):
         return
 #    def bc_at_rmin_for_neutral_H(p, speciesName, facetIndex):ENDDEF
 
-#class UserParticleBoundaryFunctions_C(object): ENDCLASS
+#class UserParticleBoundaryFunctions_C(Particle_C): ENDCLASS
 
 class UserParticleSourceFunctions_C(object):
     """UserParticleSourceFunctions_C implements particle sources

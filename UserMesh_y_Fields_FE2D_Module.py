@@ -23,6 +23,7 @@ import math
 # !!! Direct invocation of dolfin. OK because UserMesh2DCirc is a
 # sub-class of Mesh_C !!!
 import dolfin as df_m
+import matplotlib.pyplot as mplot_m
 
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import PoissonSolve_C
@@ -244,8 +245,8 @@ class UserMesh2DCirc_C(Mesh_C):
             # The function values are set later.
 
             # A boundary has dimension 1 less than the domain:
-    # equivalent:       fieldBoundaryMarker = df_m.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
-            fieldBoundaryMarker = df_m.FacetFunction('size_t', mesh)
+#            fieldBoundaryMarker = df_m.FacetFunction('size_t', mesh)
+            fieldBoundaryMarker = df_m.MeshFunction('size_t', mesh, mesh.topology().dim()-1)
 
             # Initialize all mesh facets with a default value of 0
             # Then overwrite boundary facets that have Dirichlet BCs.
@@ -342,10 +343,13 @@ class UserMesh2DCirc_C(Mesh_C):
         if (plot_flag):
             fileName = os.path.basename(__file__)
             if plot_title is None: plotTitle = fileName + ": RZ-mesh"
-            df_m.plot(mesh, title=plotTitle, axes=True)
-            df_m.plot(fieldBoundaryMarker, title=fileName + ': field boundary marks', axes=True)
-            df_m.plot(particleBoundaryMarker, title=fileName + ': particle boundary marks', axes=True)
-            df_m.interactive()
+#            df_m.plot(mesh, title=plotTitle, axes=True)
+            df_m.plot(mesh, title=plotTitle)
+#*** Warning: Matplotlib plotting backend does not support mesh function of dim 1. Continuing without plotting...            
+#            df_m.plot(fieldBoundaryMarker, title=fileName + ': field boundary marks', axes=True)
+#            df_m.plot(particleBoundaryMarker, title=fileName + ': particle boundary marks', axes=True)
+#            df_m.interactive()
+            mplot_m.show()            
 #raw_input('C: Press <ENTER> to continue')
 
         # Save the class attributes
@@ -381,8 +385,6 @@ class UserPoissonSolve2DCirc_C(PoissonSolve_C):
     def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, assembled_charge=None, neg_electric_field=None):
         """Constructor for a Poisson solver written by the user.
         """
-
-        print "This is DOLFIN Version", df_m.DOLFIN_VERSION_STRING
 
         # Select the unit system to be used for input parameters.
         constants = U_M.MyPlasmaUnits_C

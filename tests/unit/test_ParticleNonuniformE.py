@@ -58,7 +58,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         #                      ),
         #                     )
 
-        speciesName = 'test_electrons'
+        speciesName = 'two_electrons'
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
         dynamics = 'explicit'
@@ -78,10 +78,10 @@ class TestParticleNonuniformE(unittest.TestCase):
         userParticlesModule = im_m.import_module(userParticlesModuleName)
         self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
-        ### test_electrons are present at t=0
+        ### two_electrons are present at t=0
 
         # Name the initialized species (it should be in species_names above)
-        speciesName = 'test_electrons'
+        speciesName = 'two_electrons'
         # Check that this species has been defined above
         if speciesName not in self.particle_P.species_names:
             print fncName + "The species", speciesName, "has not been defined"
@@ -105,7 +105,7 @@ class TestParticleNonuniformE(unittest.TestCase):
                               }
 
         # The dictionary keys are mnemonics for the initialized particles
-        initialParticlesDict = {'initial_test_electrons': (testElectronParams,),
+        initialParticlesDict = {'initial_two_electrons': (testElectronParams,),
                                 }
 
         self.particle_P.initial_particles_dict = initialParticlesDict
@@ -150,10 +150,11 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         # UserParticleBoundaryFunctions_C is where the facet-crossing callback
         # functions are defined.
-        userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # abbreviation
+        # userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # Now need an instantiation, not just a class name:
+        userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(self.particle_P.position_coordinates, self.particle_P.dx)
 
         spNames = self.particle_P.species_names
-        pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh2D_M, userPBndFnsClass, print_flag=False)
+        pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh2D_M, userPBndFns, print_flag=False)
         self.particle_P.pmesh_bcs = pmeshBCs
 
         # The following value should correspond to the element degree

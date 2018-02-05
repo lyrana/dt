@@ -6,11 +6,12 @@ __author__ = 'Copyright (C) 2016 L. D. Hughes'
 
 import sys
 import os
-import numpy as np_M
+import numpy as np_m
 import importlib as im_m
 import unittest
 
-import dolfin as df_M
+import dolfin as df_m
+import matplotlib.pyplot as mplot_m
 
 from DT_Module import DTcontrol_C
 from UserUnits_Module import MyPlasmaUnits_C
@@ -37,7 +38,7 @@ class TestParticleMigration(unittest.TestCase):
         pin = ParticleInput_C()
 
         # Set up particle variables
-        pin.precision = np_M.float64
+        pin.precision = np_m.float64
         pin.particle_integration_loop = 'loop-on-particles'
         # Use the 3 position coordinates, since we're doing 1, 2, and 3D particle motion
         pin.position_coordinates = ['x', 'y', 'z'] # Determines particle storage dimension
@@ -45,7 +46,7 @@ class TestParticleMigration(unittest.TestCase):
         """
         pin.force_components = ['x', 'y',]
         """
-        pin.force_precision = np_M.float64
+        pin.force_precision = np_m.float64
 
         # Give the properties of the particle species.  The charges
         # and masses are normally those of the physical particles, and
@@ -143,8 +144,8 @@ class TestParticleMigration(unittest.TestCase):
 
         # 1d mesh input
         umi1D = UserMeshInput_C()
-        umi1D.pmin = df_M.Point(-10.0)
-        umi1D.pmax = df_M.Point(10.0)
+        umi1D.pmin = df_m.Point(-10.0)
+        umi1D.pmax = df_m.Point(10.0)
         umi1D.cells_on_side = (4,)
 
         # Identify where particle boundary-conditions will be imposed
@@ -163,8 +164,8 @@ class TestParticleMigration(unittest.TestCase):
 
         # 2D mesh input
         umi2D = UserMeshInput_C()
-        umi2D.pmin = df_M.Point(-10.0, -10.0)
-        umi2D.pmax = df_M.Point(10.0, 10.0)
+        umi2D.pmin = df_m.Point(-10.0, -10.0)
+        umi2D.pmax = df_m.Point(10.0, 10.0)
         umi2D.cells_on_side = (4, 2)
 
         # Identify where particle boundary-conditions will be imposed
@@ -187,8 +188,8 @@ class TestParticleMigration(unittest.TestCase):
 
         # 3D mesh input
         umi3D = UserMeshInput_C()
-        umi3D.pmin = df_M.Point(-10.0, -10.0, -10.0)
-        umi3D.pmax = df_M.Point(10.0, 10.0, 10.0)
+        umi3D.pmin = df_m.Point(-10.0, -10.0, -10.0)
+        umi3D.pmax = df_m.Point(10.0, 10.0, 10.0)
         umi3D.cells_on_side = (4, 4, 4)
 
         # Identify where particle boundary-conditions will be imposed
@@ -333,7 +334,7 @@ class TestParticleMigration(unittest.TestCase):
         xsp0 = -9.5; ysp0 =  -9.5; zsp0 = 0.0
         vxsp0 = -2.0; vysp0 = 0.0; vzsp0 = 0.0
 
-        weight0=2.0
+        weight0 = 2.0
         bitflag0 = 2
         cell_index0 = 0
         unique_ID0 = 0
@@ -361,7 +362,7 @@ class TestParticleMigration(unittest.TestCase):
 
         # Create a mesh plotter to display the trajectory
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": First & last positions"
-        plotter=df_M.plot(self.particle_P.pmesh_M.mesh, title=plotTitle)
+        plotter=df_m.plot(self.particle_P.pmesh_M.mesh, title=plotTitle)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -370,8 +371,9 @@ class TestParticleMigration(unittest.TestCase):
                 getparticle = self.particle_P.pseg_arr[sp].get(ip)
 #                print 'sp =', sp, 'expected =', p_expected[ip]
 #                print 'calculated = ', getparticle
-                path = np_M.array([p_ic[ip][0], p_ic[ip][1], getparticle[0], getparticle[1]])
-                plotter.add_polygon(path)
+                path = np_m.array([p_ic[ip][0], p_ic[ip][1], getparticle[0], getparticle[1]])
+# Replace with point plot
+#                plotter.add_polygon(path)
 
                 for ic in range(ncoords):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
@@ -379,8 +381,7 @@ class TestParticleMigration(unittest.TestCase):
 #                print fncName, "expected cell =", p_expected[ip][-2], "computed cell =", getparticle[-2]
                 self.assertEqual(p_expected[ip][-2], getparticle[-2], msg="Particle is not in correct cell")
 
-        plotter.plot()
-#        df_M.interactive() # Stops the plot from disappearing
+        mplot_m.show()
 
         return
 #    def test_2D_particle_migration(self):ENDDEF
@@ -419,7 +420,7 @@ class TestParticleMigration(unittest.TestCase):
         xsp0 = -9.5; ysp0 =  -9.5; zsp0 = 0.0
         vxsp0 = -2.0; vysp0 = 0.0; vzsp0 = 0.0
 
-        weight0=2.0
+        weight0 = 2.0
         bitflag0 = 2
         cell_index0 = 98
         unique_ID0 = 0
@@ -448,8 +449,8 @@ class TestParticleMigration(unittest.TestCase):
         # Create a mesh plotter to display the trajectory (just the
         # first and last positions)
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": First & last positions"
-        plotter=df_M.plot(self.particle_P.pmesh_M.mesh, title=plotTitle)
-
+        plotter=df_m.plot(self.particle_P.pmesh_M.mesh, title=plotTitle)
+        
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
@@ -457,8 +458,9 @@ class TestParticleMigration(unittest.TestCase):
                 getparticle = self.particle_P.pseg_arr[sp].get(ip)
 #                print 'expected = ', p_expected[ip]
 #                print 'calculated = ', getparticle
-                path = np_M.array([p_ic[ip][0], p_ic[ip][1], p_ic[ip][2], getparticle[0], getparticle[1], getparticle[2]])
-                plotter.add_polygon(path)
+                path = np_m.array([p_ic[ip][0], p_ic[ip][1], p_ic[ip][2], getparticle[0], getparticle[1], getparticle[2]])
+# Replace this with a point plot:
+#                plotter.add_polygon(path)
 
                 for ic in range(ncoords):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
@@ -468,8 +470,8 @@ class TestParticleMigration(unittest.TestCase):
 #                print fncName, "expected cell =", p_expected[ip][-2], "computed cell =", getparticle[-2]
                 self.assertEqual(p_expected[ip][-2], getparticle[-2], msg="Particle is not in correct cell")
 
-        plotter.plot()
-        df_M.interactive() # Stops the plot from disappearing
+        mplot_m.show()
+#        yesno = raw_input("Just called show() in test_3D_particle_migration")
 
         return
 #    def test_3D_particle_migration(self):ENDDEF

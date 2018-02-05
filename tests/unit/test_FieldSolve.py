@@ -25,8 +25,8 @@ class TestFieldSolve(unittest.TestCase):
     def setUp(self):
         # initializations for each test go here...
 
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print "\n", fncName, ": This is DOLFIN Version", df_m.DOLFIN_VERSION_STRING, '\n'
+        fncName = '(' + __file__ + ') ' + sys._getframe().f_code.co_name + "():"
+        print "\n", fncName, "This is DOLFIN Version", df_m.DOLFIN_VERSION_STRING
 
         return
 #    def setUp(self):ENDDEF
@@ -43,7 +43,7 @@ class TestFieldSolve(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print '\ntest: ', fncName
 
         ## Specialized modules for the mesh and field solver
         from UserMesh_y_Fields_Spherical1D_Module import UserMeshInput1DS_C
@@ -82,6 +82,7 @@ class TestFieldSolve(unittest.TestCase):
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         mesh_M = UserMesh1DS_C(umi, compute_tree=False, plot_flag=True, plot_title=plotTitle)
+#        yesno = raw_input("Just called UserMesh1DS_C() in test_1_1D_spherical_laplace_solver")
 
         ## Storage for the potential and electric field
 
@@ -165,7 +166,7 @@ class TestFieldSolve(unittest.TestCase):
         self.assertAlmostEqual(ratio, 1.0, places=decimal_places, msg="Falloff in E is not 1/r^2 to %d decimals" % decimal_places)
 
         r_arr = mesh_M.mesh.coordinates()[:,0]
-        phi_arr = phi_F.function.vector().array()
+        phi_arr = phi_F.function.vector().get_local()
         nnodes = len(phi_arr)
         nvertices = len(r_arr)
 #        print "nnode =", nnodes
@@ -191,7 +192,7 @@ class TestFieldSolve(unittest.TestCase):
             negEexp[0:ncells] = (phi_arr[1:ncells+1] - phi_arr[0:ncells])/dr[0:ncells]
      #       print "negEexp =", negEexp
 
-            negEget = laplacesolve.negE.vector().array()
+            negEget = laplacesolve.negE.vector().get_local()
     #        print "negEget =", fieldsolveCI.negE.vector().array()
 
             # Check that the derivative equals the stored negE
@@ -212,7 +213,7 @@ class TestFieldSolve(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print '\ntest: ', fncName
 
         ## Specialized modules for the mesh and field solver
         from UserMesh_y_Fields_FE2D_Module import UserMesh2DCirc_C
@@ -347,7 +348,7 @@ class TestFieldSolve(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print '\ntest: ', fncName
 
         ### Specialized mesh and field-solver modules for this test ###
 
@@ -481,7 +482,7 @@ class TestFieldSolve(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print '\ntest: ', fncName
 
         ### Specialized mesh and field-solver modules for this test ###
 
@@ -634,7 +635,7 @@ class TestFieldSolve(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print '\ntest: ', fncName
 
         ### Specialized mesh and field-solver modules for this test ###
 

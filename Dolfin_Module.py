@@ -16,6 +16,7 @@ __all__ = ['Field_C',
 import sys
 import os
 import dolfin as df_m
+import matplotlib.pyplot as mplot_m
 import numpy as np_m
 
 #STARTCLASS
@@ -60,7 +61,7 @@ class Mesh_C(object):
         if self.mesh is not None:
             if plot_flag is True:
                 df_m.plot(self.mesh, title=plot_title, axes=True)
-                df_m.interactive()
+                mplot_m.show()
             # Compute the search tree. Uses:
             #     Evaluating field probes at a point.
             #     Computing the cell index of a particle.
@@ -508,8 +509,9 @@ class Mesh_C(object):
            :param cell_index: the (global?) index of the cell that the
                               particle started in.
 
-        :returns: number of facet traversed, or None,
-                  fraction of the path that's in this cell.
+        :returns: (index of the facet crossed or None,
+                   fraction of the path that's in this cell,
+                   the unit normal to the facet crossed)
         :rtype: int, float
         """
 
@@ -526,11 +528,11 @@ class Mesh_C(object):
 
         facet = Mesh_C.NO_FACET
 
-        pathFraction = 1.0
+        dxFraction = 1.0
         distanceToFacet = 0.0
 
         if np_m.dot(dx,dx) == 0.0:
-            return facet, pathFraction
+            return facet, dxFraction, None
 
         cell = self.cell_dict[cell_index]
 
@@ -560,10 +562,10 @@ class Mesh_C(object):
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
-                if distanceToFacet < pathFraction*n0_dot_dx:
+                if distanceToFacet < dxFraction*n0_dot_dx:
                     facet = 0
-                    pathFraction = distanceToFacet/n0_dot_dx
-#                    print "f0 find_facet(): facet=", facet, "pathFraction=", pathFraction
+                    dxFraction = distanceToFacet/n0_dot_dx
+#                    print "f0 find_facet(): facet=", facet, "dxFraction=", dxFraction
 
             # Next, test if the plane of facet 1 is crossed:
             n1_dot_dx = np_m.dot(facet_normal_vectors[1], dx)
@@ -577,9 +579,9 @@ class Mesh_C(object):
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
-                if distanceToFacet < pathFraction*n1_dot_dx:
+                if distanceToFacet < dxFraction*n1_dot_dx:
                     facet = 1
-                    pathFraction = distanceToFacet/n1_dot_dx
+                    dxFraction = distanceToFacet/n1_dot_dx
 
             # Next, test if the plane of facet 2 is crossed:
             n2_dot_dx = np_m.dot(facet_normal_vectors[2], dx)
@@ -593,9 +595,9 @@ class Mesh_C(object):
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
-                if distanceToFacet < pathFraction*n2_dot_dx:
+                if distanceToFacet < dxFraction*n2_dot_dx:
                     facet = 2
-                    pathFraction = distanceToFacet/n2_dot_dx
+                    dxFraction = distanceToFacet/n2_dot_dx
 
             # Next, test if the plane of facet 3 is crossed:
             n3_dot_dx = np_m.dot(facet_normal_vectors[3], dx)
@@ -609,14 +611,15 @@ class Mesh_C(object):
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
-                if distanceToFacet < pathFraction*n3_dot_dx:
+                if distanceToFacet < dxFraction*n3_dot_dx:
                     facet = 3
-                    pathFraction = distanceToFacet/n3_dot_dx
+                    dxFraction = distanceToFacet/n3_dot_dx
 
-            if pathFraction > 1.0 or pathFraction < 0.0:
-                print fncName, "!!! Bad value for pathFraction:", pathFraction
+            if dxFraction > 1.0 or dxFraction < 0.0:
+                print fncName, "!!! Bad value for dxFraction:", dxFraction
                 sys.exit()
-            return facet, pathFraction
+
+            return facet, dxFraction, facet_normal_vectors[facet]
 
         elif gDim == 2:
 
@@ -638,11 +641,11 @@ class Mesh_C(object):
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
 #                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
-                if distanceToFacet < pathFraction*n0_dot_dx:
+                if distanceToFacet < dxFraction*n0_dot_dx:
                     facet = 0
                     # Compute fraction of the path to this facet in this cell:
-                    pathFraction = distanceToFacet/n0_dot_dx
-#                    print "f0 find_facet(): facet=", facet, "pathFraction=", pathFraction
+                    dxFraction = distanceToFacet/n0_dot_dx
+#                    print "f0 find_facet(): facet=", facet, "dxFraction=", dxFraction
 
             # Next, test if the plane of facet 1 is crossed.
             # Distance traveled normal to facet 0:
@@ -659,10 +662,10 @@ class Mesh_C(object):
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
-                if distanceToFacet < pathFraction*n1_dot_dx:
+                if distanceToFacet < dxFraction*n1_dot_dx:
                     facet = 1
                     # Compute fraction of the path to this facet in this cell:
-                    pathFraction = distanceToFacet/n1_dot_dx
+                    dxFraction = distanceToFacet/n1_dot_dx
 
             # Next, test if the plane of facet 2 is crossed.
             # Distance traveled normal to facet 2:
@@ -679,18 +682,20 @@ class Mesh_C(object):
                     distanceToFacet = -distanceToFacet
                 # If the path-fraction to this facet's plane is
                 # smaller than for facet 0 and 1, this is the one crossed.
-                if distanceToFacet < pathFraction*n2_dot_dx:
+                if distanceToFacet < dxFraction*n2_dot_dx:
                     facet = 2
-                    pathFraction = distanceToFacet/n2_dot_dx
+                    dxFraction = distanceToFacet/n2_dot_dx
 
-            if pathFraction > 1.0 or pathFraction < 0.0:
-                print fncName, "!!! Bad value for pathFraction:", pathFraction, "!!!"
+            if dxFraction > 1.0 or dxFraction < 0.0:
+                print fncName, "!!! Bad value for dxFraction:", dxFraction, "!!!"
                 sys.exit()
-#                if abs(pathFraction) < TINY_PATH_FRACTION:
-#                    pathFraction = 0.0 # this will trigger a check on the cell index?
+#                if abs(dxFraction) < TINY_PATH_FRACTION:
+#                    dxFraction = 0.0 # this will trigger a check on the cell index?
 #                else:
 #                    sys.exit()
-            return facet, pathFraction
+
+            return facet, dxFraction, facet_normal_vectors[facet]
+        
         else:
 
             # 1D mesh: There are 2 facets indexed 0 1, and the normal vector is 1D.
@@ -707,10 +712,10 @@ class Mesh_C(object):
                     print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
-                if distanceToFacet < pathFraction*n0_dot_dx:
+                if distanceToFacet < dxFraction*n0_dot_dx:
                     facet=0
-                    pathFraction = distanceToFacet/n0_dot_dx
-                    return facet, pathFraction
+                    dxFraction = distanceToFacet/n0_dot_dx
+                    return facet, dxFraction, facet_normal_vectors[facet]                
 
             # Next, test if facet 1 is crossed:
             n1_dot_dx = facet_normal_vectors[1]*dx[0]
@@ -725,16 +730,17 @@ class Mesh_C(object):
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
 #                print "find_facet()", "distanceToFacet:", distanceToFacet, "vecToFacet:", vecToFacet, "facet_normal_vectors[1]:", facet_normal_vectors[1]
-                if distanceToFacet < pathFraction*n1_dot_dx:
+                if distanceToFacet < dxFraction*n1_dot_dx:
                     facet=1
-                    pathFraction = distanceToFacet/n1_dot_dx
+                    dxFraction = distanceToFacet/n1_dot_dx
 #                    print "find_facet", "n1_dot_dx=", n1_dot_dx, "vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
-                    return facet, pathFraction
+                    return facet, dxFraction, facet_normal_vectors[facet]                
 
-            if pathFraction > 1.0 or pathFraction < 0.0:
-                print fncName, "!!! Bad value for pathFraction:", pathFraction
+            if dxFraction > 1.0 or dxFraction < 0.0:
+                print fncName, "!!! Bad value for dxFraction:", dxFraction
                 sys.exit()
-            return facet, pathFraction
+
+            return facet, dxFraction, facet_normal_vectors[facet]                
 #    def find_facet(self, r0, dr, cell_index):ENDDEF
 
 #class Mesh_C(object):ENDCLASS
@@ -1212,7 +1218,7 @@ class PoissonSolve_C(object):
 # Plot the electric potential
         if plot_flag is True:
             df_m.plot(self.u, title=plot_title+": phi")
-            df_m.interactive()
+            mplot_m.show()
 
 # Compute -E
         # This is supposed to test if neg_electric_field has been allocated.
@@ -1248,7 +1254,8 @@ class PoissonSolve_C(object):
         self.neg_electric_field.function = df_m.project(negE, function_space)
         if plot_flag is True:
             df_m.plot(self.neg_electric_field.function, title=plot_title+": -E")
-            df_m.interactive()
+            mplot_m.show()
+            
 
         return self.neg_electric_field.function
 # how do you change sign?: see Epoints
@@ -1558,8 +1565,8 @@ class CellSubDomain_C2(df_m.SubDomain):
 
         # Create a list of the cells in this SubDomain
 
-        for icell in xrange(len(cellFunction.array())):
-            if cellFunction.array()[icell] == 1:
+        for icell in xrange(len(cellFunction.get_local())):
+            if cellFunction.get_local()[icell] == 1:
                 pass
 
 #        self.cell_function = cellFunction

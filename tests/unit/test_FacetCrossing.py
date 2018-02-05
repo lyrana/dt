@@ -213,7 +213,7 @@ class TestFacetCrossing(unittest.TestCase):
             facet_expected = 1
 
 #            print "Calling find_facet:", "r0 =", r0, "dr =", dr, "ci =", cell.index()
-            (facet_crossed, path_fraction) = self.mesh1DCI.find_facet(r0, dr, cell.index())
+            (facet_crossed, path_fraction, facetNormal) = self.mesh1DCI.find_facet(r0, dr, cell.index())
 #            print "Returned values: =", facet_crossed, "path_fraction =", path_fraction
             # Check facet
             self.assertEqual(facet_crossed, facet_expected, msg = "1D: facet crossed is not correct")
@@ -243,7 +243,7 @@ class TestFacetCrossing(unittest.TestCase):
             facet_expected = 0
 
 #            print "Calling find_facet:", "r0 =", r0, "dr =", dr, "ci =", cell.index()
-            (facet_crossed, path_fraction) = self.mesh1DCI.find_facet(r0, dr, cell.index())
+            (facet_crossed, path_fraction, facetNormal) = self.mesh1DCI.find_facet(r0, dr, cell.index())
 #            print "Returned values: =", facet_crossed, "path_fraction =", path_fraction
             self.assertEqual(facet_crossed, facet_expected, msg = "1D facet crossed is not correct")
             # Look up the cell crossed into
@@ -291,7 +291,7 @@ class TestFacetCrossing(unittest.TestCase):
                 dr = [p2.x()-p.x(), p2.y()-p.y()]
 
 #                print "r0, dr=", r0, dr
-                (facet_crossed, path_fraction) = self.mesh2DCI.find_facet(r0, dr, cell.index())
+                (facet_crossed, path_fraction, facetNormal) = self.mesh2DCI.find_facet(r0, dr, cell.index())
 
 #                print "start cell", cell.index(), "expected_cell", cell_index_expected, "facet crossed", facet_crossed
                 # Lookup the cell crossed from the facet number
@@ -342,7 +342,7 @@ class TestFacetCrossing(unittest.TestCase):
                 dr = [p2.x()-p.x(), p2.y()-p.y(), p2.z()-p.z()]
 
 #                print "r0, dr=", r0, dr
-                (facet_crossed, path_fraction) = self.mesh3DCI.find_facet(r0, dr, cell.index())
+                (facet_crossed, path_fraction, facetNormal) = self.mesh3DCI.find_facet(r0, dr, cell.index())
 
 #                print "start cell", cell.index(), "expected_cell", cell_index_expected, "facet crossed", facet_crossed
 
