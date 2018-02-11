@@ -81,11 +81,11 @@ class UserMeshInput1DS_C(object):
 # May want things like this in order to call DT from a loop?
 # or spawn off many runs?
 # maybe don't need all of these:
-        self.meshCI = None
-        self.pmeshCI = None
+        self.mesh_M = None
+        self.pmesh_M = None
 
         # the particle mesh is a copy of the field mesh
-#        self.pmeshCI = df_m.Mesh(meshCI)
+#        self.pmesh_M = df_m.Mesh(mesh_M)
 
         return
         
@@ -353,7 +353,7 @@ class UserPoissonSolveInput1DS_C(object):
         self.user_poissonsolve_input = None
         self.user_poissonsolve_class = None
 
-        self.meshCI = None
+        self.mesh_M = None
 
         self.element_type = None
         self.element_degree = None

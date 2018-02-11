@@ -52,10 +52,10 @@ class TestParticleGeneration(unittest.TestCase):
 
         ## Set control variables
 
-        ctrlCI = DTcontrol_C()
+        ctrl = DTcontrol_C()
 
-        ctrlCI.dt = 1.0e-6
-        ctrlCI.n_timesteps = 1
+        ctrl.dt = 1.0e-6
+        ctrl.n_timesteps = 1
 
         pin = self.pin
 
@@ -68,10 +68,10 @@ class TestParticleGeneration(unittest.TestCase):
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
         dynamics = 'explicit'
-        electronsCI = ParticleSpecies_C('electrons', charge, mass, dynamics)
+        electrons_S = ParticleSpecies_C('electrons', charge, mass, dynamics)
 
         # Add the electrons to particle input
-        pin.particle_species = (electronsCI,
+        pin.particle_species = (electrons_S,
                                  )
 
         ## Make the particle storage array for all species.
@@ -91,14 +91,14 @@ class TestParticleGeneration(unittest.TestCase):
         ### Mesh input for a 1D mesh
 
         # Specify the mesh parameters
-        umi1DCI = UserMeshInput_C()
-        umi1DCI.pmin = df_m.Point(-10.0)
-        umi1DCI.pmax = df_m.Point(10.0)
-        umi1DCI.cells_on_side = (20,) # Need the comma to indicate a tuple
+        umi1D = UserMeshInput_C()
+        umi1D.pmin = df_m.Point(-10.0)
+        umi1D.pmax = df_m.Point(10.0)
+        umi1D.cells_on_side = (20,) # Need the comma to indicate a tuple
 
         ### Create the 1D particle mesh and add to the Particle_C object
-        pmesh1DCI = UserMesh_C(umi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=False)
-        particle_P.pmeshCI = pmesh1DCI
+        pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        particle_P.pmesh_M = pmesh1D
 
         ### Input for particle sources
         #   For each source:
@@ -130,7 +130,7 @@ class TestParticleGeneration(unittest.TestCase):
         # The timestep interval between calls to the creation function
         timeStepInterval = 1
         # Get number-density added per invocation
-        numberDensity = chargeDensityRate*timeStepInterval*ctrlCI.dt/charge
+        numberDensity = chargeDensityRate*timeStepInterval*ctrl.dt/charge
         # Check for positivity
         if numberDensity < 0:
             print "Check number density for species", speciesName, "is negative. Should be positive"
@@ -169,7 +169,7 @@ class TestParticleGeneration(unittest.TestCase):
         # c. Source-region geometry
         xmin = -9.0
         xmax = -4.0
-        hotElectronsRegion = RectangularRegion_C(pmesh1DCI, xmin, xmax)
+        hotElectronsRegion = RectangularRegion_C(pmesh1D, xmin, xmax)
 
         ## 2. Background electrons over the whole mesh
 
@@ -194,7 +194,7 @@ class TestParticleGeneration(unittest.TestCase):
         # The timestep interval between calls to the creation function
         timeStepInterval = 1
         # Get charge-density per invocation
-        numberDensity = chargeDensityRate*timeStepInterval*ctrlCI.dt/charge
+        numberDensity = chargeDensityRate*timeStepInterval*ctrl.dt/charge
         # Check for positivity
         if numberDensity < 0:
             print "Check number density for species", speciesName, "is negative. Should be positive"
@@ -231,7 +231,7 @@ class TestParticleGeneration(unittest.TestCase):
         #      Just use same maxwellianGenerator function as above.
 
         # c. Source geometry: in this case, it's the whole mesh:
-        wholeMesh = WholeMesh_C(pmesh1DCI)
+        wholeMesh = WholeMesh_C(pmesh1D)
 
         ## Put all the particle source data into a dictionary
 
@@ -251,43 +251,43 @@ class TestParticleGeneration(unittest.TestCase):
         ### Create input for a particle trajectory object
 
         # Use an input object to collect initialization data for the trajectory object
-        self.trajinCI = TrajectoryInput_C()
+        self.trajin = TrajectoryInput_C()
 
-        self.trajinCI.maxpoints = None # Set to None to get every point
-        self.trajinCI.explicit_dict = {'names': ['x', 'ux',], 'formats': [np_m.float32]*2}
+        self.trajin.maxpoints = None # Set to None to get every point
+        self.trajin.explicit_dict = {'names': ['x', 'ux',], 'formats': [np_m.float32]*2}
 
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
         p_P = particle_P
-        trajCI = Trajectory_C(self.trajinCI, ctrlCI, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
-        particle_P.trajCI = trajCI
+        traj_T = Trajectory_C(self.trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        particle_P.traj_T = traj_T
 
         ## Invoke the source functions and write out the particles
         
-        ctrlCI.timeloop_count = 0
-        ctrlCI.time = 0.0
+        ctrl.timeloop_count = 0
+        ctrl.time = 0.0
 
         # Run identifier
-        ctrlCI.title = "test_ParticleGeneration"
+        ctrl.title = "test_ParticleGeneration"
         # Run author
-        ctrlCI.author = "tph"
+        ctrl.author = "tph"
 
         ### Select output for particles
-        ctrlCI.particle_output_file = "particleGeneration.h5part"
-        ctrlCI.particle_output_interval = 1
-        ctrlCI.particle_output_attributes = ('species_index', 'x', 'ux', 'weight')
+        ctrl.particle_output_file = "particleGeneration.h5part"
+        ctrl.particle_output_interval = 1
+        ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'weight')
 
         # Check these values
-        particle_P.check_particle_output_parameters(ctrlCI)
+        particle_P.check_particle_output_parameters(ctrl)
 
-        particle_P.add_more_particles(ctrlCI, print_flag=True)        
+        particle_P.add_more_particles(ctrl, print_flag=True)        
 
         # Dump the particle data to a file
-        particle_P.initialize_particle_output_file(ctrlCI)
+        particle_P.initialize_particle_output_file(ctrl)
 
         # Write the particle attributes
-        particle_P.write_particles_to_file(ctrlCI)
+        particle_P.write_particles_to_file(ctrl)
 
         return
 #    def test_1D_particle_source_region(self):ENDDEF
@@ -302,17 +302,17 @@ class TestParticleGeneration(unittest.TestCase):
 
 #        from UserMesh_y_Fields_FE_XYZ_Module import UserMeshInput_C
 
-        umi2DCI = UserMeshInput_C()
+        umi2D = UserMeshInput_C()
 
 # Change these to TUPLES instead of Points (avoid df_m at toplevel)
-        umi2DCI.pmin = df_m.Point(-10.0, -10.0)
-        umi2DCI.pmax = df_m.Point(10.0, 10.0)
-        umi2DCI.cells_on_side = (4, 2)
+        umi2D.pmin = df_m.Point(-10.0, -10.0)
+        umi2D.pmax = df_m.Point(10.0, 10.0)
+        umi2D.cells_on_side = (4, 2)
 
         ## Boundary conditions for the particles on this mesh
 
         # Create a 2D particle mesh
-#        pmesh2DCI = UserMesh_C(umi2DCI, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
+#        pmesh2D = UserMesh_C(umi2D, computeDictionaries=True, computeTree=True, plotFlag=plotFlag)
 
         return
 #    def test_2D_particle_source_region(self):ENDDEF

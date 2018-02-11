@@ -9,7 +9,7 @@ import numpy
 import importlib as im_m
 import unittest
 
-import dolfin as df_M
+import dolfin as df_m
 
 from DT_Module import DTcontrol_C
 
@@ -178,7 +178,7 @@ class TestParticleNonuniformE(unittest.TestCase):
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')
 
-        file = df_M.File("negE_test_2_2D.xml")
+        file = df_m.File("negE_test_2_2D.xml")
         file >> self.neg_electric_field.function
 
         # Get the initial cell index of each particle.

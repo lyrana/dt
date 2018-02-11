@@ -7,7 +7,7 @@ __all__ = ['TrajectoryInput_C',
           ]
 
 import sys
-import numpy as np_M
+import numpy as np_m
 
 # !!! Direct invocation of dolfin for trajectory plots!!!
 import dolfin as df_m
@@ -55,10 +55,10 @@ class Trajectory_C(object):
     # where it was deleted.
     NO_PINDEX = -1
 
-    def __init__(self, trajinCI, ctrl, explicit_species, implicit_species, neutral_species):
+    def __init__(self, trajin, ctrl, explicit_species, implicit_species, neutral_species):
         """Set up the initial storage.  
 
-           :var trajinCI.maxpoints: Maximum number of trajectory data points to be
+           :var trajin.maxpoints: Maximum number of trajectory data points to be
                                     collected.  If set to 'None', then every step on the
                                     trajectory is saved.
 
@@ -79,7 +79,7 @@ class Trajectory_C(object):
            npoints is at most the number of timesteps.
 
            TrajDict is a dictionary of the trajectory variables.
-           e.g.,  {'names': ['x', 'y'], 'formats': [np_M.float64, np_M.float64]}
+           e.g.,  {'names': ['x', 'y'], 'formats': [np_m.float64, np_m.float64]}
         """
 
         # Counter for the number of datapoints stored
@@ -94,10 +94,10 @@ class Trajectory_C(object):
 
         # Compute a skip interval to stay within the maximum number of
         # datapoints (if specified).
-        if trajinCI.maxpoints == None:
+        if trajin.maxpoints == None:
             self.skip = 1
         else:
-            self.skip = ctrl.n_timesteps/trajinCI.maxpoints + 1
+            self.skip = ctrl.n_timesteps/trajin.maxpoints + 1
 
         # Length of trajectory data arrays
         # If the location of boundary-crossings is recorded, then you can run out of space
@@ -113,9 +113,9 @@ class Trajectory_C(object):
 
         # The dictionary is in the form of a numpy dtype, giving names
         # and types of the trajectory values, as specified by the user's input.
-        self.explicit_dict = trajinCI.explicit_dict
-        self.implicit_dict = trajinCI.implicit_dict
-        self.neutral_dict = trajinCI.neutral_dict
+        self.explicit_dict = trajin.explicit_dict
+        self.implicit_dict = trajin.implicit_dict
+        self.neutral_dict = trajin.neutral_dict
 
         # For each species, there is
         #    1. a list of trajectory-particle IDs
@@ -134,7 +134,7 @@ class Trajectory_C(object):
             self.TrajectoryLength[sp] = []
 
         return
-#    def __init__(self, trajinCI, ctrl, explicit_species, implicit_species, neutral_species):ENDDEF
+#    def __init__(self, trajin, ctrl, explicit_species, implicit_species, neutral_species):ENDDEF
 
     def create_trajectory(self, species_name, pindex, dynamics_type, unique_id_int=None):
         """Add storage for another particle trajectory.
@@ -160,11 +160,11 @@ class Trajectory_C(object):
 
         # Add a numpy array for this particles's trajectory data
         if dynamics_type == 'explicit':
-            self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.explicit_dict))
+            self.DataList[species_name].append(np_m.empty(self.npoints, dtype=self.explicit_dict))
         elif dynamics_type == 'implicit':
-            self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.implicit_dict))
+            self.DataList[species_name].append(np_m.empty(self.npoints, dtype=self.implicit_dict))
         elif dynamics_type == 'neutral':
-            self.DataList[species_name].append(np_M.empty(self.npoints, dtype=self.neutral_dict))
+            self.DataList[species_name].append(np_m.empty(self.npoints, dtype=self.neutral_dict))
         else:
             errorMsg = "(DnT ERROR) %s\tdynamics_type %s is unknown for species %s" % (fncName, dynamics_type, species_name)
             raise RuntimeError(errorMsg)
@@ -180,13 +180,13 @@ class Trajectory_C(object):
 
 #        tmin = 0.0
 #        tmax = tmin + (self.npoints-1)*self.data_interval
-#        tvals = np_M.linspace(tmin, tmax, self.npoints)
+#        tvals = np_m.linspace(tmin, tmax, self.npoints)
 
 
 #        print 'tval = ', tvals
 
         # Temporary array for plotting
-#        yvals = np_M.empty(self.npoints)
+#        yvals = np_m.empty(self.npoints)
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
             if len(self.DataList[sp]) == 0: continue
@@ -262,7 +262,7 @@ class Trajectory_C(object):
                 # x vs. y
                 if 'x' in comps:
                     if 'y' in comps:
-                        path = np_M.empty(2*nlength, dtype=np_M.float64) # NB: dtype has to be double for add_polygon()
+                        path = np_m.empty(2*nlength, dtype=np_m.float64) # NB: dtype has to be double for add_polygon()
                         path[0::2] = data_arr['x'][0:nlength] # Start at 0, with stride 2
                         path[1::2] = data_arr['y'][0:nlength] # Start at 1, with stride 2
 #                        print fncName, 'path =', path

@@ -11,7 +11,7 @@ import unittest
 
 import importlib as im_m
 
-import numpy as np_M
+import numpy as np_m
 import dolfin as df_m
 
 from Dolfin_Module import Field_C
@@ -180,8 +180,8 @@ class TestFieldSolve(unittest.TestCase):
 
             # Set up temp arrays
             ncells = len(r_arr)-1
-            negEexp = np_M.zeros(ncells)
-            dr = np_M.zeros(ncells)
+            negEexp = np_m.zeros(ncells)
+            dr = np_m.zeros(ncells)
 
             dr[0:ncells] = r_arr[1:ncells+1] - r_arr[0:ncells]
 

@@ -158,9 +158,9 @@ class TestParticleMigration(unittest.TestCase):
         umi1D.particle_boundary_dict = particleBoundaryDict
 
         # Create a 1D particle mesh
-        self.pmesh1DCI = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
-#        self.pmesh1DCI.compute_cell_vertex_dict()
-#        self.pmesh1DCI.compute_cell_dict()
+        self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
+#        self.pmesh1D.compute_cell_vertex_dict()
+#        self.pmesh1D.compute_cell_dict()
 
         # 2D mesh input
         umi2D = UserMeshInput_C()
@@ -182,9 +182,9 @@ class TestParticleMigration(unittest.TestCase):
         umi2D.particle_boundary_dict = particleBoundaryDict
 
         # Create a 2D particle mesh
-        self.pmesh2DCI = UserMesh_C(umi2D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
-#        self.pmesh2DCI.compute_cell_vertex_dict()
-#        self.pmesh2DCI.compute_cell_dict()
+        self.pmesh2D = UserMesh_C(umi2D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
+#        self.pmesh2D.compute_cell_vertex_dict()
+#        self.pmesh2D.compute_cell_dict()
 
         # 3D mesh input
         umi3D = UserMeshInput_C()
@@ -235,14 +235,14 @@ class TestParticleMigration(unittest.TestCase):
         # List all the possible spatial coordinates
 #        spatial_coordinates = ('x','y','z')
 
-        ctrlCI = DTcontrol_C()
+        ctrl = DTcontrol_C()
 
-        ctrlCI.dt = 0.5
-        ctrlCI.n_timesteps = 19
+        ctrl.dt = 0.5
+        ctrl.n_timesteps = 19
 
         # Run for 1D mesh
 
-        self.particle_P.pmesh_M = self.pmesh1DCI
+        self.particle_P.pmesh_M = self.pmesh1D
 
         # Get the initial cell index of each particle.
         self.particle_P.compute_mesh_cell_indices()
@@ -277,9 +277,9 @@ class TestParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
-        print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "timesteps"
-        for istep in xrange(ctrlCI.n_timesteps):
-            self.particle_P.move_neutral_particles(ctrlCI)
+        print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
+        for istep in xrange(ctrl.n_timesteps):
+            self.particle_P.move_neutral_particles(ctrl)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -305,14 +305,14 @@ class TestParticleMigration(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName
 
-        ctrlCI = DTcontrol_C()
+        ctrl = DTcontrol_C()
 
-        ctrlCI.dt = 0.5
-        ctrlCI.n_timesteps = 19
+        ctrl.dt = 0.5
+        ctrl.n_timesteps = 19
 
         # Run for 2D mesh
 
-        self.particle_P.pmesh_M = self.pmesh2DCI
+        self.particle_P.pmesh_M = self.pmesh2D
 
         # Get the initial cell index of each particle.
         self.particle_P.compute_mesh_cell_indices()
@@ -356,9 +356,9 @@ class TestParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
-        print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "timesteps"
-        for istep in xrange(ctrlCI.n_timesteps):
-            self.particle_P.move_neutral_particles(ctrlCI)
+        print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
+        for istep in xrange(ctrl.n_timesteps):
+            self.particle_P.move_neutral_particles(ctrl)
 
         # Create a mesh plotter to display the trajectory
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": First & last positions"
@@ -394,10 +394,10 @@ class TestParticleMigration(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print '\ntest: ', fncName
 
-        ctrlCI = DTcontrol_C()
+        ctrl = DTcontrol_C()
 
-        ctrlCI.dt = 0.5
-        ctrlCI.n_timesteps = 19
+        ctrl.dt = 0.5
+        ctrl.n_timesteps = 19
 
         # Run for 3D mesh
 
@@ -442,9 +442,9 @@ class TestParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
-        print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "steps"
-        for istep in xrange(ctrlCI.n_timesteps):
-            self.particle_P.move_neutral_particles(ctrlCI)
+        print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "steps"
+        for istep in xrange(ctrl.n_timesteps):
+            self.particle_P.move_neutral_particles(ctrl)
 
         # Create a mesh plotter to display the trajectory (just the
         # first and last positions)
@@ -492,10 +492,10 @@ class TestParticleMigration(unittest.TestCase):
         # List all the possible spatial coordinates
         spatial_coordinates = ('x','y','z')
 
-        ctrlCI = DTcontrol_C()
+        ctrl = DTcontrol_C()
 
-        ctrlCI.dt = 0.5
-        ctrlCI.n_timesteps = 18
+        ctrl.dt = 0.5
+        ctrl.n_timesteps = 18
 
         # Run for 1, 2, and 3D meshes
 
@@ -503,11 +503,11 @@ class TestParticleMigration(unittest.TestCase):
 #        for dim in range(2,3):   # 2D only
             spatial_components = spatial_coordinates[0:dim]
             if dim == 1:
-                meshCI = self.mesh1DCI
+                mesh_M = self.mesh1D
             elif dim == 2:
-                meshCI = self.mesh2DCI
+                mesh_M = self.mesh2D
             elif dim == 3:
-                meshCI = self.mesh3DCI
+                mesh_M = self.mesh3D
 
             # Initialize or reinitialize the particles
             for sp in self.particle_P.species_names:
@@ -516,7 +516,7 @@ class TestParticleMigration(unittest.TestCase):
                     self.particle_P.create_from_list(sp, print_flag=False, resetCounters=True)
 
             # Get the initial cell index of each particle.
-            self.particle_P.compute_mesh_cell_indices(meshCI)
+            self.particle_P.compute_mesh_cell_indices(mesh_M)
 
 
             # The expected results
@@ -544,10 +544,10 @@ class TestParticleMigration(unittest.TestCase):
             p_expected = (psp1, psp2)
 
             # Integrate for n_timesteps
-            for istep in xrange(ctrlCI.n_timesteps):
-                self.particle_P.move_particles_without_fields(ctrlCI.dt, meshCI=meshCI)
+            for istep in xrange(ctrl.n_timesteps):
+                self.particle_P.move_particles_without_fields(ctrl.dt, mesh_M=mesh_M)
 
-                    #self.assertTrue(meshCI.is_inside(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")
+                    #self.assertTrue(mesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")
 
         return
 #    def test_1_particle_migration(self):ENDDEF

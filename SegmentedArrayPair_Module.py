@@ -8,7 +8,7 @@ __all__ = ['SegmentedArray_C.SegList',
 # use initial underscores for locals
 
 import sys
-import numpy as np_M
+import numpy as np_m
 
 class SegmentedArray_C(object):
     """This class implements a segmented array of items.  Each
@@ -60,7 +60,7 @@ class SegmentedArray_C(object):
         self.nPmax = [0, 0]
         for iSA in (0, 1):
             # Add the numpy array for the first segment
-            self.SegListPair[iSA].append(np_M.empty(self.SEGMENTLENGTH, dtype=item_dtype))
+            self.SegListPair[iSA].append(np_m.empty(self.SEGMENTLENGTH, dtype=item_dtype))
             # Count the number of segments:
             self.nSeg[iSA] = len(self.SegListPair[iSA])
             # Maximum number of particles that can be stored at present
@@ -204,7 +204,7 @@ class SegmentedArray_C(object):
         # Abbreviations
 
         self.nSeg[theSA] += 1
-        self.SegListPair[theSA].append(np_M.empty(self.SEGMENTLENGTH, dtype=self.ItemType))
+        self.SegListPair[theSA].append(np_m.empty(self.SEGMENTLENGTH, dtype=self.ItemType))
 
         # A list of the locations of unneeded items in the segment
 ##        self.HoleIndices[self.nSeg] = self.HoleIndices.append(np.empty(self.SegmentLength, dtype=int))

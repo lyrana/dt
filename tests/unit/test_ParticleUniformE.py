@@ -42,17 +42,17 @@ class TestParticleUniformE(unittest.TestCase):
         # initializations for each test go here...
 
         # Create an instance of the DTparticleInput class
-        pinCI = ParticleInput_C()
+        pin = ParticleInput_C()
         # Initialize particles
-        pinCI.precision = numpy.float64
-        pinCI.particle_integration_loop = 'loop-on-particles'
-        pinCI.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
-        pinCI.force_components = ['x', 'y',]
-        pinCI.force_precision = numpy.float64
+        pin.precision = numpy.float64
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.force_components = ['x', 'y',]
+        pin.force_precision = numpy.float64
 
         # Specify the particle species for this calculation
         # 1. electrons
-#         pinCI.particle_species = (('plasmaelectrons',
+#         pin.particle_species = (('plasmaelectrons',
 #                              {'initial_distribution_type' : 'listed',
 #                               'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
 #                               'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
@@ -86,25 +86,25 @@ class TestParticleUniformE(unittest.TestCase):
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
         dynamics = 'explicit'
-        plasmaElectronsCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        plasmaElectrons_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         speciesName = 'H_plus'
         charge = 1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.proton_mass
         dynamics = 'explicit'
-        HPlusCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        HPlus_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         speciesName = 'He'
         charge = 0.0
         mass = 4.0*MyPlasmaUnits_C.AMU
         dynamics = 'explicit'
-        HeCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        He_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add these species to particle input
-        pinCI.particle_species = (plasmaElectronsCI, HPlusCI, HeCI,
+        pin.particle_species = (plasmaElectrons_S, HPlus_S, He_S,
                                  )
-        # Make the particle object from pinCI
-        self.particleCI = Particle_C(pinCI, print_flag=False)
+        # Make the particle object from pin
+        self.particle_P = Particle_C(pin, print_flag=False)
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary conditions, source regions, etc.)
@@ -113,8 +113,8 @@ class TestParticleUniformE(unittest.TestCase):
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        self.particleCI.user_particles_module_name = userParticlesModuleName
-        self.particleCI.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
+        self.particle_P.user_particles_module_name = userParticlesModuleName
+        self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
 
         ### plasma_electrons are present at t=0
@@ -122,7 +122,7 @@ class TestParticleUniformE(unittest.TestCase):
         # Name the initialized species (it should be in species_names above)
         speciesName = 'plasma_electrons'
         # Check that this species has been defined above
-        if speciesName not in self.particleCI.species_names:
+        if speciesName not in self.particle_P.species_names:
             print fncName + "The species", speciesName, "has not been defined"
             sys.exit()
 
@@ -146,7 +146,7 @@ class TestParticleUniformE(unittest.TestCase):
         ## H+ ions are present at t=0
         speciesName = 'H_plus'
         # Check that this species has been defined above
-        if speciesName not in self.particleCI.species_names:
+        if speciesName not in self.particle_P.species_names:
             print fncName + "The species", speciesName, "has not been defined"
             sys.exit()
 
@@ -172,7 +172,7 @@ class TestParticleUniformE(unittest.TestCase):
                                 'initial_H_plus': (HPlusParams,),
                                 }
 
-        self.particleCI.initial_particles_dict = initialParticlesDict
+        self.particle_P.initial_particles_dict = initialParticlesDict
 
         # Create the initial particles
         for ip in initialParticlesDict:
@@ -182,7 +182,7 @@ class TestParticleUniformE(unittest.TestCase):
             initialDistributionType = ipParams['initial_distribution_type']
             if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
-                self.particleCI.create_from_list(s, False)
+                self.particle_P.create_from_list(s, False)
 
         return
 #    def setUp(self):ENDDEF
@@ -195,16 +195,16 @@ class TestParticleUniformE(unittest.TestCase):
         fncName = sys._getframe().f_code.co_name
         print '\ntest: ', fncName, '('+__file__+')'
 
-        ctrlCI = DT_m.DTcontrol_C()
+        ctrl = DT_m.DTcontrol_C()
 
-        ctrlCI.dt = 1.0e-5
-        ctrlCI.n_timesteps = 1
+        ctrl.dt = 1.0e-5
+        ctrl.n_timesteps = 1
 
         # Set constant fields
         E0 = (1.0e-4, 2.0e-4, 3.0e-4)
 #        B0 = (0.0, 0.0, 0.0)
-        ctrlCI.E0 = Vec_C(self.particleCI.particle_dimension, E0)
-#        ctrlCI.B0 = Vec_C(self.particleCI.particle_dimension, B0)
+        ctrl.E0 = Vec_C(self.particle_P.particle_dimension, E0)
+#        ctrl.B0 = Vec_C(self.particle_P.particle_dimension, B0)
 
         # The EXPECTED results, from ParticleUniformE.ods, one for each species:
         		
@@ -225,16 +225,16 @@ class TestParticleUniformE(unittest.TestCase):
 
         # Loop on the species, moving the particles one timestep, and
         # then checking the particle end positions
-        ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
+        ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         isp = 0
 
-        print "Moving", self.particleCI.get_total_particle_count(), "particles for", ctrlCI.n_timesteps, "timesteps"
-        for sp in self.particleCI.species_names:
-            if self.particleCI.get_species_particle_count(sp) == 0: continue
-            self.particleCI.move_particles_in_uniform_fields(sp, ctrlCI)
+        print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
+        for sp in self.particle_P.species_names:
+            if self.particle_P.get_species_particle_count(sp) == 0: continue
+            self.particle_P.move_particles_in_uniform_fields(sp, ctrl)
             # Check that the first particles in the array reach the right speed
-#            getparticle = self.particleCI.pseg_arr[sp][0]
-            getparticle = self.particleCI.pseg_arr[sp].get(0)
+#            getparticle = self.particle_P.pseg_arr[sp][0]
+            getparticle = self.particle_P.pseg_arr[sp].get(0)
 #            print 'calculated = ', getparticle
 #            print 'expected = ', p_expected[isp]
             for ic in range(ncoords):
@@ -253,16 +253,16 @@ class TestParticleUniformE(unittest.TestCase):
         fncName = sys._getframe().f_code.co_name
         print '\ntest: ', fncName, '('+__file__+')'
 
-        ctrlCI = DT_m.DTcontrol_C()
+        ctrl = DT_m.DTcontrol_C()
 
-        ctrlCI.dt = 1.0e-5
-        ctrlCI.n_timesteps = 10
+        ctrl.dt = 1.0e-5
+        ctrl.n_timesteps = 10
 
         # Set constant fields
         E0 = (1.0e-4, 2.0e-4, 3.0e-4)
 #        B0 = (0.0, 0.0, 0.0)
-        ctrlCI.E0 = Vec_C(self.particleCI.particle_dimension, E0)
-#        ctrlCI.B0 = Vec_C(self.particleCI.particle_dimension, B0)
+        ctrl.E0 = Vec_C(self.particle_P.particle_dimension, E0)
+#        ctrl.B0 = Vec_C(self.particle_P.particle_dimension, B0)
 
         # The expected results, from test-results.ods, one for each species:
         		
@@ -289,28 +289,28 @@ class TestParticleUniformE(unittest.TestCase):
         p_expected = (psp1, psp2)
 
         # Integrate for n_timesteps
-        ctrlCI.time_step = 0
-        ctrlCI.time = 0.0
-        for istep in xrange(ctrlCI.n_timesteps):
+        ctrl.time_step = 0
+        ctrl.time = 0.0
+        for istep in xrange(ctrl.n_timesteps):
 #            print 'test_2_electric_field_push_10steps: istep =', istep
 
             # Loop on the species
-            for sp in self.particleCI.species_names:
+            for sp in self.particle_P.species_names:
 #                if sp != 'plasmaelectrons': continue
 #                print 'test_2_electric_field_push_10steps: sp =', sp
-                if self.particleCI.get_species_particle_count(sp) == 0: continue
-                self.particleCI.move_particles_in_uniform_fields(sp, ctrlCI)
+                if self.particle_P.get_species_particle_count(sp) == 0: continue
+                self.particle_P.move_particles_in_uniform_fields(sp, ctrl)
 
-            ctrlCI.time_step += 1
-            ctrlCI.time += ctrlCI.dt
+            ctrl.time_step += 1
+            ctrl.time += ctrl.dt
 
         # check the final position of the first particle of each species
-        ncoords = self.particleCI.particle_dimension # number of particle coordinates to check
+        ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         isp = 0
-        for sp in self.particleCI.species_names:
-            if self.particleCI.get_species_particle_count(sp) == 0: continue
+        for sp in self.particle_P.species_names:
+            if self.particle_P.get_species_particle_count(sp) == 0: continue
             # Check that the first particles in the array reach the right speed
-            getparticle = self.particleCI.pseg_arr[sp].get(0)
+            getparticle = self.particle_P.pseg_arr[sp].get(0)
 #            print 'calculated = ', getparticle, 'for species', sp
 #            print 'expected = ', p_expected[isp], 'for species', sp
             for ic in range(ncoords):

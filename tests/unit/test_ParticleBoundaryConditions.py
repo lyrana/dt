@@ -10,7 +10,7 @@ import numpy
 import importlib as im_m
 import unittest
 
-import dolfin as df_M
+import dolfin as df_m
 
 from DT_Module import DTcontrol_C
 
@@ -56,18 +56,18 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.n_timesteps = 100
 
         # Create an instance of the DTparticleInput class
-        pinCI = ParticleInput_C()
+        pin = ParticleInput_C()
         # Settings common to all species
-        pinCI.precision = numpy.float64
-        pinCI.particle_integration_loop = 'loop-on-particles'
-        pinCI.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
-        pinCI.force_precision = numpy.float64
+        pin.precision = numpy.float64
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.force_precision = numpy.float64
 
         # Specify the particle species properties
 
         # Specify the particle-species
         # 1. electrons
-#         pinCI.particle_species = (('neutral_H',
+#         pin.particle_species = (('neutral_H',
 #                              {'initial_distribution_type' : 'listed',
 #                               'charge' : 0.0,
 #                               'mass' : 1.0*MyPlasmaUnits_C.AMU,
@@ -83,14 +83,14 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         charge = 0.0
         mass = 1.0*MyPlasmaUnits_C.AMU
         dynamics = 'neutral'
-        neutralHCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add the neutral hydrogen to particle input
-        pinCI.particle_species = (neutralHCI,
+        pin.particle_species = (neutralH_S,
                                  )
 
         ## Make the particle storage array for all species.
-        particle_P = Particle_C(pinCI, print_flag=False)
+        particle_P = Particle_C(pin, print_flag=False)
 
         # Provide the particle distributions for the above species
         # This could be done more like how the mesh is specified:
@@ -107,19 +107,19 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ### Create a trajectory object and add it to particle_P
 
         # Create input object for trajectories
-        trajinCI = TrajectoryInput_C()
+        trajin = TrajectoryInput_C()
 
-        trajinCI.maxpoints = None # Set to None to get every point
+        trajin.maxpoints = None # Set to None to get every point
 
         # Specify which particle variables to save.  This has the
         # form of a numpy dtype specification.
-        trajinCI.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
-        trajinCI.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
-        trajinCI.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
+        trajin.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
+        trajin.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
+        trajin.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
 
         # Add a traj_T reference to the particle object
-        pCI = particle_P # abbreviation
-        pCI.traj_T = Trajectory_C(trajinCI, ctrl, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
+        p_P = particle_P # abbreviation
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
 
         ##  Mesh input for the particle mesh, including particle boundary conditions.
 
@@ -130,13 +130,13 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # 2D mesh input
 
-        umi2DCI = UserMeshInput_C()
+        umi2D = UserMeshInput_C()
         (xmin, ymin) = (-10.0, -10.0)
         (xmax, ymax) = ( 10.0,  10.0)
-        umi2DCI.pmin = df_M.Point(xmin, ymin)
-        umi2DCI.pmax = df_M.Point(xmax, ymax)
-        umi2DCI.cells_on_side = (4, 2)
-#        umi2DCI.diagonal = 'crossed'
+        umi2D.pmin = df_m.Point(xmin, ymin)
+        umi2D.pmax = df_m.Point(xmax, ymax)
+        umi2D.cells_on_side = (4, 2)
+#        umi2D.diagonal = 'crossed'
 
         # These are the (int boundary-name) pairs used to mark mesh
         # facets. The string value of the int is used as the index.
@@ -155,14 +155,14 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                                 'ymax': ymaxIndx,
                                 }
 
-        umi2DCI.particle_boundary_dict = particleBoundaryDict
+        umi2D.particle_boundary_dict = particleBoundaryDict
 
         ## Create the 2D Cartesian mesh
 
         from UserMesh_y_Fields_FE_XYZ_Module import UserMesh_C
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        pmesh_M = UserMesh_C(umi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=False, plot_title=plotTitle)
+        pmesh_M = UserMesh_C(umi2D, compute_dictionaries=True, compute_tree=True, plot_flag=False, plot_title=plotTitle)
         # Add this to the particle object:
         particle_P.pmesh_M = pmesh_M
 
@@ -234,12 +234,12 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.timeloop_count = 0
         ctrl.time = 0.0
 
-        print "Moving", pCI.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
+        print "Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
         for istep in xrange(ctrl.n_timesteps):
             
-            if pCI.traj_T is not None:
-                if istep % pCI.traj_T.skip == 0:
-                    pCI.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
+            if p_P.traj_T is not None:
+                if istep % p_P.traj_T.skip == 0:
+                    p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
                     
             particle_P.move_neutral_particles(ctrl)
 
@@ -247,8 +247,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
             ctrl.time += ctrl.dt
 
         # Record the LAST point on the particle trajectory
-        if pCI.traj_T is not None:
-                pCI.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
+        if p_P.traj_T is not None:
+                p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
             
         return
 #    def test_1_2D_x_y_absorbing_boundary(self):ENDDEF
@@ -270,17 +270,17 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ### Particle species input
 
         # Create an instance of the DTparticleInput class
-        pinCI = ParticleInput_C()
+        pin = ParticleInput_C()
         # Initialize particles
-        pinCI.precision = numpy.float64
-        pinCI.particle_integration_loop = 'loop-on-particles'
-        pinCI.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
-        pinCI.force_components = ['x', 'y',]
-        pinCI.force_precision = numpy.float64
+        pin.precision = numpy.float64
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
+        pin.force_components = ['x', 'y',]
+        pin.force_precision = numpy.float64
 
         # Specify the particle-species properties
         # 1. electrons
-#         pinCI.particle_species = (('trajelectrons',
+#         pin.particle_species = (('trajelectrons',
 #                              {'initial_distribution_type' : 'listed',
 #                               'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
 #                               'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
@@ -296,13 +296,13 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
         dynamics = 'explicit'
-        trajelectronsCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        trajelectrons_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add the electrons to particle input
-        pinCI.particle_species = (trajelectronsCI,
+        pin.particle_species = (trajelectrons_S,
                                  )
         ## Make the particle storage array for all species.
-        particle_P = Particle_C(pinCI, print_flag=False)
+        particle_P = Particle_C(pin, print_flag=False)
 
         ## Give the name of the .py file containing special particle data (lists of
         # particles, boundary conditions, source regions, etc.)
@@ -318,15 +318,15 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ### Add a ref to a Trajectory_C object to particle_P
 
         # Create input object for trajectories
-        trajinCI = TrajectoryInput_C()
+        trajin = TrajectoryInput_C()
 
-        trajinCI.maxpoints = None # Set to None to get every point
+        trajin.maxpoints = None # Set to None to get every point
 
         # Specify which particle variables to save.  This has the
         # form of a numpy dtype specification.
-        trajinCI.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
-        trajinCI.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
-        trajinCI.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
+        trajin.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
+        trajin.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
+        trajin.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
 
         # # Initialize the particles
         # printFlags = {}
@@ -383,7 +383,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                                    element_degree=phiElementDegree-1,
                                    field_type='vector')
 
-        file = df_M.File('negE_test_2_2D.xml')
+        file = df_m.File('negE_test_2_2D.xml')
         file >> negElectricField.function
 
 
@@ -442,47 +442,47 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.n_timesteps = 14
 
         # The trajectory object can now be created and added to particle_P
-        pCI = particle_P
-        pCI.traj_T = Trajectory_C(trajinCI, ctrl, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
+        p_P = particle_P
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
 
 
         # Initialize the particles
         printFlags = {}
-        for sp in pCI.species_names: printFlags[sp] = False
-        pCI.initialize_particles(printFlags)
+        for sp in p_P.species_names: printFlags[sp] = False
+        p_P.initialize_particles(printFlags)
 
         # Get the initial cell index of each particle.
-        pCI.compute_mesh_cell_indices()
+        p_P.compute_mesh_cell_indices()
 
         ### Particle loop
 
-        print "Moving", pCI.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
+        print "Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
 
         ctrl.timeloop_count = 0
 #        ctrl.time_step = 0
         ctrl.time = 0.0
         for istep in xrange(ctrl.n_timesteps):
 
-            if pCI.traj_T is not None:
-#                print 'pCI.traj_T.skip:', pCI.traj_T.skip
-                if istep % pCI.traj_T.skip == 0:
-                    pCI.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=negElectricField)
+            if p_P.traj_T is not None:
+#                print 'p_P.traj_T.skip:', p_P.traj_T.skip
+                if istep % p_P.traj_T.skip == 0:
+                    p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=negElectricField)
 
-            pCI.move_particles_in_electrostatic_field(ctrl, negElectricField)
+            p_P.move_particles_in_electrostatic_field(ctrl, negElectricField)
 
             ctrl.timeloop_count += 1
             ctrl.time += ctrl.dt
 
         # Record the LAST point on the particle trajectory
-        if pCI.traj_T is not None:
-                pCI.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=negElectricField)
+        if p_P.traj_T is not None:
+                p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=negElectricField)
 
         # Plot the trajectory onto the particle mesh
 
-        mesh = pCI.pmesh_M.mesh
+        mesh = p_P.pmesh_M.mesh
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
         holdPlot = True # Set to True to stop the plot from disappearing.
-        pCI.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         return
 #    def test_2D_r_theta_absorbing_boundary(self):

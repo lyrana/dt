@@ -118,75 +118,75 @@ class DTsystem_C(object):
 # or spawn off many runs?
 # maybe don't need all of these:
 
-        self.particleCI = None
-        self.fieldCI = None
+        self.particle_P = None
+        self.field_M = None
 
 #        self.particles_mesh = None
 
         # the particle mesh is a copy of the field mesh
-#        self.pmesh = df_M.Mesh(mesh)
+#        self.pmesh = df_m.Mesh(mesh)
         
 #class DTsystem_C(object):
-    def time_integrate_in_uniform_fields(self, ctrlCI):
+    def time_integrate_in_uniform_fields(self, ctrl):
         """Integrate the equations for the system forward in time, in
            fields that are uniform in space and time.
         """
-        pCI = self.particleCI # abbrev for particle Class Instance
+        p_P = self.particle_P # abbrev for particle Class Instance
 
-#        for istep in xrange(ctrlCI.n_timesteps):
-#            for sp in pCI.names:
-#                pCI.move_particles_in_uniform_fields(sp, ctrlCI)
+#        for istep in xrange(ctrl.n_timesteps):
+#            for sp in p_P.names:
+#                p_P.move_particles_in_uniform_fields(sp, ctrl)
 
-        dt = ctrlCI.dt
-        E0 = ctrlCI.E0
-        for istep in xrange(ctrlCI.n_timesteps):
+        dt = ctrl.dt
+        E0 = ctrl.E0
+        for istep in xrange(ctrl.n_timesteps):
             # needs dt; doesn't need n_timesteps
-            for sp in pCI.names:
+            for sp in p_P.names:
 
-                if self.pCI.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
+                if self.p_P.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
                 qmdt = self.qom[sp]*dt
-                psa = pCI.pseg_arr[sp] # segmented array for this species
+                psa = p_P.pseg_arr[sp] # segmented array for this species
 
                 psa.init_segment_loop()
                 pseg = psa.get_next_segment()
                 while isinstance(pseg, np_m.ndarray):
 #                while pseg != None:
                     fpCI.compute_phi_at_particles(pseg)
-                    pCI.move_particle_segment_in_uniform_fields(dt, qmdt, pseg, E0)
+                    p_P.move_particle_segment_in_uniform_fields(dt, qmdt, pseg, E0)
 #                    print pseg['z']
                     pseg = psa.get_next_segment()
 
         return
-#    def time_integrate_in_uniform_fields(self, ctrlCI):ENDDEF
+#    def time_integrate_in_uniform_fields(self, ctrl):ENDDEF
 
 #class DTsystem_C(object):
-    def time_integrate_in_electrostatic_field(self, ctrlCI):
+    def time_integrate_in_electrostatic_field(self, ctrl):
         """Integrate the equations for the system forward in time in
            an electrostatic field.
         """
-        fCI = self.fields # abbrev for field Class Instance
-        pCI = self.particleCI # abbrev for particle Class Instance
+        f_M = self.fields # abbrev for field Class Instance
+        p_P = self.particle_P # abbrev for particle Class Instance
         fpCI = self.field_particle_interaction
 
-#        Efield = fCI.fields.electric_field
+#        Efield = f_M.fields.electric_field
 
-        dt = ctrlCI.dt
+        dt = ctrl.dt
 
-        for istep in xrange(ctrlCI.n_timesteps):
+        for istep in xrange(ctrl.n_timesteps):
             # needs dt; doesn't need n_timesteps
 
             # Gather particle trajectory data
-            if pCI.trajCI.trajCI is not None:
-                if istep % pCI.trajCI.skip == 0:
-                    pCI.record_trajectory_data(fpCI)
+            if p_P.traj_T.traj_T is not None:
+                if istep % p_P.traj_T.skip == 0:
+                    p_P.record_trajectory_data(fpCI)
 
             # Do the implicit species first
-            if len(pCI.implicit_species != 0):
-                self.iterate_implicit_electrostatic_particles(dt, pCI.implicit_species)
+            if len(p_P.implicit_species != 0):
+                self.iterate_implicit_electrostatic_particles(dt, p_P.implicit_species)
 
             # Then move the explicit species
-            if len(pCI.explicit_species != 0):
-                pCI.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
+            if len(p_P.explicit_species != 0):
+                p_P.move_particles_in_electrostatic_field(dt, self.neg_electric_field)
 #            self.step_particles_electrostatic_explicit(explicit_species)
                     
             # Apply boundary conditions on the particles
@@ -195,16 +195,16 @@ class DTsystem_C(object):
             
             # Compute the density
 #            fpCI.compute_charge_density_from_particles()
-            pCI.compute_charge_density(fCI)
+            p_P.compute_charge_density(f_M)
 
             # Update the electrostatic potential
-            fCI.compute_electrostatic_potential()
+            f_M.compute_electrostatic_potential()
 
         return
 
             # Compute the electric potential
 
-            # fCI.compute_electrostatic_potential()
+            # f_M.compute_electrostatic_potential()
 
             #     psa.init_segment_loop()
             #     pseg = psa.get_next_segment()
@@ -222,7 +222,7 @@ class DTsystem_C(object):
 #                Eseg = np.empty(len(pseg), dtype=item_dict))        
 
 
-#            pCI.move_particles_in_electrostatic_field(dt, qmdt, Efield)
+#            p_P.move_particles_in_electrostatic_field(dt, qmdt, Efield)
 # P/C iterate on the electrons
 # push electrons, resolve for phi
 
@@ -240,28 +240,28 @@ class DTsystem_C(object):
 
 
 
-#            pCI.move_implicit_species_in_electrostatic_field(dt, qmdt, fCI, fpCI)
+#            p_P.move_implicit_species_in_electrostatic_field(dt, qmdt, f_M, fpCI)
 
 
 # push explicit particles
-#            pCI.move_explicit_species_in_electrostatic_field(dt, qmdt, fCI, fpCI)
+#            p_P.move_explicit_species_in_electrostatic_field(dt, qmdt, f_M, fpCI)
 
 
 
 
 #                    phi_at_particles = fpCI.compute_scalar_field_at_particles(pseg, phi)
-#                    pCI.move_particle_segment_in_electrostatic_field(dt, qmdt, pseg, E)
+#                    p_P.move_particle_segment_in_electrostatic_field(dt, qmdt, pseg, E)
 
 #                    print pseg['z']
 #                    pseg = psa.get_next_segment()
 
                 # Maybe this guy is only for testing?
                 # OR you build whatever calculation you want in this file!!!
-#                pCI.move_particles_in_electrostatic_field(sp, ctrlCI)
+#                p_P.move_particles_in_electrostatic_field(sp, ctrl)
 
 
  #       return
-#    def time_integrate_in_electrostatic_field(self, ctrlCI):ENDDEF
+#    def time_integrate_in_electrostatic_field(self, ctrl):ENDDEF
 
 #class DTsystem_C(object):
 # just calls through to Particle_Module
@@ -269,8 +269,8 @@ class DTsystem_C(object):
         """Apply the standard explicit particle push in an
            electrostatic field.
         """
-        pCI = self.particleCI
-        fCI = self.fieldCI
+        p_P = self.particle_P
+        f_M = self.field_M
         fpCI = self.fieldParticleCI
 
         # P/C loop on the field and particles
@@ -278,11 +278,11 @@ class DTsystem_C(object):
         for PCiter in range(PCiterations):
             # Push the implicit particles
 #            fpCI.interpolate_potential_to_particles()
-            pCI.move_particles_in_electrostatic_E(fpCI)
+            p_P.move_particles_in_electrostatic_E(fpCI)
             # Compute the density
             fpCI.compute_density_from_particles()
             # Update the electrostatic potential
-            fCI.compute_electrostatic_potential()
+            f_M.compute_electrostatic_potential()
 
         return
 #    def step_particles_electrostatic_explicit(self, species_name):ENDDEF
@@ -295,8 +295,8 @@ class DTsystem_C(object):
            (P/C) iteration of the particle push and the electrostatic
            potential.
         """
-        pCI = self.particleCI
-        fCI = self.fieldCI
+        p_P = self.particle_P
+        f_M = self.field_M
         fpCI = self.fieldParticleCI
 
         # P/C loop on the field and particles
@@ -304,11 +304,11 @@ class DTsystem_C(object):
         for PCiter in range(PCiterations):
             # Push the implicit particles
 #            fpCI.interpolate_potential_to_particles()
-            pCI.move_particles_in_electrostatic_potential(dt, implicit_species, fCI, fpCI)
+            p_P.move_particles_in_electrostatic_potential(dt, implicit_species, f_M, fpCI)
             # Compute the density of these species
             fpCI.compute_density_from_particles(implicit_species)
             # Update the electrostatic potential
-            fCI.compute_electrostatic_potential()
+            f_M.compute_electrostatic_potential()
 
         return
 #    def iterate_implicit_electrostatic_particles(dt, implicit_species):ENDDEF

@@ -186,31 +186,31 @@ class UserMesh_C(Mesh_C):
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
-        umiCI = mesh_input
+        umi = mesh_input
 
-#        print 'umiCI.cells_on_side = ', umiCI.cells_on_side
+#        print 'umi.cells_on_side = ', umi.cells_on_side
 
-        xmin = umiCI.pmin.x()
-        xmax = umiCI.pmax.x()
-        ymin = umiCI.pmin.y()
-        ymax = umiCI.pmax.y()
-        zmin = umiCI.pmin.z()
-        zmax = umiCI.pmax.z()
+        xmin = umi.pmin.x()
+        xmax = umi.pmax.x()
+        ymin = umi.pmin.y()
+        ymax = umi.pmax.y()
+        zmin = umi.pmin.z()
+        zmax = umi.pmax.z()
 
         # Options: 'left, 'right', 'left/right', 'crossed'
-        diagonal = umiCI.diagonal
+        diagonal = umi.diagonal
 
         # Boundary conditions for fields and particles
-        fieldBoundaryDict = umiCI.field_boundary_dict
-        particleBoundaryDict = umiCI.particle_boundary_dict
-        particleSourceDict = umiCI.particle_source_dict
+        fieldBoundaryDict = umi.field_boundary_dict
+        particleBoundaryDict = umi.particle_boundary_dict
+        particleSourceDict = umi.particle_source_dict
 
         plotTitle = plot_title
 
-#        if umiCI.pmin.y() == umiCI.pmax.y() and umiCI.pmin.z() == umiCI.pmax.z():
+#        if umi.pmin.y() == umi.pmax.y() and umi.pmin.z() == umi.pmax.z():
         if ymin == ymax and zmin == zmax:
             # 1D mesh
-            (nx,) = umiCI.cells_on_side # Need the comma to indicate a tuple
+            (nx,) = umi.cells_on_side # Need the comma to indicate a tuple
             mesh_df = df_m.IntervalMesh(nx, xmin, xmax)
 
             if plot_title is None: plotTitle = "X-mesh"
@@ -297,20 +297,20 @@ class UserMesh_C(Mesh_C):
                 particleSourceMarker = None
             #   END:if particleSourceDict is not None:
 
-#        elif umiCI.pmin.z() == umiCI.pmax.z():
+#        elif umi.pmin.z() == umi.pmax.z():
         elif zmin == zmax:
             # 2D mesh
-            (nx, ny) = umiCI.cells_on_side
+            (nx, ny) = umi.cells_on_side
 
 # v > 1.5:
             if df_m.DOLFIN_VERSION_STRING > '1.5.0':
                 if diagonal is not None:
-                    mesh_df = df_m.RectangleMesh(umiCI.pmin, umiCI.pmax, nx, ny, diagonal)
+                    mesh_df = df_m.RectangleMesh(umi.pmin, umi.pmax, nx, ny, diagonal)
                 else:
-                    mesh_df = df_m.RectangleMesh(umiCI.pmin, umiCI.pmax, nx, ny)
+                    mesh_df = df_m.RectangleMesh(umi.pmin, umi.pmax, nx, ny)
             else:
 # v = 1.5:
-                mesh_df = df_m.RectangleMesh(umiCI.pmin[0], umiCI.pmin[1], umiCI.pmax[0], umiCI.pmax[1], nx, ny)
+                mesh_df = df_m.RectangleMesh(umi.pmin[0], umi.pmin[1], umi.pmax[0], umi.pmax[1], nx, ny)
 
             if plot_title is None: plotTitle = "XY-mesh"
             # Name the mesh file that will be written below
@@ -361,13 +361,13 @@ class UserMesh_C(Mesh_C):
 
         else:
             # 3D mesh
-            (nx, ny, nz) = umiCI.cells_on_side
+            (nx, ny, nz) = umi.cells_on_side
 # v > 1.5
             if df_m.DOLFIN_VERSION_STRING > '1.5.0':
-                mesh_df = df_m.BoxMesh(umiCI.pmin, umiCI.pmax, nx, ny, nz)
+                mesh_df = df_m.BoxMesh(umi.pmin, umi.pmax, nx, ny, nz)
             else:
 # v = 1.5:
-                mesh_df = df_m.BoxMesh(umiCI.pmin[0], umiCI.pmin[1], umiCI.pmin[2], umiCI.pmax[0], umiCI.pmax[1], umiCI.pmax[2], nx, ny, nz)
+                mesh_df = df_m.BoxMesh(umi.pmin[0], umi.pmin[1], umi.pmin[2], umi.pmax[0], umi.pmax[1], umi.pmax[2], nx, ny, nz)
 
             if plot_title is None: plotTitle = "XYZ-mesh"
             # Name the mesh file that will be written below

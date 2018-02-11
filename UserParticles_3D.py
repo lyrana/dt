@@ -10,7 +10,7 @@ __all__ = ['UserParticleDistributions_C.drifting_Hplus',
 
 import sys
 import math
-import numpy as np_M
+import numpy as np_m
 
 from Dolfin_Module import Mesh_C
 from Particle_Module import Particle_C

@@ -9,9 +9,9 @@ import os
 import importlib as im_m
 import unittest
 
-import numpy as np_M
+import numpy as np_m
 
-import dolfin as df_M
+import dolfin as df_m
 
 from DT_Module import DTcontrol_C
 
@@ -34,12 +34,12 @@ class TestParticleInitialization(unittest.TestCase):
         # Create an instance of the DTparticleInput class
         pin_PI = self.pin_PI = ParticleInput_C()
         # Set up particle variables
-        pin_PI.precision = np_M.float64
+        pin_PI.precision = np_m.float64
 
         pin_PI.particle_integration_loop = 'loop-on-particles'
         pin_PI.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin_PI.force_components = ['x', 'y', 'z']
-        pin_PI.force_precision = np_M.float64
+        pin_PI.force_precision = np_m.float64
 
 
         ### Particle species input
@@ -240,8 +240,8 @@ class TestParticleInitialization(unittest.TestCase):
         mi2d_UMI = UserMeshInput_C()
 
 # Replace with TUPLES since we're at toplevel
-        mi2d_UMI.pmin = df_M.Point(-10.0, -10.0)
-        mi2d_UMI.pmax = df_M.Point(10.0, 10.0)
+        mi2d_UMI.pmin = df_m.Point(-10.0, -10.0)
+        mi2d_UMI.pmax = df_m.Point(10.0, 10.0)
         mi2d_UMI.cells_on_side = (2, 2)
         mi2d_UMI.diagonal = 'left'
 
@@ -281,7 +281,7 @@ class TestParticleInitialization(unittest.TestCase):
         # Compute a value for thermalSpeed from the temperature in eV
         temperature_eV = 2.0
         temp_joule = temperature_eV*MyPlasmaUnits_C.elem_charge
-        thermalSpeed = np_M.sqrt(2.0*temp_joule/mass)
+        thermalSpeed = np_m.sqrt(2.0*temp_joule/mass)
 
         # Set a drift velocity
         # Set a drift velocity
@@ -313,9 +313,9 @@ class TestParticleInitialization(unittest.TestCase):
         xmin = -9.0; ymin = -9.0
         xmax = -4.0; ymax = -4.0
 
-# Don't use df_M in the toplevel routine, if possible
-#        pmin = df_M.Point(xmin, ymin)
-#        pmax = df_M.Point(xmax, ymax)
+# Don't use df_m in the toplevel routine, if possible
+#        pmin = df_m.Point(xmin, ymin)
+#        pmax = df_m.Point(xmax, ymax)
         pmin = (xmin, ymin)
         pmax = (xmax, ymax)
         hotElectronsRegion_RR = RectangularRegion_C(pmesh2d_UM, pmin, pmax)

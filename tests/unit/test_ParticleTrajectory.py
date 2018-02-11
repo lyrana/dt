@@ -10,7 +10,7 @@ import numpy
 import importlib as im_m
 import unittest
 
-import dolfin as df_M
+import dolfin as df_m
 
 from DT_Module import DTcontrol_C
 
@@ -167,9 +167,9 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Create the particle mesh object
 # 'crossed' diagonals
-#        self.pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+#        self.pmesh2D = Mesh_C(meshFile="quarter_circle_mesh_crossed.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
 # 'left' diagonal
-#        self.pmesh2DCI = Mesh_C(meshFile="quarter_circle_mesh_left.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
+#        self.pmesh2D = Mesh_C(meshFile="quarter_circle_mesh_left.xml", computeDictionaries=True, computeTree=True, plotFlag=False)
 
         # These are the boundary-name -> int pairs used to mark mesh facets:
         rminIndx = 1
@@ -215,7 +215,7 @@ class TestParticleTrajectory(unittest.TestCase):
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')
 
-        file = df_M.File("negE2D_crossed-2016.xml") # Use a frozen version.
+        file = df_m.File("negE2D_crossed-2016.xml") # Use a frozen version.
         file >> self.neg_electric_field.function
 
         ## Particle boundary-conditions

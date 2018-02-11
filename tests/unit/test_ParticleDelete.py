@@ -48,21 +48,21 @@ class TestParticleDeletion(unittest.TestCase):
 
         ### Create an instance of the DTparticleInput class
 
-        pinCI = ParticleInput_C()
+        pin = ParticleInput_C()
 
         # Set particle parameters
-        pinCI.precision = numpy.float64
-        pinCI.particle_integration_loop = 'loop-on-particles'
+        pin.precision = numpy.float64
+        pin.particle_integration_loop = 'loop-on-particles'
 
-        pinCI.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
 
-        pinCI.force_components = ['x', 'y', 'z']
-        pinCI.force_precision = numpy.float64
+        pin.force_components = ['x', 'y', 'z']
+        pin.force_precision = numpy.float64
 
         ### Specify the particle species for this calculation
 
         # 1. electrons
-#         pinCI.particle_species = (('one_electron',
+#         pin.particle_species = (('one_electron',
 #                              {'initial_distribution_type' : 'listed',
 #                               'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
 #                               'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
@@ -95,25 +95,25 @@ class TestParticleDeletion(unittest.TestCase):
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
         dynamics = 'explicit'
-        oneElectronCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        oneElectron_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         speciesName = 'H_plus'
         charge = 1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.proton_mass
         dynamics = 'explicit'
-        HPlusCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        HPlus_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         speciesName = 'He'
         charge = 0.0
         mass = 4.0*MyPlasmaUnits_C.AMU
         dynamics = 'explicit'
-        HeCI = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        He_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add these species to particle input
-        pinCI.particle_species = (oneElectronCI, HPlusCI, HeCI,
+        pin.particle_species = (oneElectron_S, HPlus_S, He_S,
                                  )
-        # Make the particle object from pinCI
-        self.particleCI = Particle_C(pinCI, print_flag=False)
+        # Make the particle object from pin
+        self.particle_P = Particle_C(pin, print_flag=False)
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary conditions, source regions, etc.)
@@ -122,15 +122,15 @@ class TestParticleDeletion(unittest.TestCase):
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        self.particleCI.user_particles_module_name = userParticlesModuleName
-        self.particleCI.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
+        self.particle_P.user_particles_module_name = userParticlesModuleName
+        self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### one_electron is present at t=0
 
         # Name the initialized species (it should be in species_names above)
         speciesName = 'one_electron'
         # Check that this species has been defined above
-        if speciesName not in self.particleCI.species_names:
+        if speciesName not in self.particle_P.species_names:
             print fncName + "The species", speciesName, "has not been defined"
             sys.exit()
 
@@ -155,28 +155,28 @@ class TestParticleDeletion(unittest.TestCase):
         initialParticlesDict = {'initial_one_electron': (oneElectronParams,),
                                 }
 
-        self.particleCI.initial_particles_dict = initialParticlesDict
+        self.particle_P.initial_particles_dict = initialParticlesDict
 
 
         ### Create a particle trajectory object
 
         # Use an input object to collect initialization data for the trajectory object
-        self.trajinCI = TrajectoryInput_C()
+        self.trajin = TrajectoryInput_C()
 
-        self.trajinCI.maxpoints = None # Set to None to get every point
+        self.trajin.maxpoints = None # Set to None to get every point
 
         # Specify which particle variables to save.  This has the
         # form of a numpy dtype specification.
-        self.trajinCI.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
-        self.trajinCI.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
-        self.trajinCI.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
+        self.trajin.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
+        self.trajin.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
+        self.trajin.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
 
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        pCI = self.particleCI # abbreviation
-        trajCI = Trajectory_C(self.trajinCI, self.ctrl, pCI.explicit_species, pCI.implicit_species, pCI.neutral_species)
-        self.particleCI.trajCI = trajCI
+        p_P = self.particle_P # abbreviation
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        self.particle_P.traj_T = traj_T
 
         # Create the initial particles
         for ip in initialParticlesDict:
@@ -186,7 +186,7 @@ class TestParticleDeletion(unittest.TestCase):
             initialDistributionType = ipParams['initial_distribution_type']
             if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
-                self.particleCI.create_from_list(s, False)
+                self.particle_P.create_from_list(s, False)
 
         return
 #    def setUp(self): #ENDDEF
@@ -199,26 +199,26 @@ class TestParticleDeletion(unittest.TestCase):
 
         # Abbreviations
 
-        pCI = self.particleCI
-        trajCI = pCI.trajCI
+        p_P = self.particle_P
+        traj_T = p_P.traj_T
 
         # Set constant fields
         E0 = (1.0e-4, 2.0e-4, 3.0e-4)
 #        B0 = (0.0, 0.0, 0.0)
-        self.ctrl.E0 = Vec_C(pCI.particle_dimension, E0)
-#        ctrl.B0 = Vec_C(pCI.particle_dimension, B0)
+        self.ctrl.E0 = Vec_C(p_P.particle_dimension, E0)
+#        ctrl.B0 = Vec_C(p_P.particle_dimension, B0)
 
-        print "SEGMENT_LENGTH is %d" % pCI.SEGMENT_LENGTH
+        print "SEGMENT_LENGTH is %d" % p_P.SEGMENT_LENGTH
 
         # Create more particles to test deletion. Copy the particle
         # that's already stored to make 3 full and one partially
         # filled segments.
         # We end up with 306 particles, requiring 4 segments
-        num_particles = 5+3*pCI.SEGMENT_LENGTH
+        num_particles = 5+3*p_P.SEGMENT_LENGTH
         dx = 0.2
-        for sp in pCI.species_names:
-            if pCI.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
-            getparticle = pCI.pseg_arr[sp].get(0) # why get(0) instead of [0]?
+        for sp in p_P.species_names:
+            if p_P.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
+            getparticle = p_P.pseg_arr[sp].get(0) # why get(0) instead of [0]?
             putparticle = getparticle
             x = putparticle[0]
             print "Add %d more particles to %s species" % (num_particles, sp)
@@ -229,37 +229,37 @@ class TestParticleDeletion(unittest.TestCase):
                 putparticle[0] = x
                 # Turn on trajectory flag for a particle near the end:
                 if i == num_particles-10:
-                    putparticle[10] = 0b00 | pCI.TRAJECTORY_FLAG # turn on trajectory flag
+                    putparticle[10] = 0b00 | p_P.TRAJECTORY_FLAG # turn on trajectory flag
                 else:
                     putparticle[10] = 0b00 # initialize all bits to 0
 
                 # Store the particle
-                p, pindex = pCI.pseg_arr[sp].put(putparticle)
+                p, pindex = p_P.pseg_arr[sp].put(putparticle)
 
                 ## Add the new particles to the trajectory object.
-                if p['bitflags'] & pCI.TRAJECTORY_FLAG != 0:
-                    if trajCI is not None:
+                if p['bitflags'] & p_P.TRAJECTORY_FLAG != 0:
+                    if traj_T is not None:
                         print 'pindex for trajectory = ', pindex
-                        trajCI.ParticleIdList[sp].append(pindex)
+                        traj_T.ParticleIdList[sp].append(pindex)
                         dynamicsType = 'explicit'
-                        trajCI.create_trajectory(sp, pindex, dynamicsType)
+                        traj_T.create_trajectory(sp, pindex, dynamicsType)
                     else:
-    # Instead of printing this message, a trajCI object could be created here.
+    # Instead of printing this message, a traj_T object could be created here.
                         print fncName, "*** DT Warning: A trajectory flag is on, but no trajectory object has been created yet. ***"
                 x += dx
 
         # Query the particle arrays after initialization.
-        for sp in pCI.species_names:
-            (nseg_in, nseg_out) = pCI.pseg_arr[sp].get_number_of_segments()
+        for sp in p_P.species_names:
+            (nseg_in, nseg_out) = p_P.pseg_arr[sp].get_number_of_segments()
             print sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out)
-#            npart_out = pCI.pseg_arr[sp].get_number_of_items()
-            npart_out = pCI.get_species_particle_count(sp)
+#            npart_out = p_P.pseg_arr[sp].get_number_of_items()
+            npart_out = p_P.get_species_particle_count(sp)
             print sp, "species has %d particles in the 'out' array" % npart_out
 
         # Delete some of the particles in each species.
 
-        for sp in pCI.species_names:
-            np = pCI.get_species_particle_count(sp)
+        for sp in p_P.species_names:
+            np = p_P.get_species_particle_count(sp)
             if np == 0: continue # Skip if there are no particles in this species
             # Delete 7 particles, which fit into 3 segments
             delparts = (0, np-1, np/51, np/31, np/11, np/5, np/3) # This is (0, 0, ...)
@@ -269,7 +269,7 @@ class TestParticleDeletion(unittest.TestCase):
             # Delete 5 particles, which needs a 4th segment
 #            delparts = (0, np-1, np/51, np/31, np/11)
             for ip in delparts:
-                getparticle = pCI.pseg_arr[sp].get(ip) # why get(0) instead of [0]? more explicit?
+                getparticle = p_P.pseg_arr[sp].get(ip) # why get(0) instead of [0]? more explicit?
 #                print "getparticle['bitflags']", getparticle['bitflags']
                 # Set the delete flag for these particles.
                 # Since getparticle returns a REFERENCE, this modifies the
@@ -281,19 +281,19 @@ class TestParticleDeletion(unittest.TestCase):
         # the 'out' array.  The deleted particles will get dropped from the 'out' array.
         # Don't care about the actual motion.
 
-        ncoords = pCI.particle_dimension # number of particle coordinates to check
+        ncoords = p_P.particle_dimension # number of particle coordinates to check
 #        isp = 0
-        print "Moving", pCI.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps"
-        for sp in pCI.species_names:
-            if pCI.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
-            pCI.move_particles_in_uniform_fields(sp, self.ctrl)
+        print "Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps"
+        for sp in p_P.species_names:
+            if p_P.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
+            p_P.move_particles_in_uniform_fields(sp, self.ctrl)
 
         # Now check on the arrays again
         print "\nAfter a particle move step:\n"
-        for sp in pCI.species_names:
-            (nseg_in, nseg_out) = pCI.pseg_arr[sp].get_number_of_segments()
+        for sp in p_P.species_names:
+            (nseg_in, nseg_out) = p_P.pseg_arr[sp].get_number_of_segments()
             print sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out)
-            npart_out = pCI.get_species_particle_count(sp)
+            npart_out = p_P.get_species_particle_count(sp)
             print sp, "species has %d particles in the 'out' array" % npart_out
 
 # Need an assert test here.

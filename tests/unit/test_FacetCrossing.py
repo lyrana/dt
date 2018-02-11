@@ -6,11 +6,11 @@ __author__ = 'Copyright (C) 2016 L. D. Hughes'
 
 import sys
 import os
-import numpy as np_M
+import numpy as np_m
 import importlib as im_m
 import unittest
 
-import dolfin as df_M
+import dolfin as df_m
 
 from Dolfin_Module import Mesh_C
 from UserUnits_Module import MyPlasmaUnits_C
@@ -39,48 +39,48 @@ class TestFacetCrossing(unittest.TestCase):
         # Create 1D, 2D and 3D meshes that the particles can be tested against
 
         # 1d mesh input
-        umi1DCI = UserMeshInput_C()
+        umi1D = UserMeshInput_C()
         pmin = -0.03
         pmax = 0.03
         cells_on_side = 4
-        umi1DCI.pmin = df_M.Point(pmin)
-        umi1DCI.pmax = df_M.Point(pmax)
-        umi1DCI.cells_on_side = (cells_on_side,) # Need the comma to indicate a tuple
+        umi1D.pmin = df_m.Point(pmin)
+        umi1D.pmax = df_m.Point(pmax)
+        umi1D.cells_on_side = (cells_on_side,) # Need the comma to indicate a tuple
         self.mesh1D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
-        self.mesh1DCI = UserMesh_C(umi1DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
-#        self.mesh1DCI.compute_cell_vertex_dict()
-#        self.mesh1DCI.compute_cell_dict()
+        self.mesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
+#        self.mesh1D.compute_cell_vertex_dict()
+#        self.mesh1D.compute_cell_dict()
 
         # 2D mesh input
-        umi2DCI = UserMeshInput_C()
+        umi2D = UserMeshInput_C()
         pmin = -0.03
         pmax = 0.03
         cells_on_side = 4
-        umi2DCI.pmin = df_M.Point(pmin, pmin)
-        umi2DCI.pmax = df_M.Point(pmax, pmax)
-        umi2DCI.cells_on_side = (cells_on_side, cells_on_side)
-#        umi2DCI.diagonal = 'crossed'
+        umi2D.pmin = df_m.Point(pmin, pmin)
+        umi2D.pmax = df_m.Point(pmax, pmax)
+        umi2D.cells_on_side = (cells_on_side, cells_on_side)
+#        umi2D.diagonal = 'crossed'
         self.mesh2D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
-        self.mesh2DCI = UserMesh_C(umi2DCI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
-#        self.mesh2DCI.compute_cell_vertex_dict()
-#        self.mesh2DCI.compute_cell_dict()
+        self.mesh2D = UserMesh_C(umi2D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
+#        self.mesh2D.compute_cell_vertex_dict()
+#        self.mesh2D.compute_cell_dict()
 
         # 3D mesh input
-        umi3DCI = UserMeshInput_C()
-        umi3DCI.pmin = df_M.Point(-0.03, -0.03, -0.03)
-        umi3DCI.pmax = df_M.Point(0.03, 0.03, 0.03)
-        umi3DCI.cells_on_side = (4, 4, 4)
+        umi3D = UserMeshInput_C()
+        umi3D.pmin = df_m.Point(-0.03, -0.03, -0.03)
+        umi3D.pmax = df_m.Point(0.03, 0.03, 0.03)
+        umi3D.cells_on_side = (4, 4, 4)
         # Create mesh
-        self.mesh3DCI = UserMesh_C(umi3DCI, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 3D")
-        self.mesh3DCI.compute_cell_entity_index_dict('vertex')
-        self.mesh3DCI.compute_cell_entity_index_dict('facet')
-        self.mesh3DCI.compute_cell_dict()
-        self.mesh3DCI.compute_cell_facet_normals_dict() # Unit vectors normal to cell facets
-        self.mesh3DCI.compute_cell_neighbor_dict()
+        self.mesh3D = UserMesh_C(umi3D, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 3D")
+        self.mesh3D.compute_cell_entity_index_dict('vertex')
+        self.mesh3D.compute_cell_entity_index_dict('facet')
+        self.mesh3D.compute_cell_dict()
+        self.mesh3D.compute_cell_facet_normals_dict() # Unit vectors normal to cell facets
+        self.mesh3D.compute_cell_neighbor_dict()
 
         # pmesh is the owner of the compute_index function?
 
@@ -99,28 +99,28 @@ class TestFacetCrossing(unittest.TestCase):
 
         # To list the vertices of a facet, create facet-vertex
         # connectivity (both are dim 0 in 1D):
-        self.mesh1DCI.mesh.init(0,0)
+        self.mesh1D.mesh.init(0,0)
 
-        vertex_coords = self.mesh1DCI.mesh.coordinates()
+        vertex_coords = self.mesh1D.mesh.coordinates()
 
         # Compute facet-normal dictionary indexed by cell index.
-        for cell in df_M.cells(self.mesh1DCI.mesh):
-            facet_normal_vectors = self.mesh1DCI.cell_facet_normals_dict[cell.index()]
+        for cell in df_m.cells(self.mesh1D.mesh):
+            facet_normal_vectors = self.mesh1D.cell_facet_normals_dict[cell.index()]
 #            print "cell", cell.index(), "from dict, cell_facet_normals", facet_normal_vectors
 
             # This returns the list of facet indices.  These are mesh-level indices, not the indices local to a cell.
-#            print "cell", cell.index(), "has theses facets", self.mesh1DCI.cell_entity_index_dict['facet'][cell.index()]
-            mesh_dim = self.mesh1DCI.gdim
+#            print "cell", cell.index(), "has theses facets", self.mesh1D.cell_entity_index_dict['facet'][cell.index()]
+            mesh_dim = self.mesh1D.gdim
             for fi in range(mesh_dim+1):
                 self.assertAlmostEqual(cell.normal(fi).x(), facet_normal_vectors[fi,0], msg = "1D cell facet normal x component is not correct")
 
 #            print "cell", cell.index(), "normal0", cell.normal(0).x(), "normal1", cell.normal(1).x()
 
             # Print vertices of each facet
-            for findx in self.mesh1DCI.cell_entity_index_dict['facet'][cell.index()]:
+            for findx in self.mesh1D.cell_entity_index_dict['facet'][cell.index()]:
 
                 # A way to get the facet from it's index:
-                facet = df_M.Facet(self.mesh1DCI.mesh, findx)
+                facet = df_m.Facet(self.mesh1D.mesh, findx)
 #                normal = cell.normal(findx)
                 # Get the normal from the facet instead (no difference)
                 normal = facet.normal()
@@ -140,9 +140,9 @@ class TestFacetCrossing(unittest.TestCase):
 #        sys.exit()
 
         # 2D mesh
-        vertex_coords = self.mesh2DCI.mesh.coordinates()
-        for cell in df_M.cells(self.mesh2DCI.mesh):
-            facet_normal_vectors = self.mesh2DCI.cell_facet_normals_dict[cell.index()]
+        vertex_coords = self.mesh2D.mesh.coordinates()
+        for cell in df_m.cells(self.mesh2D.mesh):
+            facet_normal_vectors = self.mesh2D.cell_facet_normals_dict[cell.index()]
             # Print values for a few cells
             for i in [0, 1, 6, 9,]:
                 if cell.index() == i:
@@ -152,16 +152,16 @@ class TestFacetCrossing(unittest.TestCase):
 #                    print "cell", cell.index(), "normal2", cell.normal(2).x(), cell.normal(2).y()
                     pass
 
-            mesh_dim = self.mesh2DCI.gdim
+            mesh_dim = self.mesh2D.gdim
             for fi in range(mesh_dim+1):
                 self.assertAlmostEqual(cell.normal(fi).x(), facet_normal_vectors[fi,0], msg = "2D cell facet normal x component is not correct")
                 self.assertAlmostEqual(cell.normal(fi).y(), facet_normal_vectors[fi,1], msg = "2D cell facet normal y component is not correct")
 
         # 3D mesh
-        vertex_coords = self.mesh3DCI.mesh.coordinates()
+        vertex_coords = self.mesh3D.mesh.coordinates()
 
-        for cell in df_M.cells(self.mesh3DCI.mesh):
-            facet_normal_vectors = self.mesh3DCI.cell_facet_normals_dict[cell.index()]
+        for cell in df_m.cells(self.mesh3D.mesh):
+            facet_normal_vectors = self.mesh3D.cell_facet_normals_dict[cell.index()]
             verts = cell.entities(0)
             # Print values for a few cells
 #            for i in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,]:
@@ -179,7 +179,7 @@ class TestFacetCrossing(unittest.TestCase):
                     # print "cell", cell.index(), "normal3", cell.normal(3).x(), cell.normal(3).y(), cell.normal(3).z()
                     pass
             # Check all the normals for all cells
-            mesh_dim = self.mesh3DCI.gdim
+            mesh_dim = self.mesh3D.gdim
             for fi in range(mesh_dim+1):
                 self.assertAlmostEqual(cell.normal(fi).x(), facet_normal_vectors[fi,0], msg = "3D cell facet normal x component is not correct")
                 self.assertAlmostEqual(cell.normal(fi).y(), facet_normal_vectors[fi,1], msg = "3D cell facet normal y component is not correct")
@@ -200,8 +200,8 @@ class TestFacetCrossing(unittest.TestCase):
         #
         # 1D: Initial point = center of cell, move = cell length
         #
-        for cell in df_M.cells(self.mesh1DCI.mesh):
-            neighbor_cell_indices = self.mesh1DCI.cell_neighbor_dict[cell.index()]
+        for cell in df_m.cells(self.mesh1D.mesh):
+            neighbor_cell_indices = self.mesh1D.cell_neighbor_dict[cell.index()]
 
             # Create initial point and move vector
             p = cell.midpoint()
@@ -213,7 +213,7 @@ class TestFacetCrossing(unittest.TestCase):
             facet_expected = 1
 
 #            print "Calling find_facet:", "r0 =", r0, "dr =", dr, "ci =", cell.index()
-            (facet_crossed, path_fraction, facetNormal) = self.mesh1DCI.find_facet(r0, dr, cell.index())
+            (facet_crossed, path_fraction, facetNormal) = self.mesh1D.find_facet(r0, dr, cell.index())
 #            print "Returned values: =", facet_crossed, "path_fraction =", path_fraction
             # Check facet
             self.assertEqual(facet_crossed, facet_expected, msg = "1D: facet crossed is not correct")
@@ -224,12 +224,12 @@ class TestFacetCrossing(unittest.TestCase):
             if cell2_index != Mesh_C.NO_CELL:
                 self.assertEqual(cell.index()+1, cell2_index, msg = "1D: cell crossed into is not correct")
                 # Look up the mesh-level facet index of the facet crossed
-                ifacet = self.mesh1DCI.cell_entity_index_dict['facet'][cell.index()][facet_crossed]
+                ifacet = self.mesh1D.cell_entity_index_dict['facet'][cell.index()][facet_crossed]
 #                print 'Cell facet', facet_crossed, 'has mesh index', ifacet
 
                 # Check this: look up the facet (dimension = 0) shared
                 # by the two cells,
-                facet = df_M.MeshEntity(self.mesh1DCI.mesh, 0, ifacet)
+                facet = df_m.MeshEntity(self.mesh1D.mesh, 0, ifacet)
                 # and make sure the two cells with this facet (the
                 # cells are entities having dimension 1) are the start
                 # and end cells.
@@ -243,7 +243,7 @@ class TestFacetCrossing(unittest.TestCase):
             facet_expected = 0
 
 #            print "Calling find_facet:", "r0 =", r0, "dr =", dr, "ci =", cell.index()
-            (facet_crossed, path_fraction, facetNormal) = self.mesh1DCI.find_facet(r0, dr, cell.index())
+            (facet_crossed, path_fraction, facetNormal) = self.mesh1D.find_facet(r0, dr, cell.index())
 #            print "Returned values: =", facet_crossed, "path_fraction =", path_fraction
             self.assertEqual(facet_crossed, facet_expected, msg = "1D facet crossed is not correct")
             # Look up the cell crossed into
@@ -253,12 +253,12 @@ class TestFacetCrossing(unittest.TestCase):
                 self.assertEqual(cell.index()-1, cell2_index, msg = "1D: cell crossed into is not correct")
 
                 # Look up the mesh-level facet index of the facet crossed
-                ifacet = self.mesh1DCI.cell_entity_index_dict['facet'][cell.index()][facet_crossed]
+                ifacet = self.mesh1D.cell_entity_index_dict['facet'][cell.index()][facet_crossed]
 #                print 'Cell facet', facet_crossed, 'has mesh index', ifacet
 
                 # Check this: look up the facet (dimension = 0) shared
                 # by the two cells,
-                facet = df_M.MeshEntity(self.mesh1DCI.mesh, 0, ifacet)
+                facet = df_m.MeshEntity(self.mesh1D.mesh, 0, ifacet)
                 # and make sure the two cells with this facet (the
                 # cells are entities having dimension 1) are the start
                 # and end cells.
@@ -266,13 +266,13 @@ class TestFacetCrossing(unittest.TestCase):
 
                 self.assertTrue(cell.index() in facet.entities(1) and cell2_index in facet.entities(1), msg = "1D: facet given by find_facet is not correct")
 #            if cell2_index != Mesh_C.NO_CELL:ENDDIF
-#        for cell in df_M.cells(self.mesh1DCI.mesh): ENDFOR
+#        for cell in df_m.cells(self.mesh1D.mesh): ENDFOR
 
         #
         # 2D: Initial point = center of cell, move = to center of neighbor cells
         #
-        for cell in df_M.cells(self.mesh2DCI.mesh):
-            neighbor_cell_indices = self.mesh2DCI.cell_neighbor_dict[cell.index()]
+        for cell in df_m.cells(self.mesh2D.mesh):
+            neighbor_cell_indices = self.mesh2D.cell_neighbor_dict[cell.index()]
 
             for nci in neighbor_cell_indices:
                 if nci == Mesh_C.NO_CELL: # Indicates that one facet of the cell is
@@ -286,12 +286,12 @@ class TestFacetCrossing(unittest.TestCase):
 #                print "cell midpoint:", p.x(), p.y()
                 r0 = [p.x(), p.y()]
 
-                cell2 = self.mesh2DCI.cell_dict[cell_index_expected]
+                cell2 = self.mesh2D.cell_dict[cell_index_expected]
                 p2 = cell2.midpoint()
                 dr = [p2.x()-p.x(), p2.y()-p.y()]
 
 #                print "r0, dr=", r0, dr
-                (facet_crossed, path_fraction, facetNormal) = self.mesh2DCI.find_facet(r0, dr, cell.index())
+                (facet_crossed, path_fraction, facetNormal) = self.mesh2D.find_facet(r0, dr, cell.index())
 
 #                print "start cell", cell.index(), "expected_cell", cell_index_expected, "facet crossed", facet_crossed
                 # Lookup the cell crossed from the facet number
@@ -301,12 +301,12 @@ class TestFacetCrossing(unittest.TestCase):
                 self.assertEqual(cell2_index, cell_index_expected, msg = "2D: final cell is not correct")
 
                 # Look up the mesh-level facet index of the facet crossed
-                ifacet = self.mesh2DCI.cell_entity_index_dict['facet'][cell.index()][facet_crossed]
+                ifacet = self.mesh2D.cell_entity_index_dict['facet'][cell.index()][facet_crossed]
 #                print 'Cell facet', facet_crossed, 'has mesh facet index', ifacet
 
                 # Check this: look up the facet (dimension = 1) shared
                 # by the two cells,
-                facet = df_M.MeshEntity(self.mesh2DCI.mesh, 1, ifacet)
+                facet = df_m.MeshEntity(self.mesh2D.mesh, 1, ifacet)
                 # and make sure the two cells with this facet (the
                 # cells are entities having dimension 2) are the start
                 # and end cells.
@@ -316,8 +316,8 @@ class TestFacetCrossing(unittest.TestCase):
         #
         # 3D: Initial point = center of cell, move = to center of neighbor cells
         #
-        for cell in df_M.cells(self.mesh3DCI.mesh):
-            neighbor_cell_indices = self.mesh3DCI.cell_neighbor_dict[cell.index()]
+        for cell in df_m.cells(self.mesh3D.mesh):
+            neighbor_cell_indices = self.mesh3D.cell_neighbor_dict[cell.index()]
 
             # Loop on this cell's neighbors. Create a displacement
             # vector from the center of this cell to the center of the
@@ -337,12 +337,12 @@ class TestFacetCrossing(unittest.TestCase):
 #                print "cell midpoint:", p.x(), p.y()
                 r0 = [p.x(), p.y(), p.z()]
 
-                cell2 = self.mesh3DCI.cell_dict[cell_index_expected]
+                cell2 = self.mesh3D.cell_dict[cell_index_expected]
                 p2 = cell2.midpoint()
                 dr = [p2.x()-p.x(), p2.y()-p.y(), p2.z()-p.z()]
 
 #                print "r0, dr=", r0, dr
-                (facet_crossed, path_fraction, facetNormal) = self.mesh3DCI.find_facet(r0, dr, cell.index())
+                (facet_crossed, path_fraction, facetNormal) = self.mesh3D.find_facet(r0, dr, cell.index())
 
 #                print "start cell", cell.index(), "expected_cell", cell_index_expected, "facet crossed", facet_crossed
 
@@ -354,12 +354,12 @@ class TestFacetCrossing(unittest.TestCase):
                 self.assertEqual(cell2_index, cell_index_expected, msg = "3D: final cell is not correct")
 
                 # Look up the mesh-level facet index of the facet crossed
-#                print 'Facets of 3D mesh', self.mesh3DCI.cell_entity_index_dict['facet']
-#                print 'Facets of cell', self.mesh3DCI.cell_entity_index_dict['facet'][cell.index()]
-                ifacet = self.mesh3DCI.cell_entity_index_dict['facet'][cell.index()][facet_crossed]
+#                print 'Facets of 3D mesh', self.mesh3D.cell_entity_index_dict['facet']
+#                print 'Facets of cell', self.mesh3D.cell_entity_index_dict['facet'][cell.index()]
+                ifacet = self.mesh3D.cell_entity_index_dict['facet'][cell.index()][facet_crossed]
                 # Check this: Used ifacet to look up the facet entity
                 # (dimension = 2) shared by the two cells,
-                facet = df_M.MeshEntity(self.mesh3DCI.mesh, 2, ifacet)
+                facet = df_m.MeshEntity(self.mesh3D.mesh, 2, ifacet)
                 # and make sure the two cells with this facet (the
                 # cells are entities having dimension 3) are the start
                 # and end cells.

@@ -9,8 +9,8 @@ import os
 import math
 import importlib as im_M
 
-import numpy as np_M
-#import dolfin as df_M
+import numpy as np_m
+#import dolfin as df_m
 
 import DnT_Module as DnT_M
 
@@ -19,7 +19,7 @@ import Trajectory_Module as Traj_M
 #import IO_Module as IO_M
 import UserUnits_Module as U_M
 
-#print "This is DOLFIN Version", df_M.DOLFIN_VERSION_STRING
+#print "This is DOLFIN Version", df_m.DOLFIN_VERSION_STRING
 
 # The initialization, since this is an initial-value problem
 
@@ -29,7 +29,7 @@ import UserUnits_Module as U_M
 Convert = U_M.MyPlasmaUnits_C
 
 # Create the simulation object
-systemCI = DnT_M.DnTsystem_C()
+system = DnT_M.DnTsystem_C()
 
 # Write input with python.
 
@@ -38,17 +38,17 @@ systemCI = DnT_M.DnTsystem_C()
 #
 
 # Create an instance of a DnTcontrol object
-ctrlCI = DnT_M.DnTcontrol_C(use_mpi=True)
+ctrl = DnT_M.DnTcontrol_C(use_mpi=True)
 
 # Specify numerical precision
-#prec = DnTparam.precision = np_M.float32
-ctrlCI.precision = np_M.float64
+#prec = DnTparam.precision = np_m.float32
+ctrl.precision = np_m.float64
 
 # Timestep
-ctrlCI.dt = 0.1
+ctrl.dt = 0.1
 
 # Number of timesteps
-ctrlCI.nsteps = 10 # doesn't usually need to be passed down to functions
+ctrl.nsteps = 10 # doesn't usually need to be passed down to functions
 
 #user_mesh_input = "UserMesh-QuarterCircle.py"
 #DnTrun.user_mesh_fileobj = IO_M.open_file(user_mesh_input, 'r')
@@ -72,16 +72,16 @@ ctrlCI.nsteps = 10 # doesn't usually need to be passed down to functions
 
 # The user can specify some geometry and mesh parameters here.
 
-umiCI = DnT_M.DnTmeshInput_C()
+umi = DnT_M.DnTmeshInput_C()
 
 # radial
-umiCI.rmin, umiCI.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
-umiCI.nr = 10 # Number of divisions in r direction
-umiCI.stretch = 1.3 # Stretch parameter
+umi.rmin, umi.rmax = 1.0, 5.0 # Mesh goes from rmin to rmax in radius
+umi.nr = 10 # Number of divisions in r direction
+umi.stretch = 1.3 # Stretch parameter
 
 # theta, starts at 0
-umiCI.tmax = math.pi/2 # theta extent of the mesh
-umiCI.nt = 20  # Number of divisions in theta direction
+umi.tmax = math.pi/2 # theta extent of the mesh
+umi.nt = 20  # Number of divisions in theta direction
 
 # Specify the module where the user creates the geometry and mesh
 # (i.e. the UserMesh_C class), and import it.
@@ -89,7 +89,7 @@ user_mesh_module = "UserMesh_y_Fields_FE2D_Module"
 UMsh_M = im_M.import_module(user_mesh_module)
 
 # Create the mesh
-systemCI.meshCI = UMsh_M.UserMesh_C(umiCI)
+system.mesh_M = UMsh_M.UserMesh_C(umi)
 
 #
 # FIELDS needed for the calculation
@@ -103,12 +103,12 @@ fI_M = im_M.import_module(fieldInfrastructureModule)
 charge_density_element_type = 'Lagrange'
 charge_density_element_degree = 1
 charge_density_field_type = 'scalar'
-systemCI.charge_density = fI_M.Field_C(mesh=systemCI.meshCI,
+system.charge_density = fI_M.Field_C(mesh=system.mesh_M,
                                        element_type=charge_density_element_type,
                                        element_degree=charge_density_element_degree,
                                        field_type=charge_density_field_type)
 
-systemCI.electrostatic_potential = fI_M.Field_C(mesh=systemCI.meshCI,
+system.electrostatic_potential = fI_M.Field_C(mesh=system.mesh_M,
                                                 element_type=charge_density_element_type,
                                                 element_degree=charge_density_element_degree,
                                                 field_type=charge_density_field_type)
@@ -121,7 +121,7 @@ if charge_density_element_degree == 1:
 else:
     electric_field_element_type = "Lagrange"
 
-systemCI.electric_field = fI_M.Field_C(mesh=systemCI.meshCI,
+system.electric_field = fI_M.Field_C(mesh=system.mesh_M,
                                        element_type=electric_field_element_type,
                                        element_degree=charge_density_element_degree-1,
                                        field_type='vector')
@@ -147,7 +147,7 @@ phi_rmax = -1.5
 
 computeEflag = True
 
-systemCI.poisson_solveCI = UFldSlv_M.UserPoissonSolve_C(linear_solver,
+system.poisson_solve = UFldSlv_M.UserPoissonSolve_C(linear_solver,
                                                     preconditioner,
                                                     phi_rmin,
                                                     phi_rmax,
@@ -155,17 +155,17 @@ systemCI.poisson_solveCI = UFldSlv_M.UserPoissonSolve_C(linear_solver,
 
 
 # DESCRIBE THE PARTICLES TO BE USED
-ctrlCI.use_particles = True
+ctrl.use_particles = True
 
-if ctrlCI.use_particles == True:
+if ctrl.use_particles == True:
 
     # Create an instance of the DnTparticleInput class
-    pinCI = DnT_M.DnTparticleInput_C()
+    pin = DnT_M.DnTparticleInput_C()
 
-    pinCI.precision = ctrlCI.precision
+    pin.precision = ctrl.precision
 
-    pinCI.force_components = ['x', 'y',]
-    pinCI.force_precision = ctrlCI.precision
+    pin.force_components = ['x', 'y',]
+    pin.force_precision = ctrl.precision
 
 # Do these matter?  The mesh will dictate these? NO
 # They matter because they're used to set the PARTICLE storage.
@@ -188,11 +188,11 @@ if ctrlCI.use_particles == True:
 #    error_msg = "Position coordinates must be one of %s" % DnTrun.velocity_coordinate_options
 #    sys.exit(error_msg)
 
-#    pinCI.phase_coords = position_coordinates + velocity_coordinates
+#    pin.phase_coords = position_coordinates + velocity_coordinates
 
 
 # This could be moved into UserParticles, but it has to be the same for all species.
-#    pinCI.position_coordinates = ('x', 'y', 'z')
+#    pin.position_coordinates = ('x', 'y', 'z')
 
 # Define the particle species used
 # need this?
@@ -205,7 +205,7 @@ if ctrlCI.use_particles == True:
     # user_particles_module below) giving the distribution functions,
     # and can vary from particle to particle.
 
-    pinCI.particle_species = (('plasmaelectrons',
+    pin.particle_species = (('plasmaelectrons',
                        {'initial_distribution_type' : 'listed',
                         'charge' : -1.0*Convert.elem_charge,
                         'mass' : 1.0*Convert.electron_mass,
@@ -230,11 +230,11 @@ if ctrlCI.use_particles == True:
                         )
 
 # Specify the module where the user has given the particle distributions:
-    pinCI.user_particles_module = "UserParticles_H_He_e"
+    pin.user_particles_module = "UserParticles_H_He_e"
 
     userParticlesModule = im_M.import_module(user_particles_module)
 # Could use this variable if we need to import this module elsewhere:
-    pinCI.user_particles_class = userParticlesClass = userParticlesModule.ParticleDistributions_C
+    pin.user_particles_class = userParticlesClass = userParticlesModule.ParticleDistributions_C
 
 #    ph = PH_M.Particles_Mesh(allSpecies)
 
@@ -242,35 +242,35 @@ if ctrlCI.use_particles == True:
 #    seg_len = DnTrun.PARTICLE_SEGMENT_LENGTH = 100
 
 # Create the simulation object
-#    runCI = DnT_M.DnTrun_C()
+#    run = DnT_M.DnTrun_C()
 
 
 # Create the object that initializes and stores the particle species
 # Don't need a seg_len here: Could be using storage that's not a segmented array.
 # Pass DnTrun?, or storage info? Or just put seg_len in the SV class? Or a global?
 #    DnTrun.particles = Part_M.Particles_C(particle_species, phase_coords, prec, seg_len, userParticlesClass, echoFlag=True)
-    systemCI.particleCI = Part_M.Particle_C(pinCI, printFlag=True)
+    system.particle_P = Part_M.Particle_C(pin, printFlag=True)
 
 # ??Generate the initial particle distributions
-    rpCI = systemCI.particleCI # abbrev for particle Class Instance
+    rp_P = system.particle_P # abbrev for particle Class Instance
     printFlags = {}
-    for sp in rpCI.names: printFlags[sp] = False
+    for sp in rp_P.names: printFlags[sp] = False
     # Turn plotting on for some species
     printFlags['plasmaelectrons'] = True
 
-#    pCI.initialize_distributions(plotFlags)
+#    p_P.initialize_distributions(plotFlags)
 
 # Interaction of fields and particles
 
     # Create the input for this...
-    fpinCI = DnT_M.DnTfieldParticleInput_C()
-    fpinCI.copy_field_mesh = False
-    fpinCI.particle_integration_loop = 'loop-on-particles'
-    fpinCI.force_components = ['x', 'y',]
-    fpinCI.precision = ctrlCI.precision
+    fpin = DnT_M.DnTfieldParticleInput_C()
+    fpin.copy_field_mesh = False
+    fpin.particle_integration_loop = 'loop-on-particles'
+    fpin.force_components = ['x', 'y',]
+    fpin.precision = ctrl.precision
 
     # ...and add the object to this run instance:
-#    systemCI.field_particle_interaction = FldPrt_M.Field_Particle_C(fpinCI, systemCI.fieldCI, systemCI.particleCI)
+#    system.field_particle_interaction = FldPrt_M.Field_Particle_C(fpin, system.field_M, system.particle_P)
 
 #    sys.exit()
 
@@ -293,44 +293,44 @@ if ctrlCI.use_particles == True:
 # Particle trajectories
 
     # Create input for trajectories
-    trajinCI = DnT_M.DnTtrajectoryInput_C()
+    trajin = DnT_M.DnTtrajectoryInput_C()
 
-    trajinCI.maxpoints = 1000 # Set to None to get every point
+    trajin.maxpoints = 1000 # Set to None to get every point
 
-#    trajinCI.species_names = rpCI.species_names
+#    trajin.species_names = rp_P.species_names
 # since these are not editable, should they go into an arg list?
-#    trajinCI.explicit_species = 
-#    trajinCI.implicit_species = 
+#    trajin.explicit_species = 
+#    trajin.implicit_species = 
 
     # Variables to save.  This has the form of a numpy dtype specification.
-    trajinCI.explicitDict = {'names': ['x', 'ux', 'Ex'], 'formats': [np_M.float32, np_M.float32]}
-    trajinCI.implicitDict = {'names': ['x', 'ux', 'phi'], 'formats': [np_M.float32, np_M.float32]}
+    trajin.explicitDict = {'names': ['x', 'ux', 'Ex'], 'formats': [np_m.float32, np_m.float32]}
+    trajin.implicitDict = {'names': ['x', 'ux', 'phi'], 'formats': [np_m.float32, np_m.float32]}
 
-#    runCI.particleCI.trajCI = Traj_M.Trajectory_C(trajinCI, ctrlCI)
-    systemCI.particleCI.trajCI = Traj_M.Trajectory_C(trajinCI, ctrlCI, rpCI.explicit_species, rpCI.implicit_species)
+#    run.particle_P.traj_T = Traj_M.Trajectory_C(trajin, ctrl)
+    system.particle_P.traj_T = Traj_M.Trajectory_C(trajin, ctrl, rp_P.explicit_species, rp_P.implicit_species)
 
 # Compute the initial fields
 
-systemCI.fieldCI.compute_electrostatic_potential(plotFlag=True)
+system.field_M.compute_electrostatic_potential(plotFlag=True)
 
 # 
 # Initialize particle species individually so they can be inspected
 # Create particles from the user's input spec
 # Create storage for number-densities computed from particles
 
-if ctrlCI.use_particles == True:
-    rpCI = systemCI.particleCI
-    rfCI = systemCI.fieldCI
-    for sp in rpCI.names:
-        init_dist_type = rpCI.initial_distribution_type[sp]
+if ctrl.use_particles == True:
+    rp_P = system.particle_P
+    rf_M = system.field_M
+    for sp in rp_P.names:
+        init_dist_type = rp_P.initial_distribution_type[sp]
         if init_dist_type == 'listed':
-            rpCI.create_from_list(sp, printFlag[sp])
-        elif rpCI.initial_distribution_type == 'functional':
-            rpCI.create_from_functions(sp, printFlag[sp])
-        elif rpCI.initial_distribution_type == 'particle_file':
-            rpCI.create_from_file(sp, printFlag[sp])
+            rp_P.create_from_list(sp, printFlag[sp])
+        elif rp_P.initial_distribution_type == 'functional':
+            rp_P.create_from_functions(sp, printFlag[sp])
+        elif rp_P.initial_distribution_type == 'particle_file':
+            rp_P.create_from_file(sp, printFlag[sp])
         else:
-            error_msg = "Unknown initial_distribution_type ", rpCI.initial_distribution_type, " in Main for species ", sp
+            error_msg = "Unknown initial_distribution_type ", rp_P.initial_distribution_type, " in Main for species ", sp
             sys.exit(error_msg)
         # Create storage for particle number-densities, now that we
         # know how many species there are.  The species
@@ -338,14 +338,14 @@ if ctrlCI.use_particles == True:
         # are computed on the particle mesh.  The total charge-density
         # must be transferred to the field mesh for Poisson's
         # equation.
-        rfCI.number_density[sp] = rfCI.fieldStorageCI.create_scalarField()
+        rf_M.number_density[sp] = rf_M.fieldStorageCI.create_scalarField()
 
 #
 # Integrate the equations for the system forward in time
 #
-systemCI.time_integrate_in_uniform_fields(ctrlCI)
+system.time_integrate_in_uniform_fields(ctrl)
 
-systemCI.time_integrate_in_electrostatic_field(ctrlCI)
+system.time_integrate_in_electrostatic_field(ctrl)
 
-systemCI.time_integrate(ctrlCI)
+system.time_integrate(ctrl)
     

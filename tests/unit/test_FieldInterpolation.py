@@ -7,9 +7,9 @@ __author__ = 'Copyright (C) 2016 L. D. Hughes'
 import sys
 import math
 import unittest
-import numpy as np_M
+import numpy as np_m
 
-import dolfin as df_M
+import dolfin as df_m
 
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
@@ -23,8 +23,8 @@ class TestFieldInterpolation(unittest.TestCase):
         # Create mesh from a file
         mesh2D_M = Mesh_C(mesh_file="mesh_quarter_circle_crossed.xml", compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
-#        df_M.plot(self.mesh, title='cylindrical mesh', axes=True)
-#        df_M.interactive()
+#        df_m.plot(self.mesh, title='cylindrical mesh', axes=True)
+#        df_m.interactive()
 
         phi_element_type = 'Lagrange'
         phi_element_degree = 1
@@ -34,13 +34,13 @@ class TestFieldInterpolation(unittest.TestCase):
                            field_type='scalar')
 
         # Read the potential from a file
-        file = df_M.File("phi_test_2_2D.xml")
+        file = df_m.File("phi_test_2_2D.xml")
         file >> self.phi.function
 
         # Plot phi
 
-#        df_M.plot(self.phi)
-#        df_M.interactive()
+#        df_m.plot(self.phi)
+#        df_m.interactive()
 
         if phi_element_degree == 1:
             # For linear elements, grad(phi) is discontinuous across
@@ -56,7 +56,7 @@ class TestFieldInterpolation(unittest.TestCase):
                                           field_type='vector')
 
         # Read the electric field from a file
-        file = df_M.File("negE_test_2_2D.xml")
+        file = df_m.File("negE_test_2_2D.xml")
         file >> self.neg_electric_field.function
 
 
@@ -75,7 +75,7 @@ class TestFieldInterpolation(unittest.TestCase):
 #        p0 = (x0,y0,z0, ux0,uy0,uz0, weight0)
 
 # Can these be named?
-        p0 = np_M.array([x0,y0,z0, ux0,uy0,uz0, weight0], dtype=float)
+        p0 = np_m.array([x0,y0,z0, ux0,uy0,uz0, weight0], dtype=float)
 
         # 2nd point
         x1 = 5.0; y1 = 0.0; z1 = 1.0
@@ -83,7 +83,7 @@ class TestFieldInterpolation(unittest.TestCase):
         weight1 = 2.0
 
 #        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1)
-        p1 = np_M.array([x1,y1,z1, ux1,uy1,uz1, weight1], dtype=float)
+        p1 = np_m.array([x1,y1,z1, ux1,uy1,uz1, weight1], dtype=float)
 
         # 3nd point: same cell as 2nd point, so same E for DG0 a element.
         x2 = 4.5; y2 = 0.0; z2 = 1.0
@@ -91,9 +91,9 @@ class TestFieldInterpolation(unittest.TestCase):
         weight2 = 2.0
 
 #        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1)
-        p2 = np_M.array([x2,y2,z2, ux2,uy2,uz2, weight2], dtype=float)
+        p2 = np_m.array([x2,y2,z2, ux2,uy2,uz2, weight2], dtype=float)
 
-        points = np_M.array([p0, p1, p2])
+        points = np_m.array([p0, p1, p2])
 
 #        self.SegList.append(np.empty(SegmentedArray_C.SegmentLength, dtype=item_dict))
 
@@ -106,13 +106,13 @@ class TestFieldInterpolation(unittest.TestCase):
 # Q: Can these be named so you can use E['x']?  
 # A: NO: Epoints_dict above describes a 'complex type' that's not just an array of floats.
 
-        Eexpected = np_M.empty([len(points), len(Ecomps)], dtype=float)
+        Eexpected = np_m.empty([len(points), len(Ecomps)], dtype=float)
         Eexpected[0] = [-0.84919658, -0.03336502]
         Eexpected[1] = [-0.19694748, -0.00773809]
         Eexpected[2] = [-0.19694748, -0.00773809]
 
-        flpoint = np_M.float64
-        Epoints = np_M.empty(points.shape[0], dtype={'names': Ecomps, 'formats': (flpoint, flpoint)})
+        flpoint = np_m.float64
+        Epoints = np_m.empty(points.shape[0], dtype={'names': Ecomps, 'formats': (flpoint, flpoint)})
 
         self.neg_electric_field.interpolate_field_to_points(points, Epoints)
 
