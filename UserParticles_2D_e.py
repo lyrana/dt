@@ -301,7 +301,8 @@ class UserParticleBoundaryFunctions_C(object):
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 
         return
-#    def default_bc(p, speciesName, facetIndex, facet_normal=None):ENDDEF
+#    def default_bc(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
+
 
 #class UserParticleBoundaryFunctions_C(object):
     @staticmethod
@@ -322,7 +323,7 @@ class UserParticleBoundaryFunctions_C(object):
         # Count the number/charge/energy of deleted particles
 
         return
-#    def default_bc_at_rmin(p, speciesName, facetIndex, facet_normal=None):ENDDEF
+#    def default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
     
 #class UserParticleBoundaryFunctions_C(object):
     def bc_at_rmin_for_test_electrons(self, p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
@@ -394,6 +395,6 @@ class UserParticleBoundaryFunctions_C(object):
 #        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 
         return
-#    def bc_at_rmin_for_test_electrons(self, p, speciesName, facetIndex, facet_normal=None):ENDDEF
+#    def bc_at_rmin_for_test_electrons(self, p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
 
 #class UserParticleBoundaryFunctions_C(object):ENDCLASS

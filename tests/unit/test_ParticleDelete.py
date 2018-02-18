@@ -43,6 +43,7 @@ class TestParticleDeletion(unittest.TestCase):
 
         self.ctrl = DT_m.DTcontrol_C()
 
+        self.ctrl.time = 0.0
         self.ctrl.dt = 1.0e-5
         self.ctrl.n_timesteps = 1
 
@@ -164,12 +165,19 @@ class TestParticleDeletion(unittest.TestCase):
         self.trajin = TrajectoryInput_C()
 
         self.trajin.maxpoints = None # Set to None to get every point
+        self.trajin.extra_points = 1  # Set to 1 to make sure one boundary-crossing can be
+                                      # accommodated. Set to a larger value if there are
+                                      # multiple boundary reflections.
 
         # Specify which particle variables to save.  This has the
         # form of a numpy dtype specification.
-        self.trajin.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
-        self.trajin.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
-        self.trajin.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
+        format_list_base = [int]
+        format_list = format_list_base + [numpy.float32]*7 # 7 is the number of floats in the next line.
+        self.trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': format_list}
+        format_list = format_list_base + [numpy.float32]*4
+        self.trajin.implicit_dict = {'names': ['step', 't', 'x', 'ux', 'phi'], 'formats': format_list}
+        format_list = format_list_base + [numpy.float32]*5
+        self.trajin.neutral_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy'], 'formats': format_list}
 
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles

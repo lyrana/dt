@@ -39,7 +39,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 #class TestParticleBoundaryConditions(unittest.TestCase):
     def test_1_2D_x_y_absorbing_boundary(self):
         """ Check that particles are deleted correctly when they
-            strike an absorbing boundary on a 2D Cartesian mesh.
+            cross an absorbing boundary on a 2D Cartesian mesh.
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -51,6 +51,14 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         #     plotFlag=True
 
         ctrl = DTcontrol_C()
+
+        # Run identifier
+        ctrl.title = "test_ParticleBoundaryConditions.py:test_1_2D_x_y_absorbing_boundary"
+        # Run author
+        ctrl.author = "tph"
+
+        ctrl.timeloop_count = 0
+        ctrl.time = 0.0
 
         ctrl.dt = 0.5
         ctrl.n_timesteps = 100
@@ -110,12 +118,18 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         trajin = TrajectoryInput_C()
 
         trajin.maxpoints = None # Set to None to get every point
+        trajin.extra_points = 1 # Set to 1 to make sure one boundary-crossing can be
+                                # accommodated.
 
         # Specify which particle variables to save.  This has the
         # form of a numpy dtype specification.
-        trajin.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
-        trajin.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
-        trajin.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
+        format_list_base = [int]
+        format_list = format_list_base + [numpy.float32]*7
+        trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': format_list}
+        format_list = format_list_base + [numpy.float32]*4
+        trajin.implicit_dict = {'names': ['step', 't', 'x', 'ux', 'phi'], 'formats': format_list}
+        format_list = format_list_base + [numpy.float32]*5
+        trajin.neutral_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy'], 'formats': format_list}
 
         # Add a traj_T reference to the particle object
         p_P = particle_P # abbreviation
@@ -231,9 +245,6 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
 # Advance the particles for n_timesteps
 
-        ctrl.timeloop_count = 0
-        ctrl.time = 0.0
-
         print "Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
         for istep in xrange(ctrl.n_timesteps):
             
@@ -249,6 +260,12 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Record the LAST point on the particle trajectory
         if p_P.traj_T is not None:
                 p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
+
+        # Plot the trajectory onto the particle mesh
+        mesh = p_P.pmesh_M.mesh
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
+        holdPlot = True # Set to True to stop the plot from disappearing.
+        p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
             
         return
 #    def test_1_2D_x_y_absorbing_boundary(self):ENDDEF
@@ -256,7 +273,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 #class TestParticleBoundaryConditions(unittest.TestCase):
     def test_2_2D_r_theta_absorbing_boundary(self):
         """ Check that particles are deleted correctly when they
-            strike an absorbing boundary.
+            cross an absorbing boundary.
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -321,13 +338,19 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         trajin = TrajectoryInput_C()
 
         trajin.maxpoints = None # Set to None to get every point
+        trajin.extra_points = 1 # Set to 1 to make sure one boundary-crossing can be
+                                # accommodated.
 
-        # Specify which particle variables to save.  This has the
+        # Specify which particle variables to save ('step' and 't' are required). This has the
         # form of a numpy dtype specification.
-        trajin.explicit_dict = {'names': ['x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [numpy.float32]*6}
-        trajin.implicit_dict = {'names': ['x', 'ux', 'phi'], 'formats': [numpy.float32]*3}
-        trajin.neutral_dict = {'names': ['x', 'ux', 'y', 'uy'], 'formats': [numpy.float32]*4}
 
+        format_list_base = [int]
+        format_list = format_list_base + [numpy.float32]*7
+        trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': format_list}
+        format_list = format_list_base + [numpy.float32]*4
+        trajin.implicit_dict = {'names': ['step', 't', 'x', 'ux', 'phi'], 'formats': format_list}
+        format_list = format_list_base + [numpy.float32]*5
+        trajin.neutral_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy'], 'formats': format_list}
         # # Initialize the particles
         # printFlags = {}
         # for sp in particle_P.species_names: printFlags[sp] = False
@@ -437,6 +460,14 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ctrl = DTcontrol_C()
 
+        # Run identifier
+        ctrl.title = "test_ParticleBoundaryConditions.py:test_2_2D_r_theta_absorbing_boundary"
+        # Run author
+        ctrl.author = "tph"
+
+        ctrl.timeloop_count = 0
+        ctrl.time = 0.0
+
         # These are fast electrons, so the timestep is small
         ctrl.dt = 1.0e-6
         ctrl.n_timesteps = 14
@@ -458,9 +489,6 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         print "Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
 
-        ctrl.timeloop_count = 0
-#        ctrl.time_step = 0
-        ctrl.time = 0.0
         for istep in xrange(ctrl.n_timesteps):
 
             if p_P.traj_T is not None:

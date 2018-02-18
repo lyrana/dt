@@ -110,7 +110,7 @@ class UserParticleBoundaryFunctions_C(Particle_C):
     """
 
     @staticmethod
-    def default_bc(p, speciesName, facetIndex, facet_normal=None):
+    def default_bc(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Global default boundary condition for all species.
 
            :param p: the record of the particle that crossed xmin.
@@ -127,14 +127,14 @@ class UserParticleBoundaryFunctions_C(Particle_C):
         # Count the number/charge/energy of deleted particles
 
         return
-#    def default_bc(p, speciesName, facetIndex):ENDDEF
+#    def default_bc(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
 
 
 ########## Cartesian coordinates ##########
 
 #class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def default_bc_at_xmin(p, speciesName, facetIndex, facet_normal=None):
+    def default_bc_at_xmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on xmin.
 
            :param p: the record of the particle that crossed xmin.
@@ -150,11 +150,11 @@ class UserParticleBoundaryFunctions_C(Particle_C):
         # Count the number/charge/energy of deleted particles
 
         return
-#    def default_bc_at_xmin(p, speciesName, facetIndex):ENDDEF
+#    def default_bc_at_xmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
     
 #class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def default_bc_at_xmax(p, speciesName, facetIndex, facet_normal=None):
+    def default_bc_at_xmax(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on xmax.
 
            :param p: the record of the particle that crossed xmin.
@@ -165,11 +165,11 @@ class UserParticleBoundaryFunctions_C(Particle_C):
         print "Called", fncName
 
         return
-#    def default_bc_at_xmax(p, speciesName, facetIndex):ENDDEF
+#    def default_bc_at_xmax(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
     
 #class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def bc_at_xmin_for_neutral_H(p, speciesName, facetIndex, facet_normal=None):
+    def bc_at_xmin_for_neutral_H(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Boundary condition for neutral_H incident on xmin.
 
            :param p: the record of the particle that crossed xmin.
@@ -187,7 +187,7 @@ class UserParticleBoundaryFunctions_C(Particle_C):
 
 #class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def default_bc_at_rmin(p, speciesName, facetIndex, facet_normal=None):
+    def default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on rmin.
            Reflect the particle after accounting for it.
 
@@ -246,14 +246,12 @@ class UserParticleBoundaryFunctions_C(Particle_C):
 # Set the delete bit
 #        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 
-
-
         return
-#    def default_bc_at_rmin(p, speciesName, facetIndex):ENDDEF
+    def default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
     
 #class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def INACTIVE_default_bc_at_rmin(p, speciesName, facetIndex, facet_normal=None):
+    def INACTIVE_default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on rmin.
            Delete the particle after accounting for it.
 
@@ -274,7 +272,7 @@ class UserParticleBoundaryFunctions_C(Particle_C):
 
 #class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def default_bc_at_rmax(p, speciesName, facetIndex, facet_normal=None):
+    def default_bc_at_rmax(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on rmax.
 
            :param p: the record of the particle that crossed rmin.
@@ -288,11 +286,11 @@ class UserParticleBoundaryFunctions_C(Particle_C):
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 
         return
-#    def default_bc_at_rmax(p, speciesName, facetIndex):ENDDEF
+#    def INACTIVE_default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
     
 #class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
-    def bc_at_rmin_for_neutral_H(p, speciesName, facetIndex, facet_normal=None):
+    def bc_at_rmin_for_neutral_H(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Boundary condition for neutral_H incident on rmin.
 
            :param p: the record of the particle that crossed rmin.
@@ -308,7 +306,7 @@ class UserParticleBoundaryFunctions_C(Particle_C):
         # Count the number/charge/energy of deleted particles
 
         return
-#    def bc_at_rmin_for_neutral_H(p, speciesName, facetIndex):ENDDEF
+#    def bc_at_rmin_for_neutral_H(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
 
 #class UserParticleBoundaryFunctions_C(Particle_C): ENDCLASS
 
@@ -319,7 +317,7 @@ class UserParticleSourceFunctions_C(object):
        scheme.
     """
 
-## XX these are supposed to be SOURCE functions.
+## XX TODO: these are supposed to be SOURCE functions.
     
 #class UserParticleSourceFunctions_C(object):
     @staticmethod

@@ -22,10 +22,19 @@ class TrajectoryInput_C(object):
         """ Initialize variables
         """
 
-        # Upper limit is the number of timesteps
+        # If maxpoints is specified, no more than this number of points will be saved.
         self.maxpoints = None
 
+        # The number of points that will be saved. The upper limit is the number of
+        # timesteps plus extra_points.
         self.npoints = None
+
+        # An array length equal to the number of timesteps+1 may not be enough to record all
+        # points on the trajectory, since boundary-crossings are always recorded.  To allow for
+        # one boundary-crossing where the particle is absorbed at the boundary,
+        # extra_points can be set to 1.  For a particle reflecting multiple times off a
+        # boundary, a larger value can be used.
+        self.extra_points = None
 
         self.explicit_dict = None
         self.implicit_dict = None
@@ -82,9 +91,6 @@ class Trajectory_C(object):
            e.g.,  {'names': ['x', 'y'], 'formats': [np_m.float64, np_m.float64]}
         """
 
-        # Counter for the number of datapoints stored
-        self.count = 0 # XX Not used?
-
         self.last_step = None # This variable can be used to check if the simulation
                               # step in the current call is the same as the step in
                               # the last call, and avoid storing the same data twice.
@@ -101,7 +107,7 @@ class Trajectory_C(object):
 
         # Length of trajectory data arrays
         # If the location of boundary-crossings is recorded, then you can run out of space
-        self.npoints = ctrl.n_timesteps/self.skip + 1
+        self.npoints = ctrl.n_timesteps/self.skip + 1 + trajin.extra_points
 
         # Time interval between datapoints
         self.data_interval = self.skip * ctrl.dt
@@ -207,7 +213,7 @@ class Trajectory_C(object):
                 x_label = "'time (s)"
                 for comp in comps:
                     mplot_m.figure()
-                    mplot_m.plot(tvals[0:nlength], data_arr[comp][0:nlength])
+                    mplot_m.plot(tvals[0:nlength], data_arr[comp][0:nlength], marker="o")
                     mplot_m.title(plot_title)
                     mplot_m.xlabel(x_label)
                     mplot_m.ylabel(comp)
@@ -218,7 +224,7 @@ class Trajectory_C(object):
                 if 'x' in comps:
                     if 'y' in comps:
                         mplot_m.figure()
-                        mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength])
+                        mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength], marker="o")
                         mplot_m.title(plot_title)
                         mplot_m.xlabel('x')
                         mplot_m.ylabel('y')
@@ -226,7 +232,7 @@ class Trajectory_C(object):
 #                        mplot_m.show()
                     if 'ux' in comps:
                         mplot_m.figure()
-                        mplot_m.plot(data_arr['x'][0:nlength], data_arr['ux'][0:nlength])
+                        mplot_m.plot(data_arr['x'][0:nlength], data_arr['ux'][0:nlength], marker="o")
                         mplot_m.title(plot_title)
                         mplot_m.xlabel('x')
                         mplot_m.ylabel('ux')
@@ -262,15 +268,16 @@ class Trajectory_C(object):
                 # x vs. y
                 if 'x' in comps:
                     if 'y' in comps:
-                        path = np_m.empty(2*nlength, dtype=np_m.float64) # NB: dtype has to be double for add_polygon()
-                        path[0::2] = data_arr['x'][0:nlength] # Start at 0, with stride 2
-                        path[1::2] = data_arr['y'][0:nlength] # Start at 1, with stride 2
+                        mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength], marker="o")
+# VTK plotter:                        
+#                        path = np_m.empty(2*nlength, dtype=np_m.float64) # NB: dtype has to be double for add_polygon()
+#                        path[0::2] = data_arr['x'][0:nlength] # Start at 0, with stride 2
+#                        path[1::2] = data_arr['y'][0:nlength] # Start at 1, with stride 2
 #                        print fncName, 'path =', path
 #                        print fncName, 'Trajectory', it, 'has ', path.size, 'points'
                         # Replace with a point plot:
                         # plotter.add_polygon(path)
 
-#        if hold_plot is True: mplot_m.show() # Stops the plot from disappearing
         mplot_m.show() # Display the plot
 
         return

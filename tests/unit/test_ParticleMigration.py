@@ -237,6 +237,12 @@ class TestParticleMigration(unittest.TestCase):
 
         ctrl = DTcontrol_C()
 
+        # Run identifier
+        ctrl.title = "test_ParticleMigration.py:test_1D_particle_migration"
+        # Run author
+        ctrl.author = "tph"
+
+        ctrl.time = 0.0
         ctrl.dt = 0.5
         ctrl.n_timesteps = 19
 
@@ -307,6 +313,12 @@ class TestParticleMigration(unittest.TestCase):
 
         ctrl = DTcontrol_C()
 
+        # Run identifier
+        ctrl.title = "test_ParticleMigration.py:test_2D_particle_migration"
+        # Run author
+        ctrl.author = "tph"
+        
+        ctrl.time = 0.0
         ctrl.dt = 0.5
         ctrl.n_timesteps = 19
 
@@ -369,9 +381,11 @@ class TestParticleMigration(unittest.TestCase):
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
                 getparticle = self.particle_P.pseg_arr[sp].get(ip)
+#                mplot_m.plot(data_arr['x'], data_arr['y'])
+                mplot_m.plot([p_ic[ip][0], getparticle[0]], [p_ic[ip][1], getparticle[1]])
 #                print 'sp =', sp, 'expected =', p_expected[ip]
 #                print 'calculated = ', getparticle
-                path = np_m.array([p_ic[ip][0], p_ic[ip][1], getparticle[0], getparticle[1]])
+#                path = np_m.array([p_ic[ip][0], p_ic[ip][1], getparticle[0], getparticle[1]])
 # Replace with point plot
 #                plotter.add_polygon(path)
 
@@ -396,6 +410,7 @@ class TestParticleMigration(unittest.TestCase):
 
         ctrl = DTcontrol_C()
 
+        ctrl.time = 0.0
         ctrl.dt = 0.5
         ctrl.n_timesteps = 19
 
@@ -456,9 +471,10 @@ class TestParticleMigration(unittest.TestCase):
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
                 getparticle = self.particle_P.pseg_arr[sp].get(ip)
+                mplot_m.plot([p_ic[ip][0], getparticle[0]], [p_ic[ip][1], getparticle[1]], [p_ic[ip][2], getparticle[2]])
 #                print 'expected = ', p_expected[ip]
 #                print 'calculated = ', getparticle
-                path = np_m.array([p_ic[ip][0], p_ic[ip][1], p_ic[ip][2], getparticle[0], getparticle[1], getparticle[2]])
+#                path = np_m.array([p_ic[ip][0], p_ic[ip][1], p_ic[ip][2], getparticle[0], getparticle[1], getparticle[2]])
 # Replace this with a point plot:
 #                plotter.add_polygon(path)
 

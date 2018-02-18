@@ -254,6 +254,10 @@ class TestParticleGeneration(unittest.TestCase):
         self.trajin = TrajectoryInput_C()
 
         self.trajin.maxpoints = None # Set to None to get every point
+        self.trajin.extra_points = 1  # Set to 1 to make sure one boundary-crossing can be
+                                      # accommodated. Set to a larger value if there are
+                                      # multiple boundary reflections.
+
         self.trajin.explicit_dict = {'names': ['x', 'ux',], 'formats': [np_m.float32]*2}
 
         ## Create the trajectory object and attach it to the particle object.
@@ -269,7 +273,7 @@ class TestParticleGeneration(unittest.TestCase):
         ctrl.time = 0.0
 
         # Run identifier
-        ctrl.title = "test_ParticleGeneration"
+        ctrl.title = "test_ParticleGeneration.py:test_1D_particle_source_region"
         # Run author
         ctrl.author = "tph"
 

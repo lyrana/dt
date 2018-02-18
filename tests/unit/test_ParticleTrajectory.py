@@ -239,12 +239,20 @@ class TestParticleTrajectory(unittest.TestCase):
         self.trajin = TrajectoryInput_C()
 
         self.trajin.maxpoints = None # Set to None to get every point
+        self.trajin.extra_points = 10 # Set to 1 to make sure one boundary-crossing can be
+                                      # accommodated. Set to a larger value if there are
+                                      # multiple boundary reflections. 10 is needed for
+                                      # all the the reflections in test_4.
 
         # Specify which particle variables to save.  This has the form of a numpy
         # dtype specification.
-        self.trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': [int, numpy.float32, numpy.float32, numpy.float32, numpy.float32, numpy.float32, numpy.float32, numpy.float32]}
-        self.trajin.implicit_dict = {'names': ['step', 't', 'x', 'ux', 'phi'], 'formats': [int, numpy.float32, numpy.float32, numpy.float32, numpy.float32]}
-        self.trajin.neutral_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy'], 'formats': [int, numpy.float32, numpy.float32, numpy.float32, numpy.float32, numpy.float32]}
+        format_list_base = [int]
+        format_list = format_list_base + [numpy.float32]*7 # 7 is the number of floats in the following line.
+        self.trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': format_list}
+        format_list = format_list_base + [numpy.float32]*4
+        self.trajin.implicit_dict = {'names': ['step', 't', 'x', 'ux', 'phi'], 'formats': format_list}
+        format_list = format_list_base + [numpy.float32]*5
+        self.trajin.neutral_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy'], 'formats': format_list}
 
         return
 
@@ -341,7 +349,9 @@ class TestParticleTrajectory(unittest.TestCase):
 
         for istep in xrange(self.ctrl.n_timesteps):
 
+            # Count the number of times this loop has been entered:
             self.ctrl.timeloop_count += 1
+            # Set the time we're integrating to:
             self.ctrl.time += self.ctrl.dt
 
             print fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
@@ -411,13 +421,12 @@ class TestParticleTrajectory(unittest.TestCase):
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         mesh = p_P.pmesh_M.mesh
         holdPlot = False # Set to True to stop the plot from disappearing.
-        holdPlot = True # Set to True to stop the plot from disappearing.
         p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         # Plot the trajectory in phase-space
 
-        plotFlag = False
-        if os.environ.get('DISPLAY') is not None and plotFlag is True:
+        plotPhaseSpace = False
+        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
             p_P.traj_T.plot_trajectories() # Phase-space plot of trajectory
 
         return
@@ -430,7 +439,7 @@ class TestParticleTrajectory(unittest.TestCase):
         """
 
         printInfoAdvance = True
-        printInfoStarting = False
+        printInfoStarting = True
         printInfoExited = True
         printWarningAtEnd = True
         
@@ -542,8 +551,8 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Plot the trajectory in phase-space
 
-        plotFlag = True
-        if os.environ.get('DISPLAY') is not None and plotFlag is True:
+        plotPhaseSpace = False
+        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
             p_P.traj_T.plot_trajectories()
 
         return
@@ -564,7 +573,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         p_P = self.particle_P
 
-        self.ctrl.n_timesteps = 16 # 25; 20; The particle hits the inner boundary on step 14.  Hits the outer boundary on step 21.
+        self.ctrl.n_timesteps = 20 # 25; 20; The particle hits the inner boundary on step 14.  Hits the outer boundary on step 21.
         dt = self.ctrl.dt
 
         ## Create the trajectory object and attach it to the particle object.
@@ -663,8 +672,8 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Plot the trajectory in phase-space
 
-        plotFlag = False
-        if os.environ.get('DISPLAY') is not None and plotFlag is True:
+        plotPhaseSpace = False
+        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
             p_P.traj_T.plot_trajectories()
 
         return

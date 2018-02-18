@@ -108,7 +108,7 @@ class UserParticleBoundaryFunctions_C(object):
     """
 
     @staticmethod
-    def default_bc(p, speciesName, facetIndex):
+    def default_bc(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Global default boundary condition for all species.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -117,8 +117,7 @@ class UserParticleBoundaryFunctions_C(object):
         return
 
     @staticmethod
-    def default_bc_at_xmin(p, speciesName, facetIndex):
-#    def default_bc_at_xmin(self, p, facetIndex):
+    def default_bc_at_xmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on xmin.
 
            :param p: the record of the particle that crossed xmin.
@@ -137,7 +136,7 @@ class UserParticleBoundaryFunctions_C(object):
 #    def default_bc_at_xmin(p, facetIndex):ENDDEF
     
     @staticmethod
-    def default_bc_at_xmax(p, speciesName, facetIndex):
+    def default_bc_at_xmax(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on xmax.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -146,7 +145,7 @@ class UserParticleBoundaryFunctions_C(object):
         return
     
     @staticmethod
-    def default_bc_at_ymin(p, speciesName, facetIndex):
+    def default_bc_at_ymin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on ymin.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
@@ -160,7 +159,7 @@ class UserParticleBoundaryFunctions_C(object):
         return
     
     @staticmethod
-    def default_bc_at_ymax(p, speciesName, facetIndex):
+    def default_bc_at_ymax(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on ymax.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -169,7 +168,7 @@ class UserParticleBoundaryFunctions_C(object):
         return
     
     @staticmethod
-    def bc_at_xmin_for_neutral_H(p, speciesName, facetIndex):
+    def bc_at_xmin_for_neutral_H(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Boundary condition for neutral_H incident on xmin.
 
         """
