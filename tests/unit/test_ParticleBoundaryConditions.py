@@ -21,7 +21,7 @@ from SegmentedArrayPair_Module import SegmentedArray_C
 from Particle_Module import *
 from Particle_Module import *
 
-from Trajectory_Module import *
+from RecordedData_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
@@ -109,7 +109,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        particle_P.user_particles_module_name = userParticlesModuleName
+        # particle_P.user_particles_module_name = userParticlesModuleName
         particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### Create a trajectory object and add it to particle_P
@@ -336,7 +336,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        particle_P.user_particles_module_name = userParticlesModuleName
+        # particle_P.user_particles_module_name = userParticlesModuleName
         particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
 

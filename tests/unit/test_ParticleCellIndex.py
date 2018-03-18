@@ -102,7 +102,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        self.particle_P.user_particles_module_name = userParticlesModuleName
+        # self.particle_P.user_particles_module_name = userParticlesModuleName
         self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### plasma_electrons are present at t=0
@@ -354,7 +354,7 @@ class TestParticleCellIndex(unittest.TestCase):
                         # print "Coordinates", p, "are in cell", pseg[ip]['cell_index']
                         if pseg[ip]['cell_index'] != Mesh_C.NO_CELL:
 #                            cell_vertices = pmesh_M.cell_entity_index_dict['vertex'][pseg[ip]['cell_index']]
-                            # Look up the cell index in the particle datalist
+                            # Look up the cell index in the particle data list
                             c = pmesh_M.cell_dict[pseg[ip]['cell_index']]
                         else:
                             c = None

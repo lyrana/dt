@@ -19,7 +19,7 @@ from Dolfin_Module import Field_C
 
 from Particle_Module import *
 
-from Trajectory_Module import *
+from RecordedData_Module import *
 
 from SegmentedArrayPair_Module import SegmentedArray_C
 
@@ -29,7 +29,7 @@ from UserUnits_Module import MyPlasmaUnits_C
 
 #STARTCLASS
 class TestParticleTrajectory(unittest.TestCase):
-    """Test classes in Trajectory_Module.
+    """Test classes in RecordedData_Module.
     """
     
     def setUp(self):
@@ -85,7 +85,7 @@ class TestParticleTrajectory(unittest.TestCase):
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        self.particle_P.user_particles_module_name = userParticlesModuleName
+        # self.particle_P.user_particles_module_name = userParticlesModuleName
         self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
 
@@ -267,8 +267,8 @@ class TestParticleTrajectory(unittest.TestCase):
 
 #class TestParticleTrajectory(unittest.TestCase):
     def test_1_trajectory_init(self):
-        """ Check that the trajectory variables are saved correctly in
-            the trajectory DataList.
+        """ Check that the trajectory variable names are saved correctly in
+            the trajectory data_list.
 
         """
 
@@ -303,19 +303,19 @@ class TestParticleTrajectory(unittest.TestCase):
         print "The explicit species with trajectory particles are", p_P.traj_T.explicit_species
         expectedList = self.trajin.explicit_dict['names']
         for sp in p_P.traj_T.explicit_species:
-            print "  with particle indices", p_P.traj_T.ParticleIdList[sp]
-            if len(p_P.traj_T.ParticleIdList[sp]) == 0: continue
-            print "  and values", p_P.traj_T.DataList[sp][0].dtype.names
-            gotList = p_P.traj_T.DataList[sp][0].dtype.names
+            print "  with particle indices", p_P.traj_T.particle_index_list[sp]
+            if len(p_P.traj_T.particle_index_list[sp]) == 0: continue
+            print "  and values", p_P.traj_T.data_list[sp][0].dtype.names
+            gotList = p_P.traj_T.data_list[sp][0].dtype.names
             for i in range(len(expectedList)):
-                self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for and explicit particle")
+                self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an explicit particle")
 
 #        print "The implicit species are", p_P.traj_T.implicit_species
         expectedList = self.trajin.implicit_dict['names']
         for sp in p_P.traj_T.implicit_species:
-#            print "  with indices", p_P.traj_T.ParticleIdList[sp]
-#            print "  and values", p_P.traj_T.DataList[sp][0].dtype.names
-            gotList = p_P.traj_T.DataList[sp][0].dtype.names
+#            print "  with indices", p_P.traj_T.particle_index_list[sp]
+#            print "  and values", p_P.traj_T.data_list[sp][0].dtype.names
+            gotList = p_P.traj_T.data_list[sp][0].dtype.names
             for i in range(len(expectedList)):
                 self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an implicit particle")
 #                self.assertAlmostEqual(getparticle[ix], p_expected[isp][ix], msg="Particle is not in correct position")
@@ -392,9 +392,9 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Check the results
 
-#        print 'trajelectrons data x:', p_P.traj_T.DataList['trajelectrons'][0][:]['x']
-#        print 'trajelectrons data ux:', p_P.traj_T.DataList['trajelectrons'][0][:]['ux']
-#        print 'trajelectrons data Ex:', p_P.traj_T.DataList['trajelectrons'][0][:]['Ex']
+#        print 'trajelectrons data x:', p_P.traj_T.data_list['trajelectrons'][0][:]['x']
+#        print 'trajelectrons data ux:', p_P.traj_T.data_list['trajelectrons'][0][:]['ux']
+#        print 'trajelectrons data Ex:', p_P.traj_T.data_list['trajelectrons'][0][:]['Ex']
 
         # First electron
         xp1 = 0.77759792; yp1 = 0.78651935; zp1 = 0.0
@@ -515,10 +515,10 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Check the results
 
-#        print 'trajelectron 0 data x:', p_P.traj_T.DataList['trajelectrons'][0][:]['x']
-#        print 'trajelectron 1 data x:', p_P.traj_T.DataList['trajelectrons'][1][:]['x']
-#        print 'trajelectron 0 data ux:', p_P.traj_T.DataList['trajelectrons'][0][:]['ux']
-#        print 'trajelectron 1 data Ex:', p_P.traj_T.DataList['trajelectrons'][0][:]['Ex']
+#        print 'trajelectron 0 data x:', p_P.traj_T.data_list['trajelectrons'][0][:]['x']
+#        print 'trajelectron 1 data x:', p_P.traj_T.data_list['trajelectrons'][1][:]['x']
+#        print 'trajelectron 0 data ux:', p_P.traj_T.data_list['trajelectrons'][0][:]['ux']
+#        print 'trajelectron 1 data Ex:', p_P.traj_T.data_list['trajelectrons'][0][:]['Ex']
 
         # The expected results from ParticleNonuniformE.ods
         		

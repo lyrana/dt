@@ -1477,9 +1477,9 @@ class Particle_C(object):
 
         # Find the position of full_index_in in the trajectory storage list.  This is
         # the full index that previously identified the particle.
-        p_index = self.traj_T.ParticleIdList[sn].index(full_index_in)
+        p_index = self.traj_T.particle_index_list[sn].index(full_index_in)
         # Replace this with the new full index.
-        self.traj_T.ParticleIdList[sn][p_index] = full_index_out
+        self.traj_T.particle_index_list[sn][p_index] = full_index_out
 
 #        print "update_traj: The particle that had index", full_index_in, "now has index", full_index_out
 
@@ -1545,22 +1545,22 @@ class Particle_C(object):
         # Copy the particle values into the trajectory
 
         # Find the position of full_index_in in the trajectory storage list:
-        p_index = self.traj_T.ParticleIdList[sn].index(full_index_in)
+        p_index = self.traj_T.particle_index_list[sn].index(full_index_in)
 #tph
 #        print "remove_traj: The position of particle", full_index_in, "in the traj array is", p_index
-#        print "remove_traj: The current particle indices are:", self.traj_T.ParticleIdList[sn]
+#        print "remove_traj: The current particle indices are:", self.traj_T.particle_index_list[sn]
 
         # Copy the particle values into the trajectory arrays for this particle
         # (The index for the new point is equal to the existing number of points
         # in the trajectory.)
-        newpoint = self.traj_T.TrajectoryLength[sn][p_index]
+        newpoint = self.traj_T.trajectory_length[sn][p_index]
         # If the trajectory array length is exceeded, return, after marking the
         # trajectory as ended.
         if newpoint > traj_T.npoints - 1:
             if printWarningIndex is True:
                 print "%s\tDnT WARNING: Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, sn, finalStep, traj_T.npoints)
                 # Mark this as a trajectory where the particle no longer exists.
-            self.traj_T.ParticleIdList[sn][p_index] = self.traj_T.NO_PINDEX
+            self.traj_T.particle_index_list[sn][p_index] = self.traj_T.NO_PINDEX
             return full_index_in
 
 #        print "remove_traj: This particle is ", self.dynamics[sn]
@@ -1568,42 +1568,42 @@ class Particle_C(object):
             for comp in traj_T.explicit_dict['names']:
 #                print "remove_traj: comp = ", comp
                 if comp == 'step':
-                    traj_T.DataList[sn][p_index][comp][newpoint] = finalStep
+                    traj_T.data_list[sn][p_index][comp][newpoint] = finalStep
                 elif comp == 't':
-                    traj_T.DataList[sn][p_index][comp][newpoint] = finalTime
+                    traj_T.data_list[sn][p_index][comp][newpoint] = finalTime
                 elif comp in p_arr.dtype.names:
-                    traj_T.DataList[sn][p_index][comp][newpoint] = p_arr[0][comp]
+                    traj_T.data_list[sn][p_index][comp][newpoint] = p_arr[0][comp]
                     # The particle has been deleted and may be out-of-bounds, so set
                     # E to zero instead of interpolating.
                 elif comp in self.negE1.dtype.names:
-                    traj_T.DataList[sn][p_index][comp][newpoint] = 0.0
+                    traj_T.data_list[sn][p_index][comp][newpoint] = 0.0
         elif self.dynamics[sn] == 'implicit':
             for comp in traj_T.implicit_dict['names']:
                 print "remove_traj: comp = ", comp
                 if comp == 'step':
-                    traj_T.DataList[sn][p_index][comp][newpoint] = finalStep
+                    traj_T.data_list[sn][p_index][comp][newpoint] = finalStep
                 elif comp == 't':
-                    traj_T.DataList[sn][p_index][comp][newpoint] = finalTime
+                    traj_T.data_list[sn][p_index][comp][newpoint] = finalTime
                 elif comp in p_arr.dtype.names:
-                    traj_T.DataList[sn][p_index][comp][newpoint] = p_arr[0][comp]
+                    traj_T.data_list[sn][p_index][comp][newpoint] = p_arr[0][comp]
 #TODO fix this for implicit species:
                 # The particle has been deleted and may be out-of-bounds, so set
                 # E to zero instead of interpolating.
                 # elif comp in self.negE1.dtype.names:
-                #     traj_T.DataList[sn][p_index][comp][newpoint] = 0.0
+                #     traj_T.data_list[sn][p_index][comp][newpoint] = 0.0
         elif self.dynamics[sn] == 'neutral':
             for comp in traj_T.neutral_dict['names']:
                 if comp == 'step':
-                    traj_T.DataList[sn][p_index][comp][newpoint] = finalStep
+                    traj_T.data_list[sn][p_index][comp][newpoint] = finalStep
                 elif comp == 't':
-                    traj_T.DataList[sn][p_index][comp][newpoint] = finalTime
+                    traj_T.data_list[sn][p_index][comp][newpoint] = finalTime
                 elif comp in p_arr.dtype.names:
-                    traj_T.DataList[sn][p_index][comp][newpoint] = p_arr[0][comp]
+                    traj_T.data_list[sn][p_index][comp][newpoint] = p_arr[0][comp]
                     
-        self.traj_T.TrajectoryLength[sn][p_index] += 1 # Increment the trajectory length
+        self.traj_T.trajectory_length[sn][p_index] += 1 # Increment the trajectory length
 
         # Mark this as a trajectory where the particle no longer exists.
-        self.traj_T.ParticleIdList[sn][p_index] = self.traj_T.NO_PINDEX
+        self.traj_T.particle_index_list[sn][p_index] = self.traj_T.NO_PINDEX
 
         return full_index_in
 #    def remove_trajectory_particleId(self, sn, i_in):ENDDEF
@@ -1662,12 +1662,12 @@ class Particle_C(object):
 
         # Look up the trajectory index for this particle
         if traj_T is not None:
-            t_idx = traj_T.ParticleIdList[species_name].index(full_index)
+            t_idx = traj_T.particle_index_list[species_name].index(full_index)
 
             # Copy the particle values into the trajectory arrays for this particle
             # (The index for the new point is equal to the existing number of points
             # in the trajectory.)
-            newpoint = traj_T.TrajectoryLength[species_name][t_idx]
+            newpoint = traj_T.trajectory_length[species_name][t_idx]
             if newpoint > traj_T.npoints - 1:
                 if printWarningIndex is True:
                     print "%s\tDnT WARNING: Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, species_name, step, traj_T.npoints)
@@ -1677,33 +1677,33 @@ class Particle_C(object):
                 for comp in traj_T.explicit_dict['names']:
                     # print 'comp = ', comp
                     if comp == 'step':
-                        traj_T.DataList[species_name][t_idx][comp][newpoint] = step
+                        traj_T.data_list[species_name][t_idx][comp][newpoint] = step
                     elif comp == 't':
-                        traj_T.DataList[species_name][t_idx][comp][newpoint] = time
+                        traj_T.data_list[species_name][t_idx][comp][newpoint] = time
                     elif comp in p_arr.dtype.names:
                         if facet_crossing is True and comp in self.position_coordinates:
-                            traj_T.DataList[species_name][t_idx][comp][newpoint] = p_arr[0][comp+'0']
+                            traj_T.data_list[species_name][t_idx][comp][newpoint] = p_arr[0][comp+'0']
                         else:
-                            traj_T.DataList[species_name][t_idx][comp][newpoint] = p_arr[0][comp]
+                            traj_T.data_list[species_name][t_idx][comp][newpoint] = p_arr[0][comp]
                     elif comp in E_arr.dtype.names:
-                        traj_T.DataList[species_name][t_idx][comp][newpoint] = E_arr[0][comp]
+                        traj_T.data_list[species_name][t_idx][comp][newpoint] = E_arr[0][comp]
             elif self.dynamics[species_name] == 'neutral':
                 for comp in traj_T.explicit_dict['names']:
                     # print 'comp = ', comp
                     if comp == 'step':
-                        traj_T.DataList[species_name][t_idx][comp][newpoint] = step
+                        traj_T.data_list[species_name][t_idx][comp][newpoint] = step
                     elif comp == 't':
-                        traj_T.DataList[species_name][t_idx][comp][newpoint] = time
+                        traj_T.data_list[species_name][t_idx][comp][newpoint] = time
                     elif comp in p_arr.dtype.names:
                         if facet_crossing is True and comp in self.position_coordinates:
-                            traj_T.DataList[species_name][t_idx][comp][newpoint] = p_arr[0][comp+'0']
+                            traj_T.data_list[species_name][t_idx][comp][newpoint] = p_arr[0][comp+'0']
                         else:
-                            traj_T.DataList[species_name][t_idx][comp][newpoint] = p_arr[0][comp]
+                            traj_T.data_list[species_name][t_idx][comp][newpoint] = p_arr[0][comp]
             elif self.dynamics[species_name] == 'implicit':
                 # TODO
                 pass
                 
-            traj_T.TrajectoryLength[species_name][t_idx] += 1 # Increment the trajectory length
+            traj_T.trajectory_length[species_name][t_idx] += 1 # Increment the trajectory length
 
         return
 #    def record_trajectory_datum(self, neg_E_field=None):ENDDEF
@@ -1713,7 +1713,7 @@ class Particle_C(object):
         """Save one trajectory data-record for all the marked particles of all
            species.
 
-           If a particle's index in ParticleIdList[] is NO_PINDEX, it means that the
+           If a particle's index in particle_index_list[] is NO_PINDEX, it means that the
            particle has been deleted from the simulation, so no further data are
            added to it's trajectory.
 
@@ -1747,10 +1747,10 @@ class Particle_C(object):
         # Record a trajectory data-point for particles with explicit dynamics
         for sp in traj_T.explicit_species:
             pseg_arr = self.pseg_arr[sp] # The SA for this species
-            for i in xrange(len(traj_T.ParticleIdList[sp])): # i loops over the list of
+            for i in xrange(len(traj_T.particle_index_list[sp])): # i loops over the list of
                                                              # trajectory-particles for
                                                              # this species
-                ip = traj_T.ParticleIdList[sp][i] # Look up the full particle index
+                ip = traj_T.particle_index_list[sp][i] # Look up the full particle index
 #                print "Recording data for particle", ip, "of species", sp
                 
                 # If a particle no longer exists, skip it.
@@ -1778,7 +1778,7 @@ class Particle_C(object):
 #                print "E_arr.dtype.names =", E_arr.dtype.names
 
                 # Copy the particle values into the trajectory
-                newpoint = traj_T.TrajectoryLength[sp][i]
+                newpoint = traj_T.trajectory_length[sp][i]
                 if newpoint > traj_T.npoints - 1:
                     if printWarningArraySize is True:
                         print "%s\tDnT WARNING: Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, sp, step, traj_T.npoints)
@@ -1787,22 +1787,22 @@ class Particle_C(object):
                 for comp in traj_T.explicit_dict['names']:
 #                    print 'comp = ', comp
                     if comp == 'step':
-                        traj_T.DataList[sp][i][comp][newpoint] = step
+                        traj_T.data_list[sp][i][comp][newpoint] = step
                     elif comp == 't':
-                        traj_T.DataList[sp][i][comp][newpoint] = time
+                        traj_T.data_list[sp][i][comp][newpoint] = time
                     elif comp in p_arr.dtype.names:
-                        traj_T.DataList[sp][i][comp][newpoint] = p_arr[0][comp]
+                        traj_T.data_list[sp][i][comp][newpoint] = p_arr[0][comp]
                     elif comp in E_arr.dtype.names:
-                        traj_T.DataList[sp][i][comp][newpoint] = E_arr[0][comp]
+                        traj_T.data_list[sp][i][comp][newpoint] = E_arr[0][comp]
                         
-                traj_T.TrajectoryLength[sp][i] += 1 # Increment the trajectory length
+                traj_T.trajectory_length[sp][i] += 1 # Increment the trajectory length
 
         # Record a trajectory data-point for particles with implicit dynamics
         for sp in traj_T.implicit_species:
             pseg_arr = self.pseg_arr[sp] # The SA for this species
-            for i in xrange(len(traj_T.ParticleIdList[sp])): # i loops on
+            for i in xrange(len(traj_T.particle_index_list[sp])): # i loops on
                                                              # particle-index array
-                ip = traj_T.ParticleIdList[sp][i] # Look up the full particle index
+                ip = traj_T.particle_index_list[sp][i] # Look up the full particle index
 #                print "Recording data for particle", ip, "of species", sp
                 
                 # If a particle no longer exists, skip
@@ -1832,27 +1832,27 @@ class Particle_C(object):
 # #                print "E_arr.dtype.names =", E_arr.dtype.names
 
                 # Copy the particle values into the trajectory
-                newpoint = traj_T.TrajectoryLength[sp][i]
+                newpoint = traj_T.trajectory_length[sp][i]
                 for comp in traj_T.implicit_dict['names']:
 #                    print 'comp = ', comp
                     if comp == 'step':
-                        traj_T.DataList[sp][i][comp][newpoint] = step
+                        traj_T.data_list[sp][i][comp][newpoint] = step
                     elif comp == 't':
-                        traj_T.DataList[sp][i][comp][newpoint] = time
+                        traj_T.data_list[sp][i][comp][newpoint] = time
                     elif comp in p_arr.dtype.names:
-                        traj_T.DataList[sp][i][comp][newpoint] = p_arr[0][comp]
+                        traj_T.data_list[sp][i][comp][newpoint] = p_arr[0][comp]
 # TODO: Fix for implicit species                        
 #                    elif comp in E_arr.dtype.names:
-#                        traj_T.DataList[sp][i][comp][newpoint] = E_arr[0][comp]
+#                        traj_T.data_list[sp][i][comp][newpoint] = E_arr[0][comp]
 
-                traj_T.TrajectoryLength[sp][i] += 1 # Increment the trajectory length
+                traj_T.trajectory_length[sp][i] += 1 # Increment the trajectory length
 
         # Record a trajectory data-point for particles with neutral dynamics
         for sp in traj_T.neutral_species:
             pseg_arr = self.pseg_arr[sp] # The SA for this species
-            for i in xrange(len(traj_T.ParticleIdList[sp])): # i loops on
+            for i in xrange(len(traj_T.particle_index_list[sp])): # i loops on
                                                              # particle-index array
-                ip = traj_T.ParticleIdList[sp][i] # Look up the full particle index
+                ip = traj_T.particle_index_list[sp][i] # Look up the full particle index
 #                print "Recording data for particle", ip, "of species", sp
                 
                 # If a particle no longer exists, skip
@@ -1864,16 +1864,16 @@ class Particle_C(object):
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
                 # Copy the particle values into the trajectory
-                newpoint = traj_T.TrajectoryLength[sp][i]
+                newpoint = traj_T.trajectory_length[sp][i]
                 for comp in traj_T.neutral_dict['names']:
                     if comp == 'step':
-                        traj_T.DataList[sp][i][comp][newpoint] = step
+                        traj_T.data_list[sp][i][comp][newpoint] = step
                     elif comp == 't':
-                        traj_T.DataList[sp][i][comp][newpoint] = time
+                        traj_T.data_list[sp][i][comp][newpoint] = time
                     elif comp in p_arr.dtype.names:
-                        traj_T.DataList[sp][i][comp][newpoint] = p_arr[0][comp]
+                        traj_T.data_list[sp][i][comp][newpoint] = p_arr[0][comp]
                         
-                traj_T.TrajectoryLength[sp][i] += 1 # Increment the trajectory length
+                traj_T.trajectory_length[sp][i] += 1 # Increment the trajectory length
                         
 
         # Update "last_step" before returning

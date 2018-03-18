@@ -83,7 +83,7 @@ class TestParticleInitialization(unittest.TestCase):
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        p_P.user_particles_module_name = userParticlesModuleName
+        # p_P.user_particles_module_name = userParticlesModuleName
         p_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### Provide input for particles present at t=0

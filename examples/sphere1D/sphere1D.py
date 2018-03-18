@@ -75,7 +75,7 @@ from UserMesh_y_Fields_Spherical1D_Module import * # User input for mesh and fie
 
 from UserParticles_1D import * # User input for particles
 from Particle_Module import *
-from Trajectory_Module import *
+from RecordedData_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
@@ -260,7 +260,7 @@ if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 ##FM1 Create the mesh after the particle boundary-conditions are set
-## below. See PS.2.1 below.
+## below. See PS.2.1. below.
 
 
 ############################## PS. Particle Species ##############################

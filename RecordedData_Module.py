@@ -328,27 +328,29 @@ class Trajectory_C(object):
         """Set up the initial trajectory storage.  
 
            :var trajin.max_points: Maximum number of trajectory data points to be
-                                    collected.  If set to 'None', then every step on the
-                                    trajectory is saved.
+                                   collected.  If set to 'None', then every step on the
+                                   trajectory is saved.
 
            :var npoints: The number of datapoints that will be saved in a trajectory.  If
                          max_points is set, then npoints = max_points.  If max_points is
                          'None', then npoints = n_timesteps, i.e., every step is saved.
 
-           :var ParticleIdList: ParticleIdList[sp] is a list of the particle indices of
-                                species sp that were selected for trajectories.
+           :var particle_index_list: particle_index_list[sp] is a list of the
+                                     particle indices of species sp that were selected for
+                                     trajectories.
 
-           :var DataList: DataList[sp][itraj] is a numpy array of length npoints that
-                          stores the trajectory data for trajectory itraj of species sp.
+           :var data_list: data_list[sp][itraj] is a numpy array of length npoints that
+                           stores the trajectory data for trajectory itraj of species sp.
 
            :var explicit_dict: a dictionary in numpy dtype format giving the string names
-                              of particle attributes that can be saved in a trajectory.
+                               of particle attributes that can be saved in a trajectory.
 
            The storage uses numpy arrays of length self.npoints           
            npoints is at most the number of timesteps.
 
            TrajDict is a dictionary of the trajectory variables.
            e.g.,  {'names': ['x', 'y'], 'formats': [np_m.float64, np_m.float64]}
+
         """
 
         self.last_step = None # This variable can be used to check if the simulation
@@ -385,16 +387,16 @@ class Trajectory_C(object):
         #    2. a list of trajectory data arrays, one for each marked particle.
         #    3. a list of trajectory lengths, one for each marked particle.
         # These lists are indexed by species name, so they are dictionaries:
-        self.ParticleIdList = {} # List of particle storage indices
-        self.ParticleUniqueIdList = {} # List of particle unique_IDs
-        self.DataList = {}
-        self.TrajectoryLength = {}
+        self.particle_index_list = {} # List of particle storage indices
+        self.particle_unique_id_list = {} # List of particle unique_IDs
+        self.data_list = {}
+        self.trajectory_length = {}
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
-            self.ParticleIdList[sp] = []
-            self.ParticleUniqueIdList[sp] = []
-            self.DataList[sp] = []
-            self.TrajectoryLength[sp] = []
+            self.particle_index_list[sp] = []
+            self.particle_unique_id_list[sp] = []
+            self.data_list[sp] = []
+            self.trajectory_length[sp] = []
 
         return
 #    def __init__(self, trajin, ctrl, explicit_species, implicit_species, neutral_species):ENDDEF
@@ -413,21 +415,21 @@ class Trajectory_C(object):
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Add the particle's index to the list of marked particles for this species.
-        self.ParticleIdList[species_name].append(pindex)
-        self.ParticleUniqueIdList[species_name].append(unique_id_int)
+        self.particle_index_list[species_name].append(pindex)
+        self.particle_unique_id_list[species_name].append(unique_id_int)
 
-#        print "create_traj: The current particle indices are:", self.ParticleIdList[species_name]
+#        print "create_traj: The current particle indices are:", self.particle_index_list[species_name]
         
-        self.TrajectoryLength[species_name].append(0) # Set the trajectory point-count for this
+        self.trajectory_length[species_name].append(0) # Set the trajectory point-count for this
                                                       # particle to 0
 
         # Add a numpy array for this particles's trajectory data
         if dynamics_type == 'explicit':
-            self.DataList[species_name].append(np_m.empty(self.npoints, dtype=self.explicit_dict))
+            self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.explicit_dict))
         elif dynamics_type == 'implicit':
-            self.DataList[species_name].append(np_m.empty(self.npoints, dtype=self.implicit_dict))
+            self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.implicit_dict))
         elif dynamics_type == 'neutral':
-            self.DataList[species_name].append(np_m.empty(self.npoints, dtype=self.neutral_dict))
+            self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.neutral_dict))
         else:
             errorMsg = "(DnT ERROR) %s\tdynamics_type %s is unknown for species %s" % (fncName, dynamics_type, species_name)
             raise RuntimeError(errorMsg)
@@ -453,19 +455,19 @@ class Trajectory_C(object):
 #        yvals = np_m.empty(self.npoints)
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
-            if len(self.DataList[sp]) == 0: continue
-            comps = self.DataList[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
+            if len(self.data_list[sp]) == 0: continue
+            comps = self.data_list[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
 #            print 'comps =', comps
-            for it in xrange(len(self.ParticleIdList[sp])):
-                if self.ParticleUniqueIdList[sp][it] is None:
-                    ip = self.ParticleIdList[sp][it]
+            for it in xrange(len(self.particle_index_list[sp])):
+                if self.particle_unique_id_list[sp][it] is None:
+                    ip = self.particle_index_list[sp][it]
                     plot_title = "%s: Traj# %d Particle id %d" % (sp, it, ip)
                 else:
-                    ip = self.ParticleUniqueIdList[sp][it]
+                    ip = self.particle_unique_id_list[sp][it]
                     plot_title = "%s: Traj# %d Particle uid %d" % (sp, it, ip)
-                data_arr = self.DataList[sp][it]
-                tvals = self.DataList[sp][it]['t']
-                nlength = self.TrajectoryLength[sp][it]
+                data_arr = self.data_list[sp][it]
+                tvals = self.data_list[sp][it]['t']
+                nlength = self.trajectory_length[sp][it]
 #                print 'tvals = ', tvals[0:nlength]
 
                 # Plots vs. time
@@ -517,15 +519,15 @@ class Trajectory_C(object):
         plotter=df_m.plot(mesh, title=plot_title)
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
-            if len(self.DataList[sp]) == 0: continue
-            comps = self.DataList[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
+            if len(self.data_list[sp]) == 0: continue
+            comps = self.data_list[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
             # Loop on trajectories for this species
-            for it in xrange(len(self.ParticleIdList[sp])):
-                nlength = self.TrajectoryLength[sp][it]
+            for it in xrange(len(self.particle_index_list[sp])):
+                nlength = self.trajectory_length[sp][it]
                 if nlength == 1:
                     print fncName, "*** DT Warning: Trajectory", it, "for species", sp, "has only one point. Not plotting it.***"
                     continue
-                data_arr = self.DataList[sp][it]
+                data_arr = self.data_list[sp][it]
 #                print "data_arr[x] =", data_arr['x'][0:nlength]
                 # x vs. y
                 if 'x' in comps:

@@ -19,7 +19,7 @@ from UserMesh_y_Fields_FE_XYZ_Module import *
 
 from SegmentedArrayPair_Module import SegmentedArray_C
 from Particle_Module import *
-from Trajectory_Module import *
+from RecordedData_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
@@ -84,7 +84,7 @@ class TestParticleGeneration(unittest.TestCase):
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        particle_P.user_particles_module_name = userParticlesModuleName
+        # particle_P.user_particles_module_name = userParticlesModuleName
         particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
         
 

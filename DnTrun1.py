@@ -14,7 +14,7 @@ import numpy as np_m
 
 import DnT_Module as DnT_M
 
-import Trajectory_Module as Traj_M
+import RecordedData_Module as Rec_M
 
 #import IO_Module as IO_M
 import UserUnits_Module as U_M
@@ -306,8 +306,8 @@ if ctrl.use_particles == True:
     trajin.explicitDict = {'names': ['x', 'ux', 'Ex'], 'formats': [np_m.float32, np_m.float32]}
     trajin.implicitDict = {'names': ['x', 'ux', 'phi'], 'formats': [np_m.float32, np_m.float32]}
 
-#    run.particle_P.traj_T = Traj_M.Trajectory_C(trajin, ctrl)
-    system.particle_P.traj_T = Traj_M.Trajectory_C(trajin, ctrl, rp_P.explicit_species, rp_P.implicit_species)
+#    run.particle_P.traj_T = Rec_M.Trajectory_C(trajin, ctrl)
+    system.particle_P.traj_T = Rec_M.Trajectory_C(trajin, ctrl, rp_P.explicit_species, rp_P.implicit_species)
 
 # Compute the initial fields
 

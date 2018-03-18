@@ -13,7 +13,7 @@ import DT_Module as DT_m
 
 from UserUnits_Module import MyPlasmaUnits_C
 from Particle_Module import *
-from Trajectory_Module import *
+from RecordedData_Module import *
 
 #STARTCLASS
 class Vec_C(object):
@@ -123,7 +123,7 @@ class TestParticleDeletion(unittest.TestCase):
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        self.particle_P.user_particles_module_name = userParticlesModuleName
+        # self.particle_P.user_particles_module_name = userParticlesModuleName
         self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### one_electron is present at t=0
@@ -257,7 +257,7 @@ class TestParticleDeletion(unittest.TestCase):
                 if p['bitflags'] & p_P.TRAJECTORY_FLAG != 0:
                     if traj_T is not None:
                         print 'pindex for trajectory = ', pindex
-                        traj_T.ParticleIdList[sp].append(pindex)
+                        traj_T.particle_index_list[sp].append(pindex)
                         dynamicsType = 'explicit'
                         traj_T.create_trajectory(sp, pindex, dynamicsType)
                     else:

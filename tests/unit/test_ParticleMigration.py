@@ -86,7 +86,7 @@ class TestParticleMigration(unittest.TestCase):
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
-        self.particle_P.user_particles_module_name = userParticlesModuleName
+        # self.particle_P.user_particles_module_name = userParticlesModuleName
         self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### neutral H atoms are present at t=0
