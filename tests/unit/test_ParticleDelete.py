@@ -171,13 +171,22 @@ class TestParticleDeletion(unittest.TestCase):
 
         # Specify which particle variables to save.  This has the
         # form of a numpy dtype specification.
-        format_list_base = [int]
-        format_list = format_list_base + [numpy.float32]*7 # 7 is the number of floats in the next line.
-        self.trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': format_list}
-        format_list = format_list_base + [numpy.float32]*4
-        self.trajin.implicit_dict = {'names': ['step', 't', 'x', 'ux', 'phi'], 'formats': format_list}
-        format_list = format_list_base + [numpy.float32]*5
-        self.trajin.neutral_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy'], 'formats': format_list}
+        
+        name_list_base = ['step', 't'] # These are always recorded
+        format_list_base = [int, numpy.float32] # Start off the format list with types for
+                                                # 'step' and 't'
+
+        explicit_attributes = ['x', 'ux', 'y', 'uy', 'Ex', 'Ey']
+        format_list = format_list_base + [numpy.float32]*len(explicit_attributes)
+        self.trajin.explicit_dict = {'names': name_list_base+explicit_attributes, 'formats': format_list}
+        
+        implicit_attributes = ['x', 'ux', 'phi']
+        format_list = format_list_base + [numpy.float32]*len(implicit_attributes)
+        self.trajin.implicit_dict = {'names': name_list_base+implicit_attributes, 'formats': format_list}
+
+        neutral_attributes = ['x', 'ux', 'y', 'uy']
+        format_list = format_list_base + [numpy.float32]*len(neutral_attributes)
+        self.trajin.neutral_dict = {'names': name_list_base+neutral_attributes, 'formats': format_list}
 
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles

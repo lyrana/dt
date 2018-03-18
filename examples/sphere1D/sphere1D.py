@@ -23,11 +23,13 @@ __all__ = ['Example_C',]
 ## PC. Physical constants
 ## SP. Scratch-pad
 ## SC. Simulation Control
+##     Timestep value; Number of timesteps
+##     Output: Write field and particle data to files.
 ## FM. Field Mesh
 ## PS. Particle Species
 ##     PS.1. Define the species and provide storage.
 ##           PS.1.2. Allocate particle storage.
-##           PS.1.3. Specify the name of the UserParticlesModule
+##           PS.1.3. Specify the name of the UserParticlesModule (Deprecate)
 ##     PS.2. Particle boundary conditions, particle mesh
 ##           PS.2.1. Mark boundaries to apply BCs on particles
 ##           PS.2.2. Make the particle mesh and add it to the particle object
@@ -41,10 +43,21 @@ __all__ = ['Example_C',]
 ## FS. Field Solver
 ##     FS.1. The scalar electric potential
 ##           FS.1.1. Set boundary values of the potential
-## CHECK. Checks on input
+## HIST. Time-Histories
+## CHECK. Check the input
 ## INIT. Initialization
+##       INIT.1. Do an initial field solve without particles
+##       INIT.2. Initialize the particles
+##               INIT.2.1. Loop on initialized particle species
+##                         INIT.2.1.1. Recompute the initial electrostatic field in the presence of these particles
+##               INIT.2.2. Record initial history data
 ## RUN. Integrate forward in time
-####
+##      RUN.0. Increment the time counters
+##      RUN.1. Advance the particles one timestep
+##      RUN.2. Add particles from source regions
+##      RUN.3. Update the electric charge density
+##      RUN.4. Update the electric field
+##      RUN.5. Record history data for this timestep
 
 
 ############################## IM. Imported Modules ##############################
@@ -57,10 +70,10 @@ import unittest
 import dolfin as df_m
 
 from DT_Module import DTcontrol_C, DTscratch_C
-
 from Dolfin_Module import *
-from UserMesh_y_Fields_Spherical1D_Module import *
+from UserMesh_y_Fields_Spherical1D_Module import * # User input for mesh and fields
 
+from UserParticles_1D import * # User input for particles
 from Particle_Module import *
 from Trajectory_Module import *
 
@@ -80,8 +93,10 @@ plotInitialFields = False
 #plotFieldsEveryTimestep = True # Plot phi and -E each timestep
 plotFieldsEveryTimestep = False # Plot phi and -E each timestep
 
-plotTrajectoriesOnMesh = False # Plot the trajectory particles on top of the mesh
-plotTrajectoriesInPhaseSpace = False # 2D phase-space plots of trajectory particles
+plotTrajectoriesOnMesh = True # Plot the trajectory particles on top of the mesh
+plotTrajectoriesInPhaseSpace = True # Plot the 2D phase-space of trajectory particles
+
+plotTimeHistories = True # Plot the recorded values vs. time
 
 ############################## PC. Physical constants ##############################
 
@@ -105,7 +120,7 @@ if emitInput is True:
 # Create a class for scratch-pad variables
 scr = DTscratch_C()
 
-# Start with the size of the domain
+# Start with the size of the computational domain
 #scr.rmin = 1.0
 scr.rmin = 0.0
 scr.rmax = 4.0
@@ -168,7 +183,7 @@ ctrl.title = "sphere1D"
 ctrl.author = "tph"
 
 # Timestepping
-ctrl.n_timesteps = 100
+ctrl.n_timesteps = 25 # 100
 
 ctrl.dt = 4.0e-7 # from sphere1D.ods
 if ctrl.dt > scr.dt_max:
@@ -188,7 +203,8 @@ np_m.random.seed(ctrl.random_seed)
 ### Set parameters for writing particle output to an h5part file
 ctrl.particle_output_file = "sphere1D.h5part"
 ctrl.particle_output_interval = 1
-ctrl.particle_output_attributes = ('species_index', 'x', 'ux',)
+# Available attributes: 'species_index' and any particle-record name
+ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'unique_ID')
 
 if emitInput is True:
     print ""
@@ -198,6 +214,8 @@ if emitInput is True:
 
 
 #    print ctrl.__dict__
+
+#output = DToutput_C()
 
 
 ############################## FM. Field Mesh ##############################
@@ -252,6 +270,7 @@ pin = ParticleInput_C()
 # Initialize particles
 pin.precision = np_m.float64
 pin.particle_integration_loop = 'loop-on-particles'
+pin.coordinate_system = '1D-spherical-radius'
 pin.position_coordinates = ['x',] # determines the particle-storage dimensions. This
                                   # is doubled to get the phase-space coordinates
 pin.force_components = ['x',]
@@ -260,7 +279,7 @@ pin.force_precision = np_m.float64
 ############### PS.1. Define the species and provide storage ###############
 
 ##### PS.1.1. Basic properties and storage
-speciesName = 'electrons'
+speciesName = 'electron'
 charge = -1.0*q_e
 mass = 1.0*m_e
 dynamics = 'explicit'
@@ -306,13 +325,14 @@ particle_P = Particle_C(pin, print_flag=True)
 ##### PS.1.3. Name the particular "UserParticles" module to use
 # Give the name of the Python module file containing special particle
 # data (lists of particles, boundary conditions, source regions, etc.)
-userParticlesModuleName = "UserParticles_1D"
+#userParticlesModuleName = "UserParticles_1D"
+# See Imported Modules above
 
 # Import the module
-userParticlesModule = im_M.import_module(userParticlesModuleName)
+#userParticlesModule = im_M.import_module(userParticlesModuleName)
 
 # Add it to the particle object
-particle_P.user_particles_module = userParticlesModuleName
+#?needed? particle_P.user_particles_module = userParticlesModuleName
 ##particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
 ############### PS.2. Particle boundary conditions and mesh ###############
@@ -366,12 +386,13 @@ particle_P.pmesh_M = mesh_M
 
 # See UserParticleBoundaryFunctions_C in userParticlesModule (defined above) for the
 # definitions of the facet-crossing callback functions.
-userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # abbreviation
+#userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
+userPBndFns = UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
 
 # Make the particle-mesh boundary-conditions object and add it to the particle
 # object.
 spNames = particle_P.species_names
-pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, mesh_M, userPBndFnsClass, print_flag=False)
+pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, mesh_M, userPBndFns, print_flag=False)
 particle_P.pmesh_bcs = pmeshBCs
 
 
@@ -482,14 +503,14 @@ if emitInput is True:
 
 
 ## PS.3.2.1. The species created in this source
-speciesName = 'electrons'
+speciesName = 'electron'
 
 # Check that this species has been defined
 if speciesName in particle_P.species_names:
     charge = particle_P.charge[speciesName]
     mass = particle_P.mass[speciesName]
 else:
-    print "The species", speciesName, "has not been defined"
+    print "The species", speciesName, "has not been defined. See Particle Species Attributes for defined species."
     sys.exit()
 
 ## PS.3.2.2. Source geometry for electrons: same as Hplus
@@ -586,21 +607,23 @@ particle_P.check_particle_output_parameters(ctrl)
 trajin = TrajectoryInput_C()
 
 trajin.maxpoints = None # Set to None to get every point
+trajin.extra_points = 1 # Set to 1 to make sure one boundary-crossing can be accommodated
+                        # (e.g., when a particle hits an absorbing boundary. Set to a
+                        # larger value if there are multiple boundary reflections.
 
 # Specify which particle variables to save.  This has the
 # form of a numpy dtype specification.
 # TODO. Use real 1D spherical coordinates(?).
-trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'Ex'], 'formats': [int, np_m.float32, np_m.float32, np_m.float32, np_m.float32]}
+trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'crossings', 'Ex'], 'formats': [int, np_m.float32, np_m.float32, np_m.float32, int, np_m.float32]}
 
 ########## TRJ.2. Create the trajectory object and attach it to the particle object.
 
-# No trajectory storage is created until particles
-# with TRAJECTORY_FLAG on are encountered.
+# Note: no trajectory storage is created until particles marked with TRAJECTORY_FLAG
+# are encountered.
 traj_T = Trajectory_C(trajin, ctrl, particle_P.explicit_species, particle_P.implicit_species, particle_P.neutral_species)
 
-## Create the trajectory object and attach it to the particle object.
+## Attach this to the particle object.
 particle_P.traj_T = traj_T
-
 
 
 ############################## SRC. Source terms for the electric potential ##############################
@@ -723,6 +746,42 @@ if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
+############################## HIST. Histories ##############################
+
+########## HIST.1. History input
+
+##### HIST.1.1. Particle histories
+particleHistoryInput = ParticleHistoryInput_C()
+
+particleHistoryInput.max_points = None # Set to None to get every point
+
+# Globals: 'count', 'charge', 'KE', 'momentum'
+particleHistoryInput.scalar_histories = ['count',]
+#histin.particle_scalar_histories = ['count', 'charge',]
+
+#fieldHistoryInput = FieldHistoryInput_C()
+##### HIST.1.2. Global field histories
+#fieldHistoryInput.scalar_histories = ()
+#histin.scalar_histories = ('E-field-energy', 'max-E-field',)
+
+##### HIST.1.3. Point-probe field histories
+#fieldHistoryInput.probe_histories = ()
+# histin.vector_histories = (('E', (0.0)), ('phi', (0.0)),
+#                                 ('E', (2.0)), ('phi', (2.0)), 
+#                                 ('E', (4.0)), ('phi', (4.0)),
+#                                )
+
+##### HIST.1.4. Numerical parameter histories
+#numericalHistoryInput = NumericalHistoryInput_C()
+
+# ('average-Debye-length', 'maximum-Debye-length', 'Courant-number',
+#  'average-streaming-number', 'maximum-streaming-number')
+#numericalHistoryInput.histories = ()
+
+########## HIST.2. Create the history objects
+#output.histories = History_C(histin, ctrl, particle_P.species_names)
+particle_P.histories = ParticleHistory_C(particleHistoryInput, ctrl, particle_P.history_function_dict, particle_P.species_names)
+
 if emitInputOnly is True:
     infoMsg = "\n(DnT INFO) %s exiting because emitInputOnly is True"  % (fileName)
     sys.exit(infoMsg)
@@ -767,7 +826,7 @@ if particle_P.initial_particles_dict is not None:
         if particle_P.traj_T is not None:
             particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
 
-    ##### INIT.2.2. Recompute the initial electrostatic field in the presence of these particles
+    ##### INIT.2.1.1. Recompute the initial electrostatic field in the presence of these particles
     ## Accumulate number-density from kinetic particles
     ## and sum charge-density.
     for s in particles_P.species_names:
@@ -786,6 +845,10 @@ if particle_P.initial_particles_dict is not None:
 else:
     print "(DnT INFO) %s\n\tThere are no initial particles in this simulation" % fileName
 
+##### INIT.2.2. Record initial history data
+if particle_P.histories is not None:
+    particle_P.record_history_data(ctrl.timeloop_count, ctrl.time)
+    
 
 ############################## RUN. Integrate forward in time ##############################
 
@@ -813,7 +876,7 @@ for istep in xrange(ctrl.n_timesteps):
     # Note: if a new particle gets marked for a trajectory, the first datum is
     # recorded inside the particle generator.
     if particle_P.particle_source_dict is not None:
-        particle_P.add_more_particles(ctrl, neg_E_field=poissonsolve.neg_electric_field, print_flag=True)
+        particle_P.add_more_particles(ctrl, neg_E_field=poissonsolve.neg_electric_field)
 
     # Write a snapshot of the particles
     if ctrl.timeloop_count % ctrl.particle_output_interval == 0:
@@ -833,6 +896,11 @@ for istep in xrange(ctrl.n_timesteps):
         print ""
         print "********** Plot field at timestep %d **********" % ctrl.timeloop_count
     poissonsolve.solve_for_phi(plot_flag=plotFieldsEveryTimestep, plot_title=plotTitle)
+
+    ########## RUN.5. Record history data for this timestep
+    if particle_P.histories is not None:
+        if (ctrl.timeloop_count % particle_P.histories.skip == 0):
+            particle_P.record_history_data(ctrl.timeloop_count, ctrl.time)
 
 print ""
 print "********** Exited the time loop at step %d, time %.3g, with %d particles **********" % (ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count())
@@ -875,7 +943,11 @@ if os.environ.get('DISPLAY') is not None and plotTrajectoriesOnMesh is True:
 if os.environ.get('DISPLAY') is not None and plotTrajectoriesInPhaseSpace is True:
     print ""
     print "********** Plot trajectories in phase-space at end of simulation **********"
-    particle_P.traj_T.plot_trajectories()
+    particle_P.traj_T.plot()
 
+if os.environ.get('DISPLAY') is not None and plotTimeHistories is True:
+    if particle_P.histories is not None:
+        particle_P.histories.plot()
+    
 print ""
 print "********** Simulation ended normally at end of timestep %d, time %.3g **********" % (ctrl.timeloop_count, ctrl.time)

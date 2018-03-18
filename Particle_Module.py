@@ -61,14 +61,6 @@ class ParticleInput_C(object):
 #        self.pmesh = df_m.Mesh(mesh)
 #        self.pmesh_M = None
 
-        # Module containing user-supplied particle distributions and
-        # boundary-conditions.
-        self.user_particles_module = None
-        # The class containing distribution functions
-        self.user_particles_class = None
-        # The class containing particle boundary conditions
-        self.user_particles_bcs_class = None
-
         return
 
 #class ParticleInput_C(object):ENDCLASS
@@ -90,11 +82,14 @@ class ParticleSpecies_C(object):
 
         """
 
+        printWarningNonZeroCharge = True
+        
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Value checking
-        if dynamics == 'neutral' and charge != 0:
-            print "(DnT WARNING) %s\tSpecies %s is neutral, but has a non-zero value of electric charge: %.3g. The charge will be ignored." % (fncName, name, charge)
+        if printWarningNonZeroCharge is True:
+            if dynamics == 'neutral' and charge != 0:
+                print fncName, "\tDnT WARNING: Species %s is neutral, but has a non-zero value of electric charge: %.3g. The charge will be ignored." % (name, charge)
 
         self.name = name
         self.charge = charge
@@ -144,20 +139,20 @@ class Particle_C(object):
 
 
 #class Particle_C(object):
-    def __init__(self, particleInput, print_flag = False):
+    def __init__(self, particle_input, print_flag = False):
         """Take a list of kinetic species provided by the user and create the initial plasma
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Set local variables from passed parameters
-        precision = particleInput.precision
+        precision = particle_input.precision
         self.precision = precision
-        self.coordinate_system = particleInput.coordinate_system
-        particleSpecies = particleInput.particle_species
+        self.coordinate_system = particle_input.coordinate_system
+        particleSpecies = particle_input.particle_species
 
         # The spatial coordinates of a particle
-        self.position_coordinates = particleInput.position_coordinates
+        self.position_coordinates = particle_input.position_coordinates
         self.particle_dimension = len(self.position_coordinates)
 
         # These are the position coordinates at the start of a push
@@ -179,12 +174,12 @@ class Particle_C(object):
         self.number_of_species = len(particleSpecies)
         if print_flag:
             print ""
-            print fncName, "(DnT INFO) There are:", self.number_of_species, " species"
+            print fncName, "\tDnT INFO: There are", self.number_of_species, " species"
 
         # Put the species names in a list called "species_names"
         self.species_names = [sp.name for sp in particleSpecies]
 
-        if print_flag: print "(DnT INFO) Species names:", self.species_names
+        if print_flag: print "\tDnT INFO: Species names are", self.species_names
 
         # Make a lookup dictionary to get the species class from the name
         self.species_class_dict = {sp.name: sp for sp in particleSpecies}
@@ -196,7 +191,7 @@ class Particle_C(object):
         for sn in self.species_names:
             isp += 1
             self.species_index[sn] = isp
-            if print_flag: print "(DnT INFO) Species", sn, "is number", self.species_index[sn]
+            if print_flag: print fncName, "\tDnT INFO: Species", sn, "is number", self.species_index[sn]
 
         # Put the user-defined plasma attributes in the following
         # dictionaries, which are indexed by the name of the species
@@ -226,6 +221,8 @@ class Particle_C(object):
 
         pvartypes = [precision for var in pvars]
 
+        # Additional particle attributes
+        
         pvars.append('bitflags')
         pvartypes.append(np_m.int32)
 
@@ -236,11 +233,15 @@ class Particle_C(object):
         pvartypes.append(np_m.int32) # The size determines how many local particles
                                      # you can count.
 
+        pvars.append('crossings') # Count of cell-crossings
+        pvartypes.append(np_m.int32) # The size determines how many cell-crossings
+                                     # you can count.
+                                     
         #        self.particle_dtype = {'names' : pvars, 'formats': pvartypes}
         particleAttributes = {'names' : pvars, 'formats': pvartypes}
         self.particle_dtype = np_m.dtype(particleAttributes)
 
-        if print_flag: print "(DnT INFO) Particle metadata = %s" % self.particle_dtype
+        if print_flag: print fncName, "\tDnT INFO: Particle metadata is %s" % self.particle_dtype
 
             # Make a dictionary of the dtypes
 # just use ['bitflag']
@@ -253,14 +254,14 @@ class Particle_C(object):
             # key: 'charge'
 #            if print_flag: print "(DnT INFO) sp_dict =", sp_dict
             self.charge[speciesName] = sp.charge
-            if print_flag: print "(DnT INFO) Charge for", speciesName, "is", self.charge[speciesName]
+            if print_flag: print fncName, "\tDnT INFO: Charge for", speciesName, "is", self.charge[speciesName]
 #            if sp.charge == 0.0:
 #                self.neutral_species.append(speciesName)
 
             # key: 'mass'
             self.mass[speciesName] = sp.mass
             self.qom[speciesName] = sp.charge/sp.mass
-            if print_flag: print "(DnT INFO) Charge-to-mass ratio for", speciesName, "is", self.qom[speciesName]
+            if print_flag: print fncName, "\tDnT INFO: Charge-to-mass ratio for", speciesName, "is", self.qom[speciesName]
             # key: 'number_per_cell'
 
 # Should number_per_cell be here?  Eg if you have just some test particles
@@ -315,6 +316,18 @@ class Particle_C(object):
         # initial particles are created.)
         self.traj_T = None
 
+        # This is for a reference to a ParticleHistory_C object.
+        self.histories = None
+
+        # Create a dictionary of functions associating particle-history names with
+        # the functions that return the history data.
+        # Could use getattr(self) here, and avoid the 'self' arg when used.
+        self.history_function_dict = {'count': getattr(Particle_C,
+                                                        "get_total_particle_count"),
+                                      'species_count': getattr(Particle_C,
+                                                                "get_species_particle_count"),
+        }
+        
         # An scratch ndarray for one particle is used for trajectories
         self.one_particle_arr = np_m.empty(1, dtype=self.particle_dtype)
 
@@ -340,9 +353,9 @@ class Particle_C(object):
         self.h5_buffer = np_m.empty(self.h5_buffer_length, dtype=np_m.float64)
 
         # Make a reusable array "self.negE" for computing -E at particle positions
-        if particleInput.force_components is not None:
-            Ecomps = particleInput.force_components
-            force_precision = particleInput.force_precision
+        if particle_input.force_components is not None:
+            Ecomps = particle_input.force_components
+            force_precision = particle_input.force_precision
             Etypes = [force_precision for comp in Ecomps] # variable type
             Eseg_dict = {'names': Ecomps, 'formats': Etypes}
             self.negE = np_m.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
@@ -356,10 +369,10 @@ class Particle_C(object):
             self.zeroE = np_m.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
 
         # Not used yet
-        self.particle_integration_loop = particleInput.particle_integration_loop
+        self.particle_integration_loop = particle_input.particle_integration_loop
 
         return
-#    def __init__(self, particleInput, print_flag = False):ENDDEF
+#    def __init__(self, particle_input, print_flag = False):ENDDEF
 
 #class Particle_C(object):
     def initialize_particles(self, print_flags, neg_E_field=None):
@@ -400,7 +413,7 @@ class Particle_C(object):
                 time = 0.0
                 ipFunc(time, ipRegion, ipParams, neg_E_field)
             else:
-                errorMsg = "(DnT ERROR) %s Unknown initial_distribution_type %s for species %s" % (fncName, initial_distribution_type, s)
+                errorMsg = fncName + "\tDnT ERROR: Unknown initial_distribution_type %s for species %s" % (initial_distribution_type, s)
                 sys.exit(errorMsg)
 
         # for sp in self.species_names:
@@ -427,7 +440,10 @@ class Particle_C(object):
         """Generates particles for a species from a list provided by the user.
         """
 
+        printWarningNoTrajectory = True
+
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
         userParticlesClass = self.user_particles_class
 
         pseg_arr = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
@@ -442,7 +458,7 @@ class Particle_C(object):
         # datatype of the first segment of the segmented array.
 
         if len(particle_list[0]) != len(pseg_arr[0].dtype):
-            errorMsg = "(DnT ERROR) %s Species %s. Expecting particle data tuple %s, but data for first particle is: %s, which does not match up. Check UserParticles" %  (fncName, species_name, pseg_arr[0].dtype.names, particle_list[0])
+            errorMsg = fncName + "\tDnT ERROR: Species %s. Expecting particle data tuple %s, but data for first particle is: %s, which does not match up. Check UserParticles" %  (species_name, pseg_arr[0].dtype.names, particle_list[0])
 #            print fncName, "Expect particle data for", pseg_arr[0].dtype.names
 #            print "First particle is:", particle_list[0]
             sys.exit(errorMsg)
@@ -465,7 +481,7 @@ class Particle_C(object):
                     self.traj_T.create_trajectory(species_name, pindex, dynamicsType, unique_id_int=p['unique_ID'])
                 else:
 # Instead of printing this message, a traj_T object could be created here.
-                    print fncName, "(DnT WARNING) A trajectory flag is on, but no trajectory object has been created yet."
+                    if printWarningNoTrajectory: print fncName, "\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet."
 
 #        if (print_flag): print fncName, "weight for ", species_name, " is ", weight
 #        if (print_flag): print fncName, "bitflags for ", species_name, " is ", bitflags
@@ -480,6 +496,7 @@ class Particle_C(object):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+        
         pseg_arr = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
 
         p_list_method = self.initial_distribution_function[species_name]
@@ -497,7 +514,7 @@ class Particle_C(object):
 
         weight = number_of_real_particles/num_per_cell
 
-        if (print_flag): print fncName, "(DnT INFO) Weight for", species_name, "is", weight
+        if (print_flag): print fncName, "\tDnT INFO: Weight for", species_name, "is", weight
 
 # Lay down species in this cell, according to the specified density
 # For now, put all particles at the centroid
@@ -519,14 +536,17 @@ class Particle_C(object):
 #    def create_from_functions(self, species_name, print_flag = False):ENDDEF
 
 #class Particle_C(object):
-    def add_more_particles(self, ctrl, neg_E_field=None, print_flag=False):
+    def add_more_particles(self, ctrl, neg_E_field=None):
         """Add particles to the existing particle distributions.
 
         """
 
+        printInfoAddMoreParticles = False
+        
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
-        if print_flag is True:
-            print "(DnT INFO) %s\tFunction entered at timeloop_count %d, time %.3g" % (fncName, ctrl.timeloop_count, ctrl.time)
+        
+        if printInfoAddMoreParticles is True:
+            print fncName, "\tDnT INFO: Function entered at timeloop_count %d, time %.3g" % (ctrl.timeloop_count, ctrl.time)
 
         particleSourceDict = self.particle_source_dict
 
@@ -537,8 +557,8 @@ class Particle_C(object):
             (srcParams, srcFunc, srcRegion) = srcTuple
             if ctrl.timeloop_count % srcParams['timestep_interval'] == 0:
                 # Invoke the creation function
-                if print_flag is True:
-                    print "(DnT INFO) %s\t Creating new particles for source %s" % (fncName, srcName)
+                if printInfoAddMoreParticles is True:
+                    print fncName, "\tDnT INFO: Creating new particles for source %s" % (srcName)
                 srcFunc(ctrl.timeloop_count, ctrl.time, srcRegion, srcParams, neg_E_field)
 
         return
@@ -553,7 +573,7 @@ class Particle_C(object):
 
         pseg_arr = self.pseg_arr[species_name] # storage array for this species
         number_of_particles = pseg_arr.get_number_of_items()
-        if print_flag: print fncName, "(DnT INFO)", species_name, "has", number_of_particles, "macroparticles"
+        if print_flag: print fncName, "\tDnT INFO:", species_name, "has", number_of_particles, "macroparticles"
 # this should be done by the calling function?
 #        self.particle_count[species_name] = number_of_particles
 
@@ -572,7 +592,7 @@ class Particle_C(object):
             npar = pseg_arr.get_number_of_items()
             psum += npar
 
-        if print_flag: print fncName, ", (DnT INFO) Total number of macroparticles in", len(self.species_names), 'species is', psum
+        if print_flag: print fncName, "\tDnT INFO: Total number of macroparticles in", len(self.species_names), 'species is', psum
         return psum
 
 #    def get_total_particle_count(self, print_flag = False):ENDDEF
@@ -586,6 +606,7 @@ class Particle_C(object):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+        
         if self.pmesh_M is not None:
             for sn in self.species_names:
                 psa = self.pseg_arr[sn] # segmented array for this species
@@ -598,13 +619,13 @@ class Particle_C(object):
     #                    print 'ip, index =', ip, pseg[ip]['cell_index']
 # Check that is_inside() confirms the cell index:
                         if not self.pmesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']):
-                            errorMsg = "%s (DnT ERROR) is_inside() check failed for particle %d" % (fncName, ip)
+                            errorMsg = "%s\tDnT ERROR: is_inside() check failed for particle %d" % (fncName, ip)
                             sys.exit(errorMsg)
 #                        else:
 #                            print fncName, "*** is_inside check passes for particle", pseg[ip], "***"
                     (npSeg, pseg) = psa.get_next_segment('out')
         else:
-            print fncName, "(DnT WARNING) The reference to pmesh_M is None"
+            print fncName, "\tDnT WARNING: The reference to pmesh_M is None"
 
         return
 #    def compute_mesh_cell_indices(self):ENDDEF
@@ -645,6 +666,7 @@ class Particle_C(object):
     def set_number_density(self, species_name, value):
         """Set the values in the number density array for the given species.
 
+           :param species_name: The string name of a kinetic-particle species
            :param value: The number density is set to this value.
 
            :returns: None
@@ -680,6 +702,8 @@ class Particle_C(object):
            :cvar int pDim: Number of spatial coordinates in the particle location.
 
         """
+
+        printInfoBoundaryCrossing = False
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
@@ -832,8 +856,8 @@ class Particle_C(object):
 #                    print fncName, ": ip, pindex", ip, pCellIndex, "cell index:", pmesh_M.compute_cell_index(pseg[ip])
                     mLastFacet = pmesh_M.NO_FACET
                     facetCrossCount = 0
-                    t_start = time - dt
-                    dt_remaining = dt
+                    tStart = time - dt
+                    dtRemaining = dt
                     while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
@@ -875,8 +899,10 @@ class Particle_C(object):
                         (cFacet, dxFraction, facetNormal) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
                         if cFacet != pmesh_M.NO_FACET: # If the particle crossed a facet...
 
-                            t_start = t_start + dxFraction*dt_remaining # The starting time in the new cell
-                            dt_remaining = (1.0 - dxFraction)*dt_remaining
+                            tStart = tStart + dxFraction*dtRemaining # The starting time in the new cell
+                            dtFraction = dxFraction*dtRemaining
+                            dtRemaining -= dtFraction
+#                            dtRemaining = (1.0 - dxFraction)*dtRemaining
 
 #                        if found_cell != True: print "Particle is not in nearby cells; using BB search"
 #                        ci = pmesh_M.compute_cell_index(pseg[ip])
@@ -892,6 +918,7 @@ class Particle_C(object):
                             for coord in self.position_coordinates:
                                 coord0 = coord+'0'
                                 psegOut[ipOut][coord0] = psegOut[ipOut][coord0] + dxFraction*dx[i]
+# Note: the crossing velocity could be computed here from psegIn[ipIn], and passed to record_trajectory_datum() below.                                
                                 i+=1
 #                            print "After truncation p =", psegOut[ipOut]
 
@@ -907,20 +934,21 @@ class Particle_C(object):
 # mFacet is a numpy.uint32 (size_t), but the FacetFunction wants an int argument.
 #                            print "type is:", type(mFacet)
                             facValue = pmesh_M.particle_boundary_marker[mFacet]
-                            # Check if this facet has a non-zero marker, indicating that,
-                            # e.g., the facet is a boundary.
+                            # Check if this facet has a non-zero marker, indicating
+                            # that a callback function has to be called. E.g., the
+                            # facet is a boundary.
                             if facValue != 0:
                                 # Call the function associated with this value.
 
                                 # !! A reference to dx[] exists in the BC function class.
                                 if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0: # If this is a trajectory particle.
 
-                                    print "Recording boundary-crossing for particle", psegOut[ipOut]['unique_ID']
+                                    if printInfoBoundaryCrossing is True: print "Recording boundary-crossing for particle", psegOut[ipOut]['unique_ID']
 
                                     # Get the storage index that currently identifies this
                                     # particle in the trajectory list.
                                     fullIndex = psa.get_full_index(ipIn, 'in')
-                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, t_start, None, facet_crossing=True)
+                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, None, facet_crossing=True)
                                 self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
 
                             # Look up the cell index of the new cell.
@@ -944,6 +972,9 @@ class Particle_C(object):
                             sys.exit(errorMsg)
 #                       END:if cFacet != pmesh_M.NO_FACET:
 #                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
+
+                    # Record the number of facet-crossings
+                    psegOut[ipOut]['crossings'] = facetCrossCount
 
                     # Don't need this since we just look up the cell
                     # index when computing negE above
@@ -1008,13 +1039,15 @@ class Particle_C(object):
 
            :param ctrl: A DTcontrol_C object
 
-           :cvar double t_start: The time at which a particle starts its move in the
+           :cvar double tStart: The time at which a particle starts its move in the
                                  current cell.
 
-           :cvar double dt_remaining: The time a particle has left to move in the new cell
+           :cvar double dtRemaining: The time a particle has left to move in the new cell
                                       the particle has entered.
 
         """
+
+        printInfoBoundaryCrossing = False
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
@@ -1119,8 +1152,8 @@ class Particle_C(object):
                     # Loop until the particle is in the current cell
                     mLastFacet = pmesh_M.NO_FACET
                     facetCrossCount = 0
-                    t_start = time - dt
-                    dt_remaining = dt
+                    tStart = time - dt
+                    dtRemaining = dt
                     while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
@@ -1148,8 +1181,8 @@ class Particle_C(object):
                         (cFacet, dxFraction, facetNormal) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
                         if cFacet != pmesh_M.NO_FACET:
 #                            print "facet crossed is", cFacet
-                            t_start = t_start + dxFraction*dt_remaining # The starting time in the new cell
-                            dt_remaining = (1.0 - dxFraction)*dt_remaining
+                            tStart = tStart + dxFraction*dtRemaining # The starting time in the new cell
+                            dtRemaining = (1.0 - dxFraction)*dtRemaining
 
                             # Compute the crossing point
 #                           print fncName, "Before truncation p =", psegOut[ipOut]
@@ -1179,12 +1212,12 @@ class Particle_C(object):
 
                                 if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0: # If this is a trajectory particle.
 
-                                    print "Recording boundary-crossing for particle", psegOut[ipOut]['unique_ID']
+                                    if printInfoBoundaryCrossing is True: print "Recording boundary-crossing for particle", psegOut[ipOut]['unique_ID']
 
                                     # Get the storage index that currently identifies this
                                     # particle in the trajectory list of particles.
                                     fullIndex = psa.get_full_index(ipIn, 'in')
-                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, t_start, None, facet_crossing=True)
+                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, None, facet_crossing=True)
                                 # A reference to dx[] is available in the BC function class.
                                 self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
                             # Look up the cell index of the new cell.
@@ -1210,6 +1243,9 @@ class Particle_C(object):
 #                       END:if cFacet != pmesh_M.NO_FACET:
 #                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
 
+                    # Record the number of facet-crossings
+                    psegOut[ipOut]['crossings'] = facetCrossCount
+                    
                     # Check that this particle has not been deleted before
                     # incrementing the 'out' particle counter.
                     if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 0: # If this particle has not been deleted...
@@ -1445,7 +1481,7 @@ class Particle_C(object):
         # Replace this with the new full index.
         self.traj_T.ParticleIdList[sn][p_index] = full_index_out
 
-        print "update_traj: The particle that had index", full_index_in, "now has index", full_index_out
+#        print "update_traj: The particle that had index", full_index_in, "now has index", full_index_out
 
         return full_index_in, full_index_out
 #    def update_trajectory_particleId(self, sn, i_in, i_out):ENDDEF
@@ -1477,6 +1513,7 @@ class Particle_C(object):
         """
 
         printWarningIndex = True
+        printInfoOutOfBounds = True
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         
@@ -1488,7 +1525,7 @@ class Particle_C(object):
             # This particle was recorded at the beginning of this step, and has now
             # gone out of bounds after being advanced by dt, so increment the step
             # count and time for the trajectory datum.
-            print fncName, "(DnT INFO) Particle has gone out-of-bounds after the advance on timestep %d: recording its last position." % finalStep
+            if printInfoOutOfBounds is True: print fncName, "\tDnT INFO: Particle has gone out-of-bounds after the advance on timestep %d: recording its last position." % finalStep
             finalStep += 1
             finalTime += dt
             
@@ -1521,7 +1558,7 @@ class Particle_C(object):
         # trajectory as ended.
         if newpoint > traj_T.npoints - 1:
             if printWarningIndex is True:
-                print "(DnT WARNING) %s Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, sn, finalStep, traj_T.npoints)
+                print "%s\tDnT WARNING: Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, sn, finalStep, traj_T.npoints)
                 # Mark this as a trajectory where the particle no longer exists.
             self.traj_T.ParticleIdList[sn][p_index] = self.traj_T.NO_PINDEX
             return full_index_in
@@ -1633,7 +1670,7 @@ class Particle_C(object):
             newpoint = traj_T.TrajectoryLength[species_name][t_idx]
             if newpoint > traj_T.npoints - 1:
                 if printWarningIndex is True:
-                    print "(DnT WARNING) %s Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, species_name, step, traj_T.npoints)
+                    print "%s\tDnT WARNING: Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, species_name, step, traj_T.npoints)
                 return
 
             if self.dynamics[species_name] == 'explicit':
@@ -1686,15 +1723,15 @@ class Particle_C(object):
 
         """
 
-        printInfoSecond = True
-        printWarningIndex = True
+        printInfoSecond = False
+        printWarningArraySize = True
         
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Avoid a second call if the timestep hasn't changed
         if step == self.traj_T.last_step:
             if printInfoSecond is True:
-                print fncName, "(DnT INFO) Second call on timestep %d: return without storing the data." % step
+                print fncName, "\tDnT INFO: Second call on timestep %d: return without storing the data." % step
             return
 
         traj_T = self.traj_T
@@ -1743,8 +1780,8 @@ class Particle_C(object):
                 # Copy the particle values into the trajectory
                 newpoint = traj_T.TrajectoryLength[sp][i]
                 if newpoint > traj_T.npoints - 1:
-                    if printWarningIndex is True:
-                        print "(DnT WARNING) %s Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, sp, step, traj_T.npoints)
+                    if printWarningArraySize is True:
+                        print "%s\tDnT WARNING: Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, sp, step, traj_T.npoints)
                     return
                 
                 for comp in traj_T.explicit_dict['names']:
@@ -1845,6 +1882,35 @@ class Particle_C(object):
         return
 #    def record_trajectory_data(self, neg_E_field=None):ENDDEF
 
+#class Particle_C(object):
+    def record_history_data(self, step, time):
+        """Save requested particle history data for this timestep.
+
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
+#        self.histories.data_array.dtype.names:
+
+        counter = self.histories.counter
+        
+        self.histories.data_array['step'][counter] = step
+        self.histories.data_array['t'][counter] = time
+
+        # Get the histories summed over the species
+        for hist in self.histories.scalar_histories:
+            self.histories.data_array[hist][counter] = self.history_function_dict[hist](self)
+
+        # Get the histories for each species separately
+        for hist in self.histories.scalar_histories:
+            for sp in self.species_names:
+                sphist = sp+'_' + hist
+                self.histories.data_array[sphist][counter] = self.history_function_dict["species_"+hist](self, sp)
+            
+#        counter += 1 # This is not an in-place assignment?
+        self.histories.counter += 1
+        
+        return
 
 #class Particle_C(object):
     def accumulate_charge_density_from_particles(self, charge_density):
@@ -1865,7 +1931,7 @@ class Particle_C(object):
                 # Loop over the number-density arrays
                 charge_density.multiply_add(self.number_density_dict[s], charge)
         else:
-            print fncName, "(DnT WARNING) The reference to pmesh_M is None"
+            print fncName, "\tDnT WARNING: The reference to pmesh_M is None"
 
         return
 #    def accumulate_charge_density_from_particles(self, charge_density):ENDDEF
@@ -1908,6 +1974,8 @@ class Particle_C(object):
 
         """
 
+        printWarningNoTrajectory = True
+
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         cellList = domain.cell_list
@@ -1941,6 +2009,7 @@ class Particle_C(object):
         if self.coordinate_system == '1D-spherical-radius':
             weightMult /= 4.0*np_m.pi # 4 \pi radians in a sphere
 
+        crossings = 0
         for icell in xrange(nCell):
             # Compute the particle weight (number of particles per macroparticle)
             weight = domain.volume[icell]*weightMult
@@ -1960,7 +2029,8 @@ class Particle_C(object):
                     for i in range(gDim):
                         pCoord[i] = cellMid[i]
                         # Turn trajectory flag ON for the first particle in the cell:
-                        bitflags = bitflags | Particle_C.TRAJECTORY_FLAG
+#tph                        
+#                        bitflags = bitflags | Particle_C.TRAJECTORY_FLAG
                 else:
                     while True:
                         # Put the particle in a sphere
@@ -1991,17 +2061,22 @@ class Particle_C(object):
                 particle[3*pDim+1] = bitflags
                 particle[3*pDim+2] = cellIndex
                 particle[3*pDim+3] = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+#tph                
+                # if particle[3*pDim+3] == 640:
+                #     print "create_max: adding particle with ID", particle[3*pDim+3]
+                #     particle[3*pDim+1] = bitflags | Particle_C.TRAJECTORY_FLAG
+
+                particle[3*pDim+4] = crossings
+                    
                 # Store the particle
                 p, pindex = pseg_arr.put(particle)
-
-#                print "create_max: adding particle with ID", p['unique_ID'], "index: ", pindex
 
                 # If the particle is tagged as a trajectory particle, initialize its
                 # trajectory information. Note: if this is being called by
                 # initialize_particles(), the E-field has not been computed yet.
                 if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
                     if self.traj_T is not None:
-#                        print "A trajectory will be recorded for particle", pindex, "of species", speciesName
+                        print "A trajectory will be recorded for particle", pindex, "of species:", speciesName
                         dynamicsType = self.dynamics[speciesName]
                         self.traj_T.create_trajectory(speciesName, pindex, dynamicsType)
                         # Record the initial datum for this new trajectory
@@ -2010,7 +2085,7 @@ class Particle_C(object):
                         self.record_trajectory_datum(speciesName, p, pindex, step, time, neg_E_field)
                     else:
 # Instead of printing this message, a traj_T object could be created here?
-                        print fncName, "(DnT WARNING) A trajectory flag is on, but no trajectory object has been created yet."
+                        if printWarningNoTrajectory is True: print fncName, "\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet."
 
 #        if (print_flag): print fncName, "weight for ", speciesName, " is ", weight
 #        if (print_flag): print fncName, "bitflags for ", speciesName, " is ", bitflags
@@ -2088,13 +2163,15 @@ class Particle_C(object):
 
         """
 
+        printInfoSecondCall = False
+        
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Avoid a second call if the timestep hasn't changed since the last call
         # (e.g., on exiting the time loop)
         step = ctrl.timeloop_count
         if step == self.h5_last_write_step:
-            print fncName, "(DnT INFO) Second call on timestep %d: return without writing the data." % step
+            if printInfoSecondCall is True: print fncName, "\tDnT INFO: Second call on timestep %d: return without writing the data." % step
             return
 
         # Create a new group for this timestep
@@ -2270,7 +2347,7 @@ class ParticleMeshBoundaryConditions_C(object):
                     print "ParticleMeshBoundaryConditions_C: Boundary condition for", pBDictInv[intTag], "/", sp, "is", bcFunction
                 self.bc_function_dict[intTag][sp] = bcFunction
         return
-#    def __init__(self, particleInput, particle_P, print_flag = False):ENDDEF
+#    def __init__(self, particle_input, particle_P, print_flag = False):ENDDEF
 
     def absorb(self):
         return
@@ -2354,6 +2431,6 @@ class ParticleMeshSources_C(object):
                 self.srcFunctionDict[intTag][sp] = srcFunction
 
         return
-#    def __init__(self, particleInput, particle_P, print_flag = False):ENDDEF
+#    def __init__(self, particle_input, particle_P, print_flag = False):ENDDEF
 
 #class ParticleMeshSources_C(object):ENDCLASS

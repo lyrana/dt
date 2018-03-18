@@ -123,13 +123,21 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # Specify which particle variables to save.  This has the
         # form of a numpy dtype specification.
-        format_list_base = [int]
-        format_list = format_list_base + [numpy.float32]*7
-        trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': format_list}
-        format_list = format_list_base + [numpy.float32]*4
-        trajin.implicit_dict = {'names': ['step', 't', 'x', 'ux', 'phi'], 'formats': format_list}
-        format_list = format_list_base + [numpy.float32]*5
-        trajin.neutral_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy'], 'formats': format_list}
+        name_list_base = ['step', 't'] # These are always recorded
+        format_list_base = [int, numpy.float32] # Start off the format list with types for
+                                                # 'step' and 't'
+
+        explicit_attributes = ['x', 'ux', 'y', 'uy', 'Ex', 'Ey']
+        format_list = format_list_base + [numpy.float32]*len(explicit_attributes)
+        trajin.explicit_dict = {'names': name_list_base+explicit_attributes, 'formats': format_list}
+        
+        implicit_attributes = ['x', 'ux', 'phi']
+        format_list = format_list_base + [numpy.float32]*len(implicit_attributes)
+        trajin.implicit_dict = {'names': name_list_base+implicit_attributes, 'formats': format_list}
+
+        neutral_attributes = ['x', 'ux', 'y', 'uy']
+        format_list = format_list_base + [numpy.float32]*len(neutral_attributes)
+        trajin.neutral_dict = {'names': name_list_base+neutral_attributes, 'formats': format_list}
 
         # Add a traj_T reference to the particle object
         p_P = particle_P # abbreviation

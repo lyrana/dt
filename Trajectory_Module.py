@@ -2,7 +2,13 @@
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-__all__ = ['TrajectoryInput_C', 
+__all__ = ['HistoryInput_C',
+           'History_C',
+#           'FieldHistoryInput_C',
+#           'FieldHistory_C',
+           'ParticleHistoryInput_C',
+           'ParticleHistory_C',
+           'TrajectoryInput_C', 
            'Trajectory_C', 
           ]
 
@@ -14,6 +20,260 @@ import dolfin as df_m
 import matplotlib.pyplot as mplot_m
 
 #STARTCLASS
+class HistoryInput_C(object):
+    """An input class for time histories of particle, field, and numerical-parameter
+       quantities.
+
+    """
+
+    def __init__(self):
+        """Initialize storage for time-histories.
+
+           :cvar max_points: The maximum number of points to record. If 'None', then
+                              every point is recorded.
+
+           :cvar scalar_histories: A tuple containing the names of scalar-valued
+                                   histories.
+
+           :cvar vector_histories: A tuple containing the names of vector-valued
+                                   histories.
+
+        """
+
+        self.max_points = None
+        self.scalar_histories = []
+        self.vector_histories = []
+
+        return
+    
+#class HistoryInput_C(object):ENDCLASS
+
+#STARTCLASS
+class ParticleHistoryInput_C(object):
+    """An input class for time histories of particle-based quantities.
+
+    """
+
+    def __init__(self):
+        """Initialize storage for time-histories.
+
+           :cvar max_points: The maximum number of points to record. If 'None', then
+                              every point is recorded.
+
+           :cvar scalar_histories: A tuple containing the names of scalar-valued
+                                   particle histories.
+
+        """
+
+        self.max_points = None
+        self.scalar_histories = []
+
+        return
+    
+#class ParticleHistoryInput_C(object):ENDCLASS
+
+#STARTCLASS
+class FieldHistoryInput_C(object):
+    """An input class for time histories of field quantities.
+
+    """
+
+    def __init__(self):
+        """Initialize storage for time-histories.
+
+           :cvar max_points: The maximum number of points to record. If 'None', then
+                              every point is recorded.
+
+           :cvar scalar_histories: A tuple containing the names of scalar-valued
+                                   field histories.
+
+           :cvar vector_histories: A tuple containing the names of vector-valued
+                                  field histories.
+
+        """
+
+        self.max_points = None
+        self.scalar_histories = []
+        self.vector_histories = []
+
+        return
+    
+#class FieldHistoryInput_C(object):ENDCLASS
+
+#STARTCLASS
+class History_C(object):
+    """Contains time histories of particle, field, and numerical quantities.
+
+    """
+
+    def __init__(self, histin, ctrl):
+        
+        """Initialize storage for time-histories.
+
+           :param histin: A HistoryInput_C object.
+           :param ctrl: A DTcontrol_C object.
+
+        """
+
+        self.scalar_histories = histin.scalar_histories
+        self.ctrl = ctrl
+
+        # Compute a skip interval to stay within the maximum number of
+        # datapoints (if specified).
+        if histin.max_points is None:
+            self.skip = 1
+        else:
+            self.skip = ctrl.n_timesteps/max_points + 1
+
+        # Length of history-data arrays
+        self.npoints = ctrl.n_timesteps/self.skip + 1
+
+        # Initial a counter
+        self.counter = 0
+
+        # Create a dictionary to specify the dtype of the history data
+        self.history_list_base = ['step', 't'] # These are always recorded
+        self.format_list_base = [int, np_m.float32] # Start off the format list with types for
+                                             # 'step' and 't'
+        
+        return
+#    def __init__(self, histin, ctrl):ENDDEF
+
+
+#class History_C(object):
+    def record_data(self):
+        """Record the history values at this timestep.
+
+        """
+        
+        
+        return    
+#    def record_data(self):ENDDEF
+
+
+#class History_C(object):ENDCLASS
+
+
+class ParticleHistory_C(History_C):
+    """Contains time histories of particle quantities.
+
+    """
+
+    def __init__(self, histin, ctrl, function_dict, species_names):
+        
+        """Create storage for particle time-histories.
+
+           :param histin: A ParticleHistoryInput_C object.
+           :param ctrl: A DTcontrol_C object.
+           :param function_dict: The base functions needed to get history data
+           :param species_names: A list of particle species names.
+
+           The species names are used to create function calls for the individual
+           species from the base functions.
+
+        """
+
+        # Call the parent constructor to complete setting class variables.
+        super(self.__class__, self).__init__(histin, ctrl)
+
+        # Particle global histories: for each species, record the history for the sum
+        # of all the species, and for each individual species.
+
+        # Add the individual species histories to the user-provided list:
+        particleSpeciesHistories = []
+#        particleSpeciesHistories[:] = histin.scalar_histories[:]
+#        print 'particleSpeciesHistories = ', particleSpeciesHistories
+        for hist in histin.scalar_histories:
+            for sp in species_names:
+                sphist = sp+'_'+hist
+                particleSpeciesHistories.append(sphist)
+#                species_function_name = 'species_'+hist
+#                function_dict[sphist] = (function_dict[species_function_name], sp)
+                
+        historyList = self.history_list_base + histin.scalar_histories + particleSpeciesHistories
+        formatList = self.format_list_base + [np_m.float32 for i in range(len(histin.scalar_histories))] + [np_m.float32 for i in range(len(particleSpeciesHistories))]
+#        print 'formatList', formatList
+
+        self.species_scalar_histories = particleSpeciesHistories
+        
+        # Create the particle-history storage arrays
+        self.data_array = np_m.zeros(self.npoints, dtype={'names': historyList, 'formats': formatList})
+        
+#        # Create the function calls for the individual species
+
+
+        
+        return
+#    def __init__(self, histin, ctrl, function_dict, species_names):ENDDEF
+
+
+#class History_C(object):
+    def record_data(self):
+        """Record the history values at this timestep.
+
+        """
+        
+        
+        return    
+#    def record_data(self):ENDDEF
+
+#class History_C(object):
+    def plot(self):
+        """Plot the histories owned by this instance of 
+
+        """
+        import matplotlib.pyplot as mplot_m
+
+        # Loop on the histories
+
+        tvals = self.data_array['t']
+        nlength = self.npoints
+
+        # Plot 'step' vs. 't' for information
+
+        yarray = self.data_array['step']
+
+        plot_title = "timestep number vs. time"
+        x_label = "time (s)"
+        y_label = "timestep"
+
+        mplot_m.figure()
+        mplot_m.plot(tvals, yarray, marker="o")
+        mplot_m.title(plot_title)
+        mplot_m.xlabel(x_label)
+        mplot_m.ylabel(y_label)
+        mplot_m.grid(True)
+        
+        # Plot the requested histories, both total and for each species
+        for hist in self.scalar_histories + self.species_scalar_histories:
+
+            yarray = self.data_array[hist]
+
+            plot_title = "%s vs. time" % (hist)
+            x_label = "time (s)"
+            y_label = hist
+
+            mplot_m.figure()
+#            mplot_m.plot(tvals[0:nlength], data_arr[comp][0:nlength], marker="o")
+            mplot_m.plot(tvals, yarray, marker="o")
+            mplot_m.title(plot_title)
+            mplot_m.xlabel(x_label)
+            mplot_m.ylabel(y_label)
+            mplot_m.grid(True)
+            
+        mplot_m.show()
+            
+        return
+#    def plot(self):ENDDEF
+
+
+
+#class History_C(object):ENDCLASS
+
+
+
+
+#STARTCLASS
 class TrajectoryInput_C(object):
     """Parameters that specify particle trajectory
     """
@@ -22,8 +282,8 @@ class TrajectoryInput_C(object):
         """ Initialize variables
         """
 
-        # If maxpoints is specified, no more than this number of points will be saved.
-        self.maxpoints = None
+        # If max_points is specified, no more than this number of points will be saved.
+        self.max_points = None
 
         # The number of points that will be saved. The upper limit is the number of
         # timesteps plus extra_points.
@@ -65,14 +325,14 @@ class Trajectory_C(object):
     NO_PINDEX = -1
 
     def __init__(self, trajin, ctrl, explicit_species, implicit_species, neutral_species):
-        """Set up the initial storage.  
+        """Set up the initial trajectory storage.  
 
-           :var trajin.maxpoints: Maximum number of trajectory data points to be
+           :var trajin.max_points: Maximum number of trajectory data points to be
                                     collected.  If set to 'None', then every step on the
                                     trajectory is saved.
 
            :var npoints: The number of datapoints that will be saved in a trajectory.  If
-                         maxpoints is set, then npoints = maxpoints.  If maxpoints is
+                         max_points is set, then npoints = max_points.  If max_points is
                          'None', then npoints = n_timesteps, i.e., every step is saved.
 
            :var ParticleIdList: ParticleIdList[sp] is a list of the particle indices of
@@ -100,17 +360,14 @@ class Trajectory_C(object):
 
         # Compute a skip interval to stay within the maximum number of
         # datapoints (if specified).
-        if trajin.maxpoints == None:
+        if trajin.max_points is None:
             self.skip = 1
         else:
-            self.skip = ctrl.n_timesteps/trajin.maxpoints + 1
+            self.skip = ctrl.n_timesteps/trajin.max_points + 1
 
         # Length of trajectory data arrays
         # If the location of boundary-crossings is recorded, then you can run out of space
         self.npoints = ctrl.n_timesteps/self.skip + 1 + trajin.extra_points
-
-        # Time interval between datapoints
-        self.data_interval = self.skip * ctrl.dt
 
         # Need these to get the right trajectory variables
         self.explicit_species = explicit_species
@@ -149,7 +406,7 @@ class Trajectory_C(object):
                                 particle belongs to.
            :param pindex: Index of the marked particle in the particle
                           storage array.
-           :param int unique_ID: The unique ID integer of this particle.
+           :param int unique_id_int: The unique ID integer of this particle.
 
         """
 
@@ -179,8 +436,9 @@ class Trajectory_C(object):
 #    def create_trajectory(self, species_name, dynamics_type):ENDDEF
 
 #class Trajectory_C(object):
-    def plot_trajectories(self):
-        """Plot the nth trajectory
+    def plot(self):
+        """Plot the accumulated particle trajectories.
+
         """
         import matplotlib.pyplot as mplot_m
 
@@ -209,8 +467,10 @@ class Trajectory_C(object):
                 tvals = self.DataList[sp][it]['t']
                 nlength = self.TrajectoryLength[sp][it]
 #                print 'tvals = ', tvals[0:nlength]
+
                 # Plots vs. time
-                x_label = "'time (s)"
+                
+                x_label = "time (s)"
                 for comp in comps:
                     mplot_m.figure()
                     mplot_m.plot(tvals[0:nlength], data_arr[comp][0:nlength], marker="o")
@@ -219,7 +479,9 @@ class Trajectory_C(object):
                     mplot_m.ylabel(comp)
                     mplot_m.grid(True)
 #                    mplot_m.show()
+
                 # Phase-space plots
+                
                 # x vs. y
                 if 'x' in comps:
                     if 'y' in comps:
@@ -241,7 +503,7 @@ class Trajectory_C(object):
                 
                 mplot_m.show()
         return
-#    def plot_trajectories(self):ENDDEF
+#    def plot(self):ENDDEF
 
 #class Trajectory_C(object):
     def plot_trajectories_on_mesh(self, mesh, plot_title, hold_plot=False):
@@ -284,3 +546,4 @@ class Trajectory_C(object):
 #    def plot_trajectories_on_mesh(self):ENDDEF
 
 #class Trajectory_C(object):ENDCLASS
+

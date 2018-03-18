@@ -161,8 +161,6 @@ class UserMesh1DS_C(Mesh_C):
                    mesh boundaries for particle boundary-conditions.
         """
 
-        self.coordinate_system = '1D-spherical-radius'
-
         if mesh_input.mesh_file is None:
             self.create_mesh(mesh_input, plot_flag=plot_flag, plot_title=plot_title)
             # Don't need another mesh plot
@@ -456,8 +454,11 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
         #     for bc in self.bcs:
         #         bc.apply(self.A)
 
-        df_m.set_log_level(df_m.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
-#df.set_log_level(1) # Gives the most messages
+        
+        #df_m.set_log_level(1) # Gives the most messages
+        #df_m.set_log_level(df_m.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
+        # Turn off solver messages
+        df_m.set_log_active(False)
 
 # default LU is flakey: different answers on different calls: NO!: this was a heap problem of unitialized memory!
 #        self.phi = None

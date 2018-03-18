@@ -265,8 +265,9 @@ class TestParticleMigration(unittest.TestCase):
         bitflag0 = 2
         cell_index0 = 0
         unique_ID0 = 0
+        crossings = 0
 
-        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0)
+        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0, crossings)
 
         # Second particle
 
@@ -277,8 +278,9 @@ class TestParticleMigration(unittest.TestCase):
         bitflag1 = 2
         cell_index1 = 0
         unique_ID1 = 1
+        crossings = 0
 
-        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1)
+        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1, crossings)
 
         p_expected = (psp0, psp1)
 
@@ -296,9 +298,9 @@ class TestParticleMigration(unittest.TestCase):
 #                print 'calculated = ', getparticle
                 for ic in range(ncoords):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
-                # The cell index is in last position: [-2]
-#                print fncName, "expected cell =", p_expected[ip][-2], "computed cell =", getparticle[-2]
-                self.assertEqual(p_expected[ip][-2], getparticle[-2], msg="Particle is not in correct cell")
+                cell_index_position = -3
+#                print fncName, "expected cell =", p_expected[ip][cell_index_position], "computed cell =", getparticle[cell_index_position]
+                self.assertEqual(p_expected[ip][cell_index_position], getparticle[cell_index_position], msg="Particle is not in correct cell")
 
         return
 #    def test_1D_particle_migration(self):ENDDEF
@@ -350,8 +352,9 @@ class TestParticleMigration(unittest.TestCase):
         bitflag0 = 2
         cell_index0 = 0
         unique_ID0 = 0
+        crossings = 0
 
-        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0)
+        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0, crossings)
 
         # Second particle
 
@@ -362,8 +365,9 @@ class TestParticleMigration(unittest.TestCase):
         bitflag1 = 2
         cell_index1 = 0
         unique_ID1 = 0
+        crossings = 0
 
-        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1)
+        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1, crossings)
 
         p_expected = (psp0, psp1)
 
@@ -391,9 +395,9 @@ class TestParticleMigration(unittest.TestCase):
 
                 for ic in range(ncoords):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
-                # The cell index is in last position: [-2]
-#                print fncName, "expected cell =", p_expected[ip][-2], "computed cell =", getparticle[-2]
-                self.assertEqual(p_expected[ip][-2], getparticle[-2], msg="Particle is not in correct cell")
+                cell_index_position = -3
+#                print fncName, "expected cell =", p_expected[ip][cell_index_position], "computed cell =", getparticle[cell_index_position]
+                self.assertEqual(p_expected[ip][cell_index_position], getparticle[cell_index_position], msg="Particle is not in correct cell")
 
         mplot_m.show()
 
@@ -439,8 +443,9 @@ class TestParticleMigration(unittest.TestCase):
         bitflag0 = 2
         cell_index0 = 98
         unique_ID0 = 0
+        crossings = 0
 
-        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0)
+        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0, crossings)
 
         # Second particle
 
@@ -451,8 +456,9 @@ class TestParticleMigration(unittest.TestCase):
         bitflag1 = 2
         cell_index1 = 0
         unique_ID1 = 0
+        crossings = 0
 
-        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1)
+        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1, crossings)
 
         p_expected = (psp0, psp1)
 
@@ -480,11 +486,9 @@ class TestParticleMigration(unittest.TestCase):
 
                 for ic in range(ncoords):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
-                # The index of the cell containing the particle is in the
-                # last position of the stored particle attributes,
-                # i.e., at location [-2]
-#                print fncName, "expected cell =", p_expected[ip][-2], "computed cell =", getparticle[-2]
-                self.assertEqual(p_expected[ip][-2], getparticle[-2], msg="Particle is not in correct cell")
+                cell_index_position = -3
+#                print fncName, "expected cell =", p_expected[ip][cell_index_position], "computed cell =", getparticle[cell_index_position]
+                self.assertEqual(p_expected[ip][cell_index_position], getparticle[cell_index_position], msg="Particle is not in correct cell")
 
         mplot_m.show()
 #        yesno = raw_input("Just called show() in test_3D_particle_migration")

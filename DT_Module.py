@@ -323,13 +323,13 @@ class DToutput_C(object):
     def __init__(self):
         """ Initialize variables
         """
-        pass
+        self.histories = None
     
-# See Aleph input
-        self.plot
-
         return
 
+#class DToutput_C(object):ENDCLASS
+
+    
 #STARTCLASS
 class DTscratch_C(object):
     """Contains scratch-pad values

@@ -246,13 +246,22 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Specify which particle variables to save.  This has the form of a numpy
         # dtype specification.
-        format_list_base = [int]
-        format_list = format_list_base + [numpy.float32]*7 # 7 is the number of floats in the following line.
-        self.trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': format_list}
-        format_list = format_list_base + [numpy.float32]*4
-        self.trajin.implicit_dict = {'names': ['step', 't', 'x', 'ux', 'phi'], 'formats': format_list}
-        format_list = format_list_base + [numpy.float32]*5
-        self.trajin.neutral_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy'], 'formats': format_list}
+
+        name_list_base = ['step', 't'] # These are always recorded
+        format_list_base = [int, numpy.float32] # Start off the format list with types for
+                                                # 'step' and 't'
+
+        explicit_attributes = ['x', 'ux', 'y', 'uy', 'crossings', 'Ex', 'Ey']
+        format_list = format_list_base + [numpy.float32 for i in range(len(explicit_attributes))]
+        self.trajin.explicit_dict = {'names': name_list_base+explicit_attributes, 'formats': format_list}
+        
+        implicit_attributes = ['x', 'ux', 'phi']
+        format_list = format_list_base + [numpy.float32 for i in range(len(implicit_attributes))]
+        self.trajin.implicit_dict = {'names': name_list_base+implicit_attributes, 'formats': format_list}
+
+        neutral_attributes = ['x', 'ux', 'y', 'uy']
+        format_list = format_list_base + [numpy.float32 for i in range(len(neutral_attributes))]
+        self.trajin.neutral_dict = {'names': name_list_base+neutral_attributes, 'formats': format_list}
 
         return
 
@@ -427,7 +436,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         plotPhaseSpace = False
         if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
-            p_P.traj_T.plot_trajectories() # Phase-space plot of trajectory
+            p_P.traj_T.plot() # Phase-space plot of trajectory
 
         return
 #    def test_2_record_trajectory(self):ENDDEF
@@ -551,9 +560,9 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Plot the trajectory in phase-space
 
-        plotPhaseSpace = False
+        plotPhaseSpace = True
         if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
-            p_P.traj_T.plot_trajectories()
+            p_P.traj_T.plot()
 
         return
 #    def test_3_out_of_bounds(self):ENDDEF
@@ -674,7 +683,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         plotPhaseSpace = False
         if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
-            p_P.traj_T.plot_trajectories()
+            p_P.traj_T.plot()
 
         return
 #    def test_4_reflect_at_boundaries(self):ENDDEF

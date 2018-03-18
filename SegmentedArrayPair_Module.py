@@ -61,6 +61,7 @@ class SegmentedArray_C(object):
         for iSA in (0, 1):
             # Add the numpy array for the first segment
             self.SegListPair[iSA].append(np_m.empty(self.SEGMENTLENGTH, dtype=item_dtype))
+#            self.SegListPair[iSA].append(np_m.zeros(self.SEGMENTLENGTH, dtype=item_dtype))
             # Count the number of segments:
             self.nSeg[iSA] = len(self.SegListPair[iSA])
             # Maximum number of particles that can be stored at present
@@ -205,6 +206,7 @@ class SegmentedArray_C(object):
 
         self.nSeg[theSA] += 1
         self.SegListPair[theSA].append(np_m.empty(self.SEGMENTLENGTH, dtype=self.ItemType))
+#        self.SegListPair[theSA].append(np_m.zeros(self.SEGMENTLENGTH, dtype=self.ItemType))
 
         # A list of the locations of unneeded items in the segment
 ##        self.HoleIndices[self.nSeg] = self.HoleIndices.append(np.empty(self.SegmentLength, dtype=int))
@@ -213,7 +215,6 @@ class SegmentedArray_C(object):
 
         self.FirstNotFullSegment[theSA] += 1
         self.FirstAvailableOffset[theSA] = 0
-#HERE
 
 #class SegmentedArray_C(object):
     def init_out_loop(self):

@@ -74,10 +74,11 @@ class UserParticleDistributions_C(object):
         bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG
         cell_index = Mesh_C.NO_CELL
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
         # Trim the number of coordinates here to match
         # "position_coordinates" variable in ParticleInput_C
-        p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index, unique_ID)
+        p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index, unique_ID, crossings)
 
         # Second particle
         # An electron along the 22.5-degree line
@@ -97,10 +98,11 @@ class UserParticleDistributions_C(object):
 #        cell_index = -1
         cell_index = Mesh_C.NO_CELL
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
         
         # Trim the number of coordinates here to match
         # "position_coordinates" variable in ParticleInput_C
-        p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index, unique_ID)
+        p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index, unique_ID, crossings)
 
         particle_list = (p0, p1)
 #        particle_list = (p1,)
@@ -141,10 +143,11 @@ class UserParticleDistributions_C(object):
         bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG
         cell_index = Mesh_C.NO_CELL
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
         
         # Trim the number of coordinates here to match
         # "position_coordinates" variable in ParticleInput_C
-        p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index, unique_ID)
+        p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index, unique_ID, crossings)
 
         # Second particle
         (x1, y1, z1) = (1.1, 0.0, 10.0)
@@ -164,10 +167,11 @@ class UserParticleDistributions_C(object):
         # Turn on trajectory flag.
         bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG 
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
         
         # Trim the number of coordinates here to to match
         # "position_coordinates" variable in ParticleInput_C
-        p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index, unique_ID)
+        p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index, unique_ID, crossings)
 
         particle_list = (p0, p1)
 #        particle_list = (p0,)
@@ -210,10 +214,11 @@ class UserParticleDistributions_C(object):
         bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG
         cell_index = Mesh_C.NO_CELL
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
         
         # Trim the number of coordinates here to match
         # "position_coordinates" variable in ParticleInput_C
-        p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index, unique_ID)
+        p0 = (x0,y0, x0,y0, ux0,uy0, weight0, bitflags0, cell_index, unique_ID, crossings)
 
         # Second particle
         (x1, y1, z1) = (1.1, 0.0, 10.0)
@@ -233,10 +238,11 @@ class UserParticleDistributions_C(object):
         # Turn on trajectory flag.
         bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG 
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
         
         # Trim the number of coordinates here to to match
         # "position_coordinates" variable in ParticleInput_C
-        p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index, unique_ID)
+        p1 = (x1,y1, x1,y1, ux1,uy1, weight1, bitflags1, cell_index, unique_ID, crossings)
 
         particle_list = (p0, p1)
 #        particle_list = (p0,)
@@ -261,13 +267,9 @@ class UserParticleBoundaryFunctions_C(object):
        scheme.
     """
 
-#    def __init__(self, name, charge, mass, dynamics):
-#    def __init__(self, particle_P):
     def __init__(self, position_coordinates, dx):
         """Initialize a UserParticleBoundaryFunctions_C object.
 
-#           :param particle_P: The Particle_C object to which these
-#                              boundary-conditions apply.
             :param position_coordinates: Example: ['x', 'y',]
             :param dx: The particle move vector
         
@@ -275,7 +277,6 @@ class UserParticleBoundaryFunctions_C(object):
 
         # Make aliases for quantities contained in particle_P that are needed to
         # implement various boundary conditions.
-        # These are shadowed values:
         self.position_coordinates = position_coordinates
         self.particle_dimension = len(self.position_coordinates)        
         self.dx = dx
@@ -346,17 +347,8 @@ class UserParticleBoundaryFunctions_C(object):
         
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
 
-
         if printInfoInvoked is True:
-#            print fncName, "(DnT INFO) Invoked by particle", p, "of species", speciesName
             print "DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName)
-
-
- # print "(DnT WARNING) %s Index %d for species %s on step %d exceeds array size %d. Point will not be recorded." % (fncName, newpoint, species_name, step, traj_T.npoints)
-
-            
-#        print fncName, "invoked by particle", p, "of species", speciesName
-
         pDim = self.particle_dimension
 
         # Scratch space
@@ -365,7 +357,7 @@ class UserParticleBoundaryFunctions_C(object):
         # self.pvel can hold: ux,uy,uz, (or subset)
         u = self.pvel
 
-        # The contains the actual move vector (see __init__() above)
+        # This is a reference to the actual move vector (see __init__() above)
         dx = self.dx # The the move-vector
        
         # Compute the move-vector past the reflecting surface
@@ -390,7 +382,6 @@ class UserParticleBoundaryFunctions_C(object):
         
         # Count the number/charge/energy of deleted particles
         
-
         # Set the delete flag
 #        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 

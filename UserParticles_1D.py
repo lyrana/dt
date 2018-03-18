@@ -100,7 +100,7 @@ class UserParticleDistributions_C(object):
 
 #class UserParticleDistributions_C(object):ENDCLASS
 
-class UserParticleBoundaryFunctions_C(Particle_C):
+class UserParticleBoundaryFunctions_C(object):
     """UserParticleBoundaryFunctions_C implements callback functions
        (boundary conditions) for kinetic particles crossing marked
        mesh facets.
@@ -108,6 +108,28 @@ class UserParticleBoundaryFunctions_C(Particle_C):
        See Particle_Module::ParticleMeshBoundaryConditions_C for naming
        scheme.
     """
+
+    def __init__(self, position_coordinates, dx):
+        """Initialize a UserParticleBoundaryFunctions_C object.
+
+            :param position_coordinates: Example: ['x', 'y',]
+            :param dx: The particle move vector
+        
+        """
+
+        # Make aliases for quantities contained in particle_P that are needed to
+        # implement various boundary conditions.
+        self.position_coordinates = position_coordinates
+        self.particle_dimension = len(self.position_coordinates)        
+        self.dx = dx
+
+        # Create scratch
+        precision = self.dx.dtype
+        self.pcoord = np_m.empty(self.particle_dimension, dtype=precision)
+        self.pvel = np_m.empty(self.particle_dimension, dtype=precision)
+
+        return
+#    def __init__(self, particle_P):ENDDEF
 
     @staticmethod
     def default_bc(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
@@ -182,12 +204,13 @@ class UserParticleBoundaryFunctions_C(Particle_C):
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 
-
+        return
+#    def bc_at_xmin_for_neutral_H(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
+        
 ########## Spherical coordinates ##########
 
 #class UserParticleBoundaryFunctions_C(Particle_C):
-    @staticmethod
-    def default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
+    def default_bc_at_rmin(self, p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on rmin.
            Reflect the particle after accounting for it.
 
@@ -205,9 +228,13 @@ class UserParticleBoundaryFunctions_C(Particle_C):
                                  reflecting surface.
 
         """
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-#        print fncName, "invoked by particle", p, "of species", speciesName
 
+        printInfoInvoked = False
+        
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+
+        if printInfoInvoked is True:
+            print "DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName)
         pDim = self.particle_dimension
 
         # Scratch space
@@ -216,29 +243,27 @@ class UserParticleBoundaryFunctions_C(Particle_C):
         # self.pvel can hold: ux,uy,uz, (or subset)
         u = self.pvel
 
-        # Local names for class variables
+        # This is a reference to the actual move vector (see __init__() above)
         dx = self.dx # The the move-vector
-        dxFraction = self.dxFraction # The fraction of the move distance traveled in
-                                     # the current cell.
        
         # Compute the move-vector past the reflecting surface
         for i in range(pDim):
-            dxOutside[i] = (1.0 - dxFraction)*dx[i]
+            dxOutside[i] = (1.0 - dx_fraction)*dx[i]
         # Compute the component in the direction normal to the reflecting surface
         n_dot_dxOutside = np_m.dot(facet_normal, dxOutside)
 
         # Compute the component of velocity normal to the reflecting surface
         for i in range(pDim):
-            u[i] = p[2*pDim:3*pDim]
+            u[i] = p[i+2*pDim]
         n_dot_u = np_m.dot(facet_normal, u)
 
         # Reflect the particle position in the surface to get its new final
         # position. Reflect the particle velocity too.
         i=0
         for coord in self.position_coordinates:
-            p[coord] -= 2.0*n_dot_dxOutside*dxOutside[i]
+            p[coord] -= 2.0 * n_dot_dxOutside * facet_normal[i]
             ucomp = 'u'+coord
-            p[ucomp] -= 2.0*n_dot_u*u[i]
+            p[ucomp] -= 2.0 * n_dot_u * facet_normal[i]
             i+=1
         
         # Count the number/charge/energy of deleted particles
@@ -247,7 +272,7 @@ class UserParticleBoundaryFunctions_C(Particle_C):
 #        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 
         return
-    def default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
+#    def default_bc_at_rmin(self, p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
     
 #class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
@@ -268,7 +293,8 @@ class UserParticleBoundaryFunctions_C(Particle_C):
         # Count the number/charge/energy of deleted particles
 
         return
-#    def default_bc_at_rmin(p, speciesName, facetIndex):ENDDEF
+#    def INACTIVE_default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
+
 
 #class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod
@@ -286,7 +312,7 @@ class UserParticleBoundaryFunctions_C(Particle_C):
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 
         return
-#    def INACTIVE_default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
+#    def default_bc_at_rmax(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
     
 #class UserParticleBoundaryFunctions_C(Particle_C):
     @staticmethod

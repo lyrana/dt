@@ -285,7 +285,7 @@ class TestParticleGeneration(unittest.TestCase):
         # Check these values
         particle_P.check_particle_output_parameters(ctrl)
 
-        particle_P.add_more_particles(ctrl, print_flag=True)        
+        particle_P.add_more_particles(ctrl)
 
         # Dump the particle data to a file
         particle_P.initialize_particle_output_file(ctrl)

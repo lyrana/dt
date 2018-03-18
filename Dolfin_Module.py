@@ -1298,6 +1298,7 @@ class CellSet_C(object):
     # The SUBDOMAIN_INDEX is incremented for each new CellSet_C
 #needed?    CELL_SUBDOMAIN_INDEX = 0
 
+#class CellSet_C(object):
     def __init__(self, mesh_M, plot_flag=False):
         """Create a CellSet_C from the given mesh.
            :param mesh_M: A Mesh_C object.
@@ -1357,6 +1358,7 @@ class CellSet_C(object):
         return
 #    def __init__(self, mesh, plot_flag=False):ENDDEF
 
+#class CellSet_C(object):
     def in_cell(self, point, index):
         """Test if point is in cell[index].
 

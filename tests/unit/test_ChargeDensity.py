@@ -65,8 +65,9 @@ class TestChargeDensity(unittest.TestCase):
         bitflags0 = 0b0
         cell_index0 = 0
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
-        p0 = (x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID)
+        p0 = (x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID, crossings)
 
         # 2nd particle
         x1 = 0.25; y1 = 0.0; z1 = 1.0
@@ -75,8 +76,9 @@ class TestChargeDensity(unittest.TestCase):
         bitflags1 = 0b0
         cell_index1 = 1
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
-        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID)
+        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID, crossings)
 
         # 3nd particle
         x2 = 0.0; y2 = 0.0; z2 = 1.0
@@ -85,15 +87,17 @@ class TestChargeDensity(unittest.TestCase):
         bitflags2 = 0b0
         cell_index2 = 0 # Particle lies on boundary between 0 and 1
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
-        p2 = (x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID)
+        p2 = (x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID, crossings)
 
         # Create the DT particle record type
-        pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
+        pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index', 'unique_ID', 'crossings']
         pvartypes = [np_m.float64]*7
         pvartypes.append(np_m.int32) # bitflags
         pvartypes.append(np_m.int32) # cell_index
         pvartypes.append(np_m.int32) # unique_ID
+        pvartypes.append(np_m.int32) # crossings
 
         p_dtype = {'names' : pvars, 'formats': pvartypes}
 
@@ -207,8 +211,9 @@ class TestChargeDensity(unittest.TestCase):
         bitflags0 = 0b0
         cell_index0 = 1
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
-        p0 = (x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID)
+        p0 = (x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID, crossings)
 
         # 2nd particle
         x1 = 1.0; y1 = 1.0; z1 = 1.0
@@ -217,8 +222,9 @@ class TestChargeDensity(unittest.TestCase):
         bitflags1 = 0b0
         cell_index1 = 6
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
-        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID)
+        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID, crossings)
 
         # 3nd particle
         x2 = -9.0; y2 = 1.0; z2 = 1.0
@@ -227,15 +233,17 @@ class TestChargeDensity(unittest.TestCase):
         bitflags2 = 0b0
         cell_index2 = 4 # Particle lies on boundary between 0 and 1
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
-        p2 = (x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID)
+        p2 = (x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID, crossings)
 
         # Create the DT particle record type
-        pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
+        pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index', 'unique_ID', 'crossings']
         pvartypes = [np_m.float64]*7
         pvartypes.append(np_m.int32) # bitflags
         pvartypes.append(np_m.int32) # cell_index
         pvartypes.append(np_m.int32) # unique_ID
+        pvartypes.append(np_m.int32) # crossings
 
         p_dtype = {'names' : pvars, 'formats': pvartypes}
 
@@ -410,11 +418,12 @@ class TestChargeDensity(unittest.TestCase):
         bitflags0 = 0b0
         cell_index0 = 1
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
         # Unlike the previous tests, we're using a Particle_C object here, so
         # the particle tuple has to match the one in Particle_C:
         # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
-        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID)
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID, crossings)
 
         # 2nd particle
         x1 = 1.0; y1 = 1.0; z1 = 1.0
@@ -423,8 +432,9 @@ class TestChargeDensity(unittest.TestCase):
         bitflags1 = 0b0
         cell_index1 = 6
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
-        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID)
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID, crossings)
 
         # 3nd particle
         x2 = -9.0; y2 = 1.0; z2 = 1.0
@@ -433,8 +443,9 @@ class TestChargeDensity(unittest.TestCase):
         bitflags2 = 0b0
         cell_index2 = 4 # Particle lies on boundary between 0 and 1
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
-        p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID)
+        p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID, crossings)
 
         # # Create the DT particle record type
         # pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
@@ -652,10 +663,11 @@ class TestChargeDensity(unittest.TestCase):
         bitflags0 = 0b0
         cell_index0 = 1
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
         # The particle tuple has to match the one in Particle_C:
         # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
-        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID)
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID, crossings)
 
         particle_list = (p0,)
 
@@ -854,10 +866,11 @@ class TestChargeDensity(unittest.TestCase):
         weight0 /= 4.0*np_m.pi # charge per steradian
         bitflags0 = 0b0
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
         # The particle tuple has to match the one in Particle_C:
         # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
-        p0 = (x0, x0, ux0, weight0, bitflags0, cell_index0, unique_ID)
+        p0 = (x0, x0, ux0, weight0, bitflags0, cell_index0, unique_ID, crossings)
 
         particle_list = (p0, )
 
@@ -1060,10 +1073,11 @@ class TestChargeDensity(unittest.TestCase):
         weight0 /= 4.0*np_m.pi # charge per steradian
         bitflags0 = 0b0
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
         # The particle tuple has to match the one in Particle_C:
         # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
-        p0 = (x0, x0, ux0, weight0, bitflags0, cell_index0, unique_ID)
+        p0 = (x0, x0, ux0, weight0, bitflags0, cell_index0, unique_ID, crossings)
 
         particle_list = (p0, )
 

@@ -86,8 +86,9 @@ class UserParticleDistributions_C(object):
 #        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
         # Instead, assign a fixed unique_ID
         unique_ID = 0
+        crossings = 0
 
-        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index, unique_ID)
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index, unique_ID, crossings)
 
         # Image particle with different weight
         x1 = y1 = 0.0; z1 = -z0
@@ -101,8 +102,9 @@ class UserParticleDistributions_C(object):
 
         #unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
         unique_ID = 1
+        crossings = 0
 
-        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index, unique_ID)
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index, unique_ID, crossings)
 
         particle_list = (p0, p1)
         np = len(particle_list)
@@ -138,9 +140,10 @@ class UserParticleDistributions_C(object):
 
 #        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
         unique_ID = 2
+        crossings = 0
 
         # Trim the number of coordinates here to match "position_coordinates" variable in ParticleInput_C
-        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index, unique_ID)
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index, unique_ID, crossings)
 
         # Image particle with different weight
         x1 = -x0; y1 = -y0; z1 = -z0
@@ -150,9 +153,10 @@ class UserParticleDistributions_C(object):
 #        bitflags1 = bitflags1 | Particle_C.TRAJECTORY_FLAG # use low bit for trajectory flag.
 #        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
         unique_ID = 3
+        crossings = 0
 
         # Trim the number of coordinates here to match "position_coordinates" variable in ParticleInput_C
-        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index, unique_ID)
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index, unique_ID, crossings)
 
         particle_list = (p0, p1)
         np = len(particle_list)
@@ -181,8 +185,9 @@ class UserParticleDistributions_C(object):
         cell_index = Mesh_C.NO_CELL
 #        cell_index = -1
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
 
-        p = (x,y,z, x,y,z, ux,uy,uz, weight, bitflags, cell_index, unique_ID)
+        p = (x,y,z, x,y,z, ux,uy,uz, weight, bitflags, cell_index, unique_ID, crossings)
 
         particle_list = (p,)
         np = len(particle_list)
