@@ -50,6 +50,10 @@ class DTcontrol_C(object):
 
         # Diagnostics
 
+        self.potential_field_output_file = None
+        self.electric_field_output_file = None
+        self.field_output_interval = None
+
         self.particle_output_file = None
         self.particle_output_interval = None
         self.particle_output_attributes = None

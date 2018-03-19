@@ -21,10 +21,10 @@ __all__ = ['Example_C',]
 ## IM. Imported Modules
 ## OF. Terminal output flags
 ## PC. Physical constants
-## SP. Scratch-pad
+## SP. Scratch-pad for calculating parameter values.
 ## SC. Simulation Control
-##     Timestep value; Number of timesteps
-##     Output: Write field and particle data to files.
+##     Set timestep value and number of timesteps.
+##     Output: Specify field and particle output files and output frequency.
 ## FM. Field Mesh
 ## PS. Particle Species
 ##     PS.1. Define the species and provide storage.
@@ -49,15 +49,27 @@ __all__ = ['Example_C',]
 ##       INIT.1. Do an initial field solve without particles
 ##       INIT.2. Initialize the particles
 ##               INIT.2.1. Loop on initialized particle species
-##                         INIT.2.1.1. Recompute the initial electrostatic field in the presence of these particles
+##                         INIT.2.1.1. Recompute the initial electrostatic field in
+##                                     the presence of these particles
 ##               INIT.2.2. Record initial history data
 ## RUN. Integrate forward in time
 ##      RUN.0. Increment the time counters
 ##      RUN.1. Advance the particles one timestep
 ##      RUN.2. Add particles from source regions
-##      RUN.3. Update the electric charge density
-##      RUN.4. Update the electric field
-##      RUN.5. Record history data for this timestep
+##      RUN.3. Write a snapshot of the particles
+##      RUN.4. Update the electric charge density
+##      RUN.5. Update the electric field
+##             RUN.5.1. Set field-plotting parameters
+##             RUN.5.2. Call the field solver
+##             RUN.5.3. Write a snapshot of the fields
+##      RUN.6. Record history data for this timestep
+## FIN. Finish the simulation
+##      FIN.1. Write the last particle data and close the output file.
+##      FIN.2. Record the LAST point on the particle trajectories.
+##      FIN.3. Plot the particle trajectories on the particle mesh.
+##      FIN.4. Plot the particle trajectories in phase-space.
+##      FIN.5. Plot the recorded history data.
+##      FIN.6. Write final log message
 
 
 ############################## IM. Imported Modules ##############################
@@ -88,15 +100,14 @@ emitInputOnly = False # Write input values to standard output and then quit.
 pauseAfterEmit = True # Wait for user input before continuing.  Can be changed to
                       # False by using ctrl.get_keyboard_input()
 
-#plotInitialFields = True
-plotInitialFields = False
-#plotFieldsEveryTimestep = True # Plot phi and -E each timestep
-plotFieldsEveryTimestep = False # Plot phi and -E each timestep
+plotInitialFields = True
+plotFieldsEveryTimestep = False # Plot phi and -E each timestep.
+plotFinalFields = True
 
-plotTrajectoriesOnMesh = True # Plot the trajectory particles on top of the mesh
-plotTrajectoriesInPhaseSpace = True # Plot the 2D phase-space of trajectory particles
+plotTrajectoriesOnMesh = True # Plot the trajectory particles on top of the mesh.
+plotTrajectoriesInPhaseSpace = True # Plot the 2D phase-space of trajectory particles.
 
-plotTimeHistories = True # Plot the recorded values vs. time
+plotTimeHistories = True # Plot the recorded values vs. time.
 
 ############################## PC. Physical constants ##############################
 
@@ -174,7 +185,6 @@ if emitInput is True:
 #electron_plasma_frequency = q_e*np_m.sqrt(n_e/(m_e*eps_0))
 
 
-
 ############################## SC. Simulation Control ##############################
 
 # Run identifier
@@ -200,8 +210,14 @@ ctrl.random_seed = 1
 
 np_m.random.seed(ctrl.random_seed)
 
+### Set parameters for writing field output files
+ctrl.potential_field_output_file = ctrl.title + "-phi.pvd"
+ctrl.electric_field_output_file = ctrl.title + "-E.pvd"
+ctrl.field_output_interval = 1
+
 ### Set parameters for writing particle output to an h5part file
-ctrl.particle_output_file = "sphere1D.h5part"
+#ctrl.particle_output_file = "sphere1D.h5part"
+ctrl.particle_output_file = ctrl.title + ".h5part"
 ctrl.particle_output_interval = 1
 # Available attributes: 'species_index' and any particle-record name
 ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'unique_ID')
@@ -804,10 +820,22 @@ if plotInitialFields is True:
 plotTitle = fileName + " initial field (no particles)"
 poissonsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 
+# Open the field output files and write the initial fields (no particles)
+if ctrl.field_output_interval is not None:
+    PotentialFieldOutputFile = df_m.File(ctrl.potential_field_output_file)
+    phi_F.function.rename("phi", "phi_label")
+    PotentialFieldOutputFile << phi_F.function
+
+    # !!! VTK cannot write a vector field on a 1D grid.
+    # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
+    # negElectricField_F.function.rename("E", "E_label")
+    # ElectricFieldOutputFile << negElectricField_F.function
+    
+
 ########## INIT.2. Initialize the particles
 
 # Open the particle output file and write the header
-if ctrl.particle_output_file is not None:
+if ctrl.particle_output_interval is not None:
     particle_P.initialize_particle_output_file(ctrl)
 
 ##### INIT.2.1. Loop on initialized particle species
@@ -842,6 +870,18 @@ if particle_P.initial_particles_dict is not None:
     plotTitle = fileName + "Initial field (with particles)"
     poissonsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 
+    # Open write the initial fields (with contribution from initial particles)
+    if ctrl.field_output_interval is not None:
+        phi_F.function.rename("phi", "phi_label")
+        PotentialFieldOutputFile << phi_F.function
+
+    # !!! VTK cannot write a vector field on a 1D grid.
+    # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
+    # negElectricField_F.function.rename("E", "E_label")
+    # ElectricFieldOutputFile << negElectricField_F.function
+
+
+    
 else:
     print "(DnT INFO) %s\n\tThere are no initial particles in this simulation" % fileName
 
@@ -878,11 +918,12 @@ for istep in xrange(ctrl.n_timesteps):
     if particle_P.particle_source_dict is not None:
         particle_P.add_more_particles(ctrl, neg_E_field=poissonsolve.neg_electric_field)
 
-    # Write a snapshot of the particles
-    if ctrl.timeloop_count % ctrl.particle_output_interval == 0:
-        particle_P.write_particles_to_file(ctrl)
+    ########## RUN.3. Write a snapshot of the particles
+    if ctrl.particle_output_interval is not None:
+        if ctrl.timeloop_count % ctrl.particle_output_interval == 0:
+            particle_P.write_particles_to_file(ctrl)
 
-    ########## RUN.3. Update the electric charge density
+    ########## RUN.4. Update the electric charge density
     for s in particle_P.species_names:
         particle_P.accumulate_number_density(s)
         q = particle_P.charge[s]
@@ -890,14 +931,33 @@ for istep in xrange(ctrl.n_timesteps):
 
     particle_P.accumulate_charge_density_from_particles(chargeDensity_F)
 
-    ########## RUN.4. Update the electric field
-    plotTitle = os.path.basename(__file__) + ": n=%d " % (ctrl.timeloop_count)
+    ########## RUN.5. Update the electric field
+
+    ##### RUN.5.1. Set field plotting parameters
     if plotFieldsEveryTimestep is True:
+        plotFields = True
+        plotTitle = os.path.basename(__file__) + ": n=%d " % (ctrl.timeloop_count)
         print ""
         print "********** Plot field at timestep %d **********" % ctrl.timeloop_count
-    poissonsolve.solve_for_phi(plot_flag=plotFieldsEveryTimestep, plot_title=plotTitle)
+    elif plotFinalFields is True and ctrl.timeloop_count == ctrl.n_timesteps:
+        plotFields = True
+        plotTitle = os.path.basename(__file__) + ": n=%d " % (ctrl.timeloop_count)
+        print ""
+        print "********** Plot final field at timestep %d **********" % ctrl.timeloop_count
+    else:
+        plotFields = False
+        plotTitle = None
 
-    ########## RUN.5. Record history data for this timestep
+    ##### RUN.5.2. Call the field solver
+    poissonsolve.solve_for_phi(plot_flag=plotFields, plot_title=plotTitle)
+
+    ##### RUN.5.3. Write a snapshot of the fields
+    if ctrl.field_output_interval is not None:
+        if ctrl.timeloop_count % ctrl.field_output_interval == 0:
+            phi_F.function.rename("phi", "phi_label")
+            PotentialFieldOutputFile << phi_F.function
+    
+    ########## RUN.6. Record history data for this timestep
     if particle_P.histories is not None:
         if (ctrl.timeloop_count % particle_P.histories.skip == 0):
             particle_P.record_history_data(ctrl.timeloop_count, ctrl.time)
@@ -911,22 +971,21 @@ print "********** Exited the time loop at step %d, time %.3g, with %d particles 
 
 ############################## FIN. Finish the simulation ##############################
 
-# Write the last particle data and close the output file
+##### FIN.1. Write the last particle data and close the output file.
 if ctrl.particle_output_file is not None:
     print ""
     print "********** Write final particle data to %s and close the file **********" % (ctrl.particle_output_file)
 #    print ""
     particle_P.write_particles_to_file(ctrl, close_flag=True)
 
-# Record the LAST point on the particle trajectories
+##### FIN.2. Record the LAST point on the particle trajectories.
 if particle_P.traj_T is not None:
     print ""
     print "********** Record final particle trajectory data **********"
 #    print ""
     particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
 
-# Plot the trajectory onto the particle mesh
-
+##### FIN.3. Plot the particle trajectories on the particle mesh.
 if os.environ.get('DISPLAY') is not None and plotTrajectoriesOnMesh is True:
     print ""
     print "********** Plot trajectories on particle mesh at end of simulation **********"
@@ -935,19 +994,19 @@ if os.environ.get('DISPLAY') is not None and plotTrajectoriesOnMesh is True:
     holdPlot = True # Set to True to stop the plot from disappearing.
     particle_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
-# Plot the trajectory in phase-space
-
-#import matplotlib.pyplot as plot_M
-#tvals = np_M.linspace(tmin, tmax,
-
+##### FIN.4. Plot the particle trajectories in phase-space.
 if os.environ.get('DISPLAY') is not None and plotTrajectoriesInPhaseSpace is True:
     print ""
     print "********** Plot trajectories in phase-space at end of simulation **********"
     particle_P.traj_T.plot()
 
+##### FIN.5. Plot the recorded history data.
 if os.environ.get('DISPLAY') is not None and plotTimeHistories is True:
+    print ""
+    print "********** Plot recorded history data at end of simulation **********"
     if particle_P.histories is not None:
         particle_P.histories.plot()
-    
+
+##### FIN.6. Write final log message
 print ""
 print "********** Simulation ended normally at end of timestep %d, time %.3g **********" % (ctrl.timeloop_count, ctrl.time)
