@@ -444,18 +444,20 @@ class Trajectory_C(object):
         """
         import matplotlib.pyplot as mplot_m
 
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        
 #        tmin = 0.0
 #        tmax = tmin + (self.npoints-1)*self.data_interval
 #        tvals = np_m.linspace(tmin, tmax, self.npoints)
-
-
 #        print 'tval = ', tvals
 
         # Temporary array for plotting
 #        yvals = np_m.empty(self.npoints)
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
-            if len(self.data_list[sp]) == 0: continue
+            if len(self.data_list[sp]) == 0:
+                print fncName, "\tDnT INFO: No trajectories recorded for species %s." % sp
+                continue
             comps = self.data_list[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
 #            print 'comps =', comps
             for it in xrange(len(self.particle_index_list[sp])):
@@ -519,13 +521,16 @@ class Trajectory_C(object):
         plotter=df_m.plot(mesh, title=plot_title)
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
-            if len(self.data_list[sp]) == 0: continue
+            if len(self.data_list[sp]) == 0:
+                print fncName, "\tDnT INFO: No trajectories recorded for species %s." % sp
+                continue
             comps = self.data_list[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
             # Loop on trajectories for this species
             for it in xrange(len(self.particle_index_list[sp])):
                 nlength = self.trajectory_length[sp][it]
                 if nlength == 1:
-                    print fncName, "*** DT Warning: Trajectory", it, "for species", sp, "has only one point. Not plotting it.***"
+                    print fncName, "\tDnT Warning: Trajectory %d for species %s has only one point. Not plotting it." % (it, sp)
+#                    print fncName, "*** DT Warning: Trajectory", it, "for species", sp, "has only one point. Not plotting it.***"
                     continue
                 data_arr = self.data_list[sp][it]
 #                print "data_arr[x] =", data_arr['x'][0:nlength]
@@ -533,7 +538,7 @@ class Trajectory_C(object):
                 if 'x' in comps:
                     if 'y' in comps:
                         mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength], marker="o")
-# VTK plotter:                        
+# VTK plotter is obsolete:                        
 #                        path = np_m.empty(2*nlength, dtype=np_m.float64) # NB: dtype has to be double for add_polygon()
 #                        path[0::2] = data_arr['x'][0:nlength] # Start at 0, with stride 2
 #                        path[1::2] = data_arr['y'][0:nlength] # Start at 1, with stride 2
