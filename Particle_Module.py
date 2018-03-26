@@ -1015,9 +1015,15 @@ class Particle_C(object):
                 # Done with this segment.
                 # Get the next one, if it exists.
                 (npSeg, psegIn) = psa.get_next_segment('in')
+            # End of while isinstance(psegIn, np_m.ndarray)
 
             # Set values that will be used to keep track of the particle arrays
-            particleCount += ipOut
+            if (ipOut != self.SEGMENT_LENGTH): # This catches the case where we exit the loop
+                                               # when ipOut = SEGMENT_LENGTH and there are no
+                                               # more 'in' segments.  Otherwise, we would add
+                                               # SEGMENT_LENGTH to particleCount twice.
+                
+                particleCount += ipOut
             psa.set_number_of_items('out', particleCount)
             # End of loop over segmented array
 
@@ -1283,11 +1289,15 @@ class Particle_C(object):
                 # Done with this segment.
                 # Get the next one, if it exists.
                 (npSeg, psegIn) = psa.get_next_segment('in')
-#                pseg = psa.get_next_segment()
-                # Loop over particles in this segment ends
+            # End of while isinstance(psegIn, np_m.ndarray)                                   
+                
 
             # Set values that will be used to keep track of the particle arrays
-            particleCount += ipOut
+            if (ipOut != self.SEGMENT_LENGTH): # This catches the case where we exit the loop
+                                               # when ipOut = SEGMENT_LENGTH and there are no
+                                               # more 'in' segments.  Otherwise, we would add
+                                               # SEGMENT_LENGTH to particleCount twice.
+                particleCount += ipOut
             psa.set_number_of_items('out', particleCount)
             # Loop over segmented array ends
 
@@ -2062,9 +2072,9 @@ class Particle_C(object):
                 particle[3*pDim+2] = cellIndex
                 particle[3*pDim+3] = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 #tph                
-                # if particle[3*pDim+3] == 640:
-                #     print "create_max: adding particle with ID", particle[3*pDim+3]
-                #     particle[3*pDim+1] = bitflags | Particle_C.TRAJECTORY_FLAG
+#                if particle[3*pDim+3] == 2448:
+#                    print "create_max: adding particle with ID", particle[3*pDim+3]
+#                    particle[3*pDim+1] = bitflags | Particle_C.TRAJECTORY_FLAG
 
                 particle[3*pDim+4] = crossings
                     

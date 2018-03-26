@@ -226,7 +226,7 @@ ctrl.title = "sphere1D"
 ctrl.author = "tph"
 
 # Timestepping
-ctrl.n_timesteps = 25 # 100
+ctrl.n_timesteps = 100 # 100
 
 ctrl.dt = 4.0e-7 # from sphere1D.ods
 if ctrl.dt > scr.dt_max:
@@ -706,15 +706,17 @@ chargeDensity_F = Field_C(mesh_M=mesh_M,
 
 ########## FS.1. The scalar electric potential
 
-##### FS.1.1. Set boundary values of the potential
-phiVals = {'rmin':  0.0,
-           'rmax': -scr.confining_potential,
-          }
-           
-# phiVals = {'rmin':  0.0,
-#            'rmax': -1.5,
-#            }
+# Use 'unset' to have a natural BC.
 
+##### FS.1.1. Set boundary values of the potential
+phiVals = {'rmin': 'unset',
+           'rmax': 0.0
+          }
+
+# phiVals = {'rmin':  0.0,
+#            'rmax': -scr.confining_potential,
+#           }
+           
 if emitInput is True:
     print ""
     print "********** Potential Boundary Values (phiVals) **********"

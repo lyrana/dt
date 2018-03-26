@@ -387,10 +387,10 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
            Generates the bilinear form a(u,v) for the variational form of Poisson's eq.
 
            :param charge_density_factor: A multiplier applied to the charge density
-                                         term in the field solve.
+                                         term in the field equation.
 
            :param assembled_charge_factor: A multiplier applied to the assembled
-                                           charge term in the field solve.
+                                           charge term in the field equation.
 
         """
 
