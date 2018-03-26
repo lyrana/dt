@@ -7,11 +7,23 @@ __version__ = 0.1
 __author__ = 'Copyright (C) 2017 L. D. Hughes'
 __all__ = ['Example_C',]
 
-"""
-   A spherical source region creates ion-electron pairs.  The
-   electrons are hot and the ions are cold.  The electrons pull the
+"""A spherical source region creates ion-electron pairs.  The electrons are hot and
+   the ions are cold, but may be given a radial velocity.  The electrons pull the
    ions radially outward.
+
 """
+#### Commentary
+#
+#  The key parameters are:
+#
+#      1. The electron temperature ('T_e_eV'). This determines how fast the electrons
+#         escape.
+#
+#      2. The potential difference ('confining_potential') between the center and the
+#         edge of the region.  This is the confining potential for the electrons.
+#      
+#
+
 
 #### Section Index
 
@@ -22,6 +34,10 @@ __all__ = ['Example_C',]
 ## OF. Terminal output flags
 ## PC. Physical constants
 ## SP. Scratch-pad for calculating parameter values.
+##     SP.1. Calculate spatial parameters
+##     SP.2. Calculate electron parameters
+##     SP.3. Calculate ion parameters
+##     SP.4. Calculate field parameters
 ## SC. Simulation Control
 ##     Set timestep value and number of timesteps.
 ##     Output: Specify field and particle output files and output frequency.
@@ -43,8 +59,14 @@ __all__ = ['Example_C',]
 ## FS. Field Solver
 ##     FS.1. The scalar electric potential
 ##           FS.1.1. Set boundary values of the potential
-## HIST. Time-Histories
-## CHECK. Check the input
+##     FS.2. The electric field (gradient of scalar potential)
+##           FS.2.1. Properties of the electric field
+##           FS.2.2. Storage for the electric field
+##     FS.3. The potential field solver
+##           FS.3.1. The potential field solver algorithm parameters
+##           FS.3.2. Create the potential field solver object
+## HST. Time-Histories
+## CHK. Check the input
 ## INIT. Initialization
 ##       INIT.1. Do an initial field solve without particles
 ##       INIT.2. Initialize the particles
@@ -131,6 +153,8 @@ if emitInput is True:
 # Create a class for scratch-pad variables
 scr = DTscratch_C()
 
+########## SP.1. Calculate spatial parameters
+
 # Start with the size of the computational domain
 #scr.rmin = 1.0
 scr.rmin = 0.0
@@ -147,6 +171,8 @@ print "Electron Debye length = %.3g m" % scr.lambda_D
 ctrl = DTcontrol_C()
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
+
+########## SP.2. Calculate electron parameters
 
 # Specify the electron temperature
 scr.T_e_eV = 6.0
@@ -175,6 +201,8 @@ print "Electron density = %.3g per m^{-3}" % scr.electron_density
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
+########## SP.3. Calculate ion parameters
+
 # Compute the ion sound speed
 scr.ion_charge_state = 1.0
 scr.ion_sound_speed = np_m.sqrt(scr.ion_charge_state*q_e*scr.T_e_eV/m_Hplus)
@@ -184,6 +212,11 @@ if emitInput is True:
 
 #electron_plasma_frequency = q_e*np_m.sqrt(n_e/(m_e*eps_0))
 
+########## SP.4. Calculate field parameters
+
+# Set the confining potential (in Volts)
+scr.confining_potential = 10.0*scr.T_e_eV
+scr.spacecharge_factor = 0.01
 
 ############################## SC. Simulation Control ##############################
 
@@ -674,9 +707,10 @@ chargeDensity_F = Field_C(mesh_M=mesh_M,
 ########## FS.1. The scalar electric potential
 
 ##### FS.1.1. Set boundary values of the potential
-phiVals = {'rmin':  'unset',
-           'rmax': -1.5,
-           }
+phiVals = {'rmin':  0.0,
+           'rmax': -scr.confining_potential,
+          }
+           
 # phiVals = {'rmin':  0.0,
 #            'rmax': -1.5,
 #            }
@@ -739,34 +773,37 @@ if emitInput is True:
     print negElectricField_F
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-########## FS.3.1. The Poisson solver parameters
+########## FS.3. The potential field solver
+    
+##### FS.3.1. The potential field solver algorithm parameters
 linearSolver = 'lu'
 preconditioner = None
 
-########## FS.3.2. Create the Poisson solver object
+##### FS.3.2. Create the potential field solver object
 fieldBoundaryMarker = mesh_M.field_boundary_marker
 if emitInput is True:
     print ""
     print "********** Calling UserPoissonSolve_C constructor **********"
-poissonsolve = UserPoissonSolve1DS_C(phi_F,
-                                  linearSolver, preconditioner,
-                                  fieldBoundaryMarker, phiBCs,
-                                  assembled_charge=chargeDensity_F.function,
-                                  neg_electric_field=negElectricField_F)
+potentialsolve = UserPoissonSolve1DS_C(phi_F,
+                                       linearSolver, preconditioner,
+                                       fieldBoundaryMarker, phiBCs,
+                                       assembled_charge=chargeDensity_F.function,
+                                       assembled_charge_factor=scr.spacecharge_factor,
+                                       neg_electric_field=negElectricField_F)
 
 if emitInput is True:
     print ""
     print "********** Poisson Solver Attributes **********"
-#    print "poissonsolve =", poissonsolve.__dict__
-    print poissonsolve
+#    print "potentialsolve =", potentialsolve.__dict__
+    print potentialsolve
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
-############################## HIST. Histories ##############################
+############################## HST. Histories ##############################
 
-########## HIST.1. History input
+########## HST.1. History input
 
-##### HIST.1.1. Particle histories
+##### HST.1.1. Particle histories
 particleHistoryInput = ParticleHistoryInput_C()
 
 particleHistoryInput.max_points = None # Set to None to get every point
@@ -776,25 +813,25 @@ particleHistoryInput.scalar_histories = ['count',]
 #histin.particle_scalar_histories = ['count', 'charge',]
 
 #fieldHistoryInput = FieldHistoryInput_C()
-##### HIST.1.2. Global field histories
+##### HST.1.2. Global field histories
 #fieldHistoryInput.scalar_histories = ()
 #histin.scalar_histories = ('E-field-energy', 'max-E-field',)
 
-##### HIST.1.3. Point-probe field histories
+##### HST.1.3. Point-probe field histories
 #fieldHistoryInput.probe_histories = ()
 # histin.vector_histories = (('E', (0.0)), ('phi', (0.0)),
 #                                 ('E', (2.0)), ('phi', (2.0)), 
 #                                 ('E', (4.0)), ('phi', (4.0)),
 #                                )
 
-##### HIST.1.4. Numerical parameter histories
+##### HST.1.4. Numerical parameter histories
 #numericalHistoryInput = NumericalHistoryInput_C()
 
 # ('average-Debye-length', 'maximum-Debye-length', 'Courant-number',
 #  'average-streaming-number', 'maximum-streaming-number')
 #numericalHistoryInput.histories = ()
 
-########## HIST.2. Create the history objects
+########## HST.2. Create the history objects
 #output.histories = History_C(histin, ctrl, particle_P.species_names)
 particle_P.histories = ParticleHistory_C(particleHistoryInput, ctrl, particle_P.history_function_dict, particle_P.species_names)
 
@@ -803,7 +840,7 @@ if emitInputOnly is True:
     sys.exit(infoMsg)
 
 
-############################## CHECK. Check the simulation setup ##############################
+############################## CHK. Check the simulation setup ##############################
 
 if particleBoundaryDict is not None and particle_P.pmesh_M.particle_boundary_marker is None:
     print "A particleBoundaryDict was set, but particle_P.pmesh_M.particle_boundary_marker is None"
@@ -818,7 +855,7 @@ if plotInitialFields is True:
     print ""
     print "********** Compute and plot initial fields without charge-density from particles **********"
 plotTitle = fileName + " initial field (no particles)"
-poissonsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
+potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 
 # Open the field output files and write the initial fields (no particles)
 if ctrl.field_output_interval is not None:
@@ -852,7 +889,7 @@ if particle_P.initial_particles_dict is not None:
     # This will capture the FIRST point on the trajectories of marked particles
     if particle_P.initial_particles_dict is not None:
         if particle_P.traj_T is not None:
-            particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
+            particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field)
 
     ##### INIT.2.1.1. Recompute the initial electrostatic field in the presence of these particles
     ## Accumulate number-density from kinetic particles
@@ -868,7 +905,7 @@ if particle_P.initial_particles_dict is not None:
         print ""
         print "********** Plot recomputed initial fields with charge-density from particles **********"
     plotTitle = fileName + "Initial field (with particles)"
-    poissonsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
+    potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 
     # Open write the initial fields (with contribution from initial particles)
     if ctrl.field_output_interval is not None:
@@ -905,18 +942,18 @@ for istep in xrange(ctrl.n_timesteps):
     ########## RUN.1. Advance the particles one timestep
     print ""
     print "***** Advance %d particles to step %d, time %.3g *****" % (particle_P.get_total_particle_count(), ctrl.timeloop_count, ctrl.time)
-    particle_P.move_particles_in_electrostatic_field(ctrl, poissonsolve.neg_electric_field)
+    particle_P.move_particles_in_electrostatic_field(ctrl, potentialsolve.neg_electric_field)
 
     ## Record trajectory data for all marked particles
     if particle_P.traj_T is not None:
         if (ctrl.timeloop_count % particle_P.traj_T.skip == 0):
-            particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
+            particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field)
 
     ########## RUN.2. Add particles from source regions
     # Note: if a new particle gets marked for a trajectory, the first datum is
     # recorded inside the particle generator.
     if particle_P.particle_source_dict is not None:
-        particle_P.add_more_particles(ctrl, neg_E_field=poissonsolve.neg_electric_field)
+        particle_P.add_more_particles(ctrl, neg_E_field=potentialsolve.neg_electric_field)
 
     ########## RUN.3. Write a snapshot of the particles
     if ctrl.particle_output_interval is not None:
@@ -949,7 +986,7 @@ for istep in xrange(ctrl.n_timesteps):
         plotTitle = None
 
     ##### RUN.5.2. Call the field solver
-    poissonsolve.solve_for_phi(plot_flag=plotFields, plot_title=plotTitle)
+    potentialsolve.solve_for_phi(plot_flag=plotFields, plot_title=plotTitle)
 
     ##### RUN.5.3. Write a snapshot of the fields
     if ctrl.field_output_interval is not None:
@@ -983,7 +1020,7 @@ if particle_P.traj_T is not None:
     print ""
     print "********** Record final particle trajectory data **********"
 #    print ""
-    particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=poissonsolve.neg_electric_field)
+    particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field)
 
 ##### FIN.3. Plot the particle trajectories on the particle mesh.
 if os.environ.get('DISPLAY') is not None and plotTrajectoriesOnMesh is True:

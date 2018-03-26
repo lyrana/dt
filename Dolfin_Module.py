@@ -990,12 +990,12 @@ class Field_C(object):
 
         # Follow C++ source in PointSource.cpp:
 
-        # Get the dof indices, i.e., the indices where the dof values of
-        # densities from this cell are located.
-        # Note: in general, these are not the numbered the same as the vertices
+        # Get the dof indices for this cell, i.e., the indices where the dof values
+        # of densities from this cell are located in the source vector of the matrix
+        # equation. Note: in general, these are not numbered the same as the vertices
 
-        dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # type: numpy.ndarray
-        # This doesnt work, because array() contains a *copy* of vector(), not
+        dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
+        # The following doesnt work, because array() contains a *copy* of vector(), not
         # the underlying data.
 #        for i in range(len(dofIndices)):
 #            self.function.vector().array()[dofIndices[i]] += basisValues[i]
@@ -1071,23 +1071,33 @@ class PoissonSolve_C(object):
 
     """
 
-    def __init__(self):
+    def __init__(self, pde_has_constant_coeffs=True, assembled_charge_factor=None):
         """The problem-specific initialization is done in the child classes.
 
+           :param bool pde_has_constant_coeffs: If True, the operator on the potential
+                                                field does not change in time.
+
+           :param float assembled_charge_factor: Multiplies the charge density
+                                                 assembled from kinetic particles.
+                                                 Has a charge-neutralizing effect.
+
         """
+
+        self.pde_has_constant_coeffs = pde_has_constant_coeffs
+        self.assembled_charge_factor = assembled_charge_factor
 
         # If the bilinear form a(u,v) has time-independent coefficients, the
         # matrix A only needs to be assembled once, which redundant work.
 
         # A[i,j] is formed from {u[j]}, {v[i]}, and any coefficients in
-        # a(u,v). Note the order of i, j here.
+        # a(u,v). Note the order of i, j.
         if self.pde_has_constant_coeffs is True:
             self.A = df_m.assemble(self.a)
             for bc in self.bcs:
                 bc.apply(self.A)
 
         return
-#    def __init__(self, pde_has_constant_coeffs=False):ENDDEF
+#    def __init__(self, pde_has_constant_coeffs=True, assembled_charge_factor=None):ENDDEF
 
 #class PoissonSolve_C(object):
     def set_constant_source(self, charge_density_value):
@@ -1169,7 +1179,7 @@ class PoissonSolve_C(object):
     def solve_for_phi(self, plot_flag=False, plot_title="solve_for_phi"):
         """Solve Poisson's equation for the electric potential.
 
-           The variational form of the equation is:
+           The variational form of the differential equation is:
                       a(u,v) = L(v)
            a(u,v) is a bilinear form in 'u' and 'v'
            'u' is the unknown solution ("trial function")
@@ -1178,7 +1188,12 @@ class PoissonSolve_C(object):
 
            The variational form is turned into a matrix equation:
                       Ax = b
-           by using finite-dimensional trial and test-function spaces.
+           by using finite-dimensional trial and test-function spaces. The elements
+           of the square matrix A are the inner products of the differential operator
+           applied to the basis functions of the trial-function space with each of
+           the test-functions. The elements of 'b' are the inner products of the
+           source function with each of the test-functions. The coefficients of the
+           trial function form the 'x' vector that is solved for.
 
            Making the matrix 'A' from 'a' and the vector 'b' from 'L' is called
            "assembly".
@@ -1202,7 +1217,10 @@ class PoissonSolve_C(object):
 
         # Assembled charge sources (e.g., from delta-function kinetic particles)
         if self.assembled_charge is not None:
-            # Create a Vector and initialize it with Function.vector()
+            # Apply a spacecharge multiplier
+            if self.assembled_charge_factor is not None:
+                self.assembled_charge.vector()[:] *= self.assembled_charge_factor
+            # Create a Dolfin Vector and initialize it with Function.vector()
             self.b = df_m.Vector(self.assembled_charge.vector())
             # Apply the boundary conditions
             for bc in self.bcs:

@@ -382,8 +382,12 @@ class UserPoissonSolve2DCirc_C(PoissonSolve_C):
        available in the UserUnits_M.py module.
     """
 
-    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, assembled_charge=None, neg_electric_field=None):
+    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, assembled_charge=None, assembled_charge_factor=None, neg_electric_field=None):
         """Constructor for a Poisson solver written by the user.
+
+           :cvar bool pdeHasConstantCoeffs: If true, the FE matrix has to assembled
+                                            only at initialization.
+
         """
 
         # Select the unit system to be used for input parameters.
@@ -437,8 +441,8 @@ class UserPoissonSolve2DCirc_C(PoissonSolve_C):
         epsilon = df_m.Constant(constants.epsilon_0)
         self.a = epsilon*df_m.inner(df_m.grad(w), df_m.grad(self.v))*df_m.dx
 
-        # Specify whether 'a' has time-independent coefficients.
-        self.pde_has_constant_coeffs = True
+        # Specify whether 'a' has time-independent coefficients. By inspection:
+        pdeHasConstantCoeffs = True
 
         # If so, the A matrix only needs to be assembled once.
 
@@ -457,7 +461,7 @@ class UserPoissonSolve2DCirc_C(PoissonSolve_C):
 
         # Call the PoissonSolve_C base class constructor for
         # non-problem-specific initialization.
-        super(self.__class__, self).__init__()
+        super(self.__class__, self).__init__(pde_has_constant_coeffs=pdeHasConstantCoeffs, assembled_charge_factor=assembled_charge_factor)
 
         return
 #    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, neg_electric_field=None):ENDDEF

@@ -381,10 +381,16 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
        in the UserUnits_M.py module.
     """
 
-    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, assembled_charge=None, neg_electric_field=None):
+    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, charge_density_factor=None, assembled_charge=None, assembled_charge_factor=None,neg_electric_field=None):
         """Initialize a Poisson solver for 1D spherical coordinates
 
            Generates the bilinear form a(u,v) for the variational form of Poisson's eq.
+
+           :param charge_density_factor: A multiplier applied to the charge density
+                                         term in the field solve.
+
+           :param assembled_charge_factor: A multiplier applied to the assembled
+                                           charge term in the field solve.
 
         """
 
@@ -399,7 +405,9 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
         (rmax_indx, phi_rmax) = phi_BCs['rmax']
 
         self.charge_density = charge_density
+        self.charge_density_factor = charge_density_factor
         self.assembled_charge = assembled_charge
+        self.assembled_charge_factor = assembled_charge_factor
         self.neg_electric_field = neg_electric_field
 
         # Field-solver parameters
@@ -443,8 +451,8 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
 
         self.a = epsilon*df_m.inner(df_m.nabla_grad(w), df_m.nabla_grad(self.v))*r[0]**2*df_m.dx
 
-        # Specify whether 'a' has time-independent coefficients.
-        self.pde_has_constant_coeffs = True
+        # Specify whether 'a' has time-independent coefficients. By inspection:
+        pdeHasConstantCoeffs = True
 
         # If so, the A matrix only needs to be assembled once.
 # Moved
@@ -466,7 +474,7 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
 
         # Call the PoissonSolve_C base class constructor for
         # non-problem-specific initialization.
-        super(self.__class__, self).__init__()
+        super(self.__class__, self).__init__(pde_has_constant_coeffs=pdeHasConstantCoeffs, assembled_charge_factor=assembled_charge_factor)
 
         return
 #    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):ENDDEF

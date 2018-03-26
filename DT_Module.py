@@ -340,7 +340,9 @@ class DTscratch_C(object):
     """
 
     def __init__(self):
-        """ Initialize variables
+        """The parameters for each simulations will be different, so they're initialized in
+           the top-level script of the simulation.
+
         """
     
         return
