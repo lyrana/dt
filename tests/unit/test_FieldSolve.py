@@ -16,7 +16,6 @@ import dolfin as df_m
 
 from Dolfin_Module import Field_C
 from Dolfin_Module import Mesh_C
-from Dolfin_Module import PoissonSolve_C
 
 
 class TestFieldSolve(unittest.TestCase):
@@ -443,7 +442,6 @@ class TestFieldSolve(unittest.TestCase):
                                               linearSolver, preconditioner,
                                               fieldBoundaryMarker,
                                               phiBCs,
-                                              assembled_charge=chargeDensity_F.function,
                                               neg_electric_field=negElectricField_F)
 
         # Create the source term from a given density
@@ -579,7 +577,6 @@ class TestFieldSolve(unittest.TestCase):
                                              linearSolver, preconditioner,
                                              fieldBoundaryMarker,
                                              phiBCs,
-                                             assembled_charge=chargeDensity_F.function,
                                              neg_electric_field=negElectricField_F)
 
         # Create the source term from a given density
@@ -731,7 +728,6 @@ class TestFieldSolve(unittest.TestCase):
                                              linearSolver, preconditioner,
                                              fieldBoundaryMarker,
                                              phiBCs,
-                                             assembled_charge=chargeDensity_F.function,
                                              neg_electric_field=negElectricField_F)
 
         # Create the source term from a given density

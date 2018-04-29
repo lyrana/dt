@@ -675,7 +675,7 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        self.number_density_dict[species_name].set_to_value(value)
+        self.number_density_dict[species_name].set_values(value)
 
         return
 #    def set_number_density(self, species_name, value):ENDDEF
@@ -1045,11 +1045,11 @@ class Particle_C(object):
 
            :param ctrl: A DTcontrol_C object
 
-           :cvar double tStart: The time at which a particle starts its move in the
-                                 current cell.
-
            :cvar double dtRemaining: The time a particle has left to move in the new cell
                                       the particle has entered.
+           :cvar int pDim: Number of spatial coordinates in the particle location.
+           :cvar double tStart: The time at which a particle starts its move in the
+                                 current cell.
 
         """
 
@@ -2008,10 +2008,10 @@ class Particle_C(object):
         pVel = self.pvel # ux, uy, uz (or subset)
         random_vals = self.random_vals
 
-        # Loop over the domain creating particles in each cell
+        # Loop over the source domain creating particles in each cell
 
-        pCoord[:] = 0.0 # Zero out this array for the case where there are more
-                        # particle spatial dimensions than mesh spatial
+        pCoord[:] = 0.0 # Zero out this array because of the case where there are
+                        # more particle spatial dimensions than mesh spatial
                         # dimensions
 
         # Multiplier for particle weight
@@ -2044,7 +2044,7 @@ class Particle_C(object):
                 else:
                     while True:
                         # Put the particle in a sphere
-                        random_vals = np_m.random.uniform(-1.0, 1.0, gDim)
+                        random_vals = np_m.random.uniform(-1.0, 1.0, gDim) # random numbers in the range [-1,1]
                         for i in range(gDim):
                             pCoord[i] = cellMid[i]+random_vals[i]*cellRad
                         # Check if its in the cell
@@ -2055,6 +2055,7 @@ class Particle_C(object):
 
 # For 'r_theta_z' this needs to change?
 
+#HERE: is this using scratch space, or is pVel a new array?
                 pVel = np_m.random.normal(0.0, thermalSpeed, pDim) + driftVelocity
 
                 # Fill a particle record: (x,y,z, x0,y0,z0, ux,uy,uz, weight,

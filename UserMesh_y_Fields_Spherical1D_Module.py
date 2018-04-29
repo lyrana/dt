@@ -161,14 +161,20 @@ class UserMesh1DS_C(Mesh_C):
                    mesh boundaries for particle boundary-conditions.
         """
 
+        # These kwargs are passed to the parent later, so give them local names for clarity
+        computeDictionaries=compute_dictionaries
+        computeTree=compute_tree
+        plotFlag=plot_flag
+        plotTitle=plot_title
+        
         if mesh_input.mesh_file is None:
-            self.create_mesh(mesh_input, plot_flag=plot_flag, plot_title=plot_title)
+            self.create_mesh(mesh_input, plot_flag=plotFlag, plot_title=plotTitle)
             # Don't need another mesh plot
-            plot_flag = False
+            plotFlag = False
 
         # Call the parent constructor to complete setting class variables.
         meshFile = mesh_input.mesh_file
-        super(self.__class__, self).__init__(mesh_file=meshFile, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag, plot_title=plot_title)
+        super(self.__class__, self).__init__(mesh_file=meshFile, compute_dictionaries=computeDictionaries, compute_tree=computeTree, plot_flag=plotFlag, plot_title=plotTitle)
 
         self.field_boundary_dict = mesh_input.field_boundary_dict
         self.particle_boundary_dict = mesh_input.particle_boundary_dict
@@ -183,7 +189,7 @@ class UserMesh1DS_C(Mesh_C):
 # or:       particleBoundaryMarker = df_m.MeshFunctionSizet(self.mesh, "Pbcs_quarter_circle_mesh_crossed.xml")
 
         return
-#    def __init__(self, mesh_input, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
+#    def __init__(self, mesh_input, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):ENDDEF
 
 #class UserMesh1DS_C(Mesh_C):
     def __str__(self):
@@ -379,36 +385,28 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
        default (i.e., if no conversion factor is applied), but any
        units can be used provided the conversion to MKS is available
        in the UserUnits_M.py module.
+
     """
 
-    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, charge_density_factor=None, assembled_charge=None, assembled_charge_factor=None,neg_electric_field=None):
+    def __init__(self, phi_F, linear_solver, preconditioner, field_boundary_marker, phi_BCs, neg_electric_field=None):        
         """Initialize a Poisson solver for 1D spherical coordinates
 
-           Generates the bilinear form a(u,v) for the variational form of Poisson's eq.
+           Generates the a(u,v) = L(v) variational form of Poisson's Eq. (a is the
+           differential operator, u is the trial function, v is the test function and
+           L is the source term.) and turns it into a matrix equation, Ax = b.
 
-           :param charge_density_factor: A multiplier applied to the charge density
-                                         term in the field equation.
+           :param phi_F: The Field_C object for the potential
 
-           :param assembled_charge_factor: A multiplier applied to the assembled
-                                           charge term in the field equation.
+           :param neg_electric_field: The Field_C object for the electrostatic field
 
         """
 
         # Select the unit system to be used for input parameters.
         constants = U_M.MyPlasmaUnits_C
 
-        self.u = phi.function
-        V = phi.function_space
-
-        # Get the Dirichlet boundary values
-        (rmin_indx, phi_rmin) = phi_BCs['rmin']
-        (rmax_indx, phi_rmax) = phi_BCs['rmax']
-
-        self.charge_density = charge_density
-        self.charge_density_factor = charge_density_factor
-        self.assembled_charge = assembled_charge
-        self.assembled_charge_factor = assembled_charge_factor
-        self.neg_electric_field = neg_electric_field
+        # Call the PoissonSolve_C base class constructor for
+        # non-problem-specific initialization.
+        super(self.__class__, self).__init__(phi_F)
 
         # Field-solver parameters
         self.solver_parameters = {}
@@ -416,26 +414,31 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
             self.solver_parameters['linear_solver'] = linear_solver
         if preconditioner is not None:
             self.solver_parameters['preconditioner'] = preconditioner
+        
+        self.neg_electric_field = neg_electric_field
+
+        # Get the Dirichlet boundary values
+        (rmin_indx, phi_rmin) = phi_BCs['rmin']
+        (rmax_indx, phi_rmax) = phi_BCs['rmax']
+
+        # Create a function from the boundary values
+        u_rmax = df_m.Constant(phi_rmax)
 
         # Create the Dirichlet boundary-condition list for the Laplace
         # PDE.  The indices rmin_indx and rmax_indx identify the
         # facets in boundary_marker where boundary values are to be
         # set.
         #       args: DirichletBC(FunctionSpace, GenericFunction, MeshFunction, int, method="topological")
-
-        u_rmax = df_m.Constant(phi_rmax)
+        
         if phi_rmin == 'unset':
             # grad phi = 0 at rmin: natural BC.
-            self.bcs = [df_m.DirichletBC(V, u_rmax, field_boundary_marker, rmax_indx), ]
+            self.bcs = [df_m.DirichletBC(self.V, u_rmax, field_boundary_marker, rmax_indx), ]
         else:
             # phi is set explicitly at both boundaries
             u_rmin = df_m.Constant(phi_rmin)
-            self.bcs = [df_m.DirichletBC(V, u_rmin, field_boundary_marker, rmin_indx), df_m.DirichletBC(V, u_rmax, field_boundary_marker, rmax_indx)]
+            self.bcs = [df_m.DirichletBC(self.V, u_rmin, field_boundary_marker, rmin_indx), df_m.DirichletBC(self.V, u_rmax, field_boundary_marker, rmax_indx)]
             
         ### Set up the variational problem ###
-
-        w = df_m.TrialFunction(V)
-        self.v = df_m.TestFunction(V)
 
         ## Make the bilinear form 'a(w,v)' ##
 
@@ -445,24 +448,23 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
         # over the domain. The spherical-coordinate form has a coefficient r**2
         # (for the volume-element needed to integrate over the domain).
 
-#        f = df_m.Constant(0.0)
         epsilon = df_m.Constant(constants.epsilon_0)
-        r = df_m.SpatialCoordinate(V.mesh())
+        r = df_m.SpatialCoordinate(self.V.mesh())
 
-        self.a = epsilon*df_m.inner(df_m.nabla_grad(w), df_m.nabla_grad(self.v))*r[0]**2*df_m.dx
+        self.a = epsilon*df_m.inner(df_m.nabla_grad(self.w), df_m.nabla_grad(self.v))*r[0]**2*df_m.dx
 
-        # Specify whether 'a' has time-independent coefficients. By inspection:
-        pdeHasConstantCoeffs = True
+        # Specify whether 'a(u,v)' has time-independent coefficients.  If so, the
+        # matrix A only needs to be assembled once, avoiding redundant work.
+        # By inspection of the expression above:
+        self.pde_has_constant_coeffs = True
 
-        # If so, the A matrix only needs to be assembled once.
-# Moved
-        # if self.pde_has_constant_coeffs is True:
-        #     self.A = df_m.assemble(self.a)
-        #     print "A is of type", type(self.A)
-        #     for bc in self.bcs:
-        #         bc.apply(self.A)
+        # Carry out the initial assembly
+        self.assemble_matrix()
 
-        
+        # Initialize the source vector 'b' to zero charge-density.
+        self.assemble_source_expression(0.0)
+
+        # Set message detail level for the field-solver
         #df_m.set_log_level(1) # Gives the most messages
         #df_m.set_log_level(df_m.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
         # Turn off solver messages
@@ -472,12 +474,9 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
 #        self.phi = None
 #        self.negE = None
 
-        # Call the PoissonSolve_C base class constructor for
-        # non-problem-specific initialization.
-        super(self.__class__, self).__init__(pde_has_constant_coeffs=pdeHasConstantCoeffs, assembled_charge_factor=assembled_charge_factor)
-
         return
-#    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_rmin, phi_rmax, chargeDensity=None, negElectricField=None):ENDDEF
+#    def __init__(self, phi_F, linear_solver, preconditioner, field_boundary_marker, phi_BCs, neg_electric_field=None):ENDDEF    
+
 
 #class UserPoissonSolve1DS_C(PoissonSolve_C):
     def __str__(self):
@@ -489,7 +488,6 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
 
         print_string = 'solver_parameters = ' + str(self.solver_parameters)
         print_string += '\npde_has_constant_coeffs = ' + str(self.pde_has_constant_coeffs)
-        print_string += '\ncharge_density = ' + str(self.charge_density)
 
         return print_string
 #    def __str__(self):ENDDEF

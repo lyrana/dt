@@ -60,7 +60,8 @@ class Mesh_C(object):
         # child class.
         if self.mesh is not None:
             if plot_flag is True:
-                df_m.plot(self.mesh, title=plot_title, axes=True)
+#                df_m.plot(self.mesh, title=plot_title, axes=True)
+                df_m.plot(self.mesh, title=plot_title)
                 mplot_m.show()
             # Compute the search tree. Uses:
             #     Evaluating field probes at a point.
@@ -774,8 +775,12 @@ class Field_C(object):
 
         # Create the finite-element function for this field
         self.function = df_m.Function(self.function_space)
-        self.function_values = self.function.vector()
+        self.function_values = self.function.vector() # function_values is an alias for .vector().
+        self.function_len = len(self.function_values) # Number of function values
 
+        # A scratch array with length equal to the number of function values
+        self.scratch_array = np_m.empty(self.function_len, dtype=np_m.float64)
+        
 # Q: Is it a good idea to set the following variables?
 # A: Then you don't have to know Dolfin function name when writing DT scripts.
         self.element_type = element_type
@@ -804,22 +809,119 @@ class Field_C(object):
 #     def __str__(self):ENDDEF
 
 #class Field_C(object):
-    def set_to_value(self, value):
-        """Set all the field values to the given value
+    def set_values(self, value, domain=None):
+        """Set the field values to the given scalar value.
 
-           :param value: Value to set the field to.
+           If a domain is specified, the field is set to the given value inside that
+           domain.  Outside of that domain, the field is set to zero.
+
+           :param double value: Value to set the field to.
+           :param domain: (optional) The CellSet_C object over which the field is
+                          non-zero.
+
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        # Assignment to an FE function: FBook p. 25:
-        self.function.vector()[:] = value
+        if domain is None:
+            # Assignment to an FE function: EBook p. 25:
+#            self.function.vector()[:] = value
+            self.function_values[:] = value            
+        else:
+            self.function_values[:] = 0.0 # Initialize all the elements to zero.
+            for icell in xrange(domain.ncell):
+                cellIndex = domain.cell_index[icell]
+                dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
 
+                # HERE: see if dofIndex is just a cell index (not a vertex index)
+                self.function_values[dofIndices] = value
+            
+            
         return
-#    def set_to_value(self, value):ENDDEF
+#    def set_values(self, value, domain=None):ENDDEF
 
 #class Field_C(object):
-    def multiply_add(self, field_to_add, multiplier):
+    def multiply_values(self, multiplier, gaussian=False, domain=None):
+        """Multiply the field values by the given multiplier.
+
+           If a domain is specified, the field is multiplied by the given multiplier
+           inside that domain.
+
+           :param double multiplier: Value to multiply the field values by.
+           :param bool gaussian: If true, apply a random gaussian-distributed multiplier.
+           :param domain: (optional) The CellSet_C object over which the field values
+                          are multiplied.
+
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
+        if domain is None:
+            numberOfValues = self.function_len
+            if gaussian is True:
+                random_vals = self.scratch_array # Alias to a numpy scratch array
+                random_vals[:] = np_m.random.normal(0.0, multiplier, numberOfValues)
+                self.function_values[:] *= random_vals[:]
+            else:
+                self.function_values[:] *= multiplier
+        else:
+            numberOfValues = domain.ncell
+
+# HERE: this isn't finished. For a CellSet, need to figure out how to apply a multiplier to the DOFs, if the DOFs are not associated with a cell.  In that case, you cannot loop on cells.
+            for icell in xrange(domain.ncell):
+                cellIndex = domain.cell_index[icell]
+
+# !!! Doesn't this multiply vertices twice, since vertices are shared between cells?
+
+# It works if the DOFs are cell values (e.g., the E-field), and not vertex values (e.g., the density)
+
+# It'd be better to get a list of the DOFs and not loop over cells. Use a Python set().
+# 
+
+                dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
+                self.function_values[dofIndices] *= multiplier
+            
+        return
+#    def multiply_values(self, multiplier, gaussian=False, domain=None):
+
+#class Field_C(object):
+    def set_gaussian_values(self, standard_deviation, domain=None):
+        """Set the DOFs in a Field_C object to a gaussian distribution of values with the
+           specified standard deviation.
+
+           If a domain is specified, only the DOFs inside that domain are set to a
+           non-zero value. The others are set to zero.
+
+           :param double standard_deviation: The value of the standard deviation of
+           the distribution.
+           :param domain: (optional) The CellSet_C object over which the field values
+                          are set.
+
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+        
+        if domain is None:
+            numberOfValues = self.function_len
+            self.function_values[:] = np_m.random.normal(0.0, standard_deviation, numberOfValues)
+        else:
+            self.function_values[:] = 0.0 # Initialize all the elements to zero.
+            numberOfValues = domain.ncell
+            random_vals = self.scratch_array # Alias to a numpy scratch array
+            random_vals[0:numberOfValues] = np_m.random.normal(0.0, standard_deviation, numberOfValues)
+
+# Replace cell-loop with a loop over unique DoFs. It's OK as-is for the E-field, which is a cell quantity.
+            
+            for icell in xrange(numberOfValues):
+                cellIndex = domain.cell_index[icell]
+                dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
+                self.function_values[dofIndices] = random_vals[icell]
+            
+        return
+#    def set_gaussian_values(self, multiplier, gaussian=False, domain=None):
+
+#class Field_C(object):
+    def multiply_add(self, field_to_add, multiplier=None):
         """Add multiplier*field_to_add to the field values in the current object.
 
             E.g., this is used to obtain charge-density on a mesh from number-density
@@ -827,16 +929,20 @@ class Field_C(object):
 
            :param field_to_add: A Field_C object to be added to the current Field_C
                                 object.
-           :param multiplier: Scalar value that multiplies the field_to_add values
+           :param multiplier (optional): Scalar value that multiplies each field_to_add value.
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         # Assignment to a Dolfin mesh function: FBook p. 25:
-        self.function.vector()[:] += multiplier*field_to_add.function.vector()
+#        self.function.vector()[:] += multiplier*field_to_add.function.vector()
+        if multiplier is None:
+            self.function_values[:] += field_to_add.function_values
+        else:
+            self.function_values[:] += multiplier*field_to_add.function_values
 
         return
-#    def multiply_add(self, value):ENDDEF
+#    def multiply_add(self, field_to_add, multiplier=None):ENDDEF
 
 #    def interpolate_vectorField_to_points(self, points, vFpoints):
 #class Field_C(object):
@@ -846,7 +952,7 @@ class Field_C(object):
         :param points: Array of points.
         :type points: ndarray
         :param field_at_points: The calculated field values at the points.
-        :type field_at_points: ndarray
+        :type field_at_points: Numpy ndarray
 
         :returns: None
            
@@ -1001,8 +1107,7 @@ class Field_C(object):
 #            self.function.vector().array()[dofIndices[i]] += basisValues[i]
 # This works:
         # Sum the densities into these array locations
-#        self.function.vector()[dofIndices] += w*basisValues*Jhat
-        self.function.vector()[dofIndices] += w*basisValues
+        self.function_values[dofIndices] += w*basisValues
 
 # Is something additional needed in parallel? .apply("add")?
 
@@ -1071,55 +1176,109 @@ class PoissonSolve_C(object):
 
     """
 
-    def __init__(self, pde_has_constant_coeffs=True, assembled_charge_factor=None):
-        """The problem-specific initialization is done in the child classes.
+    def __init__(self, phi_F):
+        """Initialize objects needed for constructing the equations to be solved.
+           The problem-specific initialization is done in the child classes.
 
-           :param bool pde_has_constant_coeffs: If True, the operator on the potential
-                                                field does not change in time.
+           V is the finite-element function space that contains the trial and test functions.
+           u represents the solution.
+           v represents any vector in the set of test functions.
+           w represents any vector in the set of trial functions.
+           b represents the RHS of the Ax=b matrix equation.
 
-           :param float assembled_charge_factor: Multiplies the charge density
-                                                 assembled from kinetic particles.
-                                                 Has a charge-neutralizing effect.
+           :param phi_F: A Field_C object holding the potential
+
+           References:
+           [1] FBOOK, p. 3 (1.1.2), p. 309 (17.4.1).
 
         """
 
-        self.pde_has_constant_coeffs = pde_has_constant_coeffs
-        self.assembled_charge_factor = assembled_charge_factor
+
+        # The finite-element function space
+        self.V = phi_F.function_space
+        # A dolfin Function
+        self.u = phi_F.function
+        # A dolfin Argument
+        self.v = df_m.TestFunction(self.V)
+        # A dolfin Argument
+        self.w = df_m.TrialFunction(self.V)
+
+        # A dolfin GenericVector, providing a uniform interface to back-end vectors
+        self.b = df_m.Vector(phi_F.mesh_M.mesh.mpi_comm(), phi_F.function_len)
 
         # If the bilinear form a(u,v) has time-independent coefficients, the
-        # matrix A only needs to be assembled once, which redundant work.
+        # matrix A only needs to be assembled once, avoiding redundant work.
 
         # A[i,j] is formed from {u[j]}, {v[i]}, and any coefficients in
         # a(u,v). Note the order of i, j.
-        if self.pde_has_constant_coeffs is True:
-            self.A = df_m.assemble(self.a)
-            for bc in self.bcs:
-                bc.apply(self.A)
+        
+        # if self.pde_has_constant_coeffs is True:
+        #     self.A = df_m.assemble(self.a)
+        #     for bc in self.bcs:
+        #         bc.apply(self.A)
 
+        # Set the source term: it's zero for Laplace's equation.
+        # This sets the b vector
+        #self.assemble_source_expression(0.0)
+                
         return
-#    def __init__(self, pde_has_constant_coeffs=True, assembled_charge_factor=None):ENDDEF
+#    def __init__(self, phi_F):ENDDEF
 
 #class PoissonSolve_C(object):
-    def set_constant_source(self, charge_density_value):
-        """Set the source term in the field equation to a constant value.
+    def initialize_Vuvwb(self, phi_F):
+        """Initialize objects needed for constructing the equations to be solved.
 
-           A source has to be of type 'Expression', which is a Dolfin class [1].
+           V is the finite-element function space that contains the trial and test functions.
+           u represents the solution.
+           v represents any vector in the set of test functions.
+           w represents any vector in the set of trial functions.
+           b represents the RHS of the Ax=b matrix equation.
+
+           :param phi_F: A Field_C object holding the potential
 
            References:
-           [1] FBOOK, p. 196 (Sec. 103.6).
+           [1] FBOOK, p. 3 (1.1.2), p. 309 (17.4.1).
 
         """
 
-        source_expression = df_m.Constant(charge_density)
-        return source_expression*self.v*df_m.dx
+        # This could be in the __init__()?
+        
+        # The finite-element function space
+        self.V = phi_F.function_space
+        # A dolfin Function
+        self.u = phi_F.function
+        # A dolfin Argument
+        self.v = df_m.TestFunction(self.V)
+        # A dolfin Argument
+        self.w = df_m.TrialFunction(self.V)
+
+#        self.b = df_m.Vector(phi_F.function_len)
+#        self.b = df_m.PETScVector(phi_F.function_len)
+        self.b = df_m.Vector(phi_F.mesh_M.mesh.mpi_comm(), phi_F.function_len)
+        
+        return
 #    def set_constant_source(self):ENDDEF
 
+    def assemble_matrix(self):
+        """Create a source vector for the RHS of the field equation, given a
+
+           A[i,j] is formed from {u[j]}, {v[i]}, and any coefficients in a(u,v). Note
+           the order of i, j.
+
+        """
+        self.A = df_m.assemble(self.a)
+        for bc in self.bcs:
+            bc.apply(self.A)
+
+        return
+        
 #class PoissonSolve_C(object):
 #    def set_source_function(self, charge_density_expression):
     def assemble_source_expression(self, source_density):
         """Create a source vector for the RHS of the field equation, given a
-           constant density, or a string expression giving the density as a
-           function of the spatial coordinates.
+           source density.  One can specify a constant density, or a
+           string expression giving the density as a function of the
+           spatial coordinates.
 
            The density is first turned into an 'Expression' (a Dolfin class
            [1]).  Then it is used to create a linear form, namely, the integral
@@ -1145,7 +1304,9 @@ class PoissonSolve_C(object):
            :param source_density: A constant or a string expressing a function of
                                   the spatial coordinates {x[0], x[1], x[2]}
 
-           :returns: The linear form corresponding to the charge density.
+           :cvar self.b: A GenericVector containing the source values
+
+           :returns: None
 
         """
 
@@ -1161,22 +1322,28 @@ class PoissonSolve_C(object):
         elif isinstance(source_density, int):
             source_expression = df_m.Constant(float(source_density))
         else:
-            errorMsg = "%s Parameter source_density is of unexpected type" % fncName
+            errorMsg = "%s The supplied argument source_density is of unexpected type" % fncName
             sys.exit(errorMsg)
-        
+
+        ## Make the linear form 'L(v)' for the RHS ##
+
+        # The linear form is the integral over the domain of the source density
+        # times a test-function. Note: in non-Cartesian coords, there will be a
+        # volume-element factor in the definition of L (the volume-element is
+        # needed to integrate over the domain).
+            
         L = source_expression*self.v*df_m.dx
-        self.b = df_m.assemble(L)
+#        self.b = df_m.assemble(L)
+        self.b[:] = df_m.assemble(L) # b is reused
 
-        if source_density is not None:
-            for bc in self.bcs:
-                bc.apply(self.b)
+        for bc in self.bcs:
+            bc.apply(self.b)
 
-#        return b
         return
 #    def assemble_source_expression(self, source_density):ENDDEF
 
 #class PoissonSolve_C(object):
-    def solve_for_phi(self, plot_flag=False, plot_title="solve_for_phi"):
+    def solve_for_phi(self, assembled_charge=None, assembled_charge_factor=None, plot_flag=False, plot_title="solve_for_phi"):
         """Solve Poisson's equation for the electric potential.
 
            The variational form of the differential equation is:
@@ -1198,6 +1365,15 @@ class PoissonSolve_C(object):
            Making the matrix 'A' from 'a' and the vector 'b' from 'L' is called
            "assembly".
 
+           :param assembled_charge: A Field_C object containing the particle
+                                    contribution to space-charge, already in the
+                                    format needed to be added to the source
+                                    term 'b' above.
+
+           :param float assembled_charge_factor: Multiplies the charge density
+                                                 assembled from kinetic particles.
+                                                 Has a charge-neutralizing effect.
+
            :cvar U: An alias for the solution vector.
 
         """
@@ -1213,21 +1389,20 @@ class PoissonSolve_C(object):
             for bc in self.bcs:
                 bc.apply(self.A)
 
-        ### Assemble the b vector for the RHS ###
-
-        # Assembled charge sources (e.g., from delta-function kinetic particles)
-        if self.assembled_charge is not None:
+        # Charge sources (e.g., from delta-function kinetic particles) that are
+        # already in the format needed to be added directly to the source-term b.
+        if assembled_charge is not None:
             # Apply a spacecharge multiplier
-            if self.assembled_charge_factor is not None:
-                self.assembled_charge.vector()[:] *= self.assembled_charge_factor
-            # Create a Dolfin Vector and initialize it with Function.vector()
-            self.b = df_m.Vector(self.assembled_charge.vector())
+            if assembled_charge_factor is not None:
+                assembled_charge.function_values[:] *= assembled_charge_factor
+            self.b[:] = assembled_charge.function_values
+            
             # Apply the boundary conditions
             for bc in self.bcs:
                 bc.apply(self.b)
 
         # U is the solution vector
-        U = self.u.vector()
+        U = self.u.vector() # u.vector() is the same thing as u_values
 
         ### Solve the Laplace/Poisson equation ###
 
@@ -1360,7 +1535,7 @@ class CellSet_C(object):
         self.radius = np_m.empty(self.ncell, dtype = np_m.float64)
 
         # Note that icell is just a counter, not the Dolfin cell index.
-        # One could instead create an Interator over the cells in the set.
+        # One could instead create an Iterator over the cells in the set.
         for icell in xrange(self.ncell):
             c = self.cell_list[icell]
             c_index = c.index()

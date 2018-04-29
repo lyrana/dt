@@ -526,7 +526,7 @@ class TestChargeDensity(unittest.TestCase):
         # where idof is the DoF number corresponding to ivert (see conversion below).
         chargeDensityExpected = np_m.empty(chargeDensity_F.function.vector().size(), dtype=np_m.float64)
 
-        # These are in vertex, not DOF order
+        # NB: These are in vertex, not DOF order
         chargeDensityExpected[0] = 0.0
         chargeDensityExpected[1] = 1.602176487E-009
         chargeDensityExpected[2] = 0.0

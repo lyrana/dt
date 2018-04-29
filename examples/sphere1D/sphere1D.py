@@ -24,7 +24,6 @@ __all__ = ['Example_C',]
 #      
 #
 
-
 #### Section Index
 
 ### To search for a section: type a space after the last period of the section
@@ -69,10 +68,12 @@ __all__ = ['Example_C',]
 ## CHK. Check the input
 ## INIT. Initialization
 ##       INIT.1. Do an initial field solve without particles
-##       INIT.2. Initialize the particles
-##               INIT.2.1. Loop on initialized particle species
-##                         INIT.2.1.1. Recompute the initial electrostatic field in
-##                                     the presence of these particles
+##       INIT.2. Recompute initial fields including initial particle spacecharge
+##               and random electric field
+##               INIT.2.1. Recalculate initial electric field
+##                         INIT.2.1.1. Recompute the initial electrostatic field
+##                                     with particle spacecharge
+##                         INIT.2.1.2. Add in a random electric field
 ##               INIT.2.2. Record initial history data
 ## RUN. Integrate forward in time
 ##      RUN.0. Increment the time counters
@@ -83,7 +84,8 @@ __all__ = ['Example_C',]
 ##      RUN.5. Update the electric field
 ##             RUN.5.1. Set field-plotting parameters
 ##             RUN.5.2. Call the field solver
-##             RUN.5.3. Write a snapshot of the fields
+##             RUN.5.3. Add an external electric field
+##             RUN.5.4. Write a snapshot of the fields
 ##      RUN.6. Record history data for this timestep
 ## FIN. Finish the simulation
 ##      FIN.1. Write the last particle data and close the output file.
@@ -122,8 +124,12 @@ emitInputOnly = False # Write input values to standard output and then quit.
 pauseAfterEmit = True # Wait for user input before continuing.  Can be changed to
                       # False by using ctrl.get_keyboard_input()
 
+pauseAfterTimestep = True # Wait for user input before continuing to the next
+                          # timestep.  Can be changed to False by using
+                          # ctrl.get_keyboard_input()
+                      
 plotInitialFields = True
-plotFieldsEveryTimestep = False # Plot phi and -E each timestep.
+plotFieldsEveryTimestep = True # Plot phi and -E each timestep.
 plotFinalFields = True
 
 plotTrajectoriesOnMesh = True # Plot the trajectory particles on top of the mesh.
@@ -212,20 +218,23 @@ if emitInput is True:
 
 #electron_plasma_frequency = q_e*np_m.sqrt(n_e/(m_e*eps_0))
 
-########## SP.4. Calculate field parameters
+########## SP.4. Set and calculate field parameters
 
 # Set the confining potential (in Volts)
 scr.confining_potential = 10.0*scr.T_e_eV
 scr.spacecharge_factor = 0.01
 
+scr.external_electric_field_amplitude = 0.1
+
 ############################## SC. Simulation Control ##############################
 
+### Titles
 # Run identifier
 ctrl.title = "sphere1D"
 # Run author
 ctrl.author = "tph"
 
-# Timestepping
+### Timestepping
 ctrl.n_timesteps = 100 # 100
 
 ctrl.dt = 4.0e-7 # from sphere1D.ods
@@ -240,8 +249,10 @@ ctrl.time = 0.0
 
 # Set random seed
 ctrl.random_seed = 1
-
 np_m.random.seed(ctrl.random_seed)
+
+### External electric field switch
+ctrl.apply_external_electric_field = True
 
 ### Set parameters for writing field output files
 ctrl.potential_field_output_file = ctrl.title + "-phi.pvd"
@@ -691,10 +702,10 @@ for s in particle_P.species_names:
                                                field_type=number_density_field_type)
 
 ## SRC.1.2. Create a charge-density array on the field mesh
-chargeDensity_F = Field_C(mesh_M=mesh_M,
-                         element_type=number_density_element_type,
-                         element_degree=number_density_element_degree,
-                         field_type=number_density_field_type)
+assembledCharge_F = Field_C(mesh_M=mesh_M,
+                            element_type=number_density_element_type,
+                            element_degree=number_density_element_degree,
+                            field_type=number_density_field_type)
 
 ########## SRC.2 Charge-density from functions
 
@@ -789,9 +800,9 @@ if emitInput is True:
 potentialsolve = UserPoissonSolve1DS_C(phi_F,
                                        linearSolver, preconditioner,
                                        fieldBoundaryMarker, phiBCs,
-                                       assembled_charge=chargeDensity_F.function,
-                                       assembled_charge_factor=scr.spacecharge_factor,
                                        neg_electric_field=negElectricField_F)
+
+#print "Initial negElectricField_F:", negElectricField_F.function_values.get_local()
 
 if emitInput is True:
     print ""
@@ -800,6 +811,27 @@ if emitInput is True:
     print potentialsolve
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
+
+############################## EXT. External Fields ##############################
+
+########## EXT.1. Create storage for an external electric field
+
+# Use the same element type and degree as in the field solver.
+if ctrl.apply_external_electric_field:
+    externalElectricField_F = Field_C(mesh_M=mesh_M,
+                                      element_type=electricFieldElementType,
+                                      element_degree=phiElementDegree-1,
+                                      field_type='vector')
+    
+# Put non-zero external electric field values into the electron source region
+    externalElectricField_F.set_gaussian_values(scr.external_electric_field_amplitude, domain=electronSourceRegion)
+
+    print "externalElectricField values:", externalElectricField_F.function_values.get_local()
+
+#    import matplotlib.pyplot as mplot_m
+#    df_m.plot(externalElectricField_F.function, title="External E")
+#    mplot_m.show()
+#    sys.exit()
 
 ############################## HST. Histories ##############################
 
@@ -871,13 +903,14 @@ if ctrl.field_output_interval is not None:
     # ElectricFieldOutputFile << negElectricField_F.function
     
 
-########## INIT.2. Initialize the particles
+########## INIT.2. Recompute initial fields including initial particle spacecharge
+##########         and random electric field
 
 # Open the particle output file and write the header
 if ctrl.particle_output_interval is not None:
     particle_P.initialize_particle_output_file(ctrl)
 
-##### INIT.2.1. Loop on initialized particle species
+##### INIT.2.1. Recalculate initial electric field
 if particle_P.initial_particles_dict is not None:
     printFlags = {}
     for s in particle_P.species_names:
@@ -893,23 +926,33 @@ if particle_P.initial_particles_dict is not None:
         if particle_P.traj_T is not None:
             particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field)
 
-    ##### INIT.2.1.1. Recompute the initial electrostatic field in the presence of these particles
+    ##### INIT.2.1.1. Recompute the initial electrostatic field with particle spacecharge
     ## Accumulate number-density from kinetic particles
-    ## and sum charge-density.
+    ## and sum into the total charge-density.
     for s in particles_P.species_names:
         particles_P.accumulate_number_density(s)
         q = particles_P.charge[s]
-        chargeDensity_F.multiply_add(particles_P.number_density_dict[s], q)
+        assembledCharge_F.multiply_add(particle_P.number_density_dict[s], multiplier=q)        
 
-    particle_P.accumulate_charge_density_from_particles(chargeDensity_F)
+# This duplicates the above loop!
+#    particle_P.accumulate_charge_density_from_particles(assembledCharge_F)
 
     if plotInitialFields is True:
         print ""
         print "********** Plot recomputed initial fields with charge-density from particles **********"
-    plotTitle = fileName + "Initial field (with particles)"
-    potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
+    plotTitleInitial = fileName + "Initial field (with particles)"
+#    potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
+    potentialsolve.solve_for_phi(assembled_charge=assembledCharge_F, assembled_charge_factor=scr.spacecharge_factor, plot_flag=plotInitialFields, plot_title=plotTitleInitial)
+    
 
-    # Open write the initial fields (with contribution from initial particles)
+    ##### INIT.2.1.2. Add in a random electric field
+    if ctrl.apply_external_electric_field is not None:
+        # Compute new random fields
+        externalElectricField_F.set_gaussian_values(scr.external_electric_field_amplitude, domain=electronSourceRegion)
+        # Add these to the computed electric field
+        potentialsolve.neg_electric_field.multiply_add(externalElectricField_F)
+        
+    # Write out the initial fields (with contribution from initial particles and external fields)
     if ctrl.field_output_interval is not None:
         phi_F.function.rename("phi", "phi_label")
         PotentialFieldOutputFile << phi_F.function
@@ -918,8 +961,6 @@ if particle_P.initial_particles_dict is not None:
     # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
     # negElectricField_F.function.rename("E", "E_label")
     # ElectricFieldOutputFile << negElectricField_F.function
-
-
     
 else:
     print "(DnT INFO) %s\n\tThere are no initial particles in this simulation" % fileName
@@ -966,9 +1007,10 @@ for istep in xrange(ctrl.n_timesteps):
     for s in particle_P.species_names:
         particle_P.accumulate_number_density(s)
         q = particle_P.charge[s]
-        chargeDensity_F.multiply_add(particle_P.number_density_dict[s], q)
+        assembledCharge_F.multiply_add(particle_P.number_density_dict[s], multiplier=q)
 
-    particle_P.accumulate_charge_density_from_particles(chargeDensity_F)
+# this repeats the above loop:
+#    particle_P.accumulate_charge_density_from_particles(assembledCharge_F)
 
     ########## RUN.5. Update the electric field
 
@@ -987,10 +1029,24 @@ for istep in xrange(ctrl.n_timesteps):
         plotFields = False
         plotTitle = None
 
-    ##### RUN.5.2. Call the field solver
-    potentialsolve.solve_for_phi(plot_flag=plotFields, plot_title=plotTitle)
+    ##### RUN.5.2. Compute the new potential and E-field
 
-    ##### RUN.5.3. Write a snapshot of the fields
+# Apply assembled_factor before call by calling a "multiply" function?
+
+    potentialsolve.solve_for_phi(assembled_charge=assembledCharge_F, assembled_charge_factor=scr.spacecharge_factor, plot_flag=plotFields, plot_title=plotTitle)
+
+    ##### RUN.5.3. Add an external electric field
+    if ctrl.apply_external_electric_field is not None:
+        # Compute new random fields
+        externalElectricField_F.set_gaussian_values(scr.external_electric_field_amplitude, domain=electronSourceRegion)
+        # Add the external field to the self-electric field
+        potentialsolve.neg_electric_field.multiply_add(externalElectricField_F, multiplier=None)
+
+#        print "negElectricField_F:", negElectricField_F.function_values.get_local()
+        print "neg_electric_field:", potentialsolve.neg_electric_field.function_values.get_local()
+        
+        
+    ##### RUN.5.4. Write a snapshot of the fields
     if ctrl.field_output_interval is not None:
         if ctrl.timeloop_count % ctrl.field_output_interval == 0:
             phi_F.function.rename("phi", "phi_label")
@@ -1000,6 +1056,13 @@ for istep in xrange(ctrl.n_timesteps):
     if particle_P.histories is not None:
         if (ctrl.timeloop_count % particle_P.histories.skip == 0):
             particle_P.record_history_data(ctrl.timeloop_count, ctrl.time)
+
+    if pauseAfterTimestep is True:
+        pauseAfterTimestep=ctrl.get_keyboard_input(fileName)
+        if pauseAfterTimestep is False:
+            # Turn off plotting on each timestep
+            plotFieldsEveryTimestep = False
+    # End of the timestep loop (istep)
 
 print ""
 print "********** Exited the time loop at step %d, time %.3g, with %d particles **********" % (ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count())

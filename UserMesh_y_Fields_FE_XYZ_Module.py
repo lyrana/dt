@@ -434,39 +434,35 @@ class UserPoissonSolve1D_C(PoissonSolve_C):
        is available in the UserUnits_M.py module.
     """
 
-    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, assembled_charge=None, assembled_charge_factor=None, neg_electric_field=None):
+    def __init__(self, phi_F, linear_solver, preconditioner, field_boundary_marker, phi_BCs, neg_electric_field=None):
         """mesh argument is only needed if, e.g., using a SpatialCoordinate in the equations.
         """
 
         # Select the unit system to be used for input parameters.
         constants = U_M.MyPlasmaUnits_C
 
+        # Call the PoissonSolve_C base class constructor for
+        # non-problem-specific initialization.
+        super(self.__class__, self).__init__(phi_F)
+
         ### Set class and local variables from the arguments ###
 
-        # The solution coefficients are stored in 'u'
-        self.u = phi.function
-
-        # The trial-function space is 'V'
-        V = phi.function_space
-
-        # Extract the Dirichlet boundary conditions
-        (xmin_indx, phi_xmin) = phi_BCs['xmin']
-        (xmax_indx, phi_xmax) = phi_BCs['xmax']
-
-        u_xmin = df_m.Constant(phi_xmin)
-        u_xmax = df_m.Constant(phi_xmax)
-
-        self.charge_density = charge_density
-        self.assembled_charge = assembled_charge
-        self.neg_electric_field = neg_electric_field
-
-        # Field-solver parameters
+       # Field-solver parameters
         self.solver_parameters = {}
         if linear_solver is not None:
             self.solver_parameters['linear_solver'] = linear_solver
         if preconditioner is not None:
             self.solver_parameters['preconditioner'] = preconditioner
 
+        self.neg_electric_field = neg_electric_field
+
+        # Extract the Dirichlet boundary conditions
+        (xmin_indx, phi_xmin) = phi_BCs['xmin']
+        (xmax_indx, phi_xmax) = phi_BCs['xmax']
+
+        # Create functions from the boundary values        
+        u_xmin = df_m.Constant(phi_xmin)
+        u_xmax = df_m.Constant(phi_xmax)
 
         ### Create the Dirichlet boundary-condition list for the Poisson PDE.
 
@@ -475,16 +471,9 @@ class UserPoissonSolve1D_C(PoissonSolve_C):
         # set.
         #       args: DirichletBC(FunctionSpace, GenericFunction, MeshFunction, int, method="topological")
 
-        self.bcs = [df_m.DirichletBC(V, u_xmin, field_boundary_marker, xmin_indx), df_m.DirichletBC(V, u_xmax, field_boundary_marker, xmax_indx)]
+        self.bcs = [df_m.DirichletBC(self.V, u_xmin, field_boundary_marker, xmin_indx), df_m.DirichletBC(self.V, u_xmax, field_boundary_marker, xmax_indx)]
 
         ### Set up the variational problem ###
-
-        w = df_m.TrialFunction(V) # A basis function of the trial-function space.
-        self.v = df_m.TestFunction(V) # A basis function of the test-function space.
-
-        epsilon = df_m.Constant(constants.epsilon_0)
-#        f = df_m.Constant(0.0)
-#        r = df_m.SpatialCoordinate(V.mesh())
 
         ## Make the bilinear form 'a(w,v)' ##
 
@@ -494,31 +483,26 @@ class UserPoissonSolve1D_C(PoissonSolve_C):
         # over the domain. The spherical-coordinate form has a coefficient r**2
         # (for the volume-element needed to integrate over the domain). This
         # Cartesian-coordinate form doesn't.
-        self.a = epsilon*df_m.inner(df_m.nabla_grad(w), df_m.nabla_grad(self.v))*df_m.dx
+        epsilon = df_m.Constant(constants.epsilon_0)
+        self.a = epsilon*df_m.inner(df_m.nabla_grad(self.w), df_m.nabla_grad(self.v))*df_m.dx
 
-        # Specify whether 'a' has time-independent coefficients. By inspection:
-        pdeHasConstantCoeffs = True
+        # Specify whether 'a(u,v)' has time-independent coefficients.  If so, the
+        # matrix A only needs to be assembled once, avoiding redundant work.
+        # By inspection of the expression above:
+        self.pde_has_constant_coeffs = True
 
-        ## Make the linear form 'L(v)' for the RHS ##
+        # Carry out the initial assembly
+        self.assemble_matrix()
 
-        # The linear form is the integral over the domain of charge-density
-        # times a test-function. Note: in non-Cartesian coords, there will be a
-        # volume-element factor in the definition of L (the volume-element is
-        # needed to integrate over the domain).
-
-        # TODO
-
-
+        # Initialize the source vector 'b' to zero charge-density.
+        self.assemble_source_expression(0.0)
+        
         # Set the level of diagnostic output from the solver.
         df_m.set_log_level(df_m.PROGRESS) # df.set_log_level(1) gives the most messages
 
 # default LU is flakey: different answers on different calls: NO!: this was a heap problem of unitialized memory!
 #        self.phi = None
 #        self.negE = None
-
-        # Call the PoissonSolve_C base class constructor for
-        # non-problem-specific initialization.
-        super(self.__class__, self).__init__(pde_has_constant_coeffs=pdeHasConstantCoeffs, assembled_charge_factor=assembled_charge_factor)
 
         return
 #    def __init__(self, phi, linear_solver, preconditioner, field_boundary_marker, phi_BCs, charge_density=None, neg_electric_field=None):ENDDEF
