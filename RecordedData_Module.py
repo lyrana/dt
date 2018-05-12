@@ -438,7 +438,7 @@ class Trajectory_C(object):
 #    def create_trajectory(self, species_name, dynamics_type):ENDDEF
 
 #class Trajectory_C(object):
-    def plot(self):
+    def plot(self, plot_vs_t_only=False):
         """Plot the accumulated particle trajectories.
 
         """
@@ -482,28 +482,31 @@ class Trajectory_C(object):
                     mplot_m.xlabel(x_label)
                     mplot_m.ylabel(comp)
                     mplot_m.grid(True)
-#                    mplot_m.show()
+                    # mplot_m.show()
 
-                # Phase-space plots
-                
+                if plot_vs_t_only is False:
+                  # Phase-space plots
+
+# Lots of other plots could be added, e.g., x vs. z
+
                 # x vs. y
-                if 'x' in comps:
-                    if 'y' in comps:
-                        mplot_m.figure()
-                        mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength], marker="o")
-                        mplot_m.title(plot_title)
-                        mplot_m.xlabel('x')
-                        mplot_m.ylabel('y')
-                        mplot_m.grid(True)
-#                        mplot_m.show()
-                    if 'ux' in comps:
-                        mplot_m.figure()
-                        mplot_m.plot(data_arr['x'][0:nlength], data_arr['ux'][0:nlength], marker="o")
-                        mplot_m.title(plot_title)
-                        mplot_m.xlabel('x')
-                        mplot_m.ylabel('ux')
-                        mplot_m.grid(True)
-#                        mplot_m.show()
+                    if 'x' in comps:
+                        if 'y' in comps:
+                            mplot_m.figure()
+                            mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength], marker="o")
+                            mplot_m.title(plot_title)
+                            mplot_m.xlabel('x')
+                            mplot_m.ylabel('y')
+                            mplot_m.grid(True)
+                            # mplot_m.show()
+                        if 'ux' in comps:
+                            mplot_m.figure()
+                            mplot_m.plot(data_arr['x'][0:nlength], data_arr['ux'][0:nlength], marker="o")
+                            mplot_m.title(plot_title)
+                            mplot_m.xlabel('x')
+                            mplot_m.ylabel('ux')
+                            mplot_m.grid(True)
+                            # mplot_m.show()
                 
                 mplot_m.show()
         return

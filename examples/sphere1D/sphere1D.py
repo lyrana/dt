@@ -84,7 +84,7 @@ __all__ = ['Example_C',]
 ##      RUN.5. Update the electric field
 ##             RUN.5.1. Set field-plotting parameters
 ##             RUN.5.2. Call the field solver
-##             RUN.5.3. Add an external electric field
+##             RUN.5.3. Add an external electric random field
 ##             RUN.5.4. Write a snapshot of the fields
 ##      RUN.6. Record history data for this timestep
 ## FIN. Finish the simulation
@@ -251,8 +251,10 @@ ctrl.time = 0.0
 ctrl.random_seed = 1
 np_m.random.seed(ctrl.random_seed)
 
-### External electric field switch
-ctrl.apply_external_electric_field = True
+### Electric field switches
+ctrl.apply_solved_electric_field = True
+ctrl.apply_external_electric_field = False
+ctrl.apply_random_external_electric_field = True
 
 ### Set parameters for writing field output files
 ctrl.potential_field_output_file = ctrl.title + "-phi.pvd"
@@ -702,7 +704,7 @@ for s in particle_P.species_names:
                                                field_type=number_density_field_type)
 
 ## SRC.1.2. Create a charge-density array on the field mesh
-assembledCharge_F = Field_C(mesh_M=mesh_M,
+assembledCharge_F = Field_C(mesh_M=particle_P.pmesh_M,
                             element_type=number_density_element_type,
                             element_degree=number_density_element_degree,
                             field_type=number_density_field_type)
@@ -750,7 +752,7 @@ phiElementDegree = 1
 phiFieldType = 'scalar'
 
 ##### FS.1.3. Storage for the electric potential solution
-phi_F = Field_C(mesh_M=mesh_M,
+phi_F = Field_C(mesh_M=particle_P.pmesh_M,
                 element_type=phiElementType,
                 element_degree=phiElementDegree,
                 field_type=phiFieldType)
@@ -774,7 +776,7 @@ else:
     electricFieldElementType = 'Lagrange'
 
 ##### FS.2.2. Storage for the electric field
-negElectricField_F = Field_C(mesh_M=mesh_M,
+negElectricField_F = Field_C(mesh_M=particle_P.pmesh_M,
                              element_type=electricFieldElementType,
                              element_degree=phiElementDegree-1,
                              field_type='vector')
@@ -793,7 +795,7 @@ linearSolver = 'lu'
 preconditioner = None
 
 ##### FS.3.2. Create the potential field solver object
-fieldBoundaryMarker = mesh_M.field_boundary_marker
+fieldBoundaryMarker = particle_P.pmesh_M.field_boundary_marker
 if emitInput is True:
     print ""
     print "********** Calling UserPoissonSolve_C constructor **********"
@@ -818,7 +820,7 @@ if emitInput is True:
 
 # Use the same element type and degree as in the field solver.
 if ctrl.apply_external_electric_field:
-    externalElectricField_F = Field_C(mesh_M=mesh_M,
+    externalElectricField_F = Field_C(mesh_M=particle_P.pmesh_M,
                                       element_type=electricFieldElementType,
                                       element_degree=phiElementDegree-1,
                                       field_type='vector')
@@ -879,7 +881,8 @@ if emitInputOnly is True:
 if particleBoundaryDict is not None and particle_P.pmesh_M.particle_boundary_marker is None:
     print "A particleBoundaryDict was set, but particle_P.pmesh_M.particle_boundary_marker is None"
     sys.exit()
-    
+
+#TODO: add check on ctrl.apply_external_electric_field and apply_solved_electric_field, to ensure that the Field_C objects exist.    
 
 ############################## INIT. Initialization ##############################
 
@@ -949,8 +952,8 @@ if particle_P.initial_particles_dict is not None:
     if ctrl.apply_external_electric_field is not None:
         # Compute new random fields
         externalElectricField_F.set_gaussian_values(scr.external_electric_field_amplitude, domain=electronSourceRegion)
-        # Add these to the computed electric field
-        potentialsolve.neg_electric_field.multiply_add(externalElectricField_F)
+        # Add these to the computed (negative) electric field. 
+        potentialsolve.neg_electric_field.multiply_add(externalElectricField_F, multiplier=-1.0)
         
     # Write out the initial fields (with contribution from initial particles and external fields)
     if ctrl.field_output_interval is not None:
@@ -985,7 +988,7 @@ for istep in xrange(ctrl.n_timesteps):
     ########## RUN.1. Advance the particles one timestep
     print ""
     print "***** Advance %d particles to step %d, time %.3g *****" % (particle_P.get_total_particle_count(), ctrl.timeloop_count, ctrl.time)
-    particle_P.move_particles_in_electrostatic_field(ctrl, potentialsolve.neg_electric_field)
+    particle_P.move_particles_in_electrostatic_field(ctrl, neg_E_field=potentialsolve.neg_electric_field)
 
     ## Record trajectory data for all marked particles
     if particle_P.traj_T is not None:

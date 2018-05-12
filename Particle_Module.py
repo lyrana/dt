@@ -352,13 +352,20 @@ class Particle_C(object):
         self.h5_buffer_length = self.number_of_species*self.SEGMENT_LENGTH
         self.h5_buffer = np_m.empty(self.h5_buffer_length, dtype=np_m.float64)
 
-        # Make a reusable array "self.negE" for computing -E at particle positions
+        # Make reusable arrays for computing solved and external E at particle positions
         if particle_input.force_components is not None:
             Ecomps = particle_input.force_components
             force_precision = particle_input.force_precision
             Etypes = [force_precision for comp in Ecomps] # variable type
             Eseg_dict = {'names': Ecomps, 'formats': Etypes}
+            # reusable array for the solved field:
             self.negE = np_m.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
+            # Same thing, for an external field:
+            self.Eext = np_m.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
+
+            # Create a reusable E array with all components zero
+            self.zeroE = np_m.zeros(self.SEGMENT_LENGTH, dtype=Eseg_dict)
+            
             # self.negE1 is a reusable array for one-particle field data for a
             # trajectory
             # Make an explicit name like 'Ex', 'Ey', 'Ez'
@@ -366,8 +373,15 @@ class Particle_C(object):
             E1seg_dict = {'names': E1comps, 'formats': Etypes}
             self.negE1 = np_m.empty(1, dtype=E1seg_dict)
             # Create a reusable E array with all components zero
-            self.zeroE = np_m.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
+#            self.zeroE = np_m.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
 
+            # self.Eext is a reusable array for one-particle external field data for a
+            # trajectory.
+            # Make an explicit name like 'Ex_ext', 'Ey_ext', 'Ez_ext'
+            E1comps = ['E'+comp+'_ext' for comp in Ecomps]
+            E1seg_dict = {'names': E1comps, 'formats': Etypes}
+            self.Eext1 = np_m.empty(1, dtype=E1seg_dict)
+            
         # Not used yet
         self.particle_integration_loop = particle_input.particle_integration_loop
 
@@ -446,7 +460,7 @@ class Particle_C(object):
 
         userParticlesClass = self.user_particles_class
 
-        pseg_arr = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        psegArrSp = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
 
         # The function that has the list of particles
         p_list_method = getattr(userParticlesClass, species_name)
@@ -457,9 +471,9 @@ class Particle_C(object):
         # Check the length of the particle data by looking at the
         # datatype of the first segment of the segmented array.
 
-        if len(particle_list[0]) != len(pseg_arr[0].dtype):
-            errorMsg = fncName + "\tDnT ERROR: Species %s. Expecting particle data tuple %s, but data for first particle is: %s, which does not match up. Check UserParticles" %  (species_name, pseg_arr[0].dtype.names, particle_list[0])
-#            print fncName, "Expect particle data for", pseg_arr[0].dtype.names
+        if len(particle_list[0]) != len(psegArrSp[0].dtype):
+            errorMsg = fncName + "\tDnT ERROR: Species %s. Expecting particle data tuple %s, but data for first particle is: %s, which does not match up. Check UserParticles" %  (species_name, psegArrSp[0].dtype.names, particle_list[0])
+#            print fncName, "Expect particle data for", psegArrSp[0].dtype.names
 #            print "First particle is:", particle_list[0]
             sys.exit(errorMsg)
 
@@ -471,7 +485,7 @@ class Particle_C(object):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            p, pindex = psegArrSp.put(particle_list[i])
             # Check if this particle has the trajectory flag turned on
             if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
 # or: p['bitflags'] should work?
@@ -494,10 +508,11 @@ class Particle_C(object):
     def create_from_functions(self, species_name, print_flag = False):
         """Generates particles for a species from a list provided by the user.
         """
-
+#NOT FINISHED OR USED
+        
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         
-        pseg_arr = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        psegArrSp = self.pseg_arr[species_name] # The SegmentedArray_C object for this species
 
         p_list_method = self.initial_distribution_function[species_name]
         number_of_macroparticles, particle_list = p_list_method(type='listed')
@@ -571,8 +586,8 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        pseg_arr = self.pseg_arr[species_name] # storage array for this species
-        number_of_particles = pseg_arr.get_number_of_items()
+        psegArrSp = self.pseg_arr[species_name] # storage array for this species
+        number_of_particles = psegArrSp.get_number_of_items()
         if print_flag: print fncName, "\tDnT INFO:", species_name, "has", number_of_particles, "macroparticles"
 # this should be done by the calling function?
 #        self.particle_count[species_name] = number_of_particles
@@ -588,8 +603,8 @@ class Particle_C(object):
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         psum = 0
         for sn in self.species_names:
-            pseg_arr = self.pseg_arr[sn] # storage array for this species
-            npar = pseg_arr.get_number_of_items()
+            psegArrSp = self.pseg_arr[sn] # storage array for this species
+            npar = psegArrSp.get_number_of_items()
             psum += npar
 
         if print_flag: print fncName, "\tDnT INFO: Total number of macroparticles in", len(self.species_names), 'species is', psum
@@ -681,7 +696,7 @@ class Particle_C(object):
 #    def set_number_density(self, species_name, value):ENDDEF
 
 #class Particle_C(object):
-    def move_particles_in_electrostatic_field(self, ctrl, neg_electric_field):
+    def move_particles_in_electrostatic_field(self, ctrl, neg_E_field=None, external_E_field=None, accel_only=False):
         """Advance charged particles by one time increment in an electric field
            interpolated from a mesh.
         
@@ -694,8 +709,12 @@ class Particle_C(object):
            and looking up what the neighbor cell is. This is repeated until the
            cell containing the final position is found.
 
-           :param ctrl: A DTcontrol_C object
-           :param neg_electric_field: A Field_C object containing the vector -E.
+           :param ctrl: A DTcontrol_C object.
+           :param neg_E_field: A Field_C object containing the field -E
+                               calculated by the solving the field equation.
+           :param external_E_field: A Field_C object containing an external
+                                    electric field.
+           :param bool accel_only: If True, apply force to particles, but do not move them.
 
            :cvar int cFacet: The cell-level (not mesh-level) index number of the
                              facet crossed by a particle during the move.
@@ -753,23 +772,32 @@ class Particle_C(object):
                 # Compute electric field for each particle
 
 #                print "Before:"
-#                print "position:", pseg['x'], pseg['y'] #, pseg['z']
-#                print "velocity:", pseg['ux'], pseg['uy'] #, pseg['uz']
+#                print "position:", pseg['x'] #, pseg['y'] #, pseg['z']
+#                print "velocity:", pseg['ux'] #, pseg['uy'] #, pseg['uz']
 
                 # Interpolate the electric field to the particle positions
-                # This is the negative electric field
-                neg_electric_field.interpolate_field_to_points(psegIn, self.negE)
-
-                # Truncate negE to the number of particles to get the
-                # += operations below to work: These operations need
-                # the vectors to be the same length.
-#                Eseg = self.negE[0:psegIn.size]
-                Eseg = self.negE[0:npSeg]
-                # Flip the sign to get correct E. (This is a vector
-                # operation on each component of E.)
-                for n in Eseg.dtype.names:
-                    Eseg[n] *= -1.0
-
+                # NB: This is the negative electric field
+                if ctrl.apply_solved_electric_field:
+                    neg_E_field.interpolate_field_to_points(psegIn, self.negE)
+                    # Truncate negE to the number of particles to get the
+                    # += operations below to work: These operations need
+                    # the vectors to be the same length.
+                    # This is a ref, not a copy
+                    Eseg = self.negE[0:npSeg]
+                    # Flip the sign to get correct E. (This is a vector
+                    # operation on each component of E.)
+                    for n in Eseg.dtype.names:
+                        Eseg[n] *= -1.0
+                else:
+                    Eseg = self.zeroE[0:npSeg]
+                if ctrl.apply_random_external_electric_field:
+                    external_E_field.interpolate_random_field_to_points(psegIn, self.Eext)
+                    Eext_seg = self.Eext[0:npSeg]
+                    # This is a vector operation on each component of E. This is the best
+                    # you can do for a structured array. I'm not sure you can add arrays
+                    # of E-field vectors in a single statement anyway.
+                    for n in Eseg.dtype.names:
+                        Eseg[n] += Eext_seg[n]
 
 #Old way, not using in/out arrays:
                 """
@@ -830,13 +858,14 @@ class Particle_C(object):
 
                     # Move the particle
                     # NON-RELATIVISTIC: v and u are the same
-                    for coord in self.position_coordinates:
-                        coord0 = coord+'0'
-#                        psegOut[ipOut][coord0] = psegIn[ipIn][coord] # Save the starting positions
-                        psegOut[ipOut][coord0] = psegOut[ipOut][coord] # Save the starting positions
-                        ucomp = 'u'+coord
-#                        psegOut[ipOut][coord] = psegIn[ipIn][coord] + psegIn[ipIn][ucomp]*dt
-                        psegOut[ipOut][coord] += psegOut[ipOut][ucomp]*dt
+                    if accel_only is False:
+                        for coord in self.position_coordinates:
+                            coord0 = coord+'0'
+                            #                        psegOut[ipOut][coord0] = psegIn[ipIn][coord] # Save the starting positions
+                            psegOut[ipOut][coord0] = psegOut[ipOut][coord] # Save the starting positions
+                            ucomp = 'u'+coord
+                            #                        psegOut[ipOut][coord] = psegIn[ipIn][coord] + psegIn[ipIn][ucomp]*dt
+                            psegOut[ipOut][coord] += psegOut[ipOut][ucomp]*dt
 
                     """
                     psegOut[ipOut]['x0'] = psegIn[ipIn]['x']
@@ -948,7 +977,10 @@ class Particle_C(object):
                                     # Get the storage index that currently identifies this
                                     # particle in the trajectory list.
                                     fullIndex = psa.get_full_index(ipIn, 'in')
-                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, None, facet_crossing=True)
+# Why is the None here for E? Because a particle may have gone out-of-bounds?  In that case, could compute E at initial coords instead of final coords.
+
+# Can I just send the interpolated E-field value?
+                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, neg_E_field=None, external_E_field=None, facet_crossing=True)
                                 self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
 
                             # Look up the cell index of the new cell.
@@ -1031,7 +1063,7 @@ class Particle_C(object):
 
         # End of loop over species
         return
-#    def move_particles_in_electrostatic_field(self, dt, neg_electric_field):ENDDEF
+#    def move_particles_in_electrostatic_field(self, ctrl, neg_E_field=None, external_E_field=None, accel_only=False):ENDDEF
 
 #class Particle_C(object):
     def move_neutral_particles(self, ctrl):
@@ -1223,7 +1255,7 @@ class Particle_C(object):
                                     # Get the storage index that currently identifies this
                                     # particle in the trajectory list of particles.
                                     fullIndex = psa.get_full_index(ipIn, 'in')
-                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, None, facet_crossing=True)
+                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True)
                                 # A reference to dx[] is available in the BC function class.
                                 self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
                             # Look up the cell index of the new cell.
@@ -1305,7 +1337,7 @@ class Particle_C(object):
 
         # Loop over Species ends
         return
-#    def move_neutral_particles(self, dt, neg_electric_field):ENDDEF
+#    def move_neutral_particles(self, ctrl):ENDDEF
 
 #class Particle_C(object):
     def move_particles_in_electrostatic_potential(self, species_names, dt, fCI, fpCI):
@@ -1587,6 +1619,8 @@ class Particle_C(object):
                     # E to zero instead of interpolating.
                 elif comp in self.negE1.dtype.names:
                     traj_T.data_list[sn][p_index][comp][newpoint] = 0.0
+                elif comp in self.Eext1.dtype.names:
+                    traj_T.data_list[sn][p_index][comp][newpoint] = 0.0
         elif self.dynamics[sn] == 'implicit':
             for comp in traj_T.implicit_dict['names']:
                 print "remove_traj: comp = ", comp
@@ -1619,7 +1653,7 @@ class Particle_C(object):
 #    def remove_trajectory_particleId(self, sn, i_in):ENDDEF
 
 #class Particle_C(object):
-    def record_trajectory_datum(self, species_name, p, full_index, step, time, neg_E_field, facet_crossing=False):
+    def record_trajectory_datum(self, species_name, p, full_index, step, time, neg_E_field=None, external_E_field=None, facet_crossing=False):
         """Save a single data-record of a particle trajectory.
 
            NB: It is assumed that TRAJECTORY_FLAG has been checked before this
@@ -1632,7 +1666,10 @@ class Particle_C(object):
 
            :param int full_index: The full storage index of the particle.
 
-           :param neg_E_field: A Field_C object containing the vector -E.
+           :param neg_E_field: A Field_C object containing the solved field -E.
+
+           :param external_E_field: A Field_C object containing the external
+                                    electric field.
 
            :param bool facet_crossing: If True, this is a facet-crossing call, and the initial
                                        particle coordinates are recorded instead of the final
@@ -1653,13 +1690,18 @@ class Particle_C(object):
         # print "record_trajectory_datum: p_arr[0] = ", p_arr[0]
 
         if self.dynamics[species_name] == 'explicit':
-            # Compute the force on this single particle
-            
+
+            # Compute the SOLVED field at this single particle
             if neg_E_field is None:
                 self.negE1[0] = self.zeroE[0]
             else:
+# If facet_crossing is true, could interpolate to the initial coordinate, not the final.  The final may be out-of-bounds.
+                
+# Is there already an interpolated value available?
                 neg_E_field.interpolate_field_to_points(p_arr, self.negE1)
 
+                
+            # E_arr is a ref, not a copy (HPL,p. 137)
             E_arr = self.negE1[0:p_arr.size] # Need this syntax, even though there's
                                              # just one particle, to make E_arr an array!
 
@@ -1667,8 +1709,18 @@ class Particle_C(object):
             # component of E.)
             for n in E_arr.dtype.names:
                 E_arr[n] *= -1.0
-
             # print "E_arr.dtype.names =", E_arr.dtype.names
+
+            # Compute the EXTERNAL field at this single particle
+            if external_E_field is None:
+                self.Eext1[0] = self.zeroE[0]
+            else:
+                external_E_field.interpolate_field_to_points(p_arr, self.Eext1)
+
+            Eext_arr = self.Eext1[0:p_arr.size] # Need this syntax, even though there's
+                                                # just one particle, to make Eext_arr an array!
+
+            # print "Eext_arr.dtype.names =", Eext_arr.dtype.names
 
         # Look up the trajectory index for this particle
         if traj_T is not None:
@@ -1697,6 +1749,8 @@ class Particle_C(object):
                             traj_T.data_list[species_name][t_idx][comp][newpoint] = p_arr[0][comp]
                     elif comp in E_arr.dtype.names:
                         traj_T.data_list[species_name][t_idx][comp][newpoint] = E_arr[0][comp]
+                    elif comp in Eext_arr.dtype.names:
+                        traj_T.data_list[species_name][t_idx][comp][newpoint] = Eext_arr[0][comp]
             elif self.dynamics[species_name] == 'neutral':
                 for comp in traj_T.explicit_dict['names']:
                     # print 'comp = ', comp
@@ -1719,7 +1773,7 @@ class Particle_C(object):
 #    def record_trajectory_datum(self, neg_E_field=None):ENDDEF
 
 #class Particle_C(object):
-    def record_trajectory_data(self, step, time, neg_E_field=None):
+    def record_trajectory_data(self, step, time, neg_E_field=None, external_E_field=None):
         """Save one trajectory data-record for all the marked particles of all
            species.
 
@@ -1729,8 +1783,10 @@ class Particle_C(object):
 
            :param int step: The current timestep
            :param float time: The current physical time
-           :param neg_E_field: A Field_C object containing the vector -E
-
+           :param neg_E_field: A Field_C object containing the vector field -E
+                               computed from the field equation.
+           :param external_E_field: A Field_C object containing the external
+                                    electric field.
         """
 
         printInfoSecond = False
@@ -1787,6 +1843,15 @@ class Particle_C(object):
 
 #                print "E_arr.dtype.names =", E_arr.dtype.names
 
+                # Compute the EXTERNAL field at this single particle
+                if external_E_field is None:
+                    self.Eext1[0] = self.zeroE[0]
+                else:
+                    external_E_field.interpolate_field_to_points(p_arr, self.Eext1)
+
+                Eext_arr = self.Eext1[0:p_arr.size] # Need this syntax, even though there's
+                                                   # just one particle, to make Eext_arr an array!
+                                               
                 # Copy the particle values into the trajectory
                 newpoint = traj_T.trajectory_length[sp][i]
                 if newpoint > traj_T.npoints - 1:
@@ -1804,12 +1869,14 @@ class Particle_C(object):
                         traj_T.data_list[sp][i][comp][newpoint] = p_arr[0][comp]
                     elif comp in E_arr.dtype.names:
                         traj_T.data_list[sp][i][comp][newpoint] = E_arr[0][comp]
+                    elif comp in Eext_arr.dtype.names:
+                        traj_T.data_list[sp][i][comp][newpoint] = Eext_arr[0][comp]
                         
                 traj_T.trajectory_length[sp][i] += 1 # Increment the trajectory length
 
         # Record a trajectory data-point for particles with implicit dynamics
         for sp in traj_T.implicit_species:
-            pseg_arr = self.pseg_arr[sp] # The SA for this species
+            psegArrSp = self.pseg_arr[sp] # The SA for this species
             for i in xrange(len(traj_T.particle_index_list[sp])): # i loops on
                                                              # particle-index array
                 ip = traj_T.particle_index_list[sp][i] # Look up the full particle index
@@ -1819,7 +1886,7 @@ class Particle_C(object):
                 if ip == traj_T.NO_PINDEX: continue
 
                 # Retrieve particle using its full index
-                p_arr[0] = pseg_arr.get(ip) # pulls value from the 'out' array.
+                p_arr[0] = psegArrSp.get(ip) # pulls value from the 'out' array.
 
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
@@ -1859,7 +1926,7 @@ class Particle_C(object):
 
         # Record a trajectory data-point for particles with neutral dynamics
         for sp in traj_T.neutral_species:
-            pseg_arr = self.pseg_arr[sp] # The SA for this species
+            psegArrSp = self.pseg_arr[sp] # The SA for this species
             for i in xrange(len(traj_T.particle_index_list[sp])): # i loops on
                                                              # particle-index array
                 ip = traj_T.particle_index_list[sp][i] # Look up the full particle index
@@ -1869,7 +1936,7 @@ class Particle_C(object):
                 if ip == traj_T.NO_PINDEX: continue
 
                 # Retrieve particle using its full index
-                p_arr[0] = pseg_arr.get(ip) # pulls value from the 'out' array.
+                p_arr[0] = psegArrSp.get(ip) # pulls value from the 'out' array.
 
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
@@ -1999,7 +2066,7 @@ class Particle_C(object):
         numberPerCell = paramDict['number_per_cell']
 
         # Get the storage for this species
-        pseg_arr = self.pseg_arr[speciesName] # The SegmentedArray_C object for this species
+        psegArrSp = self.pseg_arr[speciesName] # The SegmentedArray_C object for this species
         pDim = self.particle_dimension
 
         # References to scratch space
@@ -2072,7 +2139,7 @@ class Particle_C(object):
                 particle[3*pDim+1] = bitflags
                 particle[3*pDim+2] = cellIndex
                 particle[3*pDim+3] = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
-#tph                
+#tph
 #                if particle[3*pDim+3] == 2448:
 #                    print "create_max: adding particle with ID", particle[3*pDim+3]
 #                    particle[3*pDim+1] = bitflags | Particle_C.TRAJECTORY_FLAG
@@ -2080,7 +2147,7 @@ class Particle_C(object):
                 particle[3*pDim+4] = crossings
                     
                 # Store the particle
-                p, pindex = pseg_arr.put(particle)
+                p, pindex = psegArrSp.put(particle)
 
                 # If the particle is tagged as a trajectory particle, initialize its
                 # trajectory information. Note: if this is being called by
@@ -2092,8 +2159,7 @@ class Particle_C(object):
                         self.traj_T.create_trajectory(speciesName, pindex, dynamicsType)
                         # Record the initial datum for this new trajectory
 
-#                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, time, None, facet_crossing=True)                        
-                        self.record_trajectory_datum(speciesName, p, pindex, step, time, neg_E_field)
+                        self.record_trajectory_datum(speciesName, p, pindex, step, time, neg_E_field=None, external_E_field=None)
                     else:
 # Instead of printing this message, a traj_T object could be created here?
                         if printWarningNoTrajectory is True: print fncName, "\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet."

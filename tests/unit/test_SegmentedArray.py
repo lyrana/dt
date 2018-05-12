@@ -79,14 +79,14 @@ class TestSegmentedArray(unittest.TestCase):
         fncname = sys._getframe().f_code.co_name
         print '\ntest: ', fncname, '('+__file__+')'
 
-        x=0.0; y=1.0; z=2.0; px=3.0; py=4; pz=5.0; weight = 101.1
+        x=0.0; y=1.0; z=2.0; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
         bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
 #        cell_index = -1
         cell_index = Mesh_C.NO_CELL
 
         # Trim the number of coordinates here to match "position_coordinates" variable above
-        putparticle = (x, y, z, px, py, pz, weight, bitflags, cell_index)
+        putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index)
 
         self.seg_array_obj.put(putparticle)
 
@@ -101,11 +101,11 @@ class TestSegmentedArray(unittest.TestCase):
         fncname = sys._getframe().f_code.co_name
         print '\ntest: ', fncname, '('+__file__+')'
 
-        x=0.0; y=1.0; z=2.0; px=3.0; py=4; pz=5.0; weight = 101.1
+        x=0.0; y=1.0; z=2.0; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
         bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
         cell_index = Mesh_C.NO_CELL
-        putparticle = (x, y, z, px, py, pz, weight, bitflags, cell_index)
+        putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index)
         self.seg_array_obj[0] = putparticle
 
         # Get the item back out by subscripting and check it
@@ -122,7 +122,7 @@ class TestSegmentedArray(unittest.TestCase):
         fncname = sys._getframe().f_code.co_name
         print '\ntest: ', fncname, '('+__file__+')'
 
-        x=0.0; y=1.0; z=2.0; px=3.0; py=4; pz=5.0; weight = 101.1
+        x=0.0; y=1.0; z=2.0; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
         bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
         cell_index = Mesh_C.NO_CELL
@@ -130,7 +130,7 @@ class TestSegmentedArray(unittest.TestCase):
 
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):
-            putparticle = (x, y, z, px, py, pz, weight, bitflags, cell_index,)
+            putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
             self.seg_array_obj.put(putparticle)
             x += dx
 
@@ -150,7 +150,7 @@ class TestSegmentedArray(unittest.TestCase):
         fncname = sys._getframe().f_code.co_name
         print '\ntest: ', fncname, '('+__file__+')'
 
-        x=0.0; y=1.0; z=2.0; px=3.0; py=4; pz=5.0; weight = 101.1
+        x=0.0; y=1.0; z=2.0; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
         bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
         cell_index = Mesh_C.NO_CELL
@@ -158,13 +158,13 @@ class TestSegmentedArray(unittest.TestCase):
 
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):
-            putparticle = (x, y, z, px, py, pz, weight, bitflags, cell_index,)
+            putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
             self.seg_array_obj.put(putparticle)
             x += dx
 
         # Add more particles, so there are 2 particles in the 3rd segment
         for i in range(self.segment_length+1):
-            putparticle = (x, y, z, px, py, pz, weight, bitflags, cell_index,)
+            putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
             self.seg_array_obj.put(putparticle)
             x += dx
 

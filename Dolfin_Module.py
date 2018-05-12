@@ -789,7 +789,7 @@ class Field_C(object):
 # dofmap here?        
 
         return
-#    def __init__(self, mesh_M, element_type, element_degree, field_type):END
+#    def __init__(self, mesh_M, element_type, element_degree, field_type):ENDDEF
 
 #class Field_C(object):
     def __str__(self):
@@ -809,28 +809,30 @@ class Field_C(object):
 #     def __str__(self):ENDDEF
 
 #class Field_C(object):
-    def set_values(self, value, domain=None):
+    def set_values(self, value, subdomain=None):
         """Set the field values to the given scalar value.
 
-           If a domain is specified, the field is set to the given value inside that
-           domain.  Outside of that domain, the field is set to zero.
+           If a subdomain is specified, the field is set to the given value inside that
+           subdomain.  Outside of that subdomain, the field is set to zero.
 
            :param double value: Value to set the field to.
-           :param domain: (optional) The CellSet_C object over which the field is
+           :param subdomain: (optional) The CellSet_C object over which the field is
                           non-zero.
 
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        if domain is None:
+#TODO: value could be an Expression or a scalar (see, e.g., assemble_source_expression)
+        
+        if subdomain is None:
             # Assignment to an FE function: EBook p. 25:
 #            self.function.vector()[:] = value
             self.function_values[:] = value            
         else:
             self.function_values[:] = 0.0 # Initialize all the elements to zero.
-            for icell in xrange(domain.ncell):
-                cellIndex = domain.cell_index[icell]
+            for icell in xrange(subdomain.ncell):
+                cellIndex = subdomain.cell_index[icell]
                 dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
 
                 # HERE: see if dofIndex is just a cell index (not a vertex index)
@@ -838,38 +840,38 @@ class Field_C(object):
             
             
         return
-#    def set_values(self, value, domain=None):ENDDEF
+#    def set_values(self, value, subdomain=None):ENDDEF
 
 #class Field_C(object):
-    def multiply_values(self, multiplier, gaussian=False, domain=None):
-        """Multiply the field values by the given multiplier.
+    def multiply_values(self, multiplier, gaussian=False, subdomain=None):
+        """Multiply all the field values in a subdomain by the given multiplier.
 
-           If a domain is specified, the field is multiplied by the given multiplier
-           inside that domain.
+           If a subdomain is specified, the field inside that subdomain is multiplied
+           by the given value.
 
            :param double multiplier: Value to multiply the field values by.
            :param bool gaussian: If true, apply a random gaussian-distributed multiplier.
-           :param domain: (optional) The CellSet_C object over which the field values
+           :param subdomain: (optional) The CellSet_C object over which the field values
                           are multiplied.
 
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        if domain is None:
+        if subdomain is None:
             numberOfValues = self.function_len
             if gaussian is True:
-                random_vals = self.scratch_array # Alias to a numpy scratch array
-                random_vals[:] = np_m.random.normal(0.0, multiplier, numberOfValues)
-                self.function_values[:] *= random_vals[:]
+                randomVals = self.scratch_array # Alias to a numpy scratch array
+                randomVals[:] = np_m.random.normal(0.0, multiplier, numberOfValues)
+                self.function_values[:] *= randomVals[:]
             else:
                 self.function_values[:] *= multiplier
         else:
-            numberOfValues = domain.ncell
+            numberOfValues = subdomain.ncell
 
 # HERE: this isn't finished. For a CellSet, need to figure out how to apply a multiplier to the DOFs, if the DOFs are not associated with a cell.  In that case, you cannot loop on cells.
-            for icell in xrange(domain.ncell):
-                cellIndex = domain.cell_index[icell]
+            for icell in xrange(subdomain.ncell):
+                cellIndex = subdomain.cell_index[icell]
 
 # !!! Doesn't this multiply vertices twice, since vertices are shared between cells?
 
@@ -882,43 +884,43 @@ class Field_C(object):
                 self.function_values[dofIndices] *= multiplier
             
         return
-#    def multiply_values(self, multiplier, gaussian=False, domain=None):
+#    def multiply_values(self, multiplier, gaussian=False, subdomain=None):
 
 #class Field_C(object):
-    def set_gaussian_values(self, standard_deviation, domain=None):
+    def set_gaussian_values(self, standard_deviation, subdomain=None):
         """Set the DOFs in a Field_C object to a gaussian distribution of values with the
            specified standard deviation.
 
-           If a domain is specified, only the DOFs inside that domain are set to a
+           If a subdomain is specified, only the DOFs inside that subdomain are set to a
            non-zero value. The others are set to zero.
 
            :param double standard_deviation: The value of the standard deviation of
            the distribution.
-           :param domain: (optional) The CellSet_C object over which the field values
+           :param subdomain: (optional) The CellSet_C object over which the field values
                           are set.
 
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         
-        if domain is None:
+        if subdomain is None:
             numberOfValues = self.function_len
             self.function_values[:] = np_m.random.normal(0.0, standard_deviation, numberOfValues)
         else:
             self.function_values[:] = 0.0 # Initialize all the elements to zero.
-            numberOfValues = domain.ncell
-            random_vals = self.scratch_array # Alias to a numpy scratch array
-            random_vals[0:numberOfValues] = np_m.random.normal(0.0, standard_deviation, numberOfValues)
+            numberOfValues = subdomain.ncell
+            randomVals = self.scratch_array # Alias to a numpy scratch array
+            randomVals[0:numberOfValues] = np_m.random.normal(0.0, standard_deviation, numberOfValues)
 
 # Replace cell-loop with a loop over unique DoFs. It's OK as-is for the E-field, which is a cell quantity.
             
             for icell in xrange(numberOfValues):
-                cellIndex = domain.cell_index[icell]
+                cellIndex = subdomain.cell_index[icell]
                 dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
-                self.function_values[dofIndices] = random_vals[icell]
+                self.function_values[dofIndices] = randomVals[icell]
             
         return
-#    def set_gaussian_values(self, multiplier, gaussian=False, domain=None):
+#    def set_gaussian_values(self, multiplier, gaussian=False, subdomain=None):
 
 #class Field_C(object):
     def multiply_add(self, field_to_add, multiplier=None):
@@ -947,23 +949,25 @@ class Field_C(object):
 #    def interpolate_vectorField_to_points(self, points, vFpoints):
 #class Field_C(object):
     def interpolate_field_to_points(self, points, field_at_points):
-        """Interpolate fields to given points.
+        """Interpolate the field in this Field_C object to the given points.
 
-        :param points: Array of points.
-        :type points: ndarray
-        :param field_at_points: The calculated field values at the points.
-        :type field_at_points: Numpy ndarray
+           :param points: (input) Array of points (usually, these are particle locations).
+           :type points: ndarray
+           :param field_at_points: (output) The calculated field values at the points.
+           :type field_at_points: Numpy ndarray.
 
-        :returns: None
+           :returns: None
            
         """
 
         # Temporary ndarray for the interpolated field at a point
-        # Length is number of components of field (1 for scalar; 2 for 2D vector, etc.) 
+        # Length is number of components of field (1 for scalar; 2 for 2D vector, etc.)
         fieldValue = np_m.empty(len(field_at_points.dtype.fields), dtype=field_at_points.dtype[0])
 #        fieldValue = np_m.empty(self.mesh_gdim, dtype=vFpoints.dtype[0])
 
-# Loop on the points:
+        #TODO: could fieldValue be a re-used array?
+
+# Loop on the points (usually particle locations):
 
         for ip in xrange(points.shape[0]):
 
@@ -977,7 +981,53 @@ class Field_C(object):
 #        return field_at_points[0:npoints]
 #        return field_at_points
         return
-#    def interpolate_field_to_points(self, points, field_at_points):END
+#    def interpolate_field_to_points(self, points, field_at_points):ENDDEF
+
+#class Field_C(object):
+    def interpolate_random_field_to_points(self, points, field_at_points):
+        """Interpolate the field in this Field_C object to the given points, and then
+           multiply by a random number.
+
+           :param points: (input) Array of points (usually, these are particle locations).
+           :type points: ndarray
+           :param field_at_points: (output) The calculated field values at the points.
+           :type field_at_points: Numpy ndarray.
+
+           :cvar fieldValue: A vector containing the interpolated field at one point.
+           :type fieldValue: Numpy ndarray
+
+           :returns: None
+
+        """
+
+        # Storage for the interpolated field vector at a single point.
+        # Length is number of components of field vector (1 for scalar; 2 for 2D vector, etc.)
+        fieldValue = np_m.empty(len(field_at_points.dtype.fields), dtype=field_at_points.dtype[0])
+
+        #TODO: could fieldValue be a re-used array?
+
+        randomVals = self.scratch_array # Alias to a numpy scratch array
+        stdDeviation = 1.0 # For the Gaussian random-number generator
+        numberOfValues = 1 # For the Gaussian random-number generator
+        
+        # Loop on the points (usually particle locations):
+
+        for ip in xrange(points.shape[0]):
+
+            # Get the coordinates to locate the point on the mesh.
+            p = [points[ip][d] for d in range(self.mesh_gdim)]
+
+            # Evaluate the finite-element function at the point p
+            self.function(p, values=fieldValue)
+            # Don't go to the trouble of making a random number unless the field is
+            # non-zero
+            if np_m.linalg.norm(fieldValue) != 0.0:
+                randomVals[0] = np_m.random.normal(0.0, stdDeviation, numberOfValues)
+                fieldValue *= randomVals[0]
+            field_at_points[ip] = fieldValue
+#        print 'field_at_points = ', field_at_points
+        return
+#    def interpolate_random_field_to_points(self, points, field_at_points):ENDDEF
 
 #class Field_C(object):
     def integrate_delta_function(self, p):
@@ -1014,7 +1064,7 @@ class Field_C(object):
         # Evaluate the basis at the location
 
         return
-#    def integrate_delta_function(self, p):END
+#    def integrate_delta_function(self, p):ENDDEF
 
 
 #class Field_C(object):

@@ -199,7 +199,8 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         ctrl.dt = 1.0e-5
         ctrl.n_timesteps = 1
-
+        ctrl.apply_solved_electric_field = True
+                
         dt = ctrl.dt
 
         # The expected results from ParticleNonuniformE.ods

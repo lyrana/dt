@@ -41,7 +41,7 @@ class TestParticleUniformE(unittest.TestCase):
 
         # initializations for each test go here...
 
-        # Create an instance of the DTparticleInput class
+        # Create an instance of the ParticleInput class
         pin = ParticleInput_C()
         # Initialize particles
         pin.precision = numpy.float64

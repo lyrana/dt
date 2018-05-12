@@ -46,6 +46,8 @@ class TestParticleTrajectory(unittest.TestCase):
         self.ctrl.timeloop_count = 0
         self.ctrl.time = 0.0
 
+        self.ctrl.apply_solved_electric_field = True
+        
         ### Particle species input
 
         # Create an instance of the DTparticleInput class
@@ -371,7 +373,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Then move the explicit species
             if len(p_P.explicit_species) != 0:
-                p_P.move_particles_in_electrostatic_field(self.ctrl, self.neg_electric_field)
+                p_P.move_particles_in_electrostatic_field(self.ctrl, neg_E_field=self.neg_electric_field)
 
             # XX needs dt; doesn't need n_timesteps
 
@@ -493,7 +495,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Then move the explicit species
             if len(p_P.explicit_species) != 0:
-                p_P.move_particles_in_electrostatic_field(self.ctrl, self.neg_electric_field)
+                p_P.move_particles_in_electrostatic_field(self.ctrl, neg_E_field=self.neg_electric_field)
 
             # Gather particle trajectory data for marked particles
             if p_P.traj_T is not None:
@@ -619,7 +621,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Then move the explicit species
             if len(p_P.explicit_species) != 0:
-                p_P.move_particles_in_electrostatic_field(self.ctrl, self.neg_electric_field)
+                p_P.move_particles_in_electrostatic_field(self.ctrl, neg_E_field=self.neg_electric_field)
 
             # Gather particle trajectory data for marked particles
             if p_P.traj_T is not None:

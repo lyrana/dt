@@ -44,6 +44,11 @@ class DTcontrol_C(object):
 
         self.E0 = None
         self.B0 = None
+
+        # Electric field switches
+        self.apply_solved_electric_field = False
+        self.apply_external_electric_field = False
+        self.apply_random_external_electric_field = False
         
         # Random number seed
         self.random_seed = np_m.random.seed(1)
