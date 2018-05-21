@@ -1011,8 +1011,8 @@ class Field_C(object):
         numberOfValues = 1 # For the Gaussian random-number generator
         
         # Loop on the points (usually particle locations):
-
-        for ip in xrange(points.shape[0]):
+    
+        for ip in xrange(points.shape[0]): # shape[0] is the first dimension of 'points'
 
             # Get the coordinates to locate the point on the mesh.
             p = [points[ip][d] for d in range(self.mesh_gdim)]
@@ -1025,7 +1025,7 @@ class Field_C(object):
                 randomVals[0] = np_m.random.normal(0.0, stdDeviation, numberOfValues)
                 fieldValue *= randomVals[0]
             field_at_points[ip] = fieldValue
-#        print 'field_at_points = ', field_at_points
+#        print 'field_at_points = ', field_at_points[0:points.shape[0]]
         return
 #    def interpolate_random_field_to_points(self, points, field_at_points):ENDDEF
 

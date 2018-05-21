@@ -158,9 +158,9 @@ class Particle_C(object):
         # These are the position coordinates at the start of a push
         initialPositionCoordinates = [coord+'0' for coord in self.position_coordinates]
 
-        velocityCoordinates = ['u'+coord for coord in self.position_coordinates]
+        self.velocity_coordinates = ['u'+coord for coord in self.position_coordinates]
 
-        phase_coordinates = self.position_coordinates + initialPositionCoordinates + velocityCoordinates
+        phase_coordinates = self.position_coordinates + initialPositionCoordinates + self.velocity_coordinates
 #        print 'particle_c... phase_coords = ', phase_coordinates
 
         # This is for a reference to a UserMesh_C object for particles
@@ -323,9 +323,10 @@ class Particle_C(object):
         # the functions that return the history data.
         # Could use getattr(self) here, and avoid the 'self' arg when used.
         self.history_function_dict = {'count': getattr(Particle_C,
-                                                        "get_total_particle_count"),
+                                                       "get_total_particle_count"),
                                       'species_count': getattr(Particle_C,
-                                                                "get_species_particle_count"),
+                                                               "get_species_particle_count"),
+                                      'species_KE': getattr(Particle_C, "get_species_KE"),                                      
         }
         
         # An scratch ndarray for one particle is used for trajectories
@@ -580,24 +581,53 @@ class Particle_C(object):
 #    def add_more_particles(self, ctrl, print_flag=False):ENDDEF
 
 #class Particle_C(object):
+    def get_species_number(self, species_name):
+        """Counts the number of physical particles for the given species.
+
+           The number of physical particles is just the sum of the particle weights.
+
+        """
+
+        printSpeciesNumberFlag = False
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+        
+        # Sum up the macroparticles weights for this species
+        species_number = 0.0
+        psa = self.pseg_arr[species_name] # segmented array for this species
+
+        # Loop over the particle 'out' segments
+        (npSeg, pseg) = psa.init_out_loop()
+        while isinstance(pseg, np_m.ndarray):
+            species_number += np_m.sum(pseg['weight'])
+            (npSeg, pseg) = psa.get_next_segment('out')
+
+        if printSpeciesNumberFlag:
+            print fncName, "\tprintSpeciesNumberFlag=True:", species_name, "species has kinetic energy", species_number
+        
+        return species_number
+#    def get_species_number(self, species_name):ENDDEF
+
+
+#class Particle_C(object):
     def get_species_particle_count(self, species_name, print_flag=False):
-        """Counts the particles for a given species.
+        """Counts the macroparticles for a given species.
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         psegArrSp = self.pseg_arr[species_name] # storage array for this species
-        number_of_particles = psegArrSp.get_number_of_items()
-        if print_flag: print fncName, "\tDnT INFO:", species_name, "has", number_of_particles, "macroparticles"
+        number_of_macroparticles = psegArrSp.get_number_of_items()
+        if print_flag: print fncName, "\tDnT INFO:", species_name, "has", number_of_macroparticles, "macroparticles"
 # this should be done by the calling function?
 #        self.particle_count[species_name] = number_of_particles
 
-        return number_of_particles
+        return number_of_macroparticles
 #    def get_species_particle_count(self, species_name, print_flag = False):ENDDEF
 
 #class Particle_C(object):
     def get_total_particle_count(self, print_flag = False):
-        """Counts all the particles.
+        """Counts all the macroparticles.
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
@@ -611,6 +641,38 @@ class Particle_C(object):
         return psum
 
 #    def get_total_particle_count(self, print_flag = False):ENDDEF
+
+#class Particle_C(object):
+#    def get_species_KE(self, species_name, print_flag=False):
+    def get_species_KE(self, species_name):
+        """Sums the kinetic energy for a given species.
+        """
+
+        printSpeciesKEFlag = False
+        
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
+        # Sum up the kinetic energy of this species
+        species_KE = 0.0
+        psa = self.pseg_arr[species_name] # segmented array for this species
+
+        # Loop over the particle 'out' segments
+        (npSeg, pseg) = psa.init_out_loop()
+        while isinstance(pseg, np_m.ndarray):
+            # Sum of 0.5*m*u^2 for particles in this segment
+            for ucomp in self.velocity_coordinates:
+                species_KE += np_m.sum(pseg['weight']*pseg[ucomp]**2)
+            
+            (npSeg, pseg) = psa.get_next_segment('out')
+
+        species_KE *= 0.5*self.mass[species_name]
+
+        if printSpeciesKEFlag:
+            print fncName, "\tprintSpeciesKEFlag=True:", species_name, "species has kinetic energy", species_KE
+        
+        return species_KE
+#    def get_species_KE(self, species_name):ENDDEF
+    
 
 #class Particle_C(object):
     def compute_mesh_cell_indices(self):
@@ -789,7 +851,8 @@ class Particle_C(object):
                     for n in Eseg.dtype.names:
                         Eseg[n] *= -1.0
                 else:
-                    Eseg = self.zeroE[0:npSeg]
+                    self.negE[0:npSeg] = self.zeroE[0:npSeg]
+                    Eseg = self.negE[0:npSeg] # A ref, not a copy.
                 if ctrl.apply_random_external_electric_field:
                     external_E_field.interpolate_random_field_to_points(psegIn, self.Eext)
                     Eext_seg = self.Eext[0:npSeg]
@@ -846,7 +909,6 @@ class Particle_C(object):
                     # Accelerate the particle with the field components in Eseg
                     for comp in Eseg.dtype.names:
                         ucomp = 'u'+comp
-#                        psegOut[ipOut][ucomp] = psegIn[ipIn][ucomp] + qmdt*Eseg[ipIn][comp]
                         psegOut[ipOut][ucomp] += qmdt*Eseg[ipIn][comp] # Index OK?
 
 # Instead of this, could do ifs on the dimension of Eseg
@@ -1963,6 +2025,10 @@ class Particle_C(object):
     def record_history_data(self, step, time):
         """Save requested particle history data for this timestep.
 
+           The sums over all species are calculated and stored.
+           Values for each species are also calculated and stored.  
+           Per-particle values are also calculated and stored.
+
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
@@ -1974,17 +2040,25 @@ class Particle_C(object):
         self.histories.data_array['step'][counter] = step
         self.histories.data_array['t'][counter] = time
 
-        # Get the histories summed over the species
+        # Get the values for each species separately and then sum over all the
+        # species, and also compute the per-particle value.
         for hist in self.histories.scalar_histories:
-            self.histories.data_array[hist][counter] = self.history_function_dict[hist](self)
-
-        # Get the histories for each species separately
-        for hist in self.histories.scalar_histories:
+            historyForAllSpecies = 0.0
             for sp in self.species_names:
                 sphist = sp+'_' + hist
-                self.histories.data_array[sphist][counter] = self.history_function_dict["species_"+hist](self, sp)
-            
-#        counter += 1 # This is not an in-place assignment?
+                # Call the function that returns the summed value.
+                historyForSpecies = self.history_function_dict["species_"+hist](self, sp)
+                self.histories.data_array[sphist][counter] = historyForSpecies
+                # Get the number of physical particles in this species
+                speciesNumber = self.get_species_number(sp)
+                sp_1p_hist = sp+'_1p_' + hist
+                # Compute and store the per-particle value
+                self.histories.data_array[sp_1p_hist][counter] = historyForSpecies/max(speciesNumber,1)
+                historyForAllSpecies += historyForSpecies
+            # Store to value summed over all species
+            self.histories.data_array[hist][counter] = historyForAllSpecies
+                
+#        counter += 1 # This is not an in-place assignment.
         self.histories.counter += 1
         
         return

@@ -49,10 +49,14 @@ q_e = 1.0*MyPlasmaUnits_C.elem_charge
 
 #-# User input #-#
 
+numberOfParticles = 1000
+numberOfTrajectories = 0
+numberOfTrajectories = min(numberOfTrajectories, numberOfParticles)
+
 ctrl = DTcontrol_C()
 
 # Timestepping
-ctrl.n_timesteps = 2 # 100000
+ctrl.n_timesteps = 100 # 100000
 ctrl.dt = 4.0e-7 #
 
 # Initialize time counters
@@ -72,16 +76,12 @@ randomExternalElectricFieldAmplitude = 0.1
 # Initial conditions for the electron(s)
 
 # Used in: p0 = (x0, x0, ux0, weight0, bitflags0, cell_index, unique_ID, crossings)
-x0=0.0; ux0=3.0
-
+x0=0.0; ux0=0.0
 weight0 = 2.0 # number of electrons per macroparticle
 bitflags0 = 0b0 # bit flags variable
-# Turn ON trajectory flag.
-bitflags0 = bitflags0 | Particle_C.TRAJECTORY_FLAG
 #cell_index = Mesh_C.NO_CELL
 cell_index = 0
-unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
-
+crossings = 0 # a counter
 
 #-# Particles #-#
 
@@ -105,17 +105,8 @@ electron_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 # Add this species to particle input
 pin.particle_species = (electron_S,)
 
-# Create a Partice_C object
+# Create a Particle_C object
 particle_P = Particle_C(pin, print_flag=True)
-
-# Trim the number of coordinates here if needed to match "position_coordinates"
-# variable in ParticleInput_C
-crossings = 0
-p0 = (x0, x0, ux0, weight0, bitflags0, cell_index, unique_ID, crossings)
-
-# Store the particle. The stored particle and it's full index are returned
-p, pFullIndex = particle_P.pseg_arr[speciesName].put(p0)
-            
 
 #-# Particle Trajectories #-#
 
@@ -143,10 +134,24 @@ traj_T = Trajectory_C(trajin, ctrl, particle_P.explicit_species, particle_P.impl
 # Attach this to the particle object.
 particle_P.traj_T = traj_T
 
-# Create a trajectory for the particle.
-if p['bitflags'] & particle_P.TRAJECTORY_FLAG != 0:
-    dynamicsType = particle_P.dynamics[speciesName]
-    particle_P.traj_T.create_trajectory(speciesName, pFullIndex, dynamicsType)
+if numberOfTrajectories != 0:
+    skip = numberOfParticles/numberOfTrajectories
+# Store copies of the particle.
+for i in xrange(numberOfParticles):
+    # Turn ON trajectory flag.
+    if numberOfTrajectories != 0 and i % skip == 0:
+        bitflags = bitflags0 | Particle_C.TRAJECTORY_FLAG
+    else:
+        bitflags = bitflags0
+    unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+    # Trim the number of coordinates here if needed to match "position_coordinates"
+    # variable in ParticleInput_C
+    p0 = (x0, x0, ux0, weight0, bitflags, cell_index, unique_ID, crossings)
+    p, pFullIndex = particle_P.pseg_arr[speciesName].put(p0)
+    # Create a trajectory for the particle.
+    if p['bitflags'] & particle_P.TRAJECTORY_FLAG != 0:
+        dynamicsType = particle_P.dynamics[speciesName]
+        particle_P.traj_T.create_trajectory(speciesName, pFullIndex, dynamicsType)
 
 #-# Mesh input for a 1-cell 1D mesh #-#
 
@@ -193,7 +198,7 @@ particleHistoryInput = ParticleHistoryInput_C()
 particleHistoryInput.max_points = None # Set to None to get every point
 
 # Globals: 'count', 'charge', 'KE', 'momentum'
-particleHistoryInput.scalar_histories = ['count',]
+particleHistoryInput.scalar_histories = ['count', 'KE']
 #histin.particle_scalar_histories = ['count', 'charge',]
 
 #fieldHistoryInput = FieldHistoryInput_C()
@@ -244,4 +249,8 @@ print "********** Exited the time loop at step %d, time %.3g, with %d particles 
 particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, external_E_field=randomExternalElectricField_F)
 
 # Plot the particle trajectories in phase-space.
-particle_P.traj_T.plot(plot_vs_t_only=True)
+if numberOfTrajectories != 0:
+    particle_P.traj_T.plot(plot_vs_t_only=True)
+
+if particle_P.histories is not None:
+        particle_P.histories.plot()

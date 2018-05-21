@@ -179,16 +179,15 @@ class ParticleHistory_C(History_C):
         # Particle global histories: for each species, record the history for the sum
         # of all the species, and for each individual species.
 
-        # Add the individual species histories to the user-provided list:
+        # For each particle quantity in the requested history list, record a per-species
+        # value and a per-particle value, in addition to the value summed over species.
         particleSpeciesHistories = []
-#        particleSpeciesHistories[:] = histin.scalar_histories[:]
-#        print 'particleSpeciesHistories = ', particleSpeciesHistories
         for hist in histin.scalar_histories:
             for sp in species_names:
                 sphist = sp+'_'+hist
                 particleSpeciesHistories.append(sphist)
-#                species_function_name = 'species_'+hist
-#                function_dict[sphist] = (function_dict[species_function_name], sp)
+                sp_1p_hist = sp+'_1p_'+hist
+                particleSpeciesHistories.append(sp_1p_hist)
                 
         historyList = self.history_list_base + histin.scalar_histories + particleSpeciesHistories
         formatList = self.format_list_base + [np_m.float32 for i in range(len(histin.scalar_histories))] + [np_m.float32 for i in range(len(particleSpeciesHistories))]
@@ -266,11 +265,7 @@ class ParticleHistory_C(History_C):
         return
 #    def plot(self):ENDDEF
 
-
-
 #class History_C(object):ENDCLASS
-
-
 
 
 #STARTCLASS

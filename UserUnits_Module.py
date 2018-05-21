@@ -26,7 +26,7 @@ class MyPlasmaUnits_C(object):
         Temperature: Kelvin
         Charge: Coulombs
 
-        For example, if you specify temperature in eV, you should to
+        For example, if you specify temperature in eV, you should
         define an attribute (variable) 'eV' in this class, and assign
         to it the factor needed to convert to Kelvin, i.e.,
 
