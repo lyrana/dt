@@ -752,6 +752,8 @@ class Field_C(object):
     """Field_C uses the DOLFIN library to represent
        fields defined on finite-element spaces.
 
+       The dolfin FunctionSpace and Function classes are used.
+
        :param mesh_M: A Mesh_C object.  Contains the finite-element
                       mesh where the field is defined.
        :param element_type: The name of the basis function family.
@@ -830,12 +832,12 @@ class Field_C(object):
 #            self.function.vector()[:] = value
             self.function_values[:] = value            
         else:
-            self.function_values[:] = 0.0 # Initialize all the elements to zero.
+            self.function_values[:] = 0.0 # Initialize all the elements to zero before setting the value in the subdomain
             for icell in xrange(subdomain.ncell):
                 cellIndex = subdomain.cell_index[icell]
                 dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
 
-                # HERE: see if dofIndex is just a cell index (not a vertex index)
+                # TODO: see if dofIndex is just a cell index (not a vertex index)
                 self.function_values[dofIndices] = value
             
             
@@ -869,7 +871,7 @@ class Field_C(object):
         else:
             numberOfValues = subdomain.ncell
 
-# HERE: this isn't finished. For a CellSet, need to figure out how to apply a multiplier to the DOFs, if the DOFs are not associated with a cell.  In that case, you cannot loop on cells.
+# NB: this isn't finished. For a CellSet, need to figure out how to apply a multiplier to the DOFs, if the DOFs are not associated with a cell.  In that case, you cannot loop on cells. Use a Python "set"?  i.e. a set of unique objects.
             for icell in xrange(subdomain.ncell):
                 cellIndex = subdomain.cell_index[icell]
 
@@ -1033,9 +1035,13 @@ class Field_C(object):
     def integrate_delta_function(self, p):
         """This function takes the 'inner product' of a delta-function
            located at point p and the basis functions used by the
-           field object.  This occurs, e.g., in computing the source
-           density for Poisson's equations, where the basis functions
-           are the "test" functions. The field must be a scalar.
+           field object.
+
+           This occurs, e.g., in computing the source density for Poisson's
+           equation, where the basis functions are the "test" functions. The
+           field must be a scalar.
+
+           The PointSource function used has to search for the cell containing p.
 
            :param p: A point inside the domain of the function.
            :type p: An object with data fields 'x', ('y', 'z'),
@@ -1069,17 +1075,20 @@ class Field_C(object):
 
 #class Field_C(object):
     def interpolate_delta_function_to_dofs(self, p):
-        """This function takes the 'inner product' of a delta-function located
-           at point p and the basis functions used by the field object.
+        """This function takes the 'inner product' of a weighted delta-function located at
+           the coordinates of p and the dof-attached shape functions that are
+           non-zero at the coordinates of p.
 
-           This can be used e.g., to assemble the space-charge source vector
+           This can be used, e.g., to assemble the space-charge source vector
            {rho*u_i*dx} for the variational form of Poisson's equation from a
-           distribution of delta-function particles.  The basis functions {u_i}
-           are the "test" functions. The field rho is a scalar.
+           distribution of delta-function particles.  The shape functions {u_i} are
+           the "test" functions. The field rho is a scalar.
 
            For non-Cartesian coordinates, the integral to obtain the inner product
            will contain a non-unity Jacobian factor in order to obtain the correct
            volume element.
+
+           This implementation loops on particles, not on cells.
 
            :param p: A point inside the domain of the function.
            :type p: An object with data fields 'x', ('y', 'z'),
@@ -1114,8 +1123,8 @@ class Field_C(object):
         coordinate_dofs = cell.get_coordinate_dofs()
 
         # Compute the basis-function values at the given point, p.
-        # "basis_values" stores the values of the basis_functions at p.
-        # el.space_dimension() is the number of basis functions
+        # "basisValues" stores the values of the basis_functions at p.
+        # el.space_dimension() is the number of non-zero basis functions in the element.
 
         nBF = el.space_dimension()
         # A numpy array is needed to pass this value to evaluate_basis_all() below.
@@ -1167,6 +1176,53 @@ class Field_C(object):
         return
 #    def interpolate_delta_function_to_dofs(self, p):ENDDEF
 
+#class Field_C(object):
+#    def sum_weights_in_cells(self, p):
+    def add_weight_to_cell(self, p):
+        """This function adds the weight of point object p to the Field_C cell array.
+
+           This can be used e.g., to compute a cell number-density (in combination
+           with divide_by_cell_volumes()).
+
+           The underlying dolfin Function is assumed to use scalar contant-in-cell DG
+           elements.
+
+           :param p: A point object inside the domain of the Field_C function.
+           :type p: Has at least the data fields 'cell_index' and 'weight'.
+
+           :returns: None.  The field value in the cell containing the point is incremented
+                     by the weight.
+
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
+        cellIndex = p['cell_index']
+        dofIndex = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
+        self.function_values[dofIndex] += p['weight']
+        
+        return
+#    def add_weight_to_cell(self, p):ENDDEF
+
+#class Field_C(object):
+    def divide_by_cell_volumes(self):
+        """This function divides an array of cell values by the cell volume.
+
+           The cell values are assumed to be represented by Discontinuous Galerkin
+           elements, i.e., the value is constant over the cell.
+
+        """
+
+        # Loop on the cells in the mesh
+        for cell in df_m.cells(self.mesh_M.mesh):
+            cellIndex = cell.index()
+            cellVol = self.mesh_M.cell_volume_dict[cellIndex]
+            # There's only 1 DoF in the cell, since this function uses constant DG elements
+            dofIndex = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
+            self.function_values[dofIndex] /= cellVol
+
+        return
+#    def divide_by_cell_volumes(self):ENDDEF
 
 #class Field_C(object):ENDCLASS
 

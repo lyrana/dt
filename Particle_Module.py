@@ -308,7 +308,7 @@ class Particle_C(object):
         ## Reference to particle number densities (add this after construction of
         ## Particle_C instance)
         # Set to None until the storage is allocated
-        self.number_density_dict = {s: None for s in self.species_names}
+        self.dof_number_density_dict = {s: None for s in self.species_names}
 
         # This is for a reference to a Trajectory_C object to handle particles
         # that have the TRAJECTORY_FLAG bit turned on.  A Trajectory_C object
@@ -444,7 +444,7 @@ class Particle_C(object):
         #         sys.exit(errorMsg)
 
             # Compute the particle number density if storage has been allocated
-            if self.number_density_dict[s] is not None:
+            if self.dof_number_density_dict[s] is not None:
                 self.accumulate_number_density(s)
 
         return
@@ -708,18 +708,23 @@ class Particle_C(object):
 #    def compute_mesh_cell_indices(self):ENDDEF
 
 #class Particle_C(object):
-    def accumulate_number_density(self, species_name):
-        """Add contributions to the number density for the specified kinetic-particle
-           species.
+    def accumulate_number_density(self, species_name, cell_number_density=None):
+        """Compute the DoF and cell number density arrays for the specified
+           kinetic-particle species.
 
-           This implementation doesn't generate an actual number-density, but
-           rather the vector {n*u_i*dx}, where the {u_i} are the shape functions
-           for the i'th DoF. The result needs to be divided by a volume to get an
-           actual density.
+           For the DoF array, this doesn't generate an actual number-density, but
+           rather the inner product vector {n*u_i*dx}, where n is the density
+           function and u_i is the shape function of the i'th DoF. The result needs
+           to be divided by a volume to get a dimension of density.
 
-           Loops on particles, not on cells.
+           For the cell array, the particle weights are summed in each cell and
+           divided by the cell volume.
+
+           This implementation loops on particles, not on cells.
 
            :param species_name: The string name of a kinetic-particle species
+           :param cell_number_density: a scalar Field_C object containing cell values.
+
            :returns: None
 
         """
@@ -731,8 +736,16 @@ class Particle_C(object):
 
         while isinstance(pseg, np_m.ndarray):
             for p in pseg:
-                self.number_density_dict[species_name].interpolate_delta_function_to_dofs(p)
+                # The density projection onto DoF shape functions
+                self.dof_number_density_dict[species_name].interpolate_delta_function_to_dofs(p)
+                # The cell number density
+                if cell_number_density is not None:
+                    cell_number_density.add_weight_to_cell(p)
             (npSeg, pseg) = psa.get_next_segment('out')
+
+        # Convert the cell values to a cell density    
+        if cell_number_density is not None:
+            cell_number_density.divide_by_cell_volumes()
 
         return
 #    def accumulate_number_density(self, species_name):ENDDEF
@@ -752,7 +765,7 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        self.number_density_dict[species_name].set_values(value)
+        self.dof_number_density_dict[species_name].set_values(value)
 
         return
 #    def set_number_density(self, species_name, value):ENDDEF
@@ -837,9 +850,9 @@ class Particle_C(object):
 #                print "position:", pseg['x'] #, pseg['y'] #, pseg['z']
 #                print "velocity:", pseg['ux'] #, pseg['uy'] #, pseg['uz']
 
-                # Interpolate the electric field to the particle positions
-                # NB: This is the negative electric field
-                if ctrl.apply_solved_electric_field:
+                if ctrl.apply_solved_electric_field is None or ctrl.apply_solved_electric_field[sn] is True:
+                    # Interpolate the solved electric field to the particle positions
+                    # NB: This is the negative electric field
                     neg_E_field.interpolate_field_to_points(psegIn, self.negE)
                     # Truncate negE to the number of particles to get the
                     # += operations below to work: These operations need
@@ -853,14 +866,16 @@ class Particle_C(object):
                 else:
                     self.negE[0:npSeg] = self.zeroE[0:npSeg]
                     Eseg = self.negE[0:npSeg] # A ref, not a copy.
-                if ctrl.apply_random_external_electric_field:
-                    external_E_field.interpolate_random_field_to_points(psegIn, self.Eext)
-                    Eext_seg = self.Eext[0:npSeg]
-                    # This is a vector operation on each component of E. This is the best
-                    # you can do for a structured array. I'm not sure you can add arrays
-                    # of E-field vectors in a single statement anyway.
-                    for n in Eseg.dtype.names:
-                        Eseg[n] += Eext_seg[n]
+                if external_E_field is not None:
+                    if ctrl.apply_random_external_electric_field is None or ctrl.apply_random_external_electric_field[sn] is True:
+                        # Interpolate the external electric field to the particle positions
+                        external_E_field.interpolate_random_field_to_points(psegIn, self.Eext)
+                        Eext_seg = self.Eext[0:npSeg]
+                        # This is a vector operation on each component of E. This is the best
+                        # you can do for a structured array. I'm not sure that you can add arrays
+                        # of E-field vectors in a single statement anyway.
+                        for n in Eseg.dtype.names:
+                            Eseg[n] += Eext_seg[n]
 
 #Old way, not using in/out arrays:
                 """
@@ -958,7 +973,7 @@ class Particle_C(object):
                         facetCrossCount += 1
                         # Check for an abnormal number of facet crossings:
                         if facetCrossCount > self.MAX_FACET_CROSS_COUNT:
-                            errorMsg = "%s !!! MAX_FACET_CROSS_COUNT exceeded!!!" % (fncName)
+                            errorMsg = "%s\tExiting because MAX_FACET_CROSS_COUNT = %d was exceeded!" % (fncName, self.MAX_FACET_CROSS_COUNT)
                             sys.exit(errorMsg)
 
                         # Compute dx[], the move vector that starts in
@@ -2064,6 +2079,9 @@ class Particle_C(object):
         return
 
 #class Particle_C(object):
+
+# Note: This function may be superfluous. See sphere1D.py.
+
     def accumulate_charge_density_from_particles(self, charge_density):
         """Compute the charge density contributed by the kinetic particles.
 
@@ -2080,7 +2098,7 @@ class Particle_C(object):
             for s in self.species_names:
                 charge = self.charge[s]
                 # Loop over the number-density arrays
-                charge_density.multiply_add(self.number_density_dict[s], charge)
+                charge_density.multiply_add(self.dof_number_density_dict[s], charge)
         else:
             print fncName, "\tDnT WARNING: The reference to pmesh_M is None"
 
@@ -2196,7 +2214,7 @@ class Particle_C(object):
 
 # For 'r_theta_z' this needs to change?
 
-#HERE: is this using scratch space, or is pVel a new array?
+#CHECK: is this using scratch space, or is pVel a new array?
                 pVel = np_m.random.normal(0.0, thermalSpeed, pDim) + driftVelocity
 
                 # Fill a particle record: (x,y,z, x0,y0,z0, ux,uy,uz, weight,

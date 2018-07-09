@@ -46,7 +46,7 @@ class TestParticleTrajectory(unittest.TestCase):
         self.ctrl.timeloop_count = 0
         self.ctrl.time = 0.0
 
-        self.ctrl.apply_solved_electric_field = True
+        self.ctrl.apply_solved_electric_field = None
         
         ### Particle species input
 

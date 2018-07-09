@@ -63,8 +63,6 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.dt = 0.5
         ctrl.n_timesteps = 100
 
-        ctrl.apply_solved_electric_field = True        
-
         # Create an instance of the DTparticleInput class
         pin = ParticleInput_C()
         # Settings common to all species
@@ -481,7 +479,6 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # These are fast electrons, so the timestep is small
         ctrl.dt = 1.0e-6
         ctrl.n_timesteps = 14
-        ctrl.apply_solved_electric_field = True
         
         # The trajectory object can now be created and added to particle_P
         p_P = particle_P

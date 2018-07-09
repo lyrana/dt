@@ -46,9 +46,16 @@ class DTcontrol_C(object):
         self.B0 = None
 
         # Electric field switches
-        self.apply_solved_electric_field = False
-        self.apply_external_electric_field = False
-        self.apply_random_external_electric_field = False
+#        self.apply_solved_electric_field = False
+#        self.apply_external_electric_field = False
+#        self.apply_random_external_electric_field = False
+
+        # To control the application of the solved and external electric fields by
+        # species, these can be refs to dictionaries that have True/False values
+        # for each species.
+        self.apply_solved_electric_field = None
+        self.apply_external_electric_field = None
+        self.apply_random_external_electric_field = None
         
         # Random number seed
         self.random_seed = np_m.random.seed(1)
@@ -100,9 +107,12 @@ class DTcontrol_C(object):
 
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+
         inChar = raw_input("Press Enter to continue, q to quit, ! to stop pausing...")
         if inChar == 'q':
-            infoMsg = "\n(DnT INFO) %s Exiting because %s was entered"  % (callerName, inChar)
+            print fncName
+            infoMsg = "\t%s Exiting because %s was entered"  % (callerName, inChar)
             sys.exit(infoMsg)
         elif inChar == '!':
             pauseAfterEmit = False

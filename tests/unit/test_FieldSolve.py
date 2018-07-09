@@ -331,6 +331,11 @@ class TestFieldSolve(unittest.TestCase):
             file = df_m.File("negE_test_2_2D.xml")
             file << negElectricField_F.function
 
+        # Try XDMF format
+        xf = df_m.XDMFFile("phi_test_2_2D.xdmf")
+#        xf.write(phi_F.function, 0.1)
+        xf.write(phi_F.function)
+            
         return
 #    def test_2_2D_cyl_laplace_solver(self):ENDDEF
 
