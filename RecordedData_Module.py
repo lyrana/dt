@@ -186,8 +186,8 @@ class ParticleHistory_C(History_C):
             for sp in species_names:
                 sphist = sp+'_'+hist
                 particleSpeciesHistories.append(sphist)
-                sp_1p_hist = sp+'_1p_'+hist
-                particleSpeciesHistories.append(sp_1p_hist)
+                sp_pp_hist = sp+'_pp_'+hist
+                particleSpeciesHistories.append(sp_pp_hist)
                 
         historyList = self.history_list_base + histin.scalar_histories + particleSpeciesHistories
         formatList = self.format_list_base + [np_m.float32 for i in range(len(histin.scalar_histories))] + [np_m.float32 for i in range(len(particleSpeciesHistories))]

@@ -2214,8 +2214,7 @@ class Particle_C(object):
 
 # For 'r_theta_z' this needs to change?
 
-#CHECK: is this using scratch space, or is pVel a new array?
-                pVel = np_m.random.normal(0.0, thermalSpeed, pDim) + driftVelocity
+                pVel[:] = np_m.random.normal(0.0, thermalSpeed, pDim) + driftVelocity
 
                 # Fill a particle record: (x,y,z, x0,y0,z0, ux,uy,uz, weight,
                 #                         bitflags, cell_index)
