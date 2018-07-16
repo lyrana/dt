@@ -4,7 +4,7 @@
 # See sphere1D.ods for setting up parameters
 
 __version__ = 0.1
-__author__ = 'Copyright (C) 2017 L. D. Hughes'
+__author__ = 'Copyright (C) 2017-2018 L. D. Hughes'
 __all__ = ['Example_C',]
 
 """A spherical source region creates ion-electron pairs.  The electrons are hot and
@@ -13,15 +13,41 @@ __all__ = ['Example_C',]
 
 """
 #### Commentary
+
+#  The radial extent of the simulation is from 'scr.rmin' to 'scr.rmax'.
+
+#  The number of cells is 'scr.nr'.
+
+#  The Debye length is specified by the number of cells in it.
+
+#  The size of the source-region where ions and electrons are created is given as a number
+#  of Debye lengths
+
+
+#  Key physical parameters are:
+
+#       * The electron temperature ('scr.T_e_eV'). This determines the electron
+#         pressure, and so the ambipolar electric field set up by the electrons.
+
+#       * The number of Debye-lengths in the simulation region.
+
+#       * The external random-electric-field amplitude
+#         ('scr.random_external_electric_field_amplitude').  This is an external energy source
+#         that heats the electrons in the source region.  Without this, cold electrons
+#         will accumulate in this region while the hotter ones escape.
+
+#       * The potential difference ('scr.confining_potential') between the center and the
+#         edge of the simulation region.  This is the confining potential for the electrons.
+#         (This is not a parameter if the region goes to r = 0).
+
+#  Key numerical parameters are:
 #
-#  The key parameters are:
+#       * 'numberPerCell' for the ions and electrons.
+#         
+
+#  Key output parameters are:
 #
-#      1. The electron temperature ('T_e_eV'). This determines how fast the electrons
-#         escape.
-#
-#      2. The potential difference ('confining_potential') between the center and the
-#         edge of the region.  This is the confining potential for the electrons.
-#      
+#       * 'ctrl.particle_output_interval'.
 #
 
 #### Section Index
@@ -32,14 +58,16 @@ __all__ = ['Example_C',]
 ## IM. Imported Modules
 ## OF. Terminal output flags
 ## PC. Physical constants
-## SP. Scratch-pad for calculating parameter values.
+## SP. scratch-paD for calculating parameter values.
 ##     SP.1. Calculate spatial parameters
 ##     SP.2. Calculate electron parameters
 ##     SP.3. Calculate ion parameters
 ##     SP.4. Calculate field parameters
 ## SC. Simulation Control
-##     Set timestep value and number of timesteps.
-##     Output: Specify field and particle output files and output frequency.
+##     SC.1. Titles
+##     SC.2. Set timestep value and number of timesteps.
+##     SC.3. Electric field control
+##     SC.4. Output: Specify field and particle output files and output frequency.
 ## FM. Field Mesh
 ## PS. Particle Species
 ##     PS.1. Define the species and provide storage.
@@ -54,7 +82,12 @@ __all__ = ['Example_C',]
 ##           PS.3.2. Electron source near r=0
 ##           PS.3.3. Put all the particle source data into a dictionary
 ## TRJ. Particle Trajectories
+## DEN. Particle Densities
+##      DEN.1. Create DoF number-density arrays on the particle mesh for each kinetic species
+##      DEN.2. Create cell number-density arrays on the particle mesh for each kinetic species
 ## SRC. Source terms for the electric potential
+##      SRC.1. Charge-density obtained from kinetic particles
+##      SRC.2. Charge-density from functions
 ## FS. Field Solver
 ##     FS.1. The scalar electric potential
 ##           FS.1.1. Set boundary values of the potential
@@ -62,9 +95,17 @@ __all__ = ['Example_C',]
 ##           FS.2.1. Properties of the electric field
 ##           FS.2.2. Storage for the electric field
 ##     FS.3. The potential field solver
-##           FS.3.1. The potential field solver algorithm parameters
-##           FS.3.2. Create the potential field solver object
+##           FS.3.1. Compute dynamic electron permittivity (if implicit)
+##           FS.3.2. Set the potential field solver algorithm parameters
+##           FS.3.3. Create the potential field solver object
+## EXT. External Fields
+##      EXT.1. Create storage for an external electric field
 ## HST. Time-Histories
+##      HST.1. History input
+##             HST.1.2. Global field histories
+##             HST.1.3. Point-probe field histories
+##             HST.1.4. Numerical parameter histories
+##      HST.2. Create the history objects
 ## CHK. Check the input
 ## INIT. Initialization
 ##       INIT.1. Do an initial field solve without particles
@@ -80,7 +121,7 @@ __all__ = ['Example_C',]
 ##      RUN.1. Advance the particles one timestep
 ##      RUN.2. Add particles from source regions
 ##      RUN.3. Write a snapshot of the particles
-##      RUN.4. Update the electric charge density
+##      RUN.4. Update the particle densities and electric charge density
 ##      RUN.5. Update the electric field
 ##             RUN.5.1. Set field-plotting parameters
 ##             RUN.5.2. Call the field solver
@@ -139,10 +180,13 @@ plotTimeHistories = True # Plot the recorded values vs. time.
 
 ############################## PC. Physical constants ##############################
 
+# DO NOT MODIFY THESE VALUES!
+# These are abbreviations for physical constants.
+# Values used in the simulation should be written in terms of these.
 m_e = 1.0*MyPlasmaUnits_C.electron_mass
 q_e = 1.0*MyPlasmaUnits_C.elem_charge
 
-m_Hplus = 1.0*MyPlasmaUnits_C.AMU
+m_AMU = 1.0*MyPlasmaUnits_C.AMU
 
 eps_0 = MyPlasmaUnits_C.epsilon_0
 k_B = MyPlasmaUnits_C.boltzmann_constant
@@ -164,34 +208,38 @@ scr = DTscratch_C()
 # Start with the size of the computational domain
 #scr.rmin = 1.0
 scr.rmin = 0.0
-scr.rmax = 4.0
+scr.rmax = 20.0 # 40.0
 # Set the spatial resolution
-scr.nr = 10
+scr.nr = 50
 
 # Compute a rough cell-size (The mesh can be stretched non-uniformly)
 scr.dr_av = (scr.rmax-scr.rmin)/scr.nr
+print "Rough cell-size = %.3g m" % scr.dr_av
 
-# Specify the desired Debye length as a fraction of the cell-size
-scr.lambda_D = 0.5*scr.dr_av
+# Specify the desired Debye length as a multiple of the cell-size
+scr.lambda_D = 2.0*scr.dr_av
 print "Electron Debye length = %.3g m" % scr.lambda_D
+print "There are roughly %.3g cells per electron Debye length" % (scr.lambda_D/scr.dr_av)
+print "There are roughly %.3g Debye lengths in the computational region" % ((scr.rmax-scr.rmin)/scr.lambda_D)
 ctrl = DTcontrol_C()
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 ########## SP.2. Calculate electron parameters
 
+scr.electron_mass = m_e
 # Specify the electron temperature
-scr.T_e_eV = 6.0
+scr.T_e_eV = 0.02 # 6.0
 
 # Convert this to an electron thermal velocity
 scr.vthermal_e = np_m.sqrt(q_e*scr.T_e_eV/m_e)
-print "Electron thermal velocity = %.3g m/s" % scr.vthermal_e
+print "For T_e = %.3g eV, electron thermal velocity = %.3g m/s" % (scr.T_e_eV, scr.vthermal_e)
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Compute the electron plasme frequency needed to get the above Debye length
 scr.omega_e = scr.vthermal_e/scr.lambda_D
-print "Electron plasma frequency = %.3g rad/s" % scr.omega_e
+print "For above electron Debye length, electron plasma frequency = %.3g rad/s" % scr.omega_e
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -203,16 +251,20 @@ if emitInput is True:
 
 # Compute the electron density from the plasma frequency
 scr.electron_density = m_e*eps_0*(scr.omega_e/q_e)**2
-print "Electron density = %.3g per m^{-3}" % scr.electron_density
+print "For above electron plasma-frequency, electron density = %.3g per m^{-3}" % scr.electron_density
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 ########## SP.3. Calculate ion parameters
 
+scr.ion_mass = 100.0*scr.electron_mass
+
 # Compute the ion sound speed
 scr.ion_charge_state = 1.0
-scr.ion_sound_speed = np_m.sqrt(scr.ion_charge_state*q_e*scr.T_e_eV/m_Hplus)
-print "Ion sound speed = %.3g m/s" % scr.ion_sound_speed
+scr.ion_sound_speed = np_m.sqrt(scr.ion_charge_state*q_e*scr.T_e_eV/scr.ion_mass)
+# If the mesh goes to r=0, the following is used to estimate the ion drift out of the source region:
+scr.ion_sound_speed_multiplier = 0.1
+print "Ion sound speed = %.3g m/s, multiplier is set to %.3g" % (scr.ion_sound_speed, scr.ion_sound_speed_multiplier)
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -221,25 +273,27 @@ if emitInput is True:
 ########## SP.4. Set and calculate field parameters
 
 # Set the confining potential (in Volts)
-scr.confining_potential = 10.0*scr.T_e_eV
-scr.spacecharge_factor = 0.01
-
-scr.external_electric_field_amplitude = 0.1
+#scr.confining_potential = 10.0*scr.T_e_eV
 
 ############################## SC. Simulation Control ##############################
 
-### Titles
+##### SC.1. Titles
+
 # Run identifier
 ctrl.title = "sphere1D"
 # Run author
 ctrl.author = "tph"
 
-### Timestepping
+##### SC.2. Timestepping
+
 ctrl.n_timesteps = 100 # 100
 
-ctrl.dt = 4.0e-7 # from sphere1D.ods
+ctrl.dt = 1.0e-5 # sec 4.0e-7 from sphere1D.ods
 if ctrl.dt > scr.dt_max:
-    print "%s\n(DnT WARNING) Timestep exceeds stability limit by %.3g" % (fileName, ctrl.dt/scr.dt_max)
+    print "%s\n\tTimestep exceeds stability limit by %.3g" % (fileName, ctrl.dt/scr.dt_max)
+else:
+    print "%s\n\tTimestep is %.3g of stability limit" % (fileName, ctrl.dt/scr.dt_max)
+    
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
@@ -251,14 +305,27 @@ ctrl.time = 0.0
 ctrl.random_seed = 1
 np_m.random.seed(ctrl.random_seed)
 
-### Electric field switches
-ctrl.apply_solved_electric_field = True
-ctrl.apply_external_electric_field = False
-ctrl.apply_random_external_electric_field = True
+##### SC.3. Electric field control
 
-### Set parameters for writing field output files
-ctrl.potential_field_output_file = ctrl.title + "-phi.pvd"
-ctrl.electric_field_output_file = ctrl.title + "-E.pvd"
+# Electric field control
+
+# Set the switches to empty dictionaries here if and only if you want to set
+# per-species values in PS.1.1. below.  If the following lines are commented out, then
+# the forces WILL BE APPLIED.
+#ctrl.apply_solved_electric_field = {}
+#ctrl.apply_random_external_electric_field = {}
+
+spacechargeFactor = 1.0
+randomExternalElectricFieldAmplitude = 0.1
+
+##### SC.4. Output control
+
+###Set parameters for writing field output files
+ctrl.electron_density_output_file = ctrl.title + "-ne.xdmf"
+ctrl.ion_density_output_file = ctrl.title + "-ni.xdmf"
+ctrl.potential_field_output_file = ctrl.title + "-phi.xdmf"
+# VTK output is deprecated: ctrl.potential_field_output_file = ctrl.title + "-phi.pvd"
+# VTK output is deprecated: ctrl.electric_field_output_file = ctrl.title + "-E.pvd"
 ctrl.field_output_interval = 1
 
 ### Set parameters for writing particle output to an h5part file
@@ -266,7 +333,8 @@ ctrl.field_output_interval = 1
 ctrl.particle_output_file = ctrl.title + ".h5part"
 ctrl.particle_output_interval = 1
 # Available attributes: 'species_index' and any particle-record name
-ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'unique_ID')
+# e.g., 'weight', 'bit-flags', 'cell-index', 'unique_ID', 'crossings'
+ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'unique_ID', 'crossings')
 
 if emitInput is True:
     print ""
@@ -347,11 +415,23 @@ mass = 1.0*m_e
 dynamics = 'explicit'
 electron_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
+# Set force-application switches for this species
+if ctrl.apply_solved_electric_field is not None:
+    ctrl.apply_solved_electric_field[speciesName] = True
+if ctrl.apply_random_external_electric_field is not None:
+    ctrl.apply_random_external_electric_field[speciesName] = False
+
 speciesName = 'Hplus'
 charge = 1.0*q_e
-mass = 1.0*m_Hplus
+mass = scr.ion_mass
 dynamics = 'explicit'
 Hplus_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+# Set force-application switches for this species
+if ctrl.apply_solved_electric_field is not None:
+    ctrl.apply_solved_electric_field[speciesName] = True
+if ctrl.apply_random_external_electric_field is not None:
+    ctrl.apply_random_external_electric_field[speciesName] = False
 
 # Add the two species to particle input:
 pin.particle_species = (electron_S, Hplus_S,)
@@ -478,12 +558,13 @@ if ionSpeciesName in particle_P.species_names:
     ionCharge = particle_P.charge[ionSpeciesName]
     ionMass = particle_P.mass[ionSpeciesName]
 else:
-    errorMsg = "(DnT ERROR) %s The species %s has not been defined" % (fncName, ionSpeciesName)
+    errorMsg = "(DnT ERROR) %s The species %s has not been defined" % (fileName, ionSpeciesName)
     sys.exit(errorMsg)
 
 ## PS.3.1.2. Geometry of Hplus source region
 rminHplus = scr.rmin
-rmaxHplus = rminHplus + 2.0*scr.dr_av
+#rmaxHplus = rminHplus + 2.0*scr.dr_av
+rmaxHplus = rminHplus + 5.0*scr.lambda_D
 HplusSourceRegion = RectangularRegion_C(particle_P.pmesh_M, rminHplus, rmaxHplus)
 
 if emitInput is True:
@@ -500,20 +581,28 @@ particleGenerator = particle_P.create_maxwellian_particles
 # !!!The function could provide it's own type
 #sourceDistributionType = 'functional'
 
-# Set the drift velocity >= the ion sound speed
+# For injection at some small inner radius, set the drift velocity >= the ion sound speed
 velocity_coordinate_system = 'r_theta_z' # This sets the interpretation of the
                                          # following values
 # vdrift_r = 2.64e4 # 1.1 times the sound speed
 # vdrift_theta = 0.0
 # vdrift_z = 0.0
 #vdrift_1 = 1.1*scr.ion_sound_speed # 1.1 times the sound speed
-vdrift_1 = 10.0*scr.ion_sound_speed
+#vdrift_1 = scr.ion_sound_speed_multiplier*scr.ion_sound_speed
+
+# If the mesh goes to r=0, set the ion drift to zero ...
+# vdrift_1 = 0.0
 vdrift_2 = 0.0
 vdrift_3 = 0.0
+# ... and make an estimate of the average ion drift-velocity in the source region:
+vdrift_av = scr.ion_sound_speed_multiplier*scr.ion_sound_speed
+vdrift_1 = 0.5*vdrift_av
+
+# 9jun18: instead, give the ions a speed to get them moving
 
 # Compute the flux of ions per unit area out of the source region (assuming the ion
 # charge-density equals the electron charge-density):
-ion_flux = scr.electron_density*vdrift_1/scr.ion_charge_state
+ion_flux = scr.electron_density*vdrift_av/scr.ion_charge_state
 
 # The ions are replenished by calling the source function
 timeStepInterval = 1 # Timesteps between invocations of the source function
@@ -529,7 +618,7 @@ if numberDensityIncrementHplus < 0:
     sys.exit()
 
 # Compute a value for thermalSpeed from the temperature in eV
-temperature_eV = 0.1 # About 1000K
+temperature_eV = 0.0 # 0.1 is about 1000K
 
 temp_joule = temperature_eV*MyPlasmaUnits_C.elem_charge
 thermalSpeed = np_m.sqrt(2.0*temp_joule/ionMass)
@@ -687,29 +776,49 @@ traj_T = Trajectory_C(trajin, ctrl, particle_P.explicit_species, particle_P.impl
 ## Attach this to the particle object.
 particle_P.traj_T = traj_T
 
+############################## DEN. Particle Densities ##############################
+
+########## DEN.1. Create DoF number-density arrays on the particle mesh for each kinetic species
+
+## Note: These arrays contain the inner product of the particle density function and
+## the shape-function attached to each DoF.
+
+dofNumberDensityElementType = 'Lagrange'
+dofNumberDensityElementDegree = 1
+dofNumberDensityFieldType = 'scalar'
+
+for s in particle_P.species_names:
+    particle_P.dof_number_density_dict[s] = Field_C(mesh_M=particle_P.pmesh_M,
+                                                    element_type=dofNumberDensityElementType,
+                                                    element_degree=dofNumberDensityElementDegree,
+                                                    field_type=dofNumberDensityFieldType)
+
+########## DEN.2. Create cell number-density arrays on the particle mesh for each kinetic species
+
+# These are used to compute the electron permittivity, and also as diagnostics.
+
+cellNumberDensityElementType = 'DG'
+cellNumberDensityElementDegree = 0
+cellNumberDensityFieldType = 'scalar'
+
+# Don't make the cell density an attribute of Particle_C (yet)
+for s in particle_P.species_names:
+    cell_number_density_dict[s] = Field_C(mesh_M=particle_P.pmesh_M,
+                                                     element_type=cellNumberDensityElementType,
+                                                     element_degree=cellNumberDensityElementDegree,
+                                                     field_type=cellNumberDensityFieldType)
 
 ############################## SRC. Source terms for the electric potential ##############################
 
 ########## SRC.1. Charge-density obtained from kinetic particles
 
-##### SRC.1.1. Create number-density arrays on the particle mesh for each kinetic species
-number_density_element_type = 'Lagrange'
-number_density_element_degree = 1
-number_density_field_type = 'scalar'
-
-for s in particle_P.species_names:
-    particle_P.number_density_dict[s] = Field_C(mesh_M=particle_P.pmesh_M,
-                                               element_type=number_density_element_type,
-                                               element_degree=number_density_element_degree,
-                                               field_type=number_density_field_type)
-
-## SRC.1.2. Create a charge-density array on the field mesh
+# This is obained from the dof_number_density_dict[] arrays and so has same attributes
 assembledCharge_F = Field_C(mesh_M=particle_P.pmesh_M,
-                            element_type=number_density_element_type,
-                            element_degree=number_density_element_degree,
-                            field_type=number_density_field_type)
+                            element_type=dofNumberDensityElementType,
+                            element_degree=dofNumberDensityElementDegree,
+                            field_type=dofNumberDensityFieldType)
 
-########## SRC.2 Charge-density from functions
+########## SRC.2. Charge-density from functions
 
 # Attach this to the particle object?
 #particle_P.charge_density = chargeDensity_F
@@ -774,12 +883,13 @@ if phiElementDegree == 1:
     electricFieldElementType = 'DG'
 else:
     electricFieldElementType = 'Lagrange'
+electricFieldFieldType = 'vector'
 
 ##### FS.2.2. Storage for the electric field
 negElectricField_F = Field_C(mesh_M=particle_P.pmesh_M,
                              element_type=electricFieldElementType,
                              element_degree=phiElementDegree-1,
-                             field_type='vector')
+                             field_type=electricFieldFieldType)
 
 if emitInput is True:
     print ""
@@ -790,11 +900,20 @@ if emitInput is True:
 
 ########## FS.3. The potential field solver
     
-##### FS.3.1. The potential field solver algorithm parameters
+##### FS.3.1. Dynamic electron permittivity (if the electrons are treated implicitly)
+
+# This is obtained from the cell_number_density_dict[] arrays, and so has the same attributes.
+
+electronPermittivity_F = Field_C(mesh_M=particle_P.pmesh_M,
+                                 element_type=cellNumberDensityElementType,
+                                 element_degree=cellNumberDensityElementDegree,
+                                 field_type=cellNumberDensityFieldType)
+
+##### FS.3.2. The potential field solver algorithm parameters
 linearSolver = 'lu'
 preconditioner = None
 
-##### FS.3.2. Create the potential field solver object
+##### FS.3.3. Create the potential field solver object
 fieldBoundaryMarker = particle_P.pmesh_M.field_boundary_marker
 if emitInput is True:
     print ""
@@ -819,19 +938,17 @@ if emitInput is True:
 ########## EXT.1. Create storage for an external electric field
 
 # Use the same element type and degree as in the field solver.
-if ctrl.apply_external_electric_field:
-    externalElectricField_F = Field_C(mesh_M=particle_P.pmesh_M,
-                                      element_type=electricFieldElementType,
-                                      element_degree=phiElementDegree-1,
-                                      field_type='vector')
-    
-# Put non-zero external electric field values into the electron source region
-    externalElectricField_F.set_gaussian_values(scr.external_electric_field_amplitude, domain=electronSourceRegion)
-
-    print "externalElectricField values:", externalElectricField_F.function_values.get_local()
+if randomExternalElectricFieldAmplitude != 0.0:
+    randomExternalElectricField_F = Field_C(mesh_M=particle_P.pmesh_M,
+                                            element_type=electricFieldElementType,
+                                            element_degree=phiElementDegree-1,
+                                            field_type=electricFieldFieldType)
+    # Put non-zero external electric field values into the electron source region
+    randomExternalElectricField_F.set_values(randomExternalElectricFieldAmplitude, subdomain=electronSourceRegion)
+    print "randomExternalElectricField values:", randomExternalElectricField_F.function_values.get_local()
 
 #    import matplotlib.pyplot as mplot_m
-#    df_m.plot(externalElectricField_F.function, title="External E")
+#    df_m.plot(randomExternalElectricField_F.function, title="External E")
 #    mplot_m.show()
 #    sys.exit()
 
@@ -896,9 +1013,11 @@ potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 
 # Open the field output files and write the initial fields (no particles)
 if ctrl.field_output_interval is not None:
-    PotentialFieldOutputFile = df_m.File(ctrl.potential_field_output_file)
+# VTK output is deprecated: potentialFieldOutputFile = df_m.File(ctrl.potential_field_output_file)
+    potentialFieldOutputFile = df_m.XDMFFile(ctrl.potential_field_output_file)
     phi_F.function.rename("phi", "phi_label")
-    PotentialFieldOutputFile << phi_F.function
+# VTK output is deprecated: potentialFieldOutputFile << phi_F.function
+    potentialFieldOutputFile.write(phi_F.function, ctrl.time)
 
     # !!! VTK cannot write a vector field on a 1D grid.
     # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
@@ -913,7 +1032,7 @@ if ctrl.field_output_interval is not None:
 if ctrl.particle_output_interval is not None:
     particle_P.initialize_particle_output_file(ctrl)
 
-##### INIT.2.1. Recalculate initial electric field
+##### INIT.2.1. Recalculate the initial electric field
 if particle_P.initial_particles_dict is not None:
     printFlags = {}
     for s in particle_P.species_names:
@@ -927,15 +1046,15 @@ if particle_P.initial_particles_dict is not None:
     # This will capture the FIRST point on the trajectories of marked particles
     if particle_P.initial_particles_dict is not None:
         if particle_P.traj_T is not None:
-            particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field)
+            particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
 
     ##### INIT.2.1.1. Recompute the initial electrostatic field with particle spacecharge
     ## Accumulate number-density from kinetic particles
     ## and sum into the total charge-density.
     for s in particles_P.species_names:
-        particles_P.accumulate_number_density(s)
+        particles_P.accumulate_number_density(s, cell_number_density_dict[s])
         q = particles_P.charge[s]
-        assembledCharge_F.multiply_add(particle_P.number_density_dict[s], multiplier=q)        
+        assembledCharge_F.multiply_add(particle_P.dof_number_density_dict[s], multiplier=q)        
 
 # This duplicates the above loop!
 #    particle_P.accumulate_charge_density_from_particles(assembledCharge_F)
@@ -945,22 +1064,25 @@ if particle_P.initial_particles_dict is not None:
         print "********** Plot recomputed initial fields with charge-density from particles **********"
     plotTitleInitial = fileName + "Initial field (with particles)"
 #    potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
-    potentialsolve.solve_for_phi(assembled_charge=assembledCharge_F, assembled_charge_factor=scr.spacecharge_factor, plot_flag=plotInitialFields, plot_title=plotTitleInitial)
+    potentialsolve.solve_for_phi(assembled_charge=assembledCharge_F, assembled_charge_factor=spacechargeFactor, plot_flag=plotInitialFields, plot_title=plotTitleInitial)
     
-
-    ##### INIT.2.1.2. Add in a random electric field
-    if ctrl.apply_external_electric_field is not None:
+    ##### INIT.2.1.2. Add in an external electric field
+#TODO: Change the following when code for a constant electric field is needed.
+#      A random field is now applied inside the particle-advance loop.
+#    if ctrl.apply_external_electric_field is not None:
+#    if scr.external_electric_field_amplitude != 0.0:
         # Compute new random fields
-        externalElectricField_F.set_gaussian_values(scr.external_electric_field_amplitude, domain=electronSourceRegion)
+#        randomExternalElectricField_F.set_gaussian_values(scr.random_external_electric_field_amplitude, domain=electronSourceRegion)
         # Add these to the computed (negative) electric field. 
-        potentialsolve.neg_electric_field.multiply_add(externalElectricField_F, multiplier=-1.0)
+#        potentialsolve.neg_electric_field.multiply_add(randomExternalElectricField_F, multiplier=-1.0)
         
     # Write out the initial fields (with contribution from initial particles and external fields)
     if ctrl.field_output_interval is not None:
         phi_F.function.rename("phi", "phi_label")
-        PotentialFieldOutputFile << phi_F.function
+# VTK output is deprecated: potentialFieldOutputFile << phi_F.function
+        potentialFieldOutputFile.write(phi_F.function, ctrl.time)
 
-    # !!! VTK cannot write a vector field on a 1D grid.
+    # !!! VTK cannot write a vector field on a 1D grid. VTK is no longer in Dolfin.
     # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
     # negElectricField_F.function.rename("E", "E_label")
     # ElectricFieldOutputFile << negElectricField_F.function
@@ -988,12 +1110,12 @@ for istep in xrange(ctrl.n_timesteps):
     ########## RUN.1. Advance the particles one timestep
     print ""
     print "***** Advance %d particles to step %d, time %.3g *****" % (particle_P.get_total_particle_count(), ctrl.timeloop_count, ctrl.time)
-    particle_P.move_particles_in_electrostatic_field(ctrl, neg_E_field=potentialsolve.neg_electric_field)
+    particle_P.move_particles_in_electrostatic_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
 
     ## Record trajectory data for all marked particles
     if particle_P.traj_T is not None:
         if (ctrl.timeloop_count % particle_P.traj_T.skip == 0):
-            particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field)
+            particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
 
     ########## RUN.2. Add particles from source regions
     # Note: if a new particle gets marked for a trajectory, the first datum is
@@ -1006,11 +1128,11 @@ for istep in xrange(ctrl.n_timesteps):
         if ctrl.timeloop_count % ctrl.particle_output_interval == 0:
             particle_P.write_particles_to_file(ctrl)
 
-    ########## RUN.4. Update the electric charge density
+    ########## RUN.4. Update the particle densities and electric charge density
     for s in particle_P.species_names:
         particle_P.accumulate_number_density(s)
         q = particle_P.charge[s]
-        assembledCharge_F.multiply_add(particle_P.number_density_dict[s], multiplier=q)
+        assembledCharge_F.multiply_add(particle_P.dof_number_density_dict[s], multiplier=q)
 
 # this repeats the above loop:
 #    particle_P.accumulate_charge_density_from_particles(assembledCharge_F)
@@ -1036,24 +1158,25 @@ for istep in xrange(ctrl.n_timesteps):
 
 # Apply assembled_factor before call by calling a "multiply" function?
 
-    potentialsolve.solve_for_phi(assembled_charge=assembledCharge_F, assembled_charge_factor=scr.spacecharge_factor, plot_flag=plotFields, plot_title=plotTitle)
+    potentialsolve.solve_for_phi(assembled_charge=assembledCharge_F, assembled_charge_factor=spacechargeFactor, plot_flag=plotFields, plot_title=plotTitle)
 
     ##### RUN.5.3. Add an external electric field
-    if ctrl.apply_external_electric_field is not None:
+# TODO: Modify the following for a non-random external field, when needed.    
+#    if ctrl.apply_external_electric_field is not None:
         # Compute new random fields
-        externalElectricField_F.set_gaussian_values(scr.external_electric_field_amplitude, domain=electronSourceRegion)
+#        randomExternalElectricField_F.set_gaussian_values(scr.random_external_electric_field_amplitude, domain=electronSourceRegion)
         # Add the external field to the self-electric field
-        potentialsolve.neg_electric_field.multiply_add(externalElectricField_F, multiplier=None)
+#        potentialsolve.neg_electric_field.multiply_add(randomExternalElectricField_F, multiplier=None)
 
-#        print "negElectricField_F:", negElectricField_F.function_values.get_local()
-        print "neg_electric_field:", potentialsolve.neg_electric_field.function_values.get_local()
-        
-        
+#        print "neg_electric_field:", potentialsolve.neg_electric_field.function_values.get_local()
+
+
     ##### RUN.5.4. Write a snapshot of the fields
     if ctrl.field_output_interval is not None:
         if ctrl.timeloop_count % ctrl.field_output_interval == 0:
             phi_F.function.rename("phi", "phi_label")
-            PotentialFieldOutputFile << phi_F.function
+# VTK output is deprecated: potentialFieldOutputFile << phi_F.function
+            potentialFieldOutputFile.write(phi_F.function, ctrl.time)            
     
     ########## RUN.6. Record history data for this timestep
     if particle_P.histories is not None:
@@ -1088,7 +1211,7 @@ if particle_P.traj_T is not None:
     print ""
     print "********** Record final particle trajectory data **********"
 #    print ""
-    particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field)
+    particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
 
 ##### FIN.3. Plot the particle trajectories on the particle mesh.
 if os.environ.get('DISPLAY') is not None and plotTrajectoriesOnMesh is True:

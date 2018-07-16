@@ -113,37 +113,37 @@ class TestChargeDensity(unittest.TestCase):
         # particle weight-distribution times the element basis
         # functions.
 
-        numberDensityElementType = 'Lagrange'
-        numberDensityElementDegree = 1
-        numberDensityFieldType = 'scalar'
-        numberDensity_F = Field_C(mesh1d_M,
-                                  element_type=numberDensityElementType,
-                                  element_degree=numberDensityElementDegree,
-                                  field_type=numberDensityFieldType)
+        dofNumberDensityElementType = 'Lagrange'
+        dofNumberDensityElementDegree = 1
+        dofNumberDensityFieldType = 'scalar'
+        dofNumberDensity_F = Field_C(mesh1d_M,
+                                  element_type=dofNumberDensityElementType,
+                                  element_degree=dofNumberDensityElementDegree,
+                                  field_type=dofNumberDensityFieldType)
 
-#        print "size of numberDensity:", numberDensity.function.vector().size()
+#        print "size of dofNumberDensity:", dofNumberDensity.function.vector().size()
 
         # The expected number-density values are put into a numpy array
-        numberDensityExpected = np_m.empty(numberDensity_F.function.vector().size(), dtype=np_m.float64)
+        dofNumberDensityExpected = np_m.empty(dofNumberDensity_F.function.vector().size(), dtype=np_m.float64)
 
         # Note that these are in the vertex numbering order, not DoF order. We will
-        # need to compare numberDensityExpected[ivert] with numberDensityCalc[idof],
+        # need to compare dofNumberDensityExpected[ivert] with dofNumberDensityCalc[idof],
         # where idof is the DoF number corresponding to ivert (see conversion below).
-        numberDensityExpected[0] = 1.0e10
-        numberDensityExpected[1] = 6.5e10
-        numberDensityExpected[2] = 1.5e10
+        dofNumberDensityExpected[0] = 1.0e10
+        dofNumberDensityExpected[1] = 6.5e10
+        dofNumberDensityExpected[2] = 1.5e10
 
         for p in particles:
-            numberDensity_F.integrate_delta_function(p)
-#            numberDensity_F.interpolate_delta_function_to_dofs(p)
+            dofNumberDensity_F.integrate_delta_function(p) # This uses dolfin.PointSource(), which does a search for the cell containing p.
+#            dofNumberDensity_F.interpolate_delta_function_to_dofs(p) # This doesn't have to search for the cell containing p.
 
         # array() returns a numpy array that has a copy of the values in vector().
-        numberDensityCalc = numberDensity_F.function.vector().get_local()
-#        print numberDensityCalc
+        dofNumberDensityCalc = dofNumberDensity_F.function.vector().get_local()
+#        print dofNumberDensityCalc
 
         # Compare results
-        functionSpace = numberDensity_F.function_space
-        gdim = numberDensity_F.mesh_gdim
+        functionSpace = dofNumberDensity_F.function_space
+        gdim = dofNumberDensity_F.mesh_gdim
         # Reshape the coordinates to get (x), or (x,y), or (x,y,z) tuples. The
         # index "-1" is short-hand for the last element of the array.
         if df_m.DOLFIN_VERSION_STRING > "1.5.0":
@@ -160,11 +160,11 @@ class TestChargeDensity(unittest.TestCase):
         # the vertices.
         v2d=df_m.vertex_to_dof_map(functionSpace)
 
-        for ivert in range(len(numberDensityExpected)):
+        for ivert in range(len(dofNumberDensityExpected)):
             idof = v2d[ivert]
 #            print "vertex", ivert, "is DoF index", idof
-#            print "numberDensityCalc, numberDensityExpected =", numberDensityCalc[idof], numberDensityExpected[ivert]
-            self.assertAlmostEqual(numberDensityCalc[idof], numberDensityExpected[ivert], places=3, msg="Wrong value of numberDensity")
+#            print "dofNumberDensityCalc, dofNumberDensityExpected =", dofNumberDensityCalc[idof], dofNumberDensityExpected[ivert]
+            self.assertAlmostEqual(dofNumberDensityCalc[idof], dofNumberDensityExpected[ivert], places=3, msg="Wrong value of dofNumberDensity")
 
         return
 #    def test_1_interpolate_particle_density_to_1Dmesh(self):ENDDEF
@@ -254,46 +254,48 @@ class TestChargeDensity(unittest.TestCase):
         particles[1] = p1
         particles[2] = p2
 
-        # Allocate storage for the number-density values.  Then
-        # number-density array stores the integral of the physical
-        # charge-distribution times the element basis functions.
+        ###### DoF density vector
+        
+        # Allocate storage for the number-density values.  The number-density array
+        # stores the integral of the physical density-distribution times the element
+        # basis functions.
 
-        numberDensityElementType = 'Lagrange'
-        numberDensityElementDegree = 1
-        numberDensityFieldType = 'scalar'
-        numberDensity_F = Field_C(pmesh2d_M,
-                                  element_type=numberDensityElementType,
-                                  element_degree=numberDensityElementDegree,
-                                  field_type=numberDensityFieldType)
+        dofNumberDensityElementType = 'Lagrange'
+        dofNumberDensityElementDegree = 1
+        dofNumberDensityFieldType = 'scalar'
+        dofNumberDensity_F = Field_C(pmesh2d_M,
+                                  element_type=dofNumberDensityElementType,
+                                  element_degree=dofNumberDensityElementDegree,
+                                  field_type=dofNumberDensityFieldType)
 
-#        print "size of numberDensity:", numberDensity_F.function.vector().size()
+#        print "size of dofNumberDensity:", dofNumberDensity_F.function.vector().size()
 
         # The expected number-density values from test_ChargeDensity.ods:test_2
-        numberDensityExpected = np_m.empty(numberDensity_F.function.vector().size(), dtype=np_m.float64)
+        dofNumberDensityExpected = np_m.empty(dofNumberDensity_F.function.vector().size(), dtype=np_m.float64)
 
         # Note that these are in the vertex numbering order, not DoF order. We will
-        # need to compare numberDensityExpected[ivert] with numberDensityCalc[idof],
+        # need to compare dofNumberDensityExpected[ivert] with dofNumberDensityCalc[idof],
         # where idof is the DoF number corresponding to ivert (see conversion below).
-        numberDensityExpected[0] = 0.0
-        numberDensityExpected[1] = 1.0e10
-        numberDensityExpected[2] = 0.0
-        numberDensityExpected[3] = 4.2e10
-        numberDensityExpected[4] = 2.8e10
-        numberDensityExpected[5] = 3.0e9
-        numberDensityExpected[6] = 4.0e9
-        numberDensityExpected[7] = 3.0e9
-        numberDensityExpected[8] = 0.0
+        dofNumberDensityExpected[0] = 0.0
+        dofNumberDensityExpected[1] = 1.0e10
+        dofNumberDensityExpected[2] = 0.0
+        dofNumberDensityExpected[3] = 4.2e10
+        dofNumberDensityExpected[4] = 2.8e10
+        dofNumberDensityExpected[5] = 3.0e9
+        dofNumberDensityExpected[6] = 4.0e9
+        dofNumberDensityExpected[7] = 3.0e9
+        dofNumberDensityExpected[8] = 0.0
 
+        # Compute the DoF density vector using the DnT functions we're testing here.
         for p in particles:
-#            numberDensity_M.integrate_delta_function(p)
-            numberDensity_F.interpolate_delta_function_to_dofs(p)
+            dofNumberDensity_F.interpolate_delta_function_to_dofs(p)
 
-        numberDensityCalc = numberDensity_F.function.vector().get_local()
-#        print fncName, numberDensityCalc
+        # Get a numpy array of the calculated values
+        dofNumberDensityCalc = dofNumberDensity_F.function.vector().get_local()
+#        print fncName, dofNumberDensityCalc
 
-        # Compare results
-        functionSpace = numberDensity_F.function_space
-        gdim = numberDensity_F.mesh_gdim
+        functionSpace = dofNumberDensity_F.function_space
+        gdim = dofNumberDensity_F.mesh_gdim
         # Reshape the coordinates to get (x), or (x,y), or (x,y,z) tuples.
         if df_m.DOLFIN_VERSION_STRING > "1.5.0":
             dofcoords = functionSpace.tabulate_dof_coordinates().reshape((-1, gdim))
@@ -306,7 +308,7 @@ class TestChargeDensity(unittest.TestCase):
         # Plot the result
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": number density"
-        df_m.plot(numberDensity_F.function, title=plotTitle)
+        df_m.plot(dofNumberDensity_F.function, title=plotTitle)
         mplot_m.show()
 #        yesno = raw_input("Just called show() in test_2_interpolate_particle_density_to_2Dmesh")
 
@@ -316,16 +318,64 @@ class TestChargeDensity(unittest.TestCase):
         # the same number of vertices as DoFs.
         v2d=df_m.vertex_to_dof_map(functionSpace)
 
-        for ivert in range(len(numberDensityExpected)):
+        for ivert in range(len(dofNumberDensityExpected)):
             idof = v2d[ivert] # The DoF number for this vertex.
 #            print "vertex", ivert, "is DoF index", idof
-#            print "numberDensityCalc, numberDensityExpected =", numberDensityCalc[idof], numberDensityExpected[ivert]
+#            print "dofNumberDensityCalc, dofNumberDensityExpected =", dofNumberDensityCalc[idof], dofNumberDensityExpected[ivert]
             # "places" means numbers after the decimal point:
-            self.assertAlmostEqual(numberDensityCalc[idof], numberDensityExpected[ivert], places=4, msg="Wrong value of numberDensity")
+            self.assertAlmostEqual(dofNumberDensityCalc[idof], dofNumberDensityExpected[ivert], places=4, msg="Wrong value of dofNumberDensity")
+
+
+        ###### Cell density vector
+
+        # Allocate storage for the cell number-density values.
+
+        cellNumberDensityElementType = 'DG'
+        cellNumberDensityElementDegree = 0
+        cellNumberDensityFieldType = 'scalar'
+        cellNumberDensity_F = Field_C(pmesh2d_M,
+                                      element_type=cellNumberDensityElementType,
+                                      element_degree=cellNumberDensityElementDegree,
+                                      field_type=cellNumberDensityFieldType)
+
+#        print "size of cellNumberDensity:", cellNumberDensity_F.function.vector().size()
+
+        # Compute the cell density using the DnT functions that we're testing
+        for p in particles:
+            cellNumberDensity_F.add_weight_to_cell(p)
+        cellNumberDensity_F.divide_by_cell_volumes()
+
+        # Get an array of the density values
+        cellNumberDensityCalc = cellNumberDensity_F.function.vector().get_local()
+#        print fncName, "cellNumberDensityCalc =", cellNumberDensityCalc
+
+        # The expected number-density values from test_ChargeDensity.ods:test_2
+        cellNumberDensityExpected = np_m.empty(cellNumberDensity_F.function.vector().size(), dtype=np_m.float64)
+
+        # Note that these are in the cell numbering order, not DoF order. We will
+        # need to compare cellNumberDensityExpected[cellIndex] with
+        # cellNumberDensityCalc[dofIndex], where dofIndex is the DoF number
+        # corresponding to cellIndex.
+        cellNumberDensityExpected[0] = 0.0
+        cellNumberDensityExpected[1] = 4.0e8
+        cellNumberDensityExpected[2] = 0.0
+        cellNumberDensityExpected[3] = 0.0
+        cellNumberDensityExpected[4] = 8.0e8
+        cellNumberDensityExpected[5] = 0.0
+        cellNumberDensityExpected[6] = 6.0e8
+        cellNumberDensityExpected[7] = 0.0
+
+        # Compare results
+
+        for cell in df_m.cells(pmesh2d_M.mesh):
+            cellIndex = cell.index()
+#            cellVol = mesh_M.cell_volume_dict[cellIndex]
+            # There's only 1 DoF in the cell, since this function uses constant DG elements
+            dofIndex = cellNumberDensity_F.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
+            self.assertAlmostEqual(cellNumberDensityCalc[dofIndex], cellNumberDensityExpected[cellIndex], places=4, msg="Wrong value of cellNumberDensity")
+
         return
 #    def test_2_interpolate_particle_density_to_2Dmesh(self):ENDDEF
-
-#class TestChargeDensity(unittest.TestCase):ENDCLASS
 
 
 #class TestChargeDensity(unittest.TestCase):
@@ -495,34 +545,35 @@ class TestChargeDensity(unittest.TestCase):
         # particles.  The number-density array stores the integral of the
         # physical density-distribution times the element basis functions.
 
-        numberDensityElementType = 'Lagrange'
-        numberDensityElementDegree = 1
-        numberDensityFieldType = 'scalar'
+        dofNumberDensityElementType = 'Lagrange'
+        dofNumberDensityElementDegree = 1
+        dofNumberDensityFieldType = 'scalar'
 
         for s in particles_P.species_names:
-            particles_P.number_density_dict[s] = Field_C(particles_P.pmesh_M,
-                                                         element_type=numberDensityElementType,
-                                                         element_degree=numberDensityElementDegree,
-                                                         field_type=numberDensityFieldType)
+            particles_P.dof_number_density_dict[s] = Field_C(particles_P.pmesh_M,
+                                                             element_type=dofNumberDensityElementType,
+                                                             element_degree=dofNumberDensityElementDegree,
+                                                             field_type=dofNumberDensityFieldType)
 
             ## Accumulate density from kinetic particles of this species
             particles_P.accumulate_number_density(s)
 
         ## Create a charge-density array on the field mesh ##
         chargeDensity_F = Field_C(mesh2d_M,
-                                  element_type=numberDensityElementType,
-                                  element_degree=numberDensityElementDegree,
-                                  field_type=numberDensityFieldType)
+                                  element_type=dofNumberDensityElementType,
+                                  element_degree=dofNumberDensityElementDegree,
+                                  field_type=dofNumberDensityFieldType)
 
         ## Compute the charge-density
+        ## (See sphere1D.py for an alternative to this)
         particles_P.accumulate_charge_density_from_particles(chargeDensity_F)
 
         chargeDensityCalc = chargeDensity_F.function.vector().get_local()
-#        print fncName, numberDensityCalc
+#        print fncName, dofNumberDensityCalc
 
         # The expected number-density values from test_ChargeDensity.ods:test_3
         # Note that these are in the vertex numbering order, not DoF order. We will
-        # need to compare numberDensityExpected[ivert] with numberDensityCalc[idof],
+        # need to compare dofNumberDensityExpected[ivert] with dofNumberDensityCalc[idof],
         # where idof is the DoF number corresponding to ivert (see conversion below).
         chargeDensityExpected = np_m.empty(chargeDensity_F.function.vector().size(), dtype=np_m.float64)
 
@@ -572,7 +623,6 @@ class TestChargeDensity(unittest.TestCase):
         return
 #    def test_3_compute_charge_density_on_2Dmesh(self):ENDDEF
 
-#class TestChargeDensity(unittest.TestCase):ENDCLASS
 
 #class TestChargeDensity(unittest.TestCase):
     def test_4_compute_charge_density_on_1Dmesh(self):
@@ -690,35 +740,35 @@ class TestChargeDensity(unittest.TestCase):
         # particles.  The number-density array stores the integral of the
         # physical density-distribution times the element basis functions.
 
-        numberDensityElementType = 'Lagrange'
-        numberDensityElementDegree = 1
-        numberDensityFieldType = 'scalar'
+        dofNumberDensityElementType = 'Lagrange'
+        dofNumberDensityElementDegree = 1
+        dofNumberDensityFieldType = 'scalar'
 
         for s in particles_P.species_names:
-            particles_P.number_density_dict[s] = Field_C(particles_P.pmesh_M,
-                                                         element_type=numberDensityElementType,
-                                                         element_degree=numberDensityElementDegree,
-                                                         field_type=numberDensityFieldType)
+            particles_P.dof_number_density_dict[s] = Field_C(particles_P.pmesh_M,
+                                                             element_type=dofNumberDensityElementType,
+                                                             element_degree=dofNumberDensityElementDegree,
+                                                             field_type=dofNumberDensityFieldType)
 
         ## Create a charge-density vector ##
         chargeDensity_F = Field_C(mesh1d_M,
-                                  element_type=numberDensityElementType,
-                                  element_degree=numberDensityElementDegree,
-                                  field_type=numberDensityFieldType)
+                                  element_type=dofNumberDensityElementType,
+                                  element_degree=dofNumberDensityElementDegree,
+                                  field_type=dofNumberDensityFieldType)
 
         ## Accumulate number-density from kinetic particles of this species
         ## and sum charge-density.
         for s in particles_P.species_names:
             particles_P.accumulate_number_density(s)
             q = particles_P.charge[s]
-            chargeDensity_F.multiply_add(particles_P.number_density_dict[s], q)
+            chargeDensity_F.multiply_add(particles_P.dof_number_density_dict[s], q)
 
         chargeDensityCalc = chargeDensity_F.function.vector().get_local()
-#        print fncName, numberDensityCalc
+#        print fncName, dofNumberDensityCalc
 
         # The expected charge-density values from test_ChargeDensity.ods:test_4
         # Note that these are in the vertex numbering order, not DoF order. We will
-        # need to compare numberDensityExpected[ivert] with numberDensityCalc[idof],
+        # need to compare dofNumberDensityExpected[ivert] with dofNumberDensityCalc[idof],
         # where idof is the DoF number corresponding to ivert (see conversion below).
         chargeDensityExpected = np_m.empty(chargeDensity_F.function.vector().size(), dtype=np_m.float64)
 
@@ -766,6 +816,9 @@ class TestChargeDensity(unittest.TestCase):
         file = df_m.File("charge_1D.xml")
         file << chargeDensity_F.function
 
+        # Use XDMF format
+        mesh_file = df_m.XDMFFile("mesh_2cell_1D.xdmf")
+        mesh_file.write(mesh1d_M.mesh)
 
         return
 #    def test_4_compute_charge_density_on_1Dmesh(self):ENDDEF
@@ -899,38 +952,38 @@ class TestChargeDensity(unittest.TestCase):
         # particles.  The number-density array stores the integral of the
         # physical density-distribution times the element basis functions.
 
-        numberDensityElementType = 'Lagrange'
-        numberDensityElementDegree = 1
-        numberDensityFieldType = 'scalar'
+        dofNumberDensityElementType = 'Lagrange'
+        dofNumberDensityElementDegree = 1
+        dofNumberDensityFieldType = 'scalar'
 
         for s in particles_P.species_names:
-            particles_P.number_density_dict[s] = Field_C(particles_P.pmesh_M,
-                                                         element_type=numberDensityElementType,
-                                                         element_degree=numberDensityElementDegree,
-                                                         field_type=numberDensityFieldType)
+            particles_P.dof_number_density_dict[s] = Field_C(particles_P.pmesh_M,
+                                                             element_type=dofNumberDensityElementType,
+                                                             element_degree=dofNumberDensityElementDegree,
+                                                             field_type=dofNumberDensityFieldType)
 
         ## Create a charge-density vector ##
         chargeDensity_F = Field_C(mesh1d_M,
-                                  element_type=numberDensityElementType,
-                                  element_degree=numberDensityElementDegree,
-                                  field_type=numberDensityFieldType)
+                                  element_type=dofNumberDensityElementType,
+                                  element_degree=dofNumberDensityElementDegree,
+                                  field_type=dofNumberDensityFieldType)
 
         ## Accumulate number-density from kinetic particles of this species
         ## and sum charge-density.
         for s in particles_P.species_names:
             particles_P.accumulate_number_density(s)
             q = particles_P.charge[s]
-            chargeDensity_F.multiply_add(particles_P.number_density_dict[s], q)
+            chargeDensity_F.multiply_add(particles_P.dof_number_density_dict[s], q)
 
-#        print "numberDensityCalc =", particles_P.number_density_dict['plasma_electrons'].function.vector().array()
+#        print "dofNumberDensityCalc =", particles_P.dof_number_density_dict['plasma_electrons'].function.vector().array()
 
         chargeDensityCalc = chargeDensity_F.function.vector().get_local()
-#        print fncName, numberDensityCalc
+#        print fncName, dofNumberDensityCalc
 
         # The expected charge-density values are computed in
         # test_ChargeDensity.ods:test_5. Note that these are in the vertex numbering
         # order, not DoF order. As a result we need to compare
-        # numberDensityExpected[ivert] with numberDensityCalc[idof], where idof is
+        # dofNumberDensityExpected[ivert] with dofNumberDensityCalc[idof], where idof is
         # the DoF number corresponding to ivert (see conversion below).
 
         # Create a numpy array for the charge density values.
@@ -1106,38 +1159,38 @@ class TestChargeDensity(unittest.TestCase):
         # particles.  The number-density array stores the integral of the
         # physical density-distribution times the element basis functions.
 
-        numberDensityElementType = 'Lagrange'
-        numberDensityElementDegree = 1
-        numberDensityFieldType = 'scalar'
+        dofNumberDensityElementType = 'Lagrange'
+        dofNumberDensityElementDegree = 1
+        dofNumberDensityFieldType = 'scalar'
 
         for s in particles_P.species_names:
-            particles_P.number_density_dict[s] = Field_C(particles_P.pmesh_M,
-                                                         element_type=numberDensityElementType,
-                                                         element_degree=numberDensityElementDegree,
-                                                         field_type=numberDensityFieldType)
+            particles_P.dof_number_density_dict[s] = Field_C(particles_P.pmesh_M,
+                                                             element_type=dofNumberDensityElementType,
+                                                             element_degree=dofNumberDensityElementDegree,
+                                                             field_type=dofNumberDensityFieldType)
 
         ## Create a charge-density vector ##
         chargeDensity_F = Field_C(mesh1d_M,
-                                  element_type=numberDensityElementType,
-                                  element_degree=numberDensityElementDegree,
-                                  field_type=numberDensityFieldType)
+                                  element_type=dofNumberDensityElementType,
+                                  element_degree=dofNumberDensityElementDegree,
+                                  field_type=dofNumberDensityFieldType)
 
         ## Accumulate number-density from kinetic particles of this species
         ## and sum charge-density.
         for s in particles_P.species_names:
             particles_P.accumulate_number_density(s)
             q = particles_P.charge[s]
-            chargeDensity_F.multiply_add(particles_P.number_density_dict[s], q)
+            chargeDensity_F.multiply_add(particles_P.dof_number_density_dict[s], q)
 
-#        print "numberDensityCalc =", particles_P.number_density_dict['plasma_electrons'].function.vector().array()
+#        print "dofNumberDensityCalc =", particles_P.dof_number_density_dict['plasma_electrons'].function.vector().array()
 
         chargeDensityCalc = chargeDensity_F.function.vector().get_local()
-#        print fncName, numberDensityCalc
+#        print fncName, dofNumberDensityCalc
 
         # The expected charge-density values are computed in
         # test_ChargeDensity.ods:test_6. Note that these are in the vertex numbering
         # order, not DoF order. As a result we need to compare
-        # numberDensityExpected[ivert] with numberDensityCalc[idof], where idof is
+        # dofNumberDensityExpected[ivert] with dofNumberDensityCalc[idof], where idof is
         # the DoF number corresponding to ivert (see conversion below).
 
         # Create a numpy array for the charge density values.

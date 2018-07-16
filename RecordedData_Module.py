@@ -536,7 +536,7 @@ class Trajectory_C(object):
                 if 'x' in comps:
                     if 'y' in comps:
                         mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength], marker="o")
-# VTK plotter is obsolete:                        
+# interactive VTK plotter is obsolete:                        
 #                        path = np_m.empty(2*nlength, dtype=np_m.float64) # NB: dtype has to be double for add_polygon()
 #                        path[0::2] = data_arr['x'][0:nlength] # Start at 0, with stride 2
 #                        path[1::2] = data_arr['y'][0:nlength] # Start at 1, with stride 2
