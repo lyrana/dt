@@ -318,11 +318,10 @@ np_m.random.seed(ctrl.random_seed)
 #ctrl.apply_random_external_electric_field = True
 
 # Set the switches to empty dictionaries here only if they'll get set when the species are
-# defined in PS.1.1. below.
+# defined in PS.1.1. below. The default is that all defined electric fields will be
+# applied to all species.
 #ctrl.apply_solved_electric_field = {}
 #ctrl.apply_random_external_electric_field = {}
-#ctrl.apply_solved_electric_field = None
-#ctrl.apply_random_external_electric_field = None
 
 spacechargeFactor = 1.0
 randomExternalElectricFieldAmplitude = 0.1

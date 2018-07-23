@@ -6,6 +6,9 @@ __author__ = 'Copyright (C) 2018 L. D. Hughes'
 
 """Apply a random electric field to an electron.
    Plot the energy of the electron vs. time.
+
+   There's no self-electric field in this calculation.
+
 """
 #### Commentary
 #
@@ -16,7 +19,7 @@ __author__ = 'Copyright (C) 2018 L. D. Hughes'
 #         gets on each timestep.
 #
 #      2. The timestep ('ctrl.dt'). This determines for how long the field is applied
-#         on each timestep.
+#         to the particles on each timestep.
 #
 #      3. The number of timesteps ('ctrl.n_timesteps'). This determines for how long
 #         the particles spend in the random field.
@@ -67,11 +70,13 @@ ctrl.time = 0.0
 ctrl.random_seed = 1
 np_m.random.seed(ctrl.random_seed)
 
-# Electric field switches
-ctrl.apply_solved_electric_field = False
-ctrl.apply_external_electric_field = False
-ctrl.apply_random_external_electric_field = True
+# Electric field control
 randomExternalElectricFieldAmplitude = 0.1
+# Set the switches to empty dictionaries here only if they'll get set when the species are
+# defined below. The default is that all defined electric fields will be applied to all
+# species.
+#ctrl.apply_solved_electric_field = {}
+#ctrl.apply_random_external_electric_field = {}
 
 # Initial conditions for the electron(s)
 
@@ -101,6 +106,13 @@ charge = -1.0*q_e
 mass = 1.0*m_e
 dynamics = 'explicit'
 electron_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+# Set force-application switches for this species
+if ctrl.apply_solved_electric_field is not None:
+    ctrl.apply_solved_electric_field[speciesName] = True
+if ctrl.apply_random_external_electric_field is not None:
+    ctrl.apply_random_external_electric_field[speciesName] = False
+
 
 # Add this species to particle input
 pin.particle_species = (electron_S,)
