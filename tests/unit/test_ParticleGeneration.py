@@ -108,7 +108,8 @@ class TestParticleGeneration(unittest.TestCase):
 
 
         # Create numpy storage needed below
-#        driftVelocity = np_m.empty(particle_P.particle_dimension, dtype=particle_P.precision)
+        driftVelocity = np_m.empty(particle_P.particle_dimension, dtype=particle_P.precision)
+
         ## 1. Hot electron source on left side of the mesh
 
         # a. Provide the species name and physical parameters
@@ -148,7 +149,11 @@ class TestParticleGeneration(unittest.TestCase):
         vdrift_2 = 2.0
         vdrift_3 = 3.0
 
-        driftVelocity = (vdrift_1, vdrift_2, vdrift_3)
+#        driftVelocity = (vdrift_1, vdrift_2, vdrift_3)
+        driftVelocity[0] = vdrift_1
+#       The particle storage arrays have only a v[0] velocity component
+#        driftVelocity[1] = vdrift_2
+#        driftVelocity[2] = vdrift_3
 
         # Set desired particles-per-cell
         numberPerCell = 1
@@ -176,6 +181,9 @@ class TestParticleGeneration(unittest.TestCase):
         ## Specify one or more species to be generated in the 2nd region.
 
         # a. Provide the species name and physical parameters for this source
+        
+        # Note that this is the same species as in ## 1. above.  It's not necessary
+        # for each source region to have a different species name.
         speciesName = 'electrons'
 
         # Check that this species has been defined above
@@ -212,8 +220,10 @@ class TestParticleGeneration(unittest.TestCase):
         vdrift_2 = 1.5
         vdrift_3 = 2.5
 
-        driftVelocity = (vdrift_1, vdrift_2, vdrift_3)
-
+#        driftVelocity = (vdrift_1, vdrift_2, vdrift_3)
+#       The particle storage arrays have only a v[0] velocity component
+        driftVelocity[0] = vdrift_1
+        
         # Set desired particles-per-cell
         numberPerCell = 10
 
@@ -296,8 +306,11 @@ class TestParticleGeneration(unittest.TestCase):
         return
 #    def test_1D_particle_source_region(self):ENDDEF
 
-    def test_2D_particle_source_region(self):
+#class TestParticleGeneration:
+def test_2D_particle_source_region(self):
         """Set up a two-dimensional source region and display it.
+
+           Incomplete
 
         """
 
@@ -308,7 +321,7 @@ class TestParticleGeneration(unittest.TestCase):
 
         umi2D = UserMeshInput_C()
 
-# Change these to TUPLES instead of Points (avoid df_m at toplevel)
+# TODO: Change these to TUPLES instead of Points? (to avoid df_m at toplevel)
         umi2D.pmin = df_m.Point(-10.0, -10.0)
         umi2D.pmax = df_m.Point(10.0, 10.0)
         umi2D.cells_on_side = (4, 2)

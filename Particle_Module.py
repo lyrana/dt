@@ -851,19 +851,20 @@ class Particle_C(object):
 #                print "position:", pseg['x'] #, pseg['y'] #, pseg['z']
 #                print "velocity:", pseg['ux'] #, pseg['uy'] #, pseg['uz']
 
-                if ctrl.apply_solved_electric_field is None or ctrl.apply_solved_electric_field[sn] is True:
-                    # Interpolate the solved electric field to the particle positions
-                    # NB: This is the negative electric field
-                    neg_E_field.interpolate_field_to_points(psegIn, self.negE)
-                    # Truncate negE to the number of particles to get the
-                    # += operations below to work: These operations need
-                    # the vectors to be the same length.
-                    # This is a ref, not a copy
-                    Eseg = self.negE[0:npSeg]
-                    # Flip the sign to get correct E. (This is a vector
-                    # operation on each component of E.)
-                    for n in Eseg.dtype.names:
-                        Eseg[n] *= -1.0
+                if neg_E_field is not None:
+                    if ctrl.apply_solved_electric_field is None or ctrl.apply_solved_electric_field[sn] is True:
+                        # Interpolate the solved electric field to the particle positions
+                        # NB: This is the negative electric field
+                        neg_E_field.interpolate_field_to_points(psegIn, self.negE)
+                        # Truncate negE to the number of particles to get the
+                        # += operations below to work: These operations need
+                        # the vectors to be the same length.
+                        # This is a ref, not a copy
+                        Eseg = self.negE[0:npSeg]
+                        # Flip the sign to get correct E. (This is a vector
+                        # operation on each component of E.)
+                        for n in Eseg.dtype.names:
+                            Eseg[n] *= -1.0
                 else:
                     self.negE[0:npSeg] = self.zeroE[0:npSeg]
                     Eseg = self.negE[0:npSeg] # A ref, not a copy.
@@ -2067,9 +2068,9 @@ class Particle_C(object):
                 self.histories.data_array[sphist][counter] = historyForSpecies
                 # Get the number of physical particles in this species
                 speciesNumber = self.get_species_number(sp)
-                sp_1p_hist = sp+'_1p_' + hist
+                sp_pp_hist = sp+'_pp_' + hist
                 # Compute and store the per-particle value
-                self.histories.data_array[sp_1p_hist][counter] = historyForSpecies/max(speciesNumber,1)
+                self.histories.data_array[sp_pp_hist][counter] = historyForSpecies/max(speciesNumber,1)
                 historyForAllSpecies += historyForSpecies
             # Store to value summed over all species
             self.histories.data_array[hist][counter] = historyForAllSpecies
@@ -2215,8 +2216,7 @@ class Particle_C(object):
 
 # For 'r_theta_z' this needs to change?
 
-#CHECK: is this using scratch space, or is pVel a new array? Use pVel[:]
-                pVel = np_m.random.normal(0.0, thermalSpeed, pDim) + driftVelocity
+                pVel[:] = np_m.random.normal(0.0, thermalSpeed, pDim) + driftVelocity
 
                 # Fill a particle record: (x,y,z, x0,y0,z0, ux,uy,uz, weight,
                 #                         bitflags, cell_index)

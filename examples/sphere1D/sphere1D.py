@@ -309,9 +309,11 @@ np_m.random.seed(ctrl.random_seed)
 
 # Electric field control
 
-# Set the switches to empty dictionaries here if and only if you want to set
-# per-species values in PS.1.1. below.  If the following lines are commented out, then
-# the forces WILL BE APPLIED.
+# Set the switches to empty dictionaries here if and only if you want to set per-species
+# values in PS.1.1. below.  The default is that all defined electric fields will be
+# applied to all species. If the following lines are commented out, then the forces WILL
+# BE APPLIED to all species.
+
 #ctrl.apply_solved_electric_field = {}
 #ctrl.apply_random_external_electric_field = {}
 
