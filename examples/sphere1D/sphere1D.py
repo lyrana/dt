@@ -38,7 +38,7 @@ __all__ = ['Example_C',]
 
 #       * The potential difference ('scr.confining_potential') between the center and the
 #         edge of the simulation region.  This is the confining potential for the electrons.
-#         (This is not a parameter if the region goes to r = 0).
+#         (This is not used as a simulation parameter if the region extends to r = 0).
 
 #  Key numerical parameters are:
 #
@@ -181,7 +181,7 @@ plotTimeHistories = True # Plot the recorded values vs. time.
 ############################## PC. Physical constants ##############################
 
 # DO NOT MODIFY THESE VALUES!
-# These are abbreviations for physical constants.
+# These are (abbreviations for) physical constants.
 # Values used in the simulation should be written in terms of these.
 m_e = 1.0*MyPlasmaUnits_C.electron_mass
 q_e = 1.0*MyPlasmaUnits_C.elem_charge
@@ -211,14 +211,16 @@ scr.rmin = 0.0
 scr.rmax = 20.0 # 40.0
 # Set the spatial resolution
 scr.nr = 50
+print "The mesh extends from %.3g m to %.3g m in radius" % (scr.rmin, scr.rmax)
+print "There are %d cells in the mesh" % scr.nr
 
 # Compute a rough cell-size (The mesh can be stretched non-uniformly)
 scr.dr_av = (scr.rmax-scr.rmin)/scr.nr
-print "Rough cell-size = %.3g m" % scr.dr_av
+print "The average cell-size is %.3g m" % scr.dr_av
 
 # Specify the desired Debye length as a multiple of the cell-size
 scr.lambda_D = 2.0*scr.dr_av
-print "Electron Debye length = %.3g m" % scr.lambda_D
+print "The electron Debye length is chosen to be %.3g m" % scr.lambda_D
 print "There are roughly %.3g cells per electron Debye length" % (scr.lambda_D/scr.dr_av)
 print "There are roughly %.3g Debye lengths in the computational region" % ((scr.rmax-scr.rmin)/scr.lambda_D)
 ctrl = DTcontrol_C()
@@ -233,25 +235,25 @@ scr.T_e_eV = 0.02 # 6.0
 
 # Convert this to an electron thermal velocity
 scr.vthermal_e = np_m.sqrt(q_e*scr.T_e_eV/m_e)
-print "For T_e = %.3g eV, electron thermal velocity = %.3g m/s" % (scr.T_e_eV, scr.vthermal_e)
+print "T_e is set to %.3g eV, giving an electron thermal velocity of %.3g m/s" % (scr.T_e_eV, scr.vthermal_e)
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Compute the electron plasme frequency needed to get the above Debye length
 scr.omega_e = scr.vthermal_e/scr.lambda_D
-print "For above electron Debye length, electron plasma frequency = %.3g rad/s" % scr.omega_e
+print "For the above electron Debye length, the electron plasma frequency is %.3g rad/s" % scr.omega_e
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Compute the explicit timestep limit from the electron plasma frequency
 scr.dt_max = 2.0/scr.omega_e
-print "Maximum stable timestep = %.3g s" % scr.dt_max
+print "This frequency gives a maximum stable timestep of %.3g s" % scr.dt_max
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Compute the electron density from the plasma frequency
 scr.electron_density = m_e*eps_0*(scr.omega_e/q_e)**2
-print "For above electron plasma-frequency, electron density = %.3g per m^{-3}" % scr.electron_density
+print "The above electron plasma-frequency correspondes to an electron density of %.3g per m^{-3}" % scr.electron_density
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -264,7 +266,7 @@ scr.ion_charge_state = 1.0
 scr.ion_sound_speed = np_m.sqrt(scr.ion_charge_state*q_e*scr.T_e_eV/scr.ion_mass)
 # If the mesh goes to r=0, the following is used to estimate the ion drift out of the source region:
 scr.ion_sound_speed_multiplier = 0.1
-print "Ion sound speed = %.3g m/s, multiplier is set to %.3g" % (scr.ion_sound_speed, scr.ion_sound_speed_multiplier)
+print "The ion sound speed is %.3g m/s. Multiplier for initial ion drift is %.3g" % (scr.ion_sound_speed, scr.ion_sound_speed_multiplier)
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -598,7 +600,7 @@ vdrift_2 = 0.0
 vdrift_3 = 0.0
 # ... and make an estimate of the average ion drift-velocity in the source region:
 vdrift_av = scr.ion_sound_speed_multiplier*scr.ion_sound_speed
-vdrift_1 = 0.5*vdrift_av
+vdrift_1 = vdrift_av
 
 # 9jun18: instead, give the ions a speed to get them moving
 
@@ -686,7 +688,7 @@ particleGenerator = particle_P.create_maxwellian_particles
 # !!!The function could provide it's own type
 #sourceDistributionType = 'functional'
 
-# Compute a number-density rate from the charge-density rate
+# Add electrons at the same rate as ions (charge is same for both in this case).
 
 numberDensityIncrement = numberDensityIncrementHplus
 # Check for positivity
@@ -788,12 +790,13 @@ particle_P.traj_T = traj_T
 dofNumberDensityElementType = 'Lagrange'
 dofNumberDensityElementDegree = 1
 dofNumberDensityFieldType = 'scalar'
+dofNumberDensityDict_F = {s: None for s in particle_P.species_names}
 
 for s in particle_P.species_names:
-    particle_P.dof_number_density_dict[s] = Field_C(mesh_M=particle_P.pmesh_M,
-                                                    element_type=dofNumberDensityElementType,
-                                                    element_degree=dofNumberDensityElementDegree,
-                                                    field_type=dofNumberDensityFieldType)
+    dofNumberDensityDict_F[s] = Field_C(mesh_M=particle_P.pmesh_M,
+                                        element_type=dofNumberDensityElementType,
+                                        element_degree=dofNumberDensityElementDegree,
+                                        field_type=dofNumberDensityFieldType)
 
 ########## DEN.2. Create cell number-density arrays on the particle mesh for each kinetic species
 
@@ -802,10 +805,11 @@ for s in particle_P.species_names:
 cellNumberDensityElementType = 'DG'
 cellNumberDensityElementDegree = 0
 cellNumberDensityFieldType = 'scalar'
+cellNumberDensityDict_F = {s: None for s in particle_P.species_names}
 
 # Don't make the cell density an attribute of Particle_C (yet)
 for s in particle_P.species_names:
-    cell_number_density_dict[s] = Field_C(mesh_M=particle_P.pmesh_M,
+    cellNumberDensityDict_F[s] = Field_C(mesh_M=particle_P.pmesh_M,
                                                      element_type=cellNumberDensityElementType,
                                                      element_degree=cellNumberDensityElementDegree,
                                                      field_type=cellNumberDensityFieldType)
@@ -904,7 +908,7 @@ if emitInput is True:
     
 ##### FS.3.1. Dynamic electron permittivity (if the electrons are treated implicitly)
 
-# This is obtained from the cell_number_density_dict[] arrays, and so has the same attributes.
+# This is obtained from the cellNumberDensityDict_F[] arrays, and so has the same attributes.
 
 electronPermittivity_F = Field_C(mesh_M=particle_P.pmesh_M,
                                  element_type=cellNumberDensityElementType,
@@ -1051,12 +1055,19 @@ if particle_P.initial_particles_dict is not None:
             particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
 
     ##### INIT.2.1.1. Recompute the initial electrostatic field with particle spacecharge
+
+    ## Zero out the number-density and charge values before accumulation begins
+    assembledCharge_F.set_values(0.0)
+    for s in particles_P.species_names:
+        dofNumberDensityDict_F[s].set_values(0.0)
+        cellNumberDensityDict_F[s].set_values(0.0)
+        
     ## Accumulate number-density from kinetic particles
     ## and sum into the total charge-density.
     for s in particles_P.species_names:
-        particles_P.accumulate_number_density(s, cell_number_density_dict[s])
+        particles_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
         q = particles_P.charge[s]
-        assembledCharge_F.multiply_add(particle_P.dof_number_density_dict[s], multiplier=q)        
+        assembledCharge_F.multiply_add(dofNumberDensityDict_F[s], multiplier=q)        
 
 # This duplicates the above loop!
 #    particle_P.accumulate_charge_density_from_particles(assembledCharge_F)
@@ -1131,10 +1142,16 @@ for istep in xrange(ctrl.n_timesteps):
             particle_P.write_particles_to_file(ctrl)
 
     ########## RUN.4. Update the particle densities and electric charge density
+    ## Zero out the number-density and charge values before accumulation begins
+    assembledCharge_F.set_values(0.0)
+    for s in particles_P.species_names:
+        dofNumberDensityDict_F[s].set_values(0.0)
+        cellNumberDensityDict_F[s].set_values(0.0)
+
     for s in particle_P.species_names:
-        particle_P.accumulate_number_density(s)
+        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], dofNumberDensityDict_F[s])
         q = particle_P.charge[s]
-        assembledCharge_F.multiply_add(particle_P.dof_number_density_dict[s], multiplier=q)
+        assembledCharge_F.multiply_add(dofNumberDensityDict_F[s], multiplier=q)
 
 # this repeats the above loop:
 #    particle_P.accumulate_charge_density_from_particles(assembledCharge_F)

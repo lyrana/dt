@@ -65,6 +65,7 @@ class ParticleInput_C(object):
 
 #class ParticleInput_C(object):ENDCLASS
 
+#STARTCLASS
 class ParticleSpecies_C(object):
     """ParticleSpecies_C implements a particle species.
 
@@ -101,6 +102,7 @@ class ParticleSpecies_C(object):
 
 #class ParticleSpecies_C(object):ENDCLASS
 
+#STARTCLASS
 import SegmentedArrayPair_Module as SA_M
 
 class Particle_C(object):
@@ -308,7 +310,7 @@ class Particle_C(object):
         ## Reference to particle number densities (add this after construction of
         ## Particle_C instance)
         # Set to None until the storage is allocated
-        self.dof_number_density_dict = {s: None for s in self.species_names}
+#        self.dof_number_density_dict = {s: None for s in self.species_names}
 
         # This is for a reference to a Trajectory_C object to handle particles
         # that have the TRAJECTORY_FLAG bit turned on.  A Trajectory_C object
@@ -444,8 +446,8 @@ class Particle_C(object):
         #         sys.exit(errorMsg)
 
             # Compute the particle number density if storage has been allocated
-            if self.dof_number_density_dict[s] is not None:
-                self.accumulate_number_density(s)
+#            if self.dof_number_density_dict[s] is not None:
+#                self.accumulate_number_density(s)
 
         return
 #    def initialize_particles(self, print_flags):ENDDEF
@@ -708,7 +710,7 @@ class Particle_C(object):
 #    def compute_mesh_cell_indices(self):ENDDEF
 
 #class Particle_C(object):
-    def accumulate_number_density(self, species_name, cell_number_density=None):
+    def accumulate_number_density(self, species_name, dof_number_density_F=None, cell_number_density_F=None):
         """Compute the DoF and cell number density arrays for the specified
            kinetic-particle species.
 
@@ -723,7 +725,7 @@ class Particle_C(object):
            This implementation loops on particles, not on cells.
 
            :param species_name: The string name of a kinetic-particle species
-           :param cell_number_density: a scalar Field_C object containing cell values.
+           :param cell_number_density_F: a scalar Field_C object containing cell values.
 
            :returns: None
 
@@ -738,15 +740,17 @@ class Particle_C(object):
             for p in pseg:
                 # Project the density function for this particle onto the DoF shape functions
                 # to get the DoF 'density'
-                self.dof_number_density_dict[species_name].interpolate_delta_function_to_dofs(p)
-                # The cell number density
-                if cell_number_density is not None:
-                    cell_number_density.add_weight_to_cell(p)
+#                self.dof_number_density_dict[species_name].interpolate_delta_function_to_dofs(p)
+                if dof_number_density_F is not None:
+                    dof_number_density_F.interpolate_delta_function_to_dofs(p)
+                # Compute the cell number density as well, if needed.
+                if cell_number_density_F is not None:
+                    cell_number_density_F.add_weight_to_cell(p)
             (npSeg, pseg) = psa.get_next_segment('out')
 
         # Convert the cell values to a cell density    
-        if cell_number_density is not None:
-            cell_number_density.divide_by_cell_volumes()
+        if cell_number_density_F is not None:
+            cell_number_density_F.divide_by_cell_volumes()
 
         return
 #    def accumulate_number_density(self, species_name):ENDDEF
@@ -766,7 +770,8 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        self.dof_number_density_dict[species_name].set_values(value)
+        sys.exit("set_number_density() should not be called")
+#        self.dof_number_density_dict[species_name].set_values(value)
 
         return
 #    def set_number_density(self, species_name, value):ENDDEF
@@ -851,6 +856,7 @@ class Particle_C(object):
 #                print "position:", pseg['x'] #, pseg['y'] #, pseg['z']
 #                print "velocity:", pseg['ux'] #, pseg['uy'] #, pseg['uz']
 
+                Eseg = None # This is for the case where no fields are to be applied to the particles,
                 if neg_E_field is not None:
                     if ctrl.apply_solved_electric_field is None or ctrl.apply_solved_electric_field[sn] is True:
                         # Interpolate the solved electric field to the particle positions
@@ -924,9 +930,10 @@ class Particle_C(object):
                     psegOut[ipOut] = psegIn[ipIn] 
 
                     # Accelerate the particle with the field components in Eseg
-                    for comp in Eseg.dtype.names:
-                        ucomp = 'u'+comp
-                        psegOut[ipOut][ucomp] += qmdt*Eseg[ipIn][comp] # Index OK?
+                    if Eseg is not None:
+                        for comp in Eseg.dtype.names:
+                            ucomp = 'u'+comp
+                            psegOut[ipOut][ucomp] += qmdt*Eseg[ipIn][comp] # Index OK?
 
 # Instead of this, could do ifs on the dimension of Eseg
                     """
@@ -2068,9 +2075,9 @@ class Particle_C(object):
                 self.histories.data_array[sphist][counter] = historyForSpecies
                 # Get the number of physical particles in this species
                 speciesNumber = self.get_species_number(sp)
-                sp_pp_hist = sp+'_pp_' + hist
+                sp_ppp_hist = sp+'_ppp_' + hist
                 # Compute and store the per-particle value
-                self.histories.data_array[sp_pp_hist][counter] = historyForSpecies/max(speciesNumber,1)
+                self.histories.data_array[sp_ppp_hist][counter] = historyForSpecies/max(speciesNumber,1)
                 historyForAllSpecies += historyForSpecies
             # Store to value summed over all species
             self.histories.data_array[hist][counter] = historyForAllSpecies
@@ -2084,10 +2091,10 @@ class Particle_C(object):
 
 # Note: This function may be superfluous. See sphere1D.py.
 
-    def accumulate_charge_density_from_particles(self, charge_density):
+    def accumulate_charge_density_from_particles(self, dof_number_density_dict_F, charge_density_F):
         """Compute the charge density contributed by the kinetic particles.
 
-           :param charge_density: Storage into which charge-density is accumulated.
+           :param charge_density_F: Storage into which charge-density is accumulated.
 
            :returns: None
 
@@ -2100,12 +2107,12 @@ class Particle_C(object):
             for s in self.species_names:
                 charge = self.charge[s]
                 # Loop over the number-density arrays
-                charge_density.multiply_add(self.dof_number_density_dict[s], charge)
+                charge_density_F.multiply_add(dof_number_density_dict_F[s], charge)
         else:
             print fncName, "\tDnT WARNING: The reference to pmesh_M is None"
 
         return
-#    def accumulate_charge_density_from_particles(self, charge_density):ENDDEF
+#    def accumulate_charge_density_from_particles(self, dof_number_density_dict_F, charge_density_F):ENDDEF
 
 
 # Standard particle distribution types

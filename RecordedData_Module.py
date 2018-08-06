@@ -232,35 +232,40 @@ class ParticleHistory_C(History_C):
 
         yarray = self.data_array['step']
 
-        plot_title = "timestep number vs. time"
+        plot_title = "timestep_number_vs._time"
         x_label = "time (s)"
         y_label = "timestep"
 
-        mplot_m.figure()
+        fig = mplot_m.figure()
         mplot_m.plot(tvals, yarray, marker="o")
         mplot_m.title(plot_title)
         mplot_m.xlabel(x_label)
         mplot_m.ylabel(y_label)
         mplot_m.grid(True)
+        mplot_m.savefig(plot_title + ".png")
+        mplot_m.show()
+        mplot_m.close(fig)
         
         # Plot the requested histories, both total and for each species
         for hist in self.scalar_histories + self.species_scalar_histories:
 
             yarray = self.data_array[hist]
 
-            plot_title = "%s vs. time" % (hist)
+            plot_title = "%s_vs._time" % (hist)
             x_label = "time (s)"
             y_label = hist
 
-            mplot_m.figure()
+            fig = mplot_m.figure()
 #            mplot_m.plot(tvals[0:nlength], data_arr[comp][0:nlength], marker="o")
             mplot_m.plot(tvals, yarray, marker="o")
             mplot_m.title(plot_title)
             mplot_m.xlabel(x_label)
             mplot_m.ylabel(y_label)
             mplot_m.grid(True)
-            
-        mplot_m.show()
+            mplot_m.savefig(plot_title + ".png")
+            mplot_m.show()
+            mplot_m.close(fig)
+#        mplot_m.show()
             
         return
 #    def plot(self):ENDDEF
@@ -458,10 +463,10 @@ class Trajectory_C(object):
             for it in xrange(len(self.particle_index_list[sp])):
                 if self.particle_unique_id_list[sp][it] is None:
                     ip = self.particle_index_list[sp][it]
-                    plot_title = "%s: Traj# %d Particle id %d" % (sp, it, ip)
+                    plot_title = "%s:_Traj#_ %d_Particle_id_%d" % (sp, it, ip)
                 else:
                     ip = self.particle_unique_id_list[sp][it]
-                    plot_title = "%s: Traj# %d Particle uid %d" % (sp, it, ip)
+                    plot_title = "%s:_Traj#_%d_Particle_uid_%d" % (sp, it, ip)
                 data_arr = self.data_list[sp][it]
                 tvals = self.data_list[sp][it]['t']
                 nlength = self.trajectory_length[sp][it]
@@ -471,12 +476,15 @@ class Trajectory_C(object):
                 
                 x_label = "time (s)"
                 for comp in comps:
-                    mplot_m.figure()
+                    fig = mplot_m.figure()
                     mplot_m.plot(tvals[0:nlength], data_arr[comp][0:nlength], marker="o")
                     mplot_m.title(plot_title)
                     mplot_m.xlabel(x_label)
                     mplot_m.ylabel(comp)
                     mplot_m.grid(True)
+                    mplot_m.savefig(plot_title + ".png")
+                    mplot_m.show()
+                    mplot_m.close(fig)
                     # mplot_m.show()
 
                 if plot_vs_t_only is False:
@@ -487,20 +495,24 @@ class Trajectory_C(object):
                 # x vs. y
                     if 'x' in comps:
                         if 'y' in comps:
-                            mplot_m.figure()
+                            fig = mplot_m.figure()
                             mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength], marker="o")
                             mplot_m.title(plot_title)
                             mplot_m.xlabel('x')
                             mplot_m.ylabel('y')
                             mplot_m.grid(True)
+                            mplot_m.savefig(plot_title + ".png")
+                            mplot_m.close(fig)
                             # mplot_m.show()
                         if 'ux' in comps:
-                            mplot_m.figure()
+                            fig = mplot_m.figure()
                             mplot_m.plot(data_arr['x'][0:nlength], data_arr['ux'][0:nlength], marker="o")
                             mplot_m.title(plot_title)
                             mplot_m.xlabel('x')
                             mplot_m.ylabel('ux')
                             mplot_m.grid(True)
+                            mplot_m.savefig(plot_title + ".png")
+                            mplot_m.close(fig)
                             # mplot_m.show()
                 
                 mplot_m.show()

@@ -117,9 +117,9 @@ class TestChargeDensity(unittest.TestCase):
         dofNumberDensityElementDegree = 1
         dofNumberDensityFieldType = 'scalar'
         dofNumberDensity_F = Field_C(mesh1d_M,
-                                  element_type=dofNumberDensityElementType,
-                                  element_degree=dofNumberDensityElementDegree,
-                                  field_type=dofNumberDensityFieldType)
+                                     element_type=dofNumberDensityElementType,
+                                     element_degree=dofNumberDensityElementDegree,
+                                     field_type=dofNumberDensityFieldType)
 
 #        print "size of dofNumberDensity:", dofNumberDensity.function.vector().size()
 
@@ -386,7 +386,7 @@ class TestChargeDensity(unittest.TestCase):
 
            Positively and negatively-charged macroparticles are created within a
            2D meshed region and are weighted to nodal points on the mesh.
-           The charge-density is then accummulated.
+           The charge-density is then accumulated.
            
            Two species data are defined and segmented-array particle storage is
            used.
@@ -548,15 +548,17 @@ class TestChargeDensity(unittest.TestCase):
         dofNumberDensityElementType = 'Lagrange'
         dofNumberDensityElementDegree = 1
         dofNumberDensityFieldType = 'scalar'
+        dofNumberDensityDict_F = {s: None for s in particles_P.species_names}
 
         for s in particles_P.species_names:
-            particles_P.dof_number_density_dict[s] = Field_C(particles_P.pmesh_M,
-                                                             element_type=dofNumberDensityElementType,
-                                                             element_degree=dofNumberDensityElementDegree,
-                                                             field_type=dofNumberDensityFieldType)
+#            particles_P.dof_number_density_dict[s] = Field_C(particles_P.pmesh_M,
+            dofNumberDensityDict_F[s] = Field_C(particles_P.pmesh_M,
+                                                element_type=dofNumberDensityElementType,
+                                                element_degree=dofNumberDensityElementDegree,
+                                                field_type=dofNumberDensityFieldType)
 
             ## Accumulate density from kinetic particles of this species
-            particles_P.accumulate_number_density(s)
+            particles_P.accumulate_number_density(s, dofNumberDensityDict_F[s])
 
         ## Create a charge-density array on the field mesh ##
         chargeDensity_F = Field_C(mesh2d_M,
@@ -566,7 +568,7 @@ class TestChargeDensity(unittest.TestCase):
 
         ## Compute the charge-density
         ## (See sphere1D.py for an alternative to this)
-        particles_P.accumulate_charge_density_from_particles(chargeDensity_F)
+        particles_P.accumulate_charge_density_from_particles(dofNumberDensityDict_F, chargeDensity_F)
 
         chargeDensityCalc = chargeDensity_F.function.vector().get_local()
 #        print fncName, dofNumberDensityCalc
@@ -632,7 +634,7 @@ class TestChargeDensity(unittest.TestCase):
 
            Positively and negatively-charged macroparticles are created within a
            1D meshed region and are weighted to nodal points on the mesh.
-           The charge-density is then accummulated.
+           The charge-density is then accumulated.
            
            Two species data are defined and segmented-array particle storage is
            used.
@@ -743,12 +745,13 @@ class TestChargeDensity(unittest.TestCase):
         dofNumberDensityElementType = 'Lagrange'
         dofNumberDensityElementDegree = 1
         dofNumberDensityFieldType = 'scalar'
-
+        dofNumberDensityDict_F = {s: None for s in particles_P.species_names}
+        
         for s in particles_P.species_names:
-            particles_P.dof_number_density_dict[s] = Field_C(particles_P.pmesh_M,
-                                                             element_type=dofNumberDensityElementType,
-                                                             element_degree=dofNumberDensityElementDegree,
-                                                             field_type=dofNumberDensityFieldType)
+            dofNumberDensityDict_F[s] = Field_C(particles_P.pmesh_M,
+                                                element_type=dofNumberDensityElementType,
+                                                element_degree=dofNumberDensityElementDegree,
+                                                field_type=dofNumberDensityFieldType)
 
         ## Create a charge-density vector ##
         chargeDensity_F = Field_C(mesh1d_M,
@@ -759,9 +762,9 @@ class TestChargeDensity(unittest.TestCase):
         ## Accumulate number-density from kinetic particles of this species
         ## and sum charge-density.
         for s in particles_P.species_names:
-            particles_P.accumulate_number_density(s)
+            particles_P.accumulate_number_density(s, dofNumberDensityDict_F[s])
             q = particles_P.charge[s]
-            chargeDensity_F.multiply_add(particles_P.dof_number_density_dict[s], q)
+            chargeDensity_F.multiply_add(dofNumberDensityDict_F[s], q)
 
         chargeDensityCalc = chargeDensity_F.function.vector().get_local()
 #        print fncName, dofNumberDensityCalc
@@ -955,12 +958,13 @@ class TestChargeDensity(unittest.TestCase):
         dofNumberDensityElementType = 'Lagrange'
         dofNumberDensityElementDegree = 1
         dofNumberDensityFieldType = 'scalar'
+        dofNumberDensityDict_F = {s: None for s in particles_P.species_names}        
 
         for s in particles_P.species_names:
-            particles_P.dof_number_density_dict[s] = Field_C(particles_P.pmesh_M,
-                                                             element_type=dofNumberDensityElementType,
-                                                             element_degree=dofNumberDensityElementDegree,
-                                                             field_type=dofNumberDensityFieldType)
+            dofNumberDensityDict_F[s] = Field_C(particles_P.pmesh_M,
+                                                element_type=dofNumberDensityElementType,
+                                                element_degree=dofNumberDensityElementDegree,
+                                                field_type=dofNumberDensityFieldType)
 
         ## Create a charge-density vector ##
         chargeDensity_F = Field_C(mesh1d_M,
@@ -971,11 +975,11 @@ class TestChargeDensity(unittest.TestCase):
         ## Accumulate number-density from kinetic particles of this species
         ## and sum charge-density.
         for s in particles_P.species_names:
-            particles_P.accumulate_number_density(s)
+            particles_P.accumulate_number_density(s, dofNumberDensityDict_F[s])
             q = particles_P.charge[s]
-            chargeDensity_F.multiply_add(particles_P.dof_number_density_dict[s], q)
+            chargeDensity_F.multiply_add(dofNumberDensityDict_F[s], q)
 
-#        print "dofNumberDensityCalc =", particles_P.dof_number_density_dict['plasma_electrons'].function.vector().array()
+#        print "dofNumberDensityCalc =", dofNumberDensityDict_F['plasma_electrons'].function.vector().array()
 
         chargeDensityCalc = chargeDensity_F.function.vector().get_local()
 #        print fncName, dofNumberDensityCalc
@@ -1162,12 +1166,13 @@ class TestChargeDensity(unittest.TestCase):
         dofNumberDensityElementType = 'Lagrange'
         dofNumberDensityElementDegree = 1
         dofNumberDensityFieldType = 'scalar'
+        dofNumberDensityDict_F = {s: None for s in particles_P.species_names}
 
         for s in particles_P.species_names:
-            particles_P.dof_number_density_dict[s] = Field_C(particles_P.pmesh_M,
-                                                             element_type=dofNumberDensityElementType,
-                                                             element_degree=dofNumberDensityElementDegree,
-                                                             field_type=dofNumberDensityFieldType)
+            dofNumberDensityDict_F[s] = Field_C(particles_P.pmesh_M,
+                                                element_type=dofNumberDensityElementType,
+                                                element_degree=dofNumberDensityElementDegree,
+                                                field_type=dofNumberDensityFieldType)
 
         ## Create a charge-density vector ##
         chargeDensity_F = Field_C(mesh1d_M,
@@ -1178,11 +1183,11 @@ class TestChargeDensity(unittest.TestCase):
         ## Accumulate number-density from kinetic particles of this species
         ## and sum charge-density.
         for s in particles_P.species_names:
-            particles_P.accumulate_number_density(s)
+            particles_P.accumulate_number_density(s, dofNumberDensityDict_F[s])
             q = particles_P.charge[s]
-            chargeDensity_F.multiply_add(particles_P.dof_number_density_dict[s], q)
+            chargeDensity_F.multiply_add(dofNumberDensityDict_F[s], q)
 
-#        print "dofNumberDensityCalc =", particles_P.dof_number_density_dict['plasma_electrons'].function.vector().array()
+#        print "dofNumberDensityCalc =", dofNumberDensityDict_F['plasma_electrons'].function.vector().array()
 
         chargeDensityCalc = chargeDensity_F.function.vector().get_local()
 #        print fncName, dofNumberDensityCalc
