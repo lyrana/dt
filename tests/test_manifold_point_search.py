@@ -45,7 +45,7 @@ def test_manifold_point_search():
     for expected_cellid in (0, 1):
         point = Point(numpy.asarray(midpoints[expected_cellid]))
         found_cellid = bb.compute_first_entity_collision(point)
-        print "expected =", expected_cellid, "found =", found_cellid
+        print("expected =", expected_cellid, "found =", found_cellid)
         assert expected_cellid == found_cellid
 
 if __name__ == '__main__':

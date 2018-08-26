@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -111,14 +111,14 @@ class TestParticleTrajectory(unittest.TestCase):
             charge = self.particle_P.charge[speciesName]
             mass = self.particle_P.mass[speciesName]
         else:
-            print "The species", speciesName, "has not been defined"
+            print("The species", speciesName, "has not been defined")
             sys.exit()
 
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "DnT INFO: Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "DnT INFO: Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -139,14 +139,14 @@ class TestParticleTrajectory(unittest.TestCase):
             charge = self.particle_P.charge[speciesName]
             mass = self.particle_P.mass[speciesName]
         else:
-            print "The species", speciesName, "has not been defined"
+            print("The species", speciesName, "has not been defined")
             sys.exit()
 
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "DnT INFO: Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "DnT INFO: Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -276,7 +276,7 @@ class TestParticleTrajectory(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         # Abbreviations
         p_P = self.particle_P
@@ -303,12 +303,12 @@ class TestParticleTrajectory(unittest.TestCase):
         # Check that the trajectory parameters are correct by
         # reading them back from the Particle_C object.
 
-        print "The explicit species with trajectory particles are", p_P.traj_T.explicit_species
+        print("The explicit species with trajectory particles are", p_P.traj_T.explicit_species)
         expectedList = self.trajin.explicit_dict['names']
         for sp in p_P.traj_T.explicit_species:
-            print "  with particle indices", p_P.traj_T.particle_index_list[sp]
+            print("  with particle indices", p_P.traj_T.particle_index_list[sp])
             if len(p_P.traj_T.particle_index_list[sp]) == 0: continue
-            print "  and values", p_P.traj_T.data_list[sp][0].dtype.names
+            print("  and values", p_P.traj_T.data_list[sp][0].dtype.names)
             gotList = p_P.traj_T.data_list[sp][0].dtype.names
             for i in range(len(expectedList)):
                 self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an explicit particle")
@@ -334,7 +334,7 @@ class TestParticleTrajectory(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         p_P = self.particle_P
 
@@ -357,16 +357,16 @@ class TestParticleTrajectory(unittest.TestCase):
         if p_P.traj_T is not None:
             p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
-        print "\nDnT INFO: %s\t Run for %d timesteps from step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.n_timesteps, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count())
+        print("\nDnT INFO: %s\t Run for %d timesteps from step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.n_timesteps, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count()))
 
-        for istep in xrange(self.ctrl.n_timesteps):
+        for istep in range(self.ctrl.n_timesteps):
 
             # Count the number of times this loop has been entered:
             self.ctrl.timeloop_count += 1
             # Set the time we're integrating to:
             self.ctrl.time += self.ctrl.dt
 
-            print fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
+            print(fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time)
 
             # Do the implicit species first
             if len(p_P.implicit_species) != 0:
@@ -387,7 +387,7 @@ class TestParticleTrajectory(unittest.TestCase):
 # test for neg_E_field = None:
 #                    p_P.record_trajectory_data()
 
-        print "\nDnT INFO: %s\t Exited the time loop at end of step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count())
+        print("\nDnT INFO: %s\t Exited the time loop at end of step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count()))
 
         # Record the LAST points on the particle trajectories
         if p_P.traj_T is not None:
@@ -456,7 +456,7 @@ class TestParticleTrajectory(unittest.TestCase):
         printWarningAtEnd = True
         
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         p_P = self.particle_P
 
@@ -480,15 +480,15 @@ class TestParticleTrajectory(unittest.TestCase):
             p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
         if printInfoAdvance is True:
-            print "\nDnT INFO: %s\t Advance for %d timesteps from step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.n_timesteps, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count())
+            print("\nDnT INFO: %s\t Advance for %d timesteps from step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.n_timesteps, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count()))
 
-        for istep in xrange(self.ctrl.n_timesteps):
+        for istep in range(self.ctrl.n_timesteps):
 
             self.ctrl.timeloop_count += 1
             self.ctrl.time += self.ctrl.dt
 
             if printInfoStarting is True:
-                print "\nDnT INFO: %s\t Starting iteration %d to reach time %.3g" % (fncName, self.ctrl.timeloop_count, self.ctrl.time)
+                print("\nDnT INFO: %s\t Starting iteration %d to reach time %.3g" % (fncName, self.ctrl.timeloop_count, self.ctrl.time))
 
             # Do the implicit species first
             if len(p_P.implicit_species) != 0:
@@ -506,11 +506,11 @@ class TestParticleTrajectory(unittest.TestCase):
 
             if p_P.get_total_particle_count() == 0:
                 if printWarningAtEnd is True:
-                    print "\nDnT WARNING: %s\t At end of step %d, time %.3g, there are 0 particles" % (fncName, self.ctrl.timeloop_count, self.ctrl.time)
+                    print("\nDnT WARNING: %s\t At end of step %d, time %.3g, there are 0 particles" % (fncName, self.ctrl.timeloop_count, self.ctrl.time))
 
         # The specified number of time steps has been reached.
         if printInfoExited is True:
-            print "\nDnT INFO: %s\t Exited the time loop at end of step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count())
+            print("\nDnT INFO: %s\t Exited the time loop at end of step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count()))
 
         # Record the LAST points on the particle trajectory
         if p_P.traj_T is not None:
@@ -540,7 +540,7 @@ class TestParticleTrajectory(unittest.TestCase):
         isp = 0
         for sp in p_P.species_names:
             if p_P.get_species_particle_count(sp) == 0:
-                print "DnT INFO: %s\t There are no particles remaining for species %s. Skipping check of results." % (fncName, sp)
+                print("DnT INFO: %s\t There are no particles remaining for species %s. Skipping check of results." % (fncName, sp))
                 continue
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
@@ -581,7 +581,7 @@ class TestParticleTrajectory(unittest.TestCase):
         printWarningAtEnd = True
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         p_P = self.particle_P
 
@@ -605,15 +605,15 @@ class TestParticleTrajectory(unittest.TestCase):
             p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
         if printInfoAdvance is True:
-            print "\nDnT INFO: %s\t Advance for %d timesteps from step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.n_timesteps, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count())
+            print("\nDnT INFO: %s\t Advance for %d timesteps from step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.n_timesteps, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count()))
 
-        for istep in xrange(self.ctrl.n_timesteps):
+        for istep in range(self.ctrl.n_timesteps):
 
             self.ctrl.timeloop_count += 1
             self.ctrl.time += self.ctrl.dt
 
             if printInfoStarting is True:
-                print "\nDnT INFO: %s\t Starting iteration %d to reach time %.3g" % (fncName, self.ctrl.timeloop_count, self.ctrl.time)
+                print("\nDnT INFO: %s\t Starting iteration %d to reach time %.3g" % (fncName, self.ctrl.timeloop_count, self.ctrl.time))
 #            print fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
 
             # Do the implicit species first
@@ -632,10 +632,10 @@ class TestParticleTrajectory(unittest.TestCase):
 
             if p_P.get_total_particle_count() == 0:
                 if printWarningAtEnd is True:
-                    print "\nDnT WARNING: %s\t At end of step %d, time %.3g, there are 0 particles" % (fncName, self.ctrl.timeloop_count, self.ctrl.time)
+                    print("\nDnT WARNING: %s\t At end of step %d, time %.3g, there are 0 particles" % (fncName, self.ctrl.timeloop_count, self.ctrl.time))
 
         # The specified number of time steps has been reached.
-        print "\nDnT INFO: %s\t Exited the time loop at end of step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count())
+        print("\nDnT INFO: %s\t Exited the time loop at end of step %d, time %.3g with %d particles\n" % (fncName, self.ctrl.timeloop_count, self.ctrl.time, p_P.get_total_particle_count()))
 
         # Record the LAST points on the particle trajectory
         if p_P.traj_T is not None:
@@ -659,7 +659,7 @@ class TestParticleTrajectory(unittest.TestCase):
         ncoords = p_P.particle_dimension # number of particle coordinates to check
         isp = 0
         for sp in p_P.species_names:
-            print fncName, "Checking results for for species", sp
+            print(fncName, "Checking results for for species", sp)
             
             if p_P.get_species_particle_count(sp) == 0: continue
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -46,7 +46,7 @@ class TestMeshFunctions(unittest.TestCase):
         # cell(index) is the local index of the cell.
         # facets(cell) are the facets of a cell.
         # facet.entities(tdim) are the entities of dimension 2 touching that facet
-        cell_neighbors = {cell.index(): sum((filter(lambda ci: ci != cell.index(), facet.entities(tdim)) for facet in df_m.facets(cell)), []) for cell in df_m.cells(mesh)}
+        cell_neighbors = {cell.index(): sum(([ci for ci in facet.entities(tdim) if ci != cell.index()] for facet in df_m.facets(cell)), []) for cell in df_m.cells(mesh)}
 
 #        print cell_neighbors
 
@@ -54,7 +54,10 @@ class TestMeshFunctions(unittest.TestCase):
         mplot_m.show()
 
 #        self.assertEqual(len(shared_items), len(expected_neighbors), msg="Cell neighbor list is not correct")
-        self.assertEqual(cmp(cell_neighbors, expected_neighbors), 0, msg="Cell neighbor list is not correct")
+#        self.assertEqual(cmp(cell_neighbors, expected_neighbors), 0, msg="Cell neighbor list is not correct")
+#26aug18 cmp() was removed from python3:
+        self.assertEqual(cell_neighbors, expected_neighbors, msg="Cell neighbor list is not correct")
+
 
         return
 

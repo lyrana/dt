@@ -11,13 +11,13 @@ Q = VectorFunctionSpace(mesh, "CG", 1, dim=2)
 v2d=vertex_to_dof_map(Q)
 d2v=dof_to_vertex_map(Q)
 
-print "before reshape, v2d=", v2d
+print("before reshape, v2d=", v2d)
 v2d = v2d.reshape((-1, mesh.geometry().dim()))
-print "after reshape, v2d=", v2d
+print("after reshape, v2d=", v2d)
 
-print "before processing, d2v=", d2v
-d2v = d2v[xrange(0, len(d2v), 2)]/2 # the even values, divided by 2??
-print "before processing, d2v=", d2v
+print("before processing, d2v=", d2v)
+d2v = d2v[range(0, len(d2v), 2)]/2 # the even values, divided by 2??
+print("before processing, d2v=", d2v)
 
 # Test
 # A function on the mesh vertices

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -21,7 +21,7 @@ class TestUserUnits(unittest.TestCase):
     def test_eV(self):
 
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        print('\ntest: ', fncname, '('+__file__+')')
 
         # The temperature value input by the user:
         input_temp_eV = 3.0

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -132,7 +132,7 @@ class TestParticleDeletion(unittest.TestCase):
         speciesName = 'one_electron'
         # Check that this species has been defined above
         if speciesName not in self.particle_P.species_names:
-            print fncName + "The species", speciesName, "has not been defined"
+            print(fncName + "The species", speciesName, "has not been defined")
             sys.exit()
 
         # Specify how the species will be initialized
@@ -140,7 +140,7 @@ class TestParticleDeletion(unittest.TestCase):
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticlesModuleName, speciesName)
@@ -212,7 +212,7 @@ class TestParticleDeletion(unittest.TestCase):
         """Delete some particles in the 'out' array"""
 
         fncName = sys._getframe().f_code.co_name
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
 
         # Abbreviations
 
@@ -225,7 +225,7 @@ class TestParticleDeletion(unittest.TestCase):
         self.ctrl.E0 = Vec_C(p_P.particle_dimension, E0)
 #        ctrl.B0 = Vec_C(p_P.particle_dimension, B0)
 
-        print "SEGMENT_LENGTH is %d" % p_P.SEGMENT_LENGTH
+        print("SEGMENT_LENGTH is %d" % p_P.SEGMENT_LENGTH)
 
         # Create more particles to test deletion. Copy the particle
         # that's already stored to make 3 full and one partially
@@ -238,7 +238,7 @@ class TestParticleDeletion(unittest.TestCase):
             getparticle = p_P.pseg_arr[sp].get(0) # why get(0) instead of [0]?
             putparticle = getparticle
             x = putparticle[0]
-            print "Add %d more particles to %s species" % (num_particles, sp)
+            print("Add %d more particles to %s species" % (num_particles, sp))
             for i in range(num_particles):
 #                print 'putparticle = ', putparticle
                 # Here's the layout of data in the putparticle tuple:
@@ -256,22 +256,22 @@ class TestParticleDeletion(unittest.TestCase):
                 ## Add the new particles to the trajectory object.
                 if p['bitflags'] & p_P.TRAJECTORY_FLAG != 0:
                     if traj_T is not None:
-                        print 'pindex for trajectory = ', pindex
+                        print('pindex for trajectory = ', pindex)
                         traj_T.particle_index_list[sp].append(pindex)
                         dynamicsType = 'explicit'
                         traj_T.create_trajectory(sp, pindex, dynamicsType)
                     else:
     # Instead of printing this message, a traj_T object could be created here.
-                        print fncName, "*** DT Warning: A trajectory flag is on, but no trajectory object has been created yet. ***"
+                        print(fncName, "*** DT Warning: A trajectory flag is on, but no trajectory object has been created yet. ***")
                 x += dx
 
         # Query the particle arrays after initialization.
         for sp in p_P.species_names:
             (nseg_in, nseg_out) = p_P.pseg_arr[sp].get_number_of_segments()
-            print sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out)
+            print(sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out))
 #            npart_out = p_P.pseg_arr[sp].get_number_of_items()
             npart_out = p_P.get_species_particle_count(sp)
-            print sp, "species has %d particles in the 'out' array" % npart_out
+            print(sp, "species has %d particles in the 'out' array" % npart_out)
 
         # Delete some of the particles in each species.
 
@@ -279,8 +279,13 @@ class TestParticleDeletion(unittest.TestCase):
             np = p_P.get_species_particle_count(sp)
             if np == 0: continue # Skip if there are no particles in this species
             # Delete 7 particles, which fit into 3 segments
-            delparts = (0, np-1, np/51, np/31, np/11, np/5, np/3) # This is (0, 0, ...)
-                                                                  # for np=1
+#26aug18: In Python3, the numbers are upgraded to float before dividing
+#            delparts = (0, np-1, np/51, np/31, np/11, np/5, np/3) # This is (0, 0, ...)
+                                                                   # for np=1
+#            print("delparts a =", delparts)
+            delparts = (0, np-1, int(np/51), int(np/31), int(np/11), int(np/5), int(np/3))
+#            print("delparts b =", delparts)
+            
             # Delete 6 particles, which fit into 3 segments
 #            delparts = (0, np-1, np/51, np/31, np/11, np/5)
             # Delete 5 particles, which needs a 4th segment
@@ -300,18 +305,18 @@ class TestParticleDeletion(unittest.TestCase):
 
         ncoords = p_P.particle_dimension # number of particle coordinates to check
 #        isp = 0
-        print "Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps"
+        print("Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps")
         for sp in p_P.species_names:
             if p_P.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
             p_P.move_particles_in_uniform_fields(sp, self.ctrl)
 
         # Now check on the arrays again
-        print "\nAfter a particle move step:\n"
+        print("\nAfter a particle move step:\n")
         for sp in p_P.species_names:
             (nseg_in, nseg_out) = p_P.pseg_arr[sp].get_number_of_segments()
-            print sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out)
+            print(sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out))
             npart_out = p_P.get_species_particle_count(sp)
-            print sp, "species has %d particles in the 'out' array" % npart_out
+            print(sp, "species has %d particles in the 'out' array" % npart_out)
 
 # Need an assert test here.
 

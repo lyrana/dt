@@ -123,10 +123,10 @@ class History_C(object):
         if histin.max_points is None:
             self.skip = 1
         else:
-            self.skip = ctrl.n_timesteps/max_points + 1
+            self.skip = int(ctrl.n_timesteps/max_points + 1)
 
         # Length of history-data arrays
-        self.npoints = ctrl.n_timesteps/self.skip + 1
+        self.npoints = int(ctrl.n_timesteps/self.skip + 1)
 
         # Initial a counter
         self.counter = 0
@@ -232,35 +232,40 @@ class ParticleHistory_C(History_C):
 
         yarray = self.data_array['step']
 
-        plot_title = "timestep number vs. time"
+        plot_title = "timestep_number_vs._time"
         x_label = "time (s)"
         y_label = "timestep"
 
-        mplot_m.figure()
+        fig = mplot_m.figure()
         mplot_m.plot(tvals, yarray, marker="o")
         mplot_m.title(plot_title)
         mplot_m.xlabel(x_label)
         mplot_m.ylabel(y_label)
         mplot_m.grid(True)
+        mplot_m.savefig(plot_title + ".png")
+        mplot_m.show()
+        mplot_m.close(fig)
         
         # Plot the requested histories, both total and for each species
         for hist in self.scalar_histories + self.species_scalar_histories:
 
             yarray = self.data_array[hist]
 
-            plot_title = "%s vs. time" % (hist)
+            plot_title = "%s_vs._time" % (hist)
             x_label = "time (s)"
             y_label = hist
 
-            mplot_m.figure()
+            fig = mplot_m.figure()
 #            mplot_m.plot(tvals[0:nlength], data_arr[comp][0:nlength], marker="o")
             mplot_m.plot(tvals, yarray, marker="o")
             mplot_m.title(plot_title)
             mplot_m.xlabel(x_label)
             mplot_m.ylabel(y_label)
             mplot_m.grid(True)
-            
-        mplot_m.show()
+            mplot_m.savefig(plot_title + ".png")
+            mplot_m.show()
+            mplot_m.close(fig)
+#        mplot_m.show()
             
         return
 #    def plot(self):ENDDEF
@@ -360,11 +365,11 @@ class Trajectory_C(object):
         if trajin.max_points is None:
             self.skip = 1
         else:
-            self.skip = ctrl.n_timesteps/trajin.max_points + 1
+            self.skip = int(ctrl.n_timesteps/trajin.max_points + 1)
 
         # Length of trajectory data arrays
         # If the location of boundary-crossings is recorded, then you can run out of space
-        self.npoints = ctrl.n_timesteps/self.skip + 1 + trajin.extra_points
+        self.npoints = int(ctrl.n_timesteps/self.skip + 1 + trajin.extra_points)
 
         # Need these to get the right trajectory variables
         self.explicit_species = explicit_species
@@ -451,17 +456,17 @@ class Trajectory_C(object):
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
             if len(self.data_list[sp]) == 0:
-                print fncName, "\tDnT INFO: No trajectories recorded for species %s." % sp
+                print(fncName, "\tDnT INFO: No trajectories recorded for species %s." % sp)
                 continue
             comps = self.data_list[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
 #            print 'comps =', comps
-            for it in xrange(len(self.particle_index_list[sp])):
+            for it in range(len(self.particle_index_list[sp])):
                 if self.particle_unique_id_list[sp][it] is None:
                     ip = self.particle_index_list[sp][it]
-                    plot_title = "%s: Traj# %d Particle id %d" % (sp, it, ip)
+                    plot_title = "%s:_Traj#_ %d_Particle_id_%d" % (sp, it, ip)
                 else:
                     ip = self.particle_unique_id_list[sp][it]
-                    plot_title = "%s: Traj# %d Particle uid %d" % (sp, it, ip)
+                    plot_title = "%s:_Traj#_%d_Particle_uid_%d" % (sp, it, ip)
                 data_arr = self.data_list[sp][it]
                 tvals = self.data_list[sp][it]['t']
                 nlength = self.trajectory_length[sp][it]
@@ -471,12 +476,15 @@ class Trajectory_C(object):
                 
                 x_label = "time (s)"
                 for comp in comps:
-                    mplot_m.figure()
+                    fig = mplot_m.figure()
                     mplot_m.plot(tvals[0:nlength], data_arr[comp][0:nlength], marker="o")
                     mplot_m.title(plot_title)
                     mplot_m.xlabel(x_label)
                     mplot_m.ylabel(comp)
                     mplot_m.grid(True)
+                    mplot_m.savefig(plot_title + ".png")
+                    mplot_m.show()
+                    mplot_m.close(fig)
                     # mplot_m.show()
 
                 if plot_vs_t_only is False:
@@ -487,20 +495,24 @@ class Trajectory_C(object):
                 # x vs. y
                     if 'x' in comps:
                         if 'y' in comps:
-                            mplot_m.figure()
+                            fig = mplot_m.figure()
                             mplot_m.plot(data_arr['x'][0:nlength], data_arr['y'][0:nlength], marker="o")
                             mplot_m.title(plot_title)
                             mplot_m.xlabel('x')
                             mplot_m.ylabel('y')
                             mplot_m.grid(True)
+                            mplot_m.savefig(plot_title + ".png")
+                            mplot_m.close(fig)
                             # mplot_m.show()
                         if 'ux' in comps:
-                            mplot_m.figure()
+                            fig = mplot_m.figure()
                             mplot_m.plot(data_arr['x'][0:nlength], data_arr['ux'][0:nlength], marker="o")
                             mplot_m.title(plot_title)
                             mplot_m.xlabel('x')
                             mplot_m.ylabel('ux')
                             mplot_m.grid(True)
+                            mplot_m.savefig(plot_title + ".png")
+                            mplot_m.close(fig)
                             # mplot_m.show()
                 
                 mplot_m.show()
@@ -520,14 +532,14 @@ class Trajectory_C(object):
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:
             if len(self.data_list[sp]) == 0:
-                print fncName, "\tDnT INFO: No trajectories recorded for species %s." % sp
+                print(fncName, "\tDnT INFO: No trajectories recorded for species %s." % sp)
                 continue
             comps = self.data_list[sp][0][0].dtype.names[2:] # Skip the 'step' and 't' fields
             # Loop on trajectories for this species
-            for it in xrange(len(self.particle_index_list[sp])):
+            for it in range(len(self.particle_index_list[sp])):
                 nlength = self.trajectory_length[sp][it]
                 if nlength == 1:
-                    print fncName, "\tDnT Warning: Trajectory %d for species %s has only one point. Not plotting it." % (it, sp)
+                    print(fncName, "\tDnT Warning: Trajectory %d for species %s has only one point. Not plotting it." % (it, sp))
 #                    print fncName, "*** DT Warning: Trajectory", it, "for species", sp, "has only one point. Not plotting it.***"
                     continue
                 data_arr = self.data_list[sp][it]

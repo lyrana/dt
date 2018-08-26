@@ -114,7 +114,7 @@ class UserParticleBoundaryFunctions_C(object):
         """Global default boundary condition for all species.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print "Called", fncName
+        print("Called", fncName)
 
         return
 
@@ -127,7 +127,7 @@ class UserParticleBoundaryFunctions_C(object):
            :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-        print fncName, "invoked by particle", p, "of species", speciesName
+        print(fncName, "invoked by particle", p, "of species", speciesName)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -142,7 +142,7 @@ class UserParticleBoundaryFunctions_C(object):
         """Default boundary condition for particles incident on xmax.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print "Called", fncName
+        print("Called", fncName)
 
         return
     
@@ -151,7 +151,7 @@ class UserParticleBoundaryFunctions_C(object):
         """Default boundary condition for particles incident on ymin.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-        print fncName, "invoked by particle", p, "of species", speciesName
+        print(fncName, "invoked by particle", p, "of species", speciesName)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -165,7 +165,7 @@ class UserParticleBoundaryFunctions_C(object):
         """Default boundary condition for particles incident on ymax.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print "Called", fncName
+        print("Called", fncName)
 
         return
     
@@ -175,7 +175,7 @@ class UserParticleBoundaryFunctions_C(object):
 
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-        print fncName, "invoked by particle", p, "of species", speciesName
+        print(fncName, "invoked by particle", p, "of species", speciesName)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -199,7 +199,7 @@ class UserParticleSourceFunctions_C(object):
         """Global default boundary condition for all species.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print "Called", fncName
+        print("Called", fncName)
 
         return
 

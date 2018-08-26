@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 # 1D spherically-symmetric expansion of ions and electrons
 # See sphere1D.ods for setting up parameters
@@ -181,7 +181,7 @@ plotTimeHistories = True # Plot the recorded values vs. time.
 ############################## PC. Physical constants ##############################
 
 # DO NOT MODIFY THESE VALUES!
-# These are (abbreviations for) physical constants, and should not be modified.
+# These are (abbreviations for) physical constants.
 # Values used in the simulation should be written in terms of these.
 m_e = 1.0*MyPlasmaUnits_C.electron_mass
 q_e = 1.0*MyPlasmaUnits_C.elem_charge
@@ -265,7 +265,7 @@ scr.ion_mass = 100.0*scr.electron_mass
 scr.ion_charge_state = 1.0
 scr.ion_sound_speed = np_m.sqrt(scr.ion_charge_state*q_e*scr.T_e_eV/scr.ion_mass)
 # If the mesh goes to r=0, the following is used to estimate the ion drift out of the source region:
-scr.ion_sound_speed_multiplier = 0.1
+scr.ion_sound_speed_multiplier = 10.0
 print("The ion sound speed is %.3g m/s. Multiplier for initial ion drift is %.3g" % (scr.ion_sound_speed, scr.ion_sound_speed_multiplier))
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
@@ -282,21 +282,21 @@ if emitInput is True:
 ##### SC.1. Titles
 
 # Run identifier
-ctrl.title = "sphere1D"
+ctrl.title = "ion-test"
 # Run author
 ctrl.author = "tph"
 
 ##### SC.2. Timestepping
 
-ctrl.n_timesteps = 100 # 100
+ctrl.n_timesteps = 10 # 100
 
-ctrl.dt = 1.0e-5 # sec 4.0e-7 from sphere1D.ods
+ctrl.dt = 3.0e-5 # sec 4.0e-7 from sphere1D.ods
 if ctrl.dt > scr.dt_max:
     print("%s\n\tTimestep exceeds stability limit by %.3g" % (fileName, ctrl.dt/scr.dt_max))
 else:
     print("%s\n\tTimestep is %.3g of stability limit" % (fileName, ctrl.dt/scr.dt_max))
     
-    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
+if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
 # Initialize time counters
@@ -316,11 +316,11 @@ np_m.random.seed(ctrl.random_seed)
 # applied to all species. If the following lines are commented out, then the forces WILL
 # BE APPLIED to all species.
 
-#ctrl.apply_solved_electric_field = {}
-#ctrl.apply_random_external_electric_field = {}
+ctrl.apply_solved_electric_field = {}
+ctrl.apply_random_external_electric_field = {}
 
 spacechargeFactor = 1.0
-randomExternalElectricFieldAmplitude = 0.1
+randomExternalElectricFieldAmplitude = 0.0
 
 ##### SC.4. Output control
 
@@ -333,7 +333,7 @@ ctrl.potential_field_output_file = ctrl.title + "-phi.xdmf"
 ctrl.field_output_interval = 1
 
 ### Set parameters for writing particle output to an h5part file
-#ctrl.particle_output_file = "sphere1D.h5part"
+#ctrl.particle_output_file = "ion-test.h5part"
 ctrl.particle_output_file = ctrl.title + ".h5part"
 ctrl.particle_output_interval = 1
 # Available attributes: 'species_index' and any particle-record name
@@ -433,7 +433,7 @@ Hplus_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
 # Set force-application switches for this species
 if ctrl.apply_solved_electric_field is not None:
-    ctrl.apply_solved_electric_field[speciesName] = True
+    ctrl.apply_solved_electric_field[speciesName] = False
 if ctrl.apply_random_external_electric_field is not None:
     ctrl.apply_random_external_electric_field[speciesName] = False
 
@@ -444,6 +444,7 @@ if emitInput is True:
     print("")
     print("********** Particle Species Attributes (particle_species.__dict__) **********")
     for s in pin.particle_species:
+        print("%s species:" % s.name)
         for k, v in s.__dict__.items():
             if type(v) is np_m.float64:
                 print(" %s = %.3g" % (k, v))
@@ -628,7 +629,8 @@ temp_joule = temperature_eV*MyPlasmaUnits_C.elem_charge
 thermalSpeed = np_m.sqrt(2.0*temp_joule/ionMass)
 
 #driftVelocityHplus = (vdrift_1, vdrift_2, vdrift_3)
-driftVelocityHplus = (vdrift_1,)
+#driftVelocityHplus[0] = vdrift_1
+driftVelocityHplus = (vdrift_1)
 
 # Set desired particles-per-cell
 numberPerCell = 1
@@ -736,7 +738,8 @@ if emitInput is True:
 #   c. source region
 
 ## Note: the dictionary keys here are source-region names, NOT species names!
-particleSourceDict = {'electron_source': (electronSourceParams, particleGenerator, electronSourceRegion),
+# Leave out the electrons:
+particleSourceDict = { #'electron_source': (electronSourceParams, particleGenerator, electronSourceRegion),
                       'Hplus_source': (HplusSourceParams, particleGenerator, HplusSourceRegion),
                       }
 
@@ -953,6 +956,8 @@ if randomExternalElectricFieldAmplitude != 0.0:
     # Put non-zero external electric field values into the electron source region
     randomExternalElectricField_F.set_values(randomExternalElectricFieldAmplitude, subdomain=electronSourceRegion)
     print("randomExternalElectricField values:", randomExternalElectricField_F.function_values.get_local())
+else:
+    randomExternalElectricField_F = None
 
 #    import matplotlib.pyplot as mplot_m
 #    df_m.plot(randomExternalElectricField_F.function, title="External E")

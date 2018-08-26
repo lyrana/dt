@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -112,7 +112,7 @@ class TestParticleCellIndex(unittest.TestCase):
         speciesName = 'plasma_electrons'
         # Check that this species has been defined above
         if speciesName not in self.particle_P.species_names:
-            print fncName + "The species", speciesName, "has not been defined"
+            print(fncName + "The species", speciesName, "has not been defined")
             sys.exit()
 
         # Specify how the species will be initialized
@@ -120,7 +120,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticlesModuleName, speciesName)
@@ -137,7 +137,7 @@ class TestParticleCellIndex(unittest.TestCase):
         speciesName = 'H_plus'
         # Check that this species has been defined above
         if speciesName not in self.particle_P.species_names:
-            print fncName + "The species", speciesName, "has not been defined"
+            print(fncName + "The species", speciesName, "has not been defined")
             sys.exit()
 
         # Specify how the species will be initialized
@@ -145,7 +145,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -233,7 +233,7 @@ class TestParticleCellIndex(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest:', fncName, '('+__file__+')'
+        print('\ntest:', fncName, '('+__file__+')')
 
         # 1D mesh
 
@@ -245,7 +245,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # the cell midpoint using the BB tree.  Compare that to the
         # index value stored in the cell object.
         # Make a particle-like point from the midpoint
-        print "1D test"
+        print("1D test")
         for cell in df_m.cells(self.pmesh1D.mesh):
             midpt = cell.midpoint()
             # Have to convert the Point to a 1-element pseg-type array
@@ -270,7 +270,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # the cell midpoint using the BB tree.  Compare that to the
         # index value stored in the cell object.
         # Make a particle-like point from the midpoint
-        print "2D test"
+        print("2D test")
         for cell in df_m.cells(self.pmesh2D.mesh):
             midpt = cell.midpoint()
             # Have to convert the Point to a 1-element pseg-type array
@@ -284,7 +284,7 @@ class TestParticleCellIndex(unittest.TestCase):
             self.assertEqual(cell_index, cell.index(), msg = "2D cell index is not correct")
 
         # 3D mesh
-        print "3D test"
+        print("3D test")
         # Make a particle-like point from the midpoint
         for cell in df_m.cells(self.pmesh3D.mesh):
             midpt = cell.midpoint()
@@ -310,12 +310,12 @@ class TestParticleCellIndex(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest:', fncName, '('+__file__+')'
+        print('\ntest:', fncName, '('+__file__+')')
 
         # List all the possible spatial coordinates
         spatial_coordinates = ('x','y','z')
 
-        print "1D, 2D, 3D tests"
+        print("1D, 2D, 3D tests")
         # Loop on the species
         isp = 0
         for sp in self.particle_P.species_names:
@@ -330,7 +330,7 @@ class TestParticleCellIndex(unittest.TestCase):
             while isinstance(pseg, np_m.ndarray):
                 # Check if the particle is still on the meshed region
 #                for ip in xrange(pseg.size):
-                for ip in xrange(np_seg):
+                for ip in range(np_seg):
 
                     # pseg[i] is 'x', 'y', 'z', 'vx', 'vy',... values of ith item
                     # So pseg[i][0:3] is 'x', 'y', 'z'.

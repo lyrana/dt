@@ -69,10 +69,10 @@ class MyPlasmaUnits_C(object):
 # Print the values (fix this to print attributes instead)
     @staticmethod
     def print_units():
-        print "Conversion factors in ", MyPlasmaUnits_C.__name__, ":"
+        print("Conversion factors in ", MyPlasmaUnits_C.__name__, ":")
         U = MyPlasmaUnits_C.U
         for key in U:
-            print key, " = ", U[key]
+            print(key, " = ", U[key])
 
 #    def __init__(self):
 #        self.number_per_m3 = 1.0

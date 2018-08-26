@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -25,7 +25,8 @@ class TestFieldSolve(unittest.TestCase):
         # initializations for each test go here...
 
         fncName = '(' + __file__ + ') ' + sys._getframe().f_code.co_name + "():"
-        print "\n", fncName, "This is DOLFIN Version", df_m.DOLFIN_VERSION_STRING
+#        print("\n", fncName, "This is DOLFIN Version", df_m.DOLFIN_VERSION_STRING)
+        print("\n", fncName, "This is DOLFIN Version", df_m.__version__)
 
         return
 #    def setUp(self):ENDDEF
@@ -42,7 +43,7 @@ class TestFieldSolve(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         ## Specialized modules for the mesh and field solver
         from UserMesh_y_Fields_Spherical1D_Module import UserMeshInput1DS_C
@@ -120,7 +121,7 @@ class TestFieldSolve(unittest.TestCase):
                     'rmax': -1.5,
                     }
 
-        phiBCs = dict( (bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
+        phiBCs = dict( (bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in list(fieldBoundaryDict.keys()))
 
         # Compute the electrostatic field from phi
         laplacesolve = UserPoissonSolve1DS_C(phi_F,
@@ -212,7 +213,7 @@ class TestFieldSolve(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         ## Specialized modules for the mesh and field solver
         from UserMesh_y_Fields_FE2D_Module import UserMesh2DCirc_C
@@ -299,7 +300,7 @@ class TestFieldSolve(unittest.TestCase):
                    'rmax': -1.5,
                    }
         
-        phiBCs = dict((bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
+        phiBCs = dict((bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in list(fieldBoundaryDict.keys()))
 
         computeEflag = True
 
@@ -351,7 +352,7 @@ class TestFieldSolve(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         ### Specialized mesh and field-solver modules for this test ###
 
@@ -414,7 +415,7 @@ class TestFieldSolve(unittest.TestCase):
                    'xmax': 1.0,
                    }
 
-        phiBCs = dict((bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
+        phiBCs = dict((bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in list(fieldBoundaryDict.keys()))
 
         ### Create vectors for for the potential and electric field ###
 
@@ -484,7 +485,7 @@ class TestFieldSolve(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         ### Specialized mesh and field-solver modules for this test ###
 
@@ -549,7 +550,7 @@ class TestFieldSolve(unittest.TestCase):
                    'rmax': 0.0,
                    }
 
-        phiBCs = dict((bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
+        phiBCs = dict((bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in list(fieldBoundaryDict.keys()))
 
         ### Create vectors for for the potential and electric field ###
 
@@ -636,7 +637,7 @@ class TestFieldSolve(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         ### Specialized mesh and field-solver modules for this test ###
 
@@ -700,7 +701,7 @@ class TestFieldSolve(unittest.TestCase):
                    'rmax': 0.0,
                    }
 
-        phiBCs = dict((bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
+        phiBCs = dict((bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in list(fieldBoundaryDict.keys()))
 
         ### Create vectors for for the potential and electric field ###
 

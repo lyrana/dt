@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -115,7 +115,7 @@ class TestUserMesh(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
 
         from UserMesh_y_Fields_Spherical1D_Module import UserMesh1DS_C
 
@@ -151,7 +151,7 @@ class TestUserMesh(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
 
         from UserMesh_y_Fields_Spherical1D_Module import UserMesh1DS_C
 
@@ -186,7 +186,7 @@ class TestUserMesh(unittest.TestCase):
     def test_quarter_circle_plot_false(self):
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
 
         from UserMesh_y_Fields_FE2D_Module import UserMesh2DCirc_C
         mesh_M = UserMesh2DCirc_C(self.umi2DCirc, plot_flag=False)
@@ -198,7 +198,7 @@ class TestUserMesh(unittest.TestCase):
     def test_quarter_circle_plot_true(self):
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
 
         if os.environ.get('DISPLAY') is None:
             plotFlag=False
