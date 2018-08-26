@@ -95,7 +95,7 @@ class UserMeshInput1DS_C(object):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
-        print fncName
+        print(fncName)
 
         print_string = ' rmin = ' + str(self.rmin)
         print_string += '\n rmax = ' + str(self.rmax)
@@ -197,7 +197,7 @@ class UserMesh1DS_C(Mesh_C):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
-        print fncName
+        print(fncName)
 
         print_string = ' mesh_tdim = ' + str(self.mesh_tdim)
         print_string += '\nmesh_gdim = ' + str(self.mesh_gdim)
@@ -466,9 +466,9 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
 
         # Set message detail level for the field-solver
         #df_m.set_log_level(1) # Gives the most messages
-        #df_m.set_log_level(df_m.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
+        #df_m.set_log_level(df_m.LogLeval.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
         # Turn off solver messages
-        df_m.set_log_active(False)
+#tph        df_m.set_log_active(False)
 
 # default LU is flakey: different answers on different calls: NO!: this was a heap problem of unitialized memory!
 #        self.phi = None
@@ -484,7 +484,7 @@ class UserPoissonSolve1DS_C(PoissonSolve_C):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
-        print fncName
+        print(fncName)
 
         print_string = 'solver_parameters = ' + str(self.solver_parameters)
         print_string += '\npde_has_constant_coeffs = ' + str(self.pde_has_constant_coeffs)

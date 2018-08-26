@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -84,7 +84,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         speciesName = 'two_electrons'
         # Check that this species has been defined above
         if speciesName not in self.particle_P.species_names:
-            print fncName + "The species", speciesName, "has not been defined"
+            print(fncName + "The species", speciesName, "has not been defined")
             sys.exit()
 
         # Specify how the species will be initialized
@@ -92,7 +92,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticlesModuleName, speciesName)
@@ -193,7 +193,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
 
         ctrl = DTcontrol_C()
 
@@ -229,7 +229,7 @@ class TestParticleNonuniformE(unittest.TestCase):
 #        print '2nd electron:', getparticle
 
         # Advance the particles one timestep
-        print "Moving", self.particle_P.get_total_particle_count(), "particles for one timestep"
+        print("Moving", self.particle_P.get_total_particle_count(), "particles for one timestep")
         ctrl.time_step = 0
         ctrl.time = 0.0
 
@@ -285,7 +285,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         """ Check the number of particles in each species.
         """
         fncName = sys._getframe().f_code.co_name
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
         pass
 
         return

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -93,7 +93,7 @@ class TestParticleInitialization(unittest.TestCase):
         speciesName = 'plasma_electrons'
         # Check that this species has been defined above
         if speciesName not in p_P.species_names:
-            print fncName + "The species", speciesName, "has not been defined"
+            print(fncName + "The species", speciesName, "has not been defined")
             sys.exit()
 
         # Specify how the species will be initialized
@@ -103,7 +103,7 @@ class TestParticleInitialization(unittest.TestCase):
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in %s for species %s " % (speciesName, userParticlesModuleName, speciesName)
@@ -122,7 +122,7 @@ class TestParticleInitialization(unittest.TestCase):
         speciesName = 'H_plus'
         # Check that this species has been defined above
         if speciesName not in p_P.species_names:
-            print fncName + "The species", speciesName, "has not been defined"
+            print(fncName + "The species", speciesName, "has not been defined")
             sys.exit()
 
         # Specify how the species will be initialized
@@ -130,7 +130,7 @@ class TestParticleInitialization(unittest.TestCase):
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -158,7 +158,7 @@ class TestParticleInitialization(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest:', fncName, '('+__file__+')'
+        print('\ntest:', fncName, '('+__file__+')')
 
         particle_species = self.pin_PI.particle_species
         # Check the names of the species
@@ -176,7 +176,7 @@ class TestParticleInitialization(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
 
         userParticlesClass = self.particle_P.user_particles_class
 
@@ -231,7 +231,7 @@ class TestParticleInitialization(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
 
         ## Control struct
         ctrl = DTcontrol_C()
@@ -267,7 +267,7 @@ class TestParticleInitialization(unittest.TestCase):
             charge = p_P.charge[speciesName]
             mass = p_P.mass[speciesName]
         else:
-            print "The species", speciesName, "needs to be defined."
+            print("The species", speciesName, "needs to be defined.")
             sys.exit()
 
         initialDistributionType = 'function_over_region'
@@ -275,7 +275,7 @@ class TestParticleInitialization(unittest.TestCase):
         numberDensity = 1.0e12
         # Check for positivity
         if numberDensity <= 0:
-            print "Check number density for species", speciesName, "is zero or negative. Should be positive"
+            print("Check number density for species", speciesName, "is zero or negative. Should be positive")
             sys.exit()
 
         # Compute a value for thermalSpeed from the temperature in eV
@@ -347,13 +347,13 @@ class TestParticleInitialization(unittest.TestCase):
         # {ipName: (ipParams, ipFunc, ipRegion_RR)}
 
         nCreatedTotal = 0
-        for ipName, ipTuple in initialParticlesDict.iteritems():
+        for ipName, ipTuple in initialParticlesDict.items():
             ipParams = ipTuple[0]
             s = ipParams['species_name']
             initialDistributionType = ipParams['initial_distribution_type']
 
             if initialDistributionType == 'function_over_region':
-                print fncName, "Initializating", ipName, "particles"
+                print(fncName, "Initializating", ipName, "particles")
                 ipFunc = ipTuple[1]
                 ipRegion_RR = ipTuple[2]
                 # Invoke the creation function
@@ -365,7 +365,7 @@ class TestParticleInitialization(unittest.TestCase):
                 # Check the number of stored particles for each species
 
                 nCreated = ipRegion_RR.ncell * ipParams['number_per_cell']
-                print fncName, "Number of particles created =", nCreated
+                print(fncName, "Number of particles created =", nCreated)
                 nCreatedTotal += nCreated
 
                 nStored = p_P.get_species_particle_count(s, print_flag = False)
@@ -373,7 +373,7 @@ class TestParticleInitialization(unittest.TestCase):
 
         # check total number of stored particles
         nStored = p_P.get_total_particle_count(print_flag = False)
-        print fncName, "Total number of particles created =", nCreatedTotal
+        print(fncName, "Total number of particles created =", nCreatedTotal)
         self.assertEqual(nStored, nCreatedTotal, msg = "Total number of stored particles is not correct")
 
         # Write out the particles to an HDF5 file
@@ -409,7 +409,7 @@ class TestParticleInitialization(unittest.TestCase):
         """ Check the number of particles in each species.
         """
         fncName = sys._getframe().f_code.co_name
-        print '\ntest:', fncName, '('+__file__+')'
+        print('\ntest:', fncName, '('+__file__+')')
 
         return
 #    def test_something(self):ENDDEF

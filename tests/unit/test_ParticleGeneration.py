@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2017 L. D. Hughes'
@@ -48,7 +48,7 @@ class TestParticleGeneration(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
 
         ## Set control variables
 
@@ -121,7 +121,7 @@ class TestParticleGeneration(unittest.TestCase):
             charge = particle_P.charge[speciesName]
             mass = particle_P.mass[speciesName]
         else:
-            print "The species", speciesName, "has not been defined"
+            print("The species", speciesName, "has not been defined")
             sys.exit()
 
         sourceDistributionType = 'functional'
@@ -134,7 +134,7 @@ class TestParticleGeneration(unittest.TestCase):
         numberDensity = chargeDensityRate*timeStepInterval*ctrl.dt/charge
         # Check for positivity
         if numberDensity < 0:
-            print "Check number density for species", speciesName, "is negative. Should be positive"
+            print("Check number density for species", speciesName, "is negative. Should be positive")
             sys.exit()
 
         # Compute a value for thermalSpeed from the temperature in eV
@@ -191,7 +191,7 @@ class TestParticleGeneration(unittest.TestCase):
             charge = particle_P.charge[speciesName]
             mass = particle_P.mass[speciesName]
         else:
-            print "The species", speciesName, "has not been defined"
+            print("The species", speciesName, "has not been defined")
             sys.exit()
 
         sourceDistributionType = 'functional'
@@ -205,7 +205,7 @@ class TestParticleGeneration(unittest.TestCase):
         numberDensity = chargeDensityRate*timeStepInterval*ctrl.dt/charge
         # Check for positivity
         if numberDensity < 0:
-            print "Check number density for species", speciesName, "is negative. Should be positive"
+            print("Check number density for species", speciesName, "is negative. Should be positive")
             sys.exit()
 
         # Compute a value for thermalSpeed
@@ -315,7 +315,7 @@ def test_2D_particle_source_region(self):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
 
 #        from UserMesh_y_Fields_FE_XYZ_Module import UserMeshInput_C
 

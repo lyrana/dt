@@ -224,7 +224,8 @@ class UserMesh2DCirc_C(Mesh_C):
 #       args: RectangleMesh(x0, y0, x1, y1, nx, ny, diagonal="right")
 
 # Switch these for CEE/Laptop
-        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
+#        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
+        if df_m.__version__ > "1.5.0":
 # v > 1.5:
             mesh = df_m.RectangleMesh(df_m.Point(rmin, 0.0), df_m.Point(rmax, 1.0), nr, nt, diagonal)
         else:
@@ -444,7 +445,8 @@ class UserPoissonSolve2DCirc_C(PoissonSolve_C):
         self.assemble_source_expression(0.0)
 
         # Set message detail level for the field-solver        
-        df_m.set_log_level(df_m.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
+        df_m.set_log_level(df_m.LogLevel.PROGRESS) # Gives PETSc LU solver, (null). (Direct solver).
+#        df_m.set_log_level(16) # Gives PETSc LU solver, (null). (Direct solver).
 #df.set_log_level(1) # Gives the most messages
 
 # default LU is flakey: different answers on different calls: NO!: this was a heap problem of unitialized memory! Fix was to used set_all(0) above.

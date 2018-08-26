@@ -296,7 +296,7 @@ class UserParticleBoundaryFunctions_C(object):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print "Called", fncName
+        print("Called", fncName)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -316,7 +316,7 @@ class UserParticleBoundaryFunctions_C(object):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
 
         if printInfoInvoked is True:
-            print "DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName)
+            print("DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName))
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -348,7 +348,7 @@ class UserParticleBoundaryFunctions_C(object):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
 
         if printInfoInvoked is True:
-            print "DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName)
+            print("DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName))
         pDim = self.particle_dimension
 
         # Scratch space

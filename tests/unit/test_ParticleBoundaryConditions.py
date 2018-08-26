@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -43,7 +43,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         # if os.environ.get('DISPLAY') is None:
         #     plotFlag=False
@@ -196,14 +196,14 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # Check that this species has been defined above
         if speciesName not in particle_P.species_names:
-            print "The species", speciesName, "has not been defined"
+            print("The species", speciesName, "has not been defined")
             sys.exit()
 
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -253,8 +253,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
 # Advance the particles for n_timesteps
 
-        print "Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
-        for istep in xrange(ctrl.n_timesteps):
+        print("Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
+        for istep in range(ctrl.n_timesteps):
             
             if p_P.traj_T is not None:
                 if istep % p_P.traj_T.skip == 0:
@@ -285,7 +285,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         # if os.environ.get('DISPLAY') is None:
         #     plotFlag=False
@@ -425,14 +425,14 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # Check that this species has been defined above
         if speciesName not in particle_P.species_names:
-            print "The species", speciesName, "has not been defined"
+            print("The species", speciesName, "has not been defined")
             sys.exit()
 
         initialDistributionType = 'listed'
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -495,9 +495,9 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ### Particle loop
 
-        print "Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
+        print("Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
 
-        for istep in xrange(ctrl.n_timesteps):
+        for istep in range(ctrl.n_timesteps):
 
             if p_P.traj_T is not None:
 #                print 'p_P.traj_T.skip:', p_P.traj_T.skip

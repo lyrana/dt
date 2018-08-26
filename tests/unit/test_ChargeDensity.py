@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -50,7 +50,7 @@ class TestChargeDensity(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
         
         # Create a 1D mesh from -0.5 to 0.5
         mesh = df_m.IntervalMesh(2, -0.5, 0.5)
@@ -146,10 +146,10 @@ class TestChargeDensity(unittest.TestCase):
         gdim = dofNumberDensity_F.mesh_gdim
         # Reshape the coordinates to get (x), or (x,y), or (x,y,z) tuples. The
         # index "-1" is short-hand for the last element of the array.
-        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
+        if df_m.__version__ > "1.5.0":
             dofcoords = functionSpace.tabulate_dof_coordinates().reshape((-1, gdim))
         else:
-            print '\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test"
+            print('\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test")
             return
 
 
@@ -186,7 +186,7 @@ class TestChargeDensity(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
         
         # Describe a 2D mesh from (-10,-10) to (10,10) with 2 cells on a side.
         umi2d_I = UserMeshInput_C()
@@ -297,10 +297,10 @@ class TestChargeDensity(unittest.TestCase):
         functionSpace = dofNumberDensity_F.function_space
         gdim = dofNumberDensity_F.mesh_gdim
         # Reshape the coordinates to get (x), or (x,y), or (x,y,z) tuples.
-        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
+        if df_m.__version__ > "1.5.0":
             dofcoords = functionSpace.tabulate_dof_coordinates().reshape((-1, gdim))
         else:
-            print '\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test"
+            print('\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test")
             return
 
 #        print "dofcoords=", dofcoords
@@ -397,7 +397,7 @@ class TestChargeDensity(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
         
 
         ########## Numerical Mesh ##########
@@ -595,10 +595,10 @@ class TestChargeDensity(unittest.TestCase):
         functionSpace = chargeDensity_F.function_space
         gdim = chargeDensity_F.mesh_gdim
         # Reshape the coordinates to get (x), or (x,y), or (x,y,z) tuples.
-        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
+        if df_m.__version__ > "1.5.0":
             dofcoords = functionSpace.tabulate_dof_coordinates().reshape((-1, gdim))
         else:
-            print '\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test"
+            print('\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test")
             return
 
 #        print "dofcoords=", dofcoords
@@ -645,7 +645,7 @@ class TestChargeDensity(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
         
 
         ########## Numerical Mesh ##########
@@ -784,10 +784,10 @@ class TestChargeDensity(unittest.TestCase):
         functionSpace = chargeDensity_F.function_space
         gdim = chargeDensity_F.mesh_gdim
         # Reshape the coordinates to get (x), or (x,y), or (x,y,z) tuples.
-        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
+        if df_m.__version__ > "1.5.0":
             dofcoords = functionSpace.tabulate_dof_coordinates().reshape((-1, gdim))
         else:
-            print '\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test"
+            print('\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test")
             return
 
 #        print "dofcoords=", dofcoords
@@ -846,7 +846,7 @@ class TestChargeDensity(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
         
         coordinateSystem = '1D-spherical-radius'
 
@@ -1005,10 +1005,10 @@ class TestChargeDensity(unittest.TestCase):
         # Get the (x,y,z) coordinates of the DoFs for inspection (only).
         # Reshape the coordinates to get (x), or (x,y), or (x,y,z) tuples.
         gdim = chargeDensity_F.mesh_gdim
-        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
+        if df_m.__version__ > "1.5.0":
             dofcoords = functionSpace.tabulate_dof_coordinates().reshape((-1, gdim))
         else:
-            print '\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test"
+            print('\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test")
             return
 #        print "dofcoords=", dofcoords
 
@@ -1054,7 +1054,7 @@ class TestChargeDensity(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName, '('+__file__+')'
+        print('\ntest: ', fncName, '('+__file__+')')
         
         coordinateSystem = '1D-spherical-radius'
 
@@ -1211,10 +1211,10 @@ class TestChargeDensity(unittest.TestCase):
         # Get the (x,y,z) coordinates of the DoFs for inspection (only).
         # Reshape the coordinates to get (x), or (x,y), or (x,y,z) tuples.
         gdim = chargeDensity_F.mesh_gdim
-        if df_m.DOLFIN_VERSION_STRING > "1.5.0":
+        if df_m.__version__ > "1.5.0":
             dofcoords = functionSpace.tabulate_dof_coordinates().reshape((-1, gdim))
         else:
-            print '\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test"
+            print('\n!!!WARNING!!!: ', fncName, ": DOLFIN too old.  Skipping rest of test")
             return
 #        print "dofcoords=", dofcoords
 

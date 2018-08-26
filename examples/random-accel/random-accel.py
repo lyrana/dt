@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2018 L. D. Hughes'
@@ -150,7 +150,7 @@ particle_P.traj_T = traj_T
 if numberOfTrajectories != 0:
     skip = numberOfParticles/numberOfTrajectories
 # Store copies of the particle.
-for i in xrange(numberOfParticles):
+for i in range(numberOfParticles):
     # Turn ON trajectory flag.
     if numberOfTrajectories != 0 and i % skip == 0:
         bitflags = bitflags0 | Particle_C.TRAJECTORY_FLAG
@@ -240,7 +240,7 @@ particle_P.record_history_data(ctrl.timeloop_count, ctrl.time)
 
 #-# Integrate forward in time #-#
 
-for istep in xrange(ctrl.n_timesteps):
+for istep in range(ctrl.n_timesteps):
 
     ctrl.timeloop_count += 1
     ctrl.time += ctrl.dt
@@ -255,8 +255,8 @@ for istep in xrange(ctrl.n_timesteps):
 
     particle_P.record_history_data(ctrl.timeloop_count, ctrl.time)    
 
-print ""
-print "********** Exited the time loop at step %d, time %.3g, with %d particles **********" % (ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count())
+print("")
+print("********** Exited the time loop at step %d, time %.3g, with %d particles **********" % (ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count()))
 
 # Record the LAST point on the particle trajectory(ies).
 particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, external_E_field=randomExternalElectricField_F)

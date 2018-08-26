@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # 1D spherically-symmetric expansion of ions and electrons
 # See sphere1D.ods for setting up parameters
@@ -197,8 +197,8 @@ k_B = MyPlasmaUnits_C.boltzmann_constant
 # Use the scratch-pad to compute values needed to set up the simulation
 
 if emitInput is True:
-    print ""
-    print "********** Scratch-pad for computing simulation parameters **********"
+    print("")
+    print("********** Scratch-pad for computing simulation parameters **********")
 
 # Create a class for scratch-pad variables
 scr = DTscratch_C()
@@ -211,18 +211,18 @@ scr.rmin = 0.0
 scr.rmax = 20.0 # 40.0
 # Set the spatial resolution
 scr.nr = 50
-print "The mesh extends from %.3g m to %.3g m in radius" % (scr.rmin, scr.rmax)
-print "There are %d cells in the mesh" % scr.nr
+print("The mesh extends from %.3g m to %.3g m in radius" % (scr.rmin, scr.rmax))
+print("There are %d cells in the mesh" % scr.nr)
 
 # Compute a rough cell-size (The mesh can be stretched non-uniformly)
 scr.dr_av = (scr.rmax-scr.rmin)/scr.nr
-print "The average cell-size is %.3g m" % scr.dr_av
+print("The average cell-size is %.3g m" % scr.dr_av)
 
 # Specify the desired Debye length as a multiple of the cell-size
 scr.lambda_D = 2.0*scr.dr_av
-print "The electron Debye length is chosen to be %.3g m" % scr.lambda_D
-print "There are roughly %.3g cells per electron Debye length" % (scr.lambda_D/scr.dr_av)
-print "There are roughly %.3g Debye lengths in the computational region" % ((scr.rmax-scr.rmin)/scr.lambda_D)
+print("The electron Debye length is chosen to be %.3g m" % scr.lambda_D)
+print("There are roughly %.3g cells per electron Debye length" % (scr.lambda_D/scr.dr_av))
+print("There are roughly %.3g Debye lengths in the computational region" % ((scr.rmax-scr.rmin)/scr.lambda_D))
 ctrl = DTcontrol_C()
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
@@ -235,25 +235,25 @@ scr.T_e_eV = 0.02 # 6.0
 
 # Convert this to an electron thermal velocity
 scr.vthermal_e = np_m.sqrt(q_e*scr.T_e_eV/m_e)
-print "T_e is set to %.3g eV, giving an electron thermal velocity of %.3g m/s" % (scr.T_e_eV, scr.vthermal_e)
+print("T_e is set to %.3g eV, giving an electron thermal velocity of %.3g m/s" % (scr.T_e_eV, scr.vthermal_e))
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Compute the electron plasme frequency needed to get the above Debye length
 scr.omega_e = scr.vthermal_e/scr.lambda_D
-print "For the above electron Debye length, the electron plasma frequency is %.3g rad/s" % scr.omega_e
+print("For the above electron Debye length, the electron plasma frequency is %.3g rad/s" % scr.omega_e)
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Compute the explicit timestep limit from the electron plasma frequency
 scr.dt_max = 2.0/scr.omega_e
-print "This frequency gives a maximum stable timestep of %.3g s" % scr.dt_max
+print("This frequency gives a maximum stable timestep of %.3g s" % scr.dt_max)
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Compute the electron density from the plasma frequency
 scr.electron_density = m_e*eps_0*(scr.omega_e/q_e)**2
-print "The above electron plasma-frequency correspondes to an electron density of %.3g per m^{-3}" % scr.electron_density
+print("The above electron plasma-frequency correspondes to an electron density of %.3g per m^{-3}" % scr.electron_density)
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -266,7 +266,7 @@ scr.ion_charge_state = 1.0
 scr.ion_sound_speed = np_m.sqrt(scr.ion_charge_state*q_e*scr.T_e_eV/scr.ion_mass)
 # If the mesh goes to r=0, the following is used to estimate the ion drift out of the source region:
 scr.ion_sound_speed_multiplier = 0.1
-print "The ion sound speed is %.3g m/s. Multiplier for initial ion drift is %.3g" % (scr.ion_sound_speed, scr.ion_sound_speed_multiplier)
+print("The ion sound speed is %.3g m/s. Multiplier for initial ion drift is %.3g" % (scr.ion_sound_speed, scr.ion_sound_speed_multiplier))
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -292,9 +292,9 @@ ctrl.n_timesteps = 100 # 100
 
 ctrl.dt = 1.0e-5 # sec 4.0e-7 from sphere1D.ods
 if ctrl.dt > scr.dt_max:
-    print "%s\n\tTimestep exceeds stability limit by %.3g" % (fileName, ctrl.dt/scr.dt_max)
+    print("%s\n\tTimestep exceeds stability limit by %.3g" % (fileName, ctrl.dt/scr.dt_max))
 else:
-    print "%s\n\tTimestep is %.3g of stability limit" % (fileName, ctrl.dt/scr.dt_max)
+    print("%s\n\tTimestep is %.3g of stability limit" % (fileName, ctrl.dt/scr.dt_max))
     
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -341,9 +341,9 @@ ctrl.particle_output_interval = 1
 ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'unique_ID', 'crossings')
 
 if emitInput is True:
-    print ""
-    print "********** Simulation Control Attributes **********"
-    print ctrl
+    print("")
+    print("********** Simulation Control Attributes **********")
+    print(ctrl)
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
@@ -382,14 +382,14 @@ fieldBoundaryDict = {'rmin': rminIndx,
 umi.field_boundary_dict = fieldBoundaryDict
 
 if emitInput is True:
-    print ""
-    print "********** Field Boundary Dictionary (fieldBoundaryDict.__dict__) **********"
+    print("")
+    print("********** Field Boundary Dictionary (fieldBoundaryDict.__dict__) **********")
 #    print "fieldBoundaryDict =", fieldBoundaryDict
-    for k, v in fieldBoundaryDict.iteritems():
+    for k, v in fieldBoundaryDict.items():
         if type(v) is np_m.float64:
-            print " %s = %.3g" % (k, v)
+            print(" %s = %.3g" % (k, v))
         else:
-            print '', k, '=', v
+            print('', k, '=', v)
 #        print '', k, '=', v
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -441,27 +441,27 @@ if ctrl.apply_random_external_electric_field is not None:
 pin.particle_species = (electron_S, Hplus_S,)
 
 if emitInput is True:
-    print ""
-    print "********** Particle Species Attributes (particle_species.__dict__) **********"
+    print("")
+    print("********** Particle Species Attributes (particle_species.__dict__) **********")
     for s in pin.particle_species:
-        for k, v in s.__dict__.iteritems():
+        for k, v in s.__dict__.items():
             if type(v) is np_m.float64:
-                print " %s = %.3g" % (k, v)
+                print(" %s = %.3g" % (k, v))
             else:
-                print '', k, '=', v
+                print('', k, '=', v)
 #            print '', k, '=', v
-        print ""
+        print("")
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 if emitInput is True:
-    print ""
-    print "********** Particle Input Attributes (pin.__dict__) **********"
+    print("")
+    print("********** Particle Input Attributes (pin.__dict__) **********")
 #    print "Particle Input =", pin.__dict__
-    for k, v in pin.__dict__.iteritems():
+    for k, v in pin.__dict__.items():
             if type(v) is np_m.float64:
-                print " %s = %.3g" % (k, v)
+                print(" %s = %.3g" % (k, v))
             else:
-                print '', k, '=', v
+                print('', k, '=', v)
 #        print '', k, '=', v
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -494,14 +494,14 @@ particleBoundaryDict = {'rmin': rminIndx,
                         }
 
 if emitInput is True:
-    print ""
-    print "********** Particle Boundary Dictionary (particleBoundaryDict) **********"
+    print("")
+    print("********** Particle Boundary Dictionary (particleBoundaryDict) **********")
 #    print "particleBoundaryDict =", particleBoundaryDict
-    for k, v in particleBoundaryDict.iteritems():
+    for k, v in particleBoundaryDict.items():
         if type(v) is np_m.float64:
-            print " %s = %.3g" % (k, v)
+            print(" %s = %.3g" % (k, v))
         else:
-            print '', k, '=', v
+            print('', k, '=', v)
 #        print '', k, '=', v
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -509,9 +509,9 @@ if emitInput is True:
 umi.particle_boundary_dict = particleBoundaryDict
 
 if emitInput is True:
-    print ""
-    print "********** Field Mesh Input Attributes **********"
-    print umi
+    print("")
+    print("********** Field Mesh Input Attributes **********")
+    print(umi)
 #    print umi.__dict__
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -520,8 +520,8 @@ if emitInput is True:
 # First complete the mesh setup now that particle boundary-conditions have been
 # set (see #FM1 above).
 if emitInput is True:
-    print ""
-    print "********** Construct and plot the mesh **********"
+    print("")
+    print("********** Construct and plot the mesh **********")
 plotTitle = os.path.basename(__file__) + ": "
 mesh_M = UserMesh1DS_C(umi, compute_dictionaries=True, compute_tree=False, plot_flag=emitInput, plot_title=plotTitle)
 
@@ -572,10 +572,10 @@ rmaxHplus = rminHplus + 5.0*scr.lambda_D
 HplusSourceRegion = RectangularRegion_C(particle_P.pmesh_M, rminHplus, rmaxHplus)
 
 if emitInput is True:
-    print ""
-    print "********** Hplus Source Region Attributes **********"
+    print("")
+    print("********** Hplus Source Region Attributes **********")
 #    print "HplusSourceRegion =", HplusSourceRegion.__dict__
-    print HplusSourceRegion
+    print(HplusSourceRegion)
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 ## PS.3.1.3. Define the Hplus generating function & parameters
@@ -618,7 +618,7 @@ ion_loss = ion_flux*timeStepInterval*ctrl.dt
 numberDensityIncrementHplus = ion_loss/(rmaxHplus-rminHplus)
 # Check for positivity
 if numberDensityIncrementHplus < 0:
-    print "Check number density for species", ionSpeciesName, "is negative. Should be positive"
+    print("Check number density for species", ionSpeciesName, "is negative. Should be positive")
     sys.exit()
 
 # Compute a value for thermalSpeed from the temperature in eV
@@ -627,7 +627,8 @@ temperature_eV = 0.0 # 0.1 is about 1000K
 temp_joule = temperature_eV*MyPlasmaUnits_C.elem_charge
 thermalSpeed = np_m.sqrt(2.0*temp_joule/ionMass)
 
-driftVelocityHplus = (vdrift_1, vdrift_2, vdrift_3)
+#driftVelocityHplus = (vdrift_1, vdrift_2, vdrift_3)
+driftVelocityHplus = (vdrift_1,)
 
 # Set desired particles-per-cell
 numberPerCell = 1
@@ -643,15 +644,15 @@ HplusSourceParams = {'species_name': ionSpeciesName,
                      'number_per_cell': numberPerCell}
 
 if emitInput is True:
-    print ""
-    print "********** Hplus Source Parameters (HplusSourceParams) **********"
+    print("")
+    print("********** Hplus Source Parameters (HplusSourceParams) **********")
 #    print "HplusSourceParams =", HplusSourceParams
-    for k, v in HplusSourceParams.iteritems():
+    for k, v in HplusSourceParams.items():
 #        print "type(v) is ", type(v)
         if type(v) is np_m.float64:
-            print " %s = %.3g" % (k, v)
+            print(" %s = %.3g" % (k, v))
         else:
-            print '', k, '=', v
+            print('', k, '=', v)
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 ##### PS.3.2. Electron source near r=0
@@ -665,7 +666,7 @@ if speciesName in particle_P.species_names:
     charge = particle_P.charge[speciesName]
     mass = particle_P.mass[speciesName]
 else:
-    print "The species", speciesName, "has not been defined. See Particle Species Attributes for defined species."
+    print("The species", speciesName, "has not been defined. See Particle Species Attributes for defined species.")
     sys.exit()
 
 ## PS.3.2.2. Source geometry for electrons: same as Hplus
@@ -674,9 +675,9 @@ rmax = rmaxHplus
 electronSourceRegion = RectangularRegion_C(particle_P.pmesh_M, rmin, rmax)
 
 if emitInput is True:
-    print ""
-    print "********** Electron Source Region Attributes **********"
-    print electronSourceRegion
+    print("")
+    print("********** Electron Source Region Attributes **********")
+    print(electronSourceRegion)
 #    print "electronSourceRegion =", electronSourceRegion.__dict__
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -693,7 +694,7 @@ particleGenerator = particle_P.create_maxwellian_particles
 numberDensityIncrement = numberDensityIncrementHplus
 # Check for positivity
 if numberDensityIncrement < 0:
-    print "Check number density for species", speciesName, "is negative. Should be positive"
+    print("Check number density for species", speciesName, "is negative. Should be positive")
     sys.exit()
 
 thermalSpeed = scr.vthermal_e
@@ -715,14 +716,14 @@ electronSourceParams = {'species_name': speciesName,
                         'number_per_cell': numberPerCell}
 
 if emitInput is True:
-    print ""
-    print "********** Electron Source Parameters (electronSourceParams) **********"
+    print("")
+    print("********** Electron Source Parameters (electronSourceParams) **********")
 #    print "electronSourceParams =", electronSourceParams
-    for k, v in electronSourceParams.iteritems():
+    for k, v in electronSourceParams.items():
         if type(v) is np_m.float64:
-            print " %s = %.3g" % (k, v)
+            print(" %s = %.3g" % (k, v))
         else:
-            print '', k, '=', v
+            print('', k, '=', v)
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
@@ -742,11 +743,11 @@ particleSourceDict = {'electron_source': (electronSourceParams, particleGenerato
 particle_P.particle_source_dict = particleSourceDict
 
 if emitInput is True:
-    print ""
-    print "********** Particle Generators (particleSourceDict) **********"
+    print("")
+    print("********** Particle Generators (particleSourceDict) **********")
 #    print "particleSourceDict =", particleSourceDict
-    for k, v in particleSourceDict.iteritems():
-        print '', str(k) + ':', v[1]
+    for k, v in particleSourceDict.items():
+        print('', str(k) + ':', v[1])
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
@@ -846,20 +847,20 @@ phiVals = {'rmin': 'unset',
 #           }
            
 if emitInput is True:
-    print ""
-    print "********** Potential Boundary Values (phiVals) **********"
+    print("")
+    print("********** Potential Boundary Values (phiVals) **********")
 #    print "phiVals =", phiVals
-    for k, v in phiVals.iteritems():
+    for k, v in phiVals.items():
         if type(v) is np_m.float64:
-            print " %s = %.3g" % (k, v)
+            print(" %s = %.3g" % (k, v))
         else:
-            print '', k, '=', v
+            print('', k, '=', v)
 #        print '', k, '=', v
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
 ## Save these in a boundary-condition dictionary
-phiBCs = dict( (bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in fieldBoundaryDict.keys())
+phiBCs = dict( (bnd, [fieldBoundaryDict[bnd], phiVals[bnd]]) for bnd in list(fieldBoundaryDict.keys()))
 
 ##### FS.1.2. Properties of the electric potential trial function
 phiElementType = 'Lagrange'
@@ -873,10 +874,10 @@ phi_F = Field_C(mesh_M=particle_P.pmesh_M,
                 field_type=phiFieldType)
 
 if emitInput is True:
-    print ""
-    print "********** Electric Potential Function Attributes **********"
+    print("")
+    print("********** Electric Potential Function Attributes **********")
 #    print "phi_F =", phi_F.__dict__
-    print phi_F
+    print(phi_F)
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 ########## FS.2. The electric field (gradient of scalar potential)
@@ -898,10 +899,10 @@ negElectricField_F = Field_C(mesh_M=particle_P.pmesh_M,
                              field_type=electricFieldFieldType)
 
 if emitInput is True:
-    print ""
-    print "********** Electric Field Function Attributes **********"
+    print("")
+    print("********** Electric Field Function Attributes **********")
 #    print "negElectricField_F =", negElectricField_F.__dict__
-    print negElectricField_F
+    print(negElectricField_F)
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 ########## FS.3. The potential field solver
@@ -922,8 +923,8 @@ preconditioner = None
 ##### FS.3.3. Create the potential field solver object
 fieldBoundaryMarker = particle_P.pmesh_M.field_boundary_marker
 if emitInput is True:
-    print ""
-    print "********** Calling UserPoissonSolve_C constructor **********"
+    print("")
+    print("********** Calling UserPoissonSolve_C constructor **********")
 potentialsolve = UserPoissonSolve1DS_C(phi_F,
                                        linearSolver, preconditioner,
                                        fieldBoundaryMarker, phiBCs,
@@ -932,10 +933,10 @@ potentialsolve = UserPoissonSolve1DS_C(phi_F,
 #print "Initial negElectricField_F:", negElectricField_F.function_values.get_local()
 
 if emitInput is True:
-    print ""
-    print "********** Poisson Solver Attributes **********"
+    print("")
+    print("********** Poisson Solver Attributes **********")
 #    print "potentialsolve =", potentialsolve.__dict__
-    print potentialsolve
+    print(potentialsolve)
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
@@ -951,7 +952,7 @@ if randomExternalElectricFieldAmplitude != 0.0:
                                             field_type=electricFieldFieldType)
     # Put non-zero external electric field values into the electron source region
     randomExternalElectricField_F.set_values(randomExternalElectricFieldAmplitude, subdomain=electronSourceRegion)
-    print "randomExternalElectricField values:", randomExternalElectricField_F.function_values.get_local()
+    print("randomExternalElectricField values:", randomExternalElectricField_F.function_values.get_local())
 
 #    import matplotlib.pyplot as mplot_m
 #    df_m.plot(randomExternalElectricField_F.function, title="External E")
@@ -1002,7 +1003,7 @@ if emitInputOnly is True:
 ############################## CHK. Check the simulation setup ##############################
 
 if particleBoundaryDict is not None and particle_P.pmesh_M.particle_boundary_marker is None:
-    print "A particleBoundaryDict was set, but particle_P.pmesh_M.particle_boundary_marker is None"
+    print("A particleBoundaryDict was set, but particle_P.pmesh_M.particle_boundary_marker is None")
     sys.exit()
 
 #TODO: add check on ctrl.apply_external_electric_field and apply_solved_electric_field, to ensure that the Field_C objects exist.    
@@ -1012,8 +1013,8 @@ if particleBoundaryDict is not None and particle_P.pmesh_M.particle_boundary_mar
 ########## INIT.1. Do an initial field solve without particles
 
 if plotInitialFields is True:
-    print ""
-    print "********** Compute and plot initial fields without charge-density from particles **********"
+    print("")
+    print("********** Compute and plot initial fields without charge-density from particles **********")
 plotTitle = fileName + " initial field (no particles)"
 potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 
@@ -1058,23 +1059,23 @@ if particle_P.initial_particles_dict is not None:
 
     ## Zero out the number-density and charge values before accumulation begins
     assembledCharge_F.set_values(0.0)
-    for s in particles_P.species_names:
+    for s in particle_P.species_names:
         dofNumberDensityDict_F[s].set_values(0.0)
         cellNumberDensityDict_F[s].set_values(0.0)
         
     ## Accumulate number-density from kinetic particles
     ## and sum into the total charge-density.
-    for s in particles_P.species_names:
-        particles_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
-        q = particles_P.charge[s]
+    for s in particle_P.species_names:
+        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+        q = particle_P.charge[s]
         assembledCharge_F.multiply_add(dofNumberDensityDict_F[s], multiplier=q)        
 
 # This duplicates the above loop!
 #    particle_P.accumulate_charge_density_from_particles(assembledCharge_F)
 
     if plotInitialFields is True:
-        print ""
-        print "********** Plot recomputed initial fields with charge-density from particles **********"
+        print("")
+        print("********** Plot recomputed initial fields with charge-density from particles **********")
     plotTitleInitial = fileName + "Initial field (with particles)"
 #    potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
     potentialsolve.solve_for_phi(assembled_charge=assembledCharge_F, assembled_charge_factor=spacechargeFactor, plot_flag=plotInitialFields, plot_title=plotTitleInitial)
@@ -1101,7 +1102,7 @@ if particle_P.initial_particles_dict is not None:
     # ElectricFieldOutputFile << negElectricField_F.function
     
 else:
-    print "(DnT INFO) %s\n\tThere are no initial particles in this simulation" % fileName
+    print("(DnT INFO) %s\n\tThere are no initial particles in this simulation" % fileName)
 
 ##### INIT.2.2. Record initial history data
 if particle_P.histories is not None:
@@ -1110,19 +1111,19 @@ if particle_P.histories is not None:
 
 ############################## RUN. Integrate forward in time ##############################
 
-print ""
-print "********** Integrate for %d timesteps from step %d, time %.3g, starting with %d particles **********" % (ctrl.n_timesteps, ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count())
+print("")
+print("********** Integrate for %d timesteps from step %d, time %.3g, starting with %d particles **********" % (ctrl.n_timesteps, ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count()))
 #print ""
 
-for istep in xrange(ctrl.n_timesteps):
+for istep in range(ctrl.n_timesteps):
 
     ########## RUN.0. Increment the time counters
     ctrl.timeloop_count += 1
     ctrl.time += ctrl.dt
 
     ########## RUN.1. Advance the particles one timestep
-    print ""
-    print "***** Advance %d particles to step %d, time %.3g *****" % (particle_P.get_total_particle_count(), ctrl.timeloop_count, ctrl.time)
+    print("")
+    print("***** Advance %d particles to step %d, time %.3g *****" % (particle_P.get_total_particle_count(), ctrl.timeloop_count, ctrl.time))
     particle_P.move_particles_in_electrostatic_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
 
     ## Record trajectory data for all marked particles
@@ -1144,7 +1145,7 @@ for istep in xrange(ctrl.n_timesteps):
     ########## RUN.4. Update the particle densities and electric charge density
     ## Zero out the number-density and charge values before accumulation begins
     assembledCharge_F.set_values(0.0)
-    for s in particles_P.species_names:
+    for s in particle_P.species_names:
         dofNumberDensityDict_F[s].set_values(0.0)
         cellNumberDensityDict_F[s].set_values(0.0)
 
@@ -1162,13 +1163,13 @@ for istep in xrange(ctrl.n_timesteps):
     if plotFieldsEveryTimestep is True:
         plotFields = True
         plotTitle = os.path.basename(__file__) + ": n=%d " % (ctrl.timeloop_count)
-        print ""
-        print "********** Plot field at timestep %d **********" % ctrl.timeloop_count
+        print("")
+        print("********** Plot field at timestep %d **********" % ctrl.timeloop_count)
     elif plotFinalFields is True and ctrl.timeloop_count == ctrl.n_timesteps:
         plotFields = True
         plotTitle = os.path.basename(__file__) + ": n=%d " % (ctrl.timeloop_count)
-        print ""
-        print "********** Plot final field at timestep %d **********" % ctrl.timeloop_count
+        print("")
+        print("********** Plot final field at timestep %d **********" % ctrl.timeloop_count)
     else:
         plotFields = False
         plotTitle = None
@@ -1209,8 +1210,8 @@ for istep in xrange(ctrl.n_timesteps):
             plotFieldsEveryTimestep = False
     # End of the timestep loop (istep)
 
-print ""
-print "********** Exited the time loop at step %d, time %.3g, with %d particles **********" % (ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count())
+print("")
+print("********** Exited the time loop at step %d, time %.3g, with %d particles **********" % (ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count()))
 #print ""
 
 #print fncName, "Exited the time loop", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
@@ -1220,22 +1221,22 @@ print "********** Exited the time loop at step %d, time %.3g, with %d particles 
 
 ##### FIN.1. Write the last particle data and close the output file.
 if ctrl.particle_output_file is not None:
-    print ""
-    print "********** Write final particle data to %s and close the file **********" % (ctrl.particle_output_file)
+    print("")
+    print("********** Write final particle data to %s and close the file **********" % (ctrl.particle_output_file))
 #    print ""
     particle_P.write_particles_to_file(ctrl, close_flag=True)
 
 ##### FIN.2. Record the LAST point on the particle trajectories.
 if particle_P.traj_T is not None:
-    print ""
-    print "********** Record final particle trajectory data **********"
+    print("")
+    print("********** Record final particle trajectory data **********")
 #    print ""
     particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
 
 ##### FIN.3. Plot the particle trajectories on the particle mesh.
 if os.environ.get('DISPLAY') is not None and plotTrajectoriesOnMesh is True:
-    print ""
-    print "********** Plot trajectories on particle mesh at end of simulation **********"
+    print("")
+    print("********** Plot trajectories on particle mesh at end of simulation **********")
     plotTitle = os.path.basename(__file__) + ": "
     mesh = particle_P.pmesh_M.mesh
     holdPlot = True # Set to True to stop the plot from disappearing.
@@ -1243,17 +1244,17 @@ if os.environ.get('DISPLAY') is not None and plotTrajectoriesOnMesh is True:
 
 ##### FIN.4. Plot the particle trajectories in phase-space.
 if os.environ.get('DISPLAY') is not None and plotTrajectoriesInPhaseSpace is True:
-    print ""
-    print "********** Plot trajectories in phase-space at end of simulation **********"
+    print("")
+    print("********** Plot trajectories in phase-space at end of simulation **********")
     particle_P.traj_T.plot()
 
 ##### FIN.5. Plot the recorded history data.
 if os.environ.get('DISPLAY') is not None and plotTimeHistories is True:
-    print ""
-    print "********** Plot recorded history data at end of simulation **********"
+    print("")
+    print("********** Plot recorded history data at end of simulation **********")
     if particle_P.histories is not None:
         particle_P.histories.plot()
 
 ##### FIN.6. Write final log message
-print ""
-print "********** Simulation ended normally at end of timestep %d, time %.3g **********" % (ctrl.timeloop_count, ctrl.time)
+print("")
+print("********** Simulation ended normally at end of timestep %d, time %.3g **********" % (ctrl.timeloop_count, ctrl.time))

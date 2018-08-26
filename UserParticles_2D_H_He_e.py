@@ -109,21 +109,21 @@ class UserParticleBoundaryConditions_C(object):
     if hasattr(user_particles_class, species_name):
         # store the name of the distribution function
         self.initial_distribution_function[species_name] = getattr(user_particles_class, species_name)
-        if printFlag: print 'UserParticleBoundaryConditions_C: Initial distribution for', species_name, ' is the function of that name in ', user_particles_class
+        if printFlag: print('UserParticleBoundaryConditions_C: Initial distribution for', species_name, ' is the function of that name in ', user_particles_class)
     # Write error message and exit if no distribution function exists
     else:
         error_msg = "UserParticleBoundaryConditions_C: Need to define a particle distribution function %s in UserParticles_2D_H_He_e.py for species %s " % (species_name, species_name)
         sys.exit(error_msg)
 
-    def absorb(self):
+#    def absorb(self):
 
 #    def absorb(self):ENDDEF
 
-    def reflect(self):
+#    def reflect(self):
 
 #    def reflect(self):ENDDEF
 
-    def default_for_all_boundaries(self):
+#    def default_for_all_boundaries(self):
 
         return
 

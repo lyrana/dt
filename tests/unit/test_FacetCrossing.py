@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -93,7 +93,7 @@ class TestFacetCrossing(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest:', fncName, '('+__file__+')'
+        print('\ntest:', fncName, '('+__file__+')')
 
         # 1D mesh
 
@@ -195,7 +195,7 @@ class TestFacetCrossing(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest:', fncName, '('+__file__+')'
+        print('\ntest:', fncName, '('+__file__+')')
 
         #
         # 1D: Initial point = center of cell, move = cell length

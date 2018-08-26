@@ -1064,15 +1064,15 @@ if particle_P.initial_particles_dict is not None:
 
     ## Zero out the number-density and charge values before accumulation begins
     assembledCharge_F.set_values(0.0)
-    for s in particles_P.species_names:
+    for s in particle_P.species_names:
         dofNumberDensityDict_F[s].set_values(0.0)
         cellNumberDensityDict_F[s].set_values(0.0)
         
     ## Accumulate number-density from kinetic particles
     ## and sum into the total charge-density.
-    for s in particles_P.species_names:
-        particles_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
-        q = particles_P.charge[s]
+    for s in particle_P.species_names:
+        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+        q = particle_P.charge[s]
         assembledCharge_F.multiply_add(dofNumberDensityDict_F[s], multiplier=q)        
 
 # This duplicates the above loop!

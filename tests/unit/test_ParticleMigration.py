@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -93,7 +93,7 @@ class TestParticleMigration(unittest.TestCase):
         speciesName = 'neutral_H'
         # Check that this species has been defined above
         if speciesName not in self.particle_P.species_names:
-            print fncName + "The species", speciesName, "has not been defined"
+            print(fncName + "The species", speciesName, "has not been defined")
             sys.exit()
 
         # Specify how the species will be initialized
@@ -101,7 +101,7 @@ class TestParticleMigration(unittest.TestCase):
         # Check that there's a function listing the particles particles
         printFlag = True
         if hasattr(userParticlesClass, speciesName):
-            if printFlag: print fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass
+            if printFlag: print(fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
         # Write error message and exit if no distribution function exists
         else:
             errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
@@ -230,7 +230,7 @@ class TestParticleMigration(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         # List all the possible spatial coordinates
 #        spatial_coordinates = ('x','y','z')
@@ -285,8 +285,8 @@ class TestParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
-        print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
-        for istep in xrange(ctrl.n_timesteps):
+        print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
+        for istep in range(ctrl.n_timesteps):
             self.particle_P.move_neutral_particles(ctrl)
 
         # Check the results
@@ -311,7 +311,7 @@ class TestParticleMigration(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         ctrl = DTcontrol_C()
 
@@ -372,8 +372,8 @@ class TestParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
-        print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps"
-        for istep in xrange(ctrl.n_timesteps):
+        print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
+        for istep in range(ctrl.n_timesteps):
             self.particle_P.move_neutral_particles(ctrl)
 
         # Create a mesh plotter to display the trajectory
@@ -410,7 +410,7 @@ class TestParticleMigration(unittest.TestCase):
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
+        print('\ntest: ', fncName)
 
         ctrl = DTcontrol_C()
 
@@ -463,8 +463,8 @@ class TestParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
-        print "Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "steps"
-        for istep in xrange(ctrl.n_timesteps):
+        print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "steps")
+        for istep in range(ctrl.n_timesteps):
             self.particle_P.move_neutral_particles(ctrl)
 
         # Create a mesh plotter to display the trajectory (just the

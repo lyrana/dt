@@ -286,7 +286,7 @@ class UserMesh_C(Mesh_C):
                 sourceX1 = SourceXrange(sourceX1min, sourceX1max)
                 sourceX2 = SourceXrange(sourceX2min, sourceX2max)
 
-                particleSourceDictInv = {v: k for k, v in particleSourceDict.iteritems()}
+                particleSourceDictInv = {v: k for k, v in particleSourceDict.items()}
                 # Get the numerical value that identifies this source
                 sourceX1_indx = int(particleSourceDictInv['sourceX1'])
                 sourceX2_indx = int(particleSourceDictInv['sourceX2'])
@@ -303,7 +303,8 @@ class UserMesh_C(Mesh_C):
             (nx, ny) = umi.cells_on_side
 
 # v > 1.5:
-            if df_m.DOLFIN_VERSION_STRING > '1.5.0':
+#            if df_m.DOLFIN_VERSION_STRING > '1.5.0':
+            if df_m.__version__ > '1.5.0':
                 if diagonal is not None:
                     mesh_df = df_m.RectangleMesh(umi.pmin, umi.pmax, nx, ny, diagonal)
                 else:
@@ -363,7 +364,7 @@ class UserMesh_C(Mesh_C):
             # 3D mesh
             (nx, ny, nz) = umi.cells_on_side
 # v > 1.5
-            if df_m.DOLFIN_VERSION_STRING > '1.5.0':
+            if df_m.__version__ > '1.5.0':
                 mesh_df = df_m.BoxMesh(umi.pmin, umi.pmax, nx, ny, nz)
             else:
 # v = 1.5:
@@ -498,7 +499,9 @@ class UserPoissonSolve1D_C(PoissonSolve_C):
         self.assemble_source_expression(0.0)
         
         # Set the level of diagnostic output from the solver.
-        df_m.set_log_level(df_m.PROGRESS) # df.set_log_level(1) gives the most messages
+#        df_m.set_log_level(df_m.PROGRESS) # df.set_log_level(1) gives the most messages
+        df_m.set_log_level(df_m.LogLevel.PROGRESS) # df.set_log_level(1) gives the most messages
+#        df_m.set_log_level(16) # df.set_log_level(1) gives the most messages
 
 # default LU is flakey: different answers on different calls: NO!: this was a heap problem of unitialized memory!
 #        self.phi = None

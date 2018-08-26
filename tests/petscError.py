@@ -29,5 +29,5 @@ nt = 20  # Number of divisions in theta direction
 meshObj = Mesh_C(rmin, rmax, s, nr, thetamax, nt, plotFlag=True)
 df_M.plot(meshObj.mesh, title='cylindrical mesh', axes=True)
 df_M.interactive()
-yesno = raw_input("Looks OK [Y/n]?")
+yesno = input("Looks OK [Y/n]?")
 

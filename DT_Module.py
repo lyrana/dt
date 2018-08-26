@@ -82,7 +82,7 @@ class DTcontrol_C(object):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
-        print fncName
+        print(fncName)
 
         print_string = ' title = ' + str(self.title)
         print_string += '\n author = ' + str(self.author)
@@ -106,9 +106,9 @@ class DTcontrol_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
-        inChar = raw_input("Press Enter to continue, q to quit, ! to stop pausing...")
+        inChar = input("Press Enter to continue, q to quit, ! to stop pausing...")
         if inChar == 'q':
-            print fncName
+            print(fncName)
             infoMsg = "\t%s Exiting because %s was entered"  % (callerName, inChar)
             sys.exit(infoMsg)
         elif inChar == '!':
@@ -155,7 +155,7 @@ class DTsystem_C(object):
 
         dt = ctrl.dt
         E0 = ctrl.E0
-        for istep in xrange(ctrl.n_timesteps):
+        for istep in range(ctrl.n_timesteps):
             # needs dt; doesn't need n_timesteps
             for sp in p_P.names:
 
@@ -188,7 +188,7 @@ class DTsystem_C(object):
 
         dt = ctrl.dt
 
-        for istep in xrange(ctrl.n_timesteps):
+        for istep in range(ctrl.n_timesteps):
             # needs dt; doesn't need n_timesteps
 
             # Gather particle trajectory data

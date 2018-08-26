@@ -153,6 +153,7 @@ class SegmentedArray_C(object):
 #        print 'get: i =', i, 'outSA = ', self.outSegmentedArray
 
         (seg, offset) = divmod(i, self.SEGMENTLENGTH)
+        
         return self.SegListPair[outSA][seg][offset]
 #    def get(self, i):ENDDEF
 

@@ -19,7 +19,7 @@ import RecordedData_Module as Rec_M
 #import IO_Module as IO_M
 import UserUnits_Module as U_M
 
-#print "This is DOLFIN Version", df_m.DOLFIN_VERSION_STRING
+#print "This is DOLFIN Version", df_m.__version__
 
 # The initialization, since this is an initial-value problem
 
@@ -141,7 +141,7 @@ UFldSlv_M = im_M.import_module(fiCI.user_fieldsolve_module)
 linear_solver = 'cg'
 preconditioner = 'ilu'
 
-boundary_marker = 
+#boundary_marker = 
 phi_rmin = 0.0
 phi_rmax = -1.5
 

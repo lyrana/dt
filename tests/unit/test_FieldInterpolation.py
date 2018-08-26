@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -63,9 +63,17 @@ class TestFieldInterpolation(unittest.TestCase):
         return
 
     def test_1_interpolate_vectorField_to_points(self):
+        """Provide 3 points and compute the values of a vector field at these points.
 
+           The point data has spatial coordinates and other data, such as velocities.
+           The number of spatial coordinates can be greater than the spatial
+           dimension of the vector field. E.g., a point can have (x, y, z) spatial
+           coordinates, while the vector may be defined only on an (x, y) space. The
+           extra particle coordinates are ignored in evaluating the vector field.
+
+        """
         fncname = sys._getframe().f_code.co_name
-        print '\ntest: ', fncname, '('+__file__+')'
+        print('\ntest: ', fncname, '('+__file__+')')
         
         # 1st point
         x0 = 1.0; y0 = 0.0; z0 = 0.0

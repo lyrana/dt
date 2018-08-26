@@ -140,8 +140,8 @@ class UserParticleBoundaryFunctions_C(object):
            :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print "Called", fncName
-        print "Particle is", p, "at facet", facetIndex
+        print("Called", fncName)
+        print("Particle is", p, "at facet", facetIndex)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -164,7 +164,7 @@ class UserParticleBoundaryFunctions_C(object):
            :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-        print fncName, "invoked by particle", p, "of species", speciesName
+        print(fncName, "invoked by particle", p, "of species", speciesName)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -184,7 +184,7 @@ class UserParticleBoundaryFunctions_C(object):
            :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print "Called", fncName
+        print("Called", fncName)
 
         return
 #    def default_bc_at_xmax(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
@@ -199,7 +199,7 @@ class UserParticleBoundaryFunctions_C(object):
            :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-        print fncName, "invoked by particle", p, "of species", speciesName
+        print(fncName, "invoked by particle", p, "of species", speciesName)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -234,7 +234,7 @@ class UserParticleBoundaryFunctions_C(object):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
 
         if printInfoInvoked is True:
-            print "DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName)
+            print("DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName))
         pDim = self.particle_dimension
 
         # Scratch space
@@ -324,7 +324,7 @@ class UserParticleBoundaryFunctions_C(object):
            :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-        print fncName, "invoked by particle", p, "of species", speciesName
+        print(fncName, "invoked by particle", p, "of species", speciesName)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -355,7 +355,7 @@ class UserParticleSourceFunctions_C(object):
            :param facetIndex: the facet crossed by particle p.
         """
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print "Called", fncName
+        print("Called", fncName)
 
         return
 

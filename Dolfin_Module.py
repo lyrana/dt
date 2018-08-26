@@ -142,7 +142,7 @@ class Mesh_C(object):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
-        print fncName
+        print(fncName)
 
         print_string = ' mesh_tdim = ' + str(self.mesh_tdim)
         print_string += '\nmesh_gdim = ' + str(self.mesh_gdim)
@@ -200,7 +200,7 @@ class Mesh_C(object):
         # Type issue: Had to convert numpy.uint32 to long (using tolist()) and
         # then to int (using map()).
         # This is because a FacetFunction wants the facet index as an int.
-        self.cell_entity_index_dict[entity_name] = dict((cell.index(), map(int, cell.entities(d).tolist())) for cell in df_m.cells(self.mesh))
+        self.cell_entity_index_dict[entity_name] = dict((cell.index(), list(map(int, cell.entities(d).tolist()))) for cell in df_m.cells(self.mesh))
 
         # E.g., use the dictionary to print the vertex coordinates:
 
@@ -305,7 +305,7 @@ class Mesh_C(object):
             for facet in df_m.facets(cell):
                 # Obtain the indices of cells attached to this facet
                 # See breakdown of this line above.
-                attached_cell_indices = filter(lambda ci: ci != cell.index(), facet.entities(tdim))
+                attached_cell_indices = [ci for ci in facet.entities(tdim) if ci != cell.index()]
                 # Can only have at most 1 neighbor-cell attached
                 if len(attached_cell_indices) > 0:
                     neighbor_cells[fi] = attached_cell_indices[0]
@@ -414,7 +414,7 @@ class Mesh_C(object):
         # (eight Fs and F = 1111)
 #        if first == 0xFFFFFFFF:
         if first == Mesh_C.NO_CELL:
-            print fncName, ": particle is out of bounds"
+            print(fncName, ": particle is out of bounds")
             sys.exit()
 
         return first
@@ -430,7 +430,7 @@ class Mesh_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        for ip in xrange(points.shape[0]):
+        for ip in range(points.shape[0]):
         # pseg[i] is a 'record' containing the 'x', 'y', 'z', 'vx', 'vy',... values of ith ithem
         # so pseg[i][0:3] is 'x', 'y', 'z'.
 
@@ -440,7 +440,7 @@ class Mesh_C(object):
             compute_cell_index(ploc)
 
         first = self.bbtree.compute_first_entity_collision(point)
-        print fncName, "cell index =", first
+        print(fncName, "cell index =", first)
 
         return
 
@@ -477,7 +477,8 @@ class Mesh_C(object):
             p = df_m.Point(point['x'])
 
 #        return cell.contains(df_m.Point(self.gdim, point))
-        return cell.contains(df_m.Point(p))
+#        return cell.contains(df_m.Point(p))
+        return cell.contains(p)
 
 #class Mesh_C(object):
     def find_facet(self, r0, dr, cell_index):
@@ -539,12 +540,13 @@ class Mesh_C(object):
 
         # The coordinates of all the vertices in this cell, in (x, y,
         # z) tuple form
-        vertex_coords = cell.get_vertex_coordinates().reshape((-1, gDim))
+#        vertex_coords = cell.get_vertex_coordinates().reshape((-1, gDim))
+        vertex_coords = np_m.array(cell.get_vertex_coordinates()).reshape((-1, gDim))
 
 #        print "find_facet(): vertex_coords=", vertex_coords
 
         # The facet-normals of this cell:
-        facet_normal_vectors = self.cell_facet_normals_dict[cell_index]        
+        facet_normal_vectors = self.cell_facet_normals_dict[cell_index]
 
         if gDim == 3:
 
@@ -560,7 +562,7 @@ class Mesh_C(object):
                 distanceToFacet = np_m.dot(facet_normal_vectors[0], vecToFacet)
 #                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
                 if distanceToFacet < 0.0:
-                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
                 if distanceToFacet < dxFraction*n0_dot_dx:
@@ -577,7 +579,7 @@ class Mesh_C(object):
                 # The normal distance to the facet plane
                 distanceToFacet = np_m.dot(facet_normal_vectors[1], vecToFacet)
                 if distanceToFacet < 0.0:
-                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
                 if distanceToFacet < dxFraction*n1_dot_dx:
@@ -593,7 +595,7 @@ class Mesh_C(object):
                 # The normal distance to the facet plane
                 distanceToFacet = np_m.dot(facet_normal_vectors[2], vecToFacet)
                 if distanceToFacet < 0.0:
-                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
                 if distanceToFacet < dxFraction*n2_dot_dx:
@@ -609,7 +611,7 @@ class Mesh_C(object):
                 # The normal distance to the facet plane
                 distanceToFacet = np_m.dot(facet_normal_vectors[3], vecToFacet)
                 if distanceToFacet < 0.0:
-                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
                 if distanceToFacet < dxFraction*n3_dot_dx:
@@ -617,7 +619,7 @@ class Mesh_C(object):
                     dxFraction = distanceToFacet/n3_dot_dx
 
             if dxFraction > 1.0 or dxFraction < 0.0:
-                print fncName, "!!! Bad value for dxFraction:", dxFraction
+                print(fncName, "!!! Bad value for dxFraction:", dxFraction)
                 sys.exit()
 
             return facet, dxFraction, facet_normal_vectors[facet]
@@ -638,7 +640,7 @@ class Mesh_C(object):
                 # The normal distance to the facet plane
                 distanceToFacet = np_m.dot(facet_normal_vectors[0], vecToFacet)
                 if distanceToFacet < 0.0:
-                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
 #                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
@@ -660,7 +662,7 @@ class Mesh_C(object):
                 # If the path-fraction to this facet's plane is
                 # smaller than for facet 0, this may be the one crossed.
                 if distanceToFacet < 0.0:
-                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
                 if distanceToFacet < dxFraction*n1_dot_dx:
@@ -678,7 +680,7 @@ class Mesh_C(object):
                 # The normal distance to the facet plane
                 distanceToFacet = np_m.dot(facet_normal_vectors[2], vecToFacet)
                 if distanceToFacet < 0.0:
-                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
                 # If the path-fraction to this facet's plane is
@@ -688,7 +690,7 @@ class Mesh_C(object):
                     dxFraction = distanceToFacet/n2_dot_dx
 
             if dxFraction > 1.0 or dxFraction < 0.0:
-                print fncName, "!!! Bad value for dxFraction:", dxFraction, "!!!"
+                print(fncName, "!!! Bad value for dxFraction:", dxFraction, "!!!")
                 sys.exit()
 #                if abs(dxFraction) < TINY_PATH_FRACTION:
 #                    dxFraction = 0.0 # this will trigger a check on the cell index?
@@ -710,7 +712,7 @@ class Mesh_C(object):
                 # The normal distance to the facet plane
                 distanceToFacet = facet_normal_vectors[0]*vecToFacet
                 if distanceToFacet < 0.0:
-                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
                 if distanceToFacet < dxFraction*n0_dot_dx:
@@ -727,7 +729,7 @@ class Mesh_C(object):
                 # The normal distance to the facet plane
                 distanceToFacet = facet_normal_vectors[1]*vecToFacet
                 if distanceToFacet < 0.0:
-                    print fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!"
+                    print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
 #                print "find_facet()", "distanceToFacet:", distanceToFacet, "vecToFacet:", vecToFacet, "facet_normal_vectors[1]:", facet_normal_vectors[1]
@@ -738,7 +740,7 @@ class Mesh_C(object):
                     return facet, dxFraction, facet_normal_vectors[facet]                
 
             if dxFraction > 1.0 or dxFraction < 0.0:
-                print fncName, "!!! Bad value for dxFraction:", dxFraction
+                print(fncName, "!!! Bad value for dxFraction:", dxFraction)
                 sys.exit()
 
             return facet, dxFraction, facet_normal_vectors[facet]                
@@ -799,7 +801,7 @@ class Field_C(object):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
-        print fncName
+        print(fncName)
 
         print_string = 'mesh_tdim = ' + str(self.mesh_tdim)
         print_string += '\nmesh_gdim = ' + str(self.mesh_gdim)
@@ -833,7 +835,7 @@ class Field_C(object):
             self.function_values[:] = value            
         else:
             self.function_values[:] = 0.0 # Initialize all the elements to zero before setting the value in the subdomain
-            for icell in xrange(subdomain.ncell):
+            for icell in range(subdomain.ncell):
                 cellIndex = subdomain.cell_index[icell]
                 dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
 
@@ -875,7 +877,7 @@ class Field_C(object):
 # to the DOFs, if DOFs can be associated with more than one cell (e.g., a vertex).  In
 # that case, you cannot loop on cells because the same DOFs will get multiplied more than
 # once. Use a Python "set" i.e. a set of unique objects.
-            for icell in xrange(subdomain.ncell):
+            for icell in range(subdomain.ncell):
                 cellIndex = subdomain.cell_index[icell]
 
 # !!! Doesn't this multiply vertices twice, since vertices are shared between cells?
@@ -919,7 +921,7 @@ class Field_C(object):
 
 # Replace cell-loop with a loop over unique DoFs. It's OK as-is for the E-field, which is a cell quantity.
             
-            for icell in xrange(numberOfValues):
+            for icell in range(numberOfValues):
                 cellIndex = subdomain.cell_index[icell]
                 dofIndices = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
                 self.function_values[dofIndices] = randomVals[icell]
@@ -974,14 +976,18 @@ class Field_C(object):
 
 # Loop on the points (usually particle locations):
 
-        for ip in xrange(points.shape[0]):
+        for ip in range(points.shape[0]):
 
             # Get the coordinates to locate the point on the mesh.
             p = [points[ip][d] for d in range(self.mesh_gdim)]
 
             # Evaluate the finite-element function at the point p
             self.function(p, values=fieldValue)
-            field_at_points[ip] = fieldValue
+#            field_at_points[ip] = fieldValue
+# 25aug18: Had to change to this to:
+            for d in range(self.mesh_gdim):
+                field_at_points[ip][d] = fieldValue[d]
+
 #        print 'field_at_points = ', field_at_points
 #        return field_at_points[0:npoints]
 #        return field_at_points
@@ -1017,7 +1023,7 @@ class Field_C(object):
         
         # Loop on the points (usually particle locations):
     
-        for ip in xrange(points.shape[0]): # shape[0] is the first dimension of 'points'
+        for ip in range(points.shape[0]): # shape[0] is the first dimension of 'points'
 
             # Get the coordinates to locate the point on the mesh.
             p = [points[ip][d] for d in range(self.mesh_gdim)]
@@ -1123,7 +1129,10 @@ class Field_C(object):
 #      I tried both and they give the same output for CG1 elements.
 #      
 #        coordinate_dofs = cell.get_vertex_coordinates()
+
         coordinate_dofs = cell.get_coordinate_dofs()
+        #tph
+        #coordinate_dofs = el.tabulate_dof_coordinates(cell)
 
         # Compute the basis-function values at the given point, p.
         # "basisValues" stores the values of the basis_functions at p.
@@ -1151,7 +1160,8 @@ class Field_C(object):
         #     Jhat = radius*radius # Drop the 4\pi factor.  Put it back where physical
         #                       # density values are needed.
 
-        el.evaluate_basis_all(basisValues, point, coordinate_dofs, cell.orientation()) 
+#        el.evaluate_basis_all(basisValues, point, coordinate_dofs, cell.orientation()) 
+        basisValues = el.evaluate_basis_all(point, coordinate_dofs, cell.orientation()) 
 #        print fncName, basisValues
 
         # Now insert the values for this cell into the global density array.
@@ -1645,7 +1655,7 @@ class CellSet_C(object):
 
         # Note that icell is just a counter, not the Dolfin cell index.
         # One could instead create an Iterator over the cells in the set.
-        for icell in xrange(self.ncell):
+        for icell in range(self.ncell):
             c = self.cell_list[icell]
             c_index = c.index()
             self.cell_index[icell] = c_index
@@ -1749,7 +1759,7 @@ class RectangularRegion_C(CellSet_C):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():' # No \n to end this since it's printed on its own line
-        print fncName
+        print(fncName)
 
         print_string = ' gdim = ' + str(self.gdim)
         print_string += '\n pmin = ' + str(self.pmin)
@@ -1869,7 +1879,7 @@ class CellSubDomain_C2(df_m.SubDomain):
 
         # Create a list of the cells in this SubDomain
 
-        for icell in xrange(len(cellFunction.get_local())):
+        for icell in range(len(cellFunction.get_local())):
             if cellFunction.get_local()[icell] == 1:
                 pass
 
