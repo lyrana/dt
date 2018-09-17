@@ -288,7 +288,7 @@ ctrl.author = "tph"
 
 ##### SC.2. Timestepping
 
-ctrl.n_timesteps = 100 # 100
+ctrl.n_timesteps = 10 # 100
 
 ctrl.dt = 1.0e-5 # sec 4.0e-7 from sphere1D.ods
 if ctrl.dt > scr.dt_max:
@@ -296,7 +296,7 @@ if ctrl.dt > scr.dt_max:
 else:
     print("%s\n\tTimestep is %.3g of stability limit" % (fileName, ctrl.dt/scr.dt_max))
     
-    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
+if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 
 # Initialize time counters
@@ -311,13 +311,14 @@ np_m.random.seed(ctrl.random_seed)
 
 # Electric field control
 
-# Set the switches to empty dictionaries here if and only if you want to set per-species
-# values in PS.1.1. below.  The default is that all defined electric fields will be
-# applied to all species. If the following lines are commented out, then the forces WILL
-# BE APPLIED to all species.
+# Set the apply_field switches to empty dictionaries (i.e., {}) here if and only if you want to
+# set per-species values in PS.1.1. below.  The default (if these are set to None, or
+# commented out) is that all defined electric fields will be applied to all
+# species. If the following lines are commented out, then the forces WILL BE APPLIED
+# to all species.
 
-#ctrl.apply_solved_electric_field = {}
-#ctrl.apply_random_external_electric_field = {}
+ctrl.apply_solved_electric_field = None
+ctrl.apply_random_external_electric_field = None
 
 spacechargeFactor = 1.0
 randomExternalElectricFieldAmplitude = 0.1
@@ -330,6 +331,8 @@ ctrl.ion_density_output_file = ctrl.title + "-ni.xdmf"
 ctrl.potential_field_output_file = ctrl.title + "-phi.xdmf"
 # VTK output is deprecated: ctrl.potential_field_output_file = ctrl.title + "-phi.pvd"
 # VTK output is deprecated: ctrl.electric_field_output_file = ctrl.title + "-E.pvd"
+
+ctrl.cell_number_density_output_interval = 1
 ctrl.field_output_interval = 1
 
 ### Set parameters for writing particle output to an h5part file
@@ -410,7 +413,7 @@ pin.position_coordinates = ['x',] # determines the particle-storage dimensions. 
 pin.force_components = ['x',]
 pin.force_precision = np_m.float64
 
-############### PS.1. Define the species and provide storage ###############
+############### PS.1. Define the species, set apply_field switches, and provide storage ###############
 
 ##### PS.1.1. Basic properties and storage
 speciesName = 'electron'
@@ -444,6 +447,7 @@ if emitInput is True:
     print("")
     print("********** Particle Species Attributes (particle_species.__dict__) **********")
     for s in pin.particle_species:
+        print("%s species:" % s.name)
         for k, v in s.__dict__.items():
             if type(v) is np_m.float64:
                 print(" %s = %.3g" % (k, v))
@@ -600,9 +604,9 @@ vdrift_2 = 0.0
 vdrift_3 = 0.0
 # ... and make an estimate of the average ion drift-velocity in the source region:
 vdrift_av = scr.ion_sound_speed_multiplier*scr.ion_sound_speed
-vdrift_1 = vdrift_av
 
-# 9jun18: instead, give the ions a speed to get them moving
+# 9jun18: Give the ions a speed to get them moving
+vdrift_1 = vdrift_av
 
 # Compute the flux of ions per unit area out of the source region (assuming the ion
 # charge-density equals the electron charge-density):
@@ -953,6 +957,8 @@ if randomExternalElectricFieldAmplitude != 0.0:
     # Put non-zero external electric field values into the electron source region
     randomExternalElectricField_F.set_values(randomExternalElectricFieldAmplitude, subdomain=electronSourceRegion)
     print("randomExternalElectricField values:", randomExternalElectricField_F.function_values.get_local())
+else:
+    randomExternalElectricField_F = None
 
 #    import matplotlib.pyplot as mplot_m
 #    df_m.plot(randomExternalElectricField_F.function, title="External E")
@@ -1021,10 +1027,11 @@ potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 # Open the field output files and write the initial fields (no particles)
 if ctrl.field_output_interval is not None:
 # VTK output is deprecated: potentialFieldOutputFile = df_m.File(ctrl.potential_field_output_file)
-    potentialFieldOutputFile = df_m.XDMFFile(ctrl.potential_field_output_file)
+    potentialFieldOutputFile = ctrl.title + "-phi" + ".xdmf"
+    potentialFieldOutputObj = df_m.XDMFFile(potentialFieldOutputFile)
     phi_F.function.rename("phi", "phi_label")
 # VTK output is deprecated: potentialFieldOutputFile << phi_F.function
-    potentialFieldOutputFile.write(phi_F.function, ctrl.time)
+    potentialFieldOutputObj.write(phi_F.function, ctrl.time)
 
     # !!! VTK cannot write a vector field on a 1D grid.
     # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
@@ -1032,9 +1039,17 @@ if ctrl.field_output_interval is not None:
     # ElectricFieldOutputFile << negElectricField_F.function
     
 
-########## INIT.2. Recompute initial fields including initial particle spacecharge
-##########         and random electric field
+########## INIT.2. Compute initial particle densities and recompute initial fields
+##########         including particle spacecharge.
 
+# Open XDMF output files for species cell number-densities
+cellNumberDensityOutputObjs = {}
+if ctrl.cell_number_density_output_interval is not None:
+    for s in particle_P.species_names:
+        cellNumberDensityOutputFile = ctrl.title + "-" + s + ".xdmf"
+        cellNumberDensityOutputObjs[s] = df_m.XDMFFile(cellNumberDensityOutputFile)
+        cellNumberDensityDict_F[s].function.rename(s+"-n", s + "_label")
+    
 # Open the particle output file and write the header
 if ctrl.particle_output_interval is not None:
     particle_P.initialize_particle_output_file(ctrl)
@@ -1092,9 +1107,9 @@ if particle_P.initial_particles_dict is not None:
         
     # Write out the initial fields (with contribution from initial particles and external fields)
     if ctrl.field_output_interval is not None:
-        phi_F.function.rename("phi", "phi_label")
+# this was done above       phi_F.function.rename("phi", "phi_label")
 # VTK output is deprecated: potentialFieldOutputFile << phi_F.function
-        potentialFieldOutputFile.write(phi_F.function, ctrl.time)
+        potentialFieldOutputObj.write(phi_F.function, ctrl.time)
 
     # !!! VTK cannot write a vector field on a 1D grid. VTK is no longer in Dolfin.
     # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
@@ -1150,7 +1165,13 @@ for istep in range(ctrl.n_timesteps):
         cellNumberDensityDict_F[s].set_values(0.0)
 
     for s in particle_P.species_names:
-        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], dofNumberDensityDict_F[s])
+        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+        # Write a snapshot of the cell number densities
+        if ctrl.cell_number_density_output_interval is not None:
+            if ctrl.timeloop_count % ctrl.cell_number_density_output_interval == 0:
+#                cellNumberDensity = dofNumberDensity_F.function.vector().get_local()
+#                print("species", s, "has cell density", cellNumberDensity
+                cellNumberDensityOutputObjs[s].write(cellNumberDensityDict_F[s].function, ctrl.time)
         q = particle_P.charge[s]
         assembledCharge_F.multiply_add(dofNumberDensityDict_F[s], multiplier=q)
 
@@ -1194,9 +1215,9 @@ for istep in range(ctrl.n_timesteps):
     ##### RUN.5.4. Write a snapshot of the fields
     if ctrl.field_output_interval is not None:
         if ctrl.timeloop_count % ctrl.field_output_interval == 0:
-            phi_F.function.rename("phi", "phi_label")
+# this was done above            phi_F.function.rename("phi", "phi_label")
 # VTK output is deprecated: potentialFieldOutputFile << phi_F.function
-            potentialFieldOutputFile.write(phi_F.function, ctrl.time)            
+            potentialFieldOutputObj.write(phi_F.function, ctrl.time)            
     
     ########## RUN.6. Record history data for this timestep
     if particle_P.histories is not None:

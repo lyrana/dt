@@ -453,6 +453,23 @@ class Mesh_C(object):
 
         self.cell_volume_dict = dict((cell.index(), cell.volume()) for cell in df_m.cells(self.mesh))
 
+#        self.cell_volume_dict = dict((cell.index(), cell.volume()) for cell in df_m.cells(self.mesh))
+
+        for cell in df_m.cells(self.mesh):
+#            ci = cell.index()
+            coords = cell.get_vertex_coordinates()
+            x0 = coords[0]
+            x1 = coords[1]
+        
+#HERE: this needs to be modified for non-Cartesian coordinates        
+        # if self.mesh_M.coordinate_system == 'Cartesian':
+        #     Jhat = 1.0
+        # elif self.mesh_M.coordinate_system == '1D-spherical-radius':
+        #     radius = p['x']
+        #     Jhat = radius*radius # Drop the 4\pi factor.  Put it back where physical
+        #                       # density values are needed.
+
+
         return
 #    def compute_cell_volume_dict(self):ENDDEF
 

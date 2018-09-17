@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # 1D spherically-symmetric expansion of ions and electrons
 # See sphere1D.ods for setting up parameters
@@ -7,42 +7,47 @@ __version__ = 0.1
 __author__ = 'Copyright (C) 2017-2018 L. D. Hughes'
 __all__ = ['Example_C',]
 
-"""A spherical source region creates ion-electron pairs.  The electrons are hot and
-   the ions are cold, but may be given a radial velocity.  The electrons pull the
-   ions radially outward.
+"""This is a version of sphere1D.py with the electrons removed (an electron species
+   is defined, but no electron creation occurs). Inject ions at a computed rate, and
+   then check if they reach the predicted steady state density as they stream
+   outward.
 
 """
 #### Commentary
 
-#  The radial extent of the simulation is from 'scr.rmin' to 'scr.rmax'.
+#  The radial extent of the simulation is from 'scr.rmin' to 'scr.rmax' (see SP.1).
 
-#  The number of cells is 'scr.nr'.
+#  The number of cells is 'scr.nr' (see SP.1).
 
-#  The Debye length is specified by the number of cells in it.
+#  The Debye length is specified by the number of cells in it (see SP.1). This along
+#  with the electron temperature yields the plasma density (see SP.2).
 
-#  The size of the source-region where ions and electrons are created is given as a number
-#  of Debye lengths
+#  The size of the source-region where ions are created is given as a number
+#  of Debye lengths (see PS.3.1.2).
+
+#  The ions are created with a drift-velocity 'vdrift_1' (see PS.3.1.3).
+
+#  An ion flux out of the creation region is estimated from velocity 'vdrift_av'. This
+#  is used to compute the number of ions to create per injection.
+
+#  Q: By following this procedure, do we get the density computed above?
 
 
 #  Key physical parameters are:
 
-#       * The electron temperature ('scr.T_e_eV'). This determines the electron
-#         pressure, and so the ambipolar electric field set up by the electrons.
+#       * The number of Debye-lengths in the simulation region. This sets the Debye length.
 
-#       * The number of Debye-lengths in the simulation region.
+#       * The electron temperature ('scr.T_e_eV'). This is used to compute the
+#         density from the Debye length.
 
-#       * The external random-electric-field amplitude
-#         ('scr.random_external_electric_field_amplitude').  This is an external energy source
-#         that heats the electrons in the source region.  Without this, cold electrons
-#         will accumulate in this region while the hotter ones escape.
+#       * 'ion_sound_speed_multiplier'. This sets the initial ion velocity, 'vdrift_1'.
 
-#       * The potential difference ('scr.confining_potential') between the center and the
-#         edge of the simulation region.  This is the confining potential for the electrons.
-#         (This is not used as a simulation parameter if the region extends to r = 0).
+#       * 'vdrift_av'. The user sets this to estimate the average drift speed in the
+#         creation region.
 
 #  Key numerical parameters are:
 #
-#       * 'numberPerCell' for the ions and electrons.
+#       * 'numberPerCell' for the ions.
 #         
 
 #  Key output parameters are:
@@ -70,7 +75,7 @@ __all__ = ['Example_C',]
 ##     SC.4. Output: Specify field and particle output files and output frequency.
 ## FM. Field Mesh
 ## PS. Particle Species
-##     PS.1. Define the species and provide storage.
+##     PS.1. Define the species, set apply_field switches, and provide storage.
 ##           PS.1.2. Allocate particle storage.
 ##           PS.1.3. Specify the name of the UserParticlesModule (Deprecate)
 ##     PS.2. Particle boundary conditions, particle mesh
@@ -288,7 +293,7 @@ ctrl.author = "tph"
 
 ##### SC.2. Timestepping
 
-ctrl.n_timesteps = 10 # 100
+ctrl.n_timesteps = 20 # 100
 
 ctrl.dt = 3.0e-5 # sec 4.0e-7 from sphere1D.ods
 if ctrl.dt > scr.dt_max:
@@ -311,10 +316,11 @@ np_m.random.seed(ctrl.random_seed)
 
 # Electric field control
 
-# Set the switches to empty dictionaries here if and only if you want to set per-species
-# values in PS.1.1. below.  The default is that all defined electric fields will be
-# applied to all species. If the following lines are commented out, then the forces WILL
-# BE APPLIED to all species.
+# Set the apply_field switches to empty dictionaries (i.e., {}) here if and only if you want to
+# set per-species values in PS.1.1. below.  The default (if these are set to None, or
+# commented out) is that all defined electric fields will be applied to all
+# species. If the following lines are commented out, then the forces WILL BE APPLIED
+# to all species.
 
 ctrl.apply_solved_electric_field = {}
 ctrl.apply_random_external_electric_field = {}
@@ -324,12 +330,8 @@ randomExternalElectricFieldAmplitude = 0.0
 
 ##### SC.4. Output control
 
-###Set parameters for writing field output files
-ctrl.electron_density_output_file = ctrl.title + "-ne.xdmf"
-ctrl.ion_density_output_file = ctrl.title + "-ni.xdmf"
-ctrl.potential_field_output_file = ctrl.title + "-phi.xdmf"
-# VTK output is deprecated: ctrl.potential_field_output_file = ctrl.title + "-phi.pvd"
-# VTK output is deprecated: ctrl.electric_field_output_file = ctrl.title + "-E.pvd"
+###Set parameters for writing output files
+ctrl.cell_number_density_output_interval = 1
 ctrl.field_output_interval = 1
 
 ### Set parameters for writing particle output to an h5part file
@@ -410,7 +412,7 @@ pin.position_coordinates = ['x',] # determines the particle-storage dimensions. 
 pin.force_components = ['x',]
 pin.force_precision = np_m.float64
 
-############### PS.1. Define the species and provide storage ###############
+############### PS.1. Define the species, set apply_field switches, and provide storage ###############
 
 ##### PS.1.1. Basic properties and storage
 speciesName = 'electron'
@@ -601,9 +603,9 @@ vdrift_2 = 0.0
 vdrift_3 = 0.0
 # ... and make an estimate of the average ion drift-velocity in the source region:
 vdrift_av = scr.ion_sound_speed_multiplier*scr.ion_sound_speed
-vdrift_1 = vdrift_av
 
-# 9jun18: instead, give the ions a speed to get them moving
+# 9jun18: Give the ions a speed to get them moving
+vdrift_1 = vdrift_av
 
 # Compute the flux of ions per unit area out of the source region (assuming the ion
 # charge-density equals the electron charge-density):
@@ -630,7 +632,8 @@ thermalSpeed = np_m.sqrt(2.0*temp_joule/ionMass)
 
 #driftVelocityHplus = (vdrift_1, vdrift_2, vdrift_3)
 #driftVelocityHplus[0] = vdrift_1
-driftVelocityHplus = (vdrift_1)
+driftVelocityHplus = (vdrift_1,) # Truncate this velocity vector to match the
+                                 # dimension of ParticleInput_C.position_coordinates.
 
 # Set desired particles-per-cell
 numberPerCell = 1
@@ -1026,10 +1029,11 @@ potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 # Open the field output files and write the initial fields (no particles)
 if ctrl.field_output_interval is not None:
 # VTK output is deprecated: potentialFieldOutputFile = df_m.File(ctrl.potential_field_output_file)
-    potentialFieldOutputFile = df_m.XDMFFile(ctrl.potential_field_output_file)
+    potentialFieldOutputFile = ctrl.title + "-phi" + ".xdmf"
+    potentialFieldOutputObj = df_m.XDMFFile(potentialFieldOutputFile)
     phi_F.function.rename("phi", "phi_label")
 # VTK output is deprecated: potentialFieldOutputFile << phi_F.function
-    potentialFieldOutputFile.write(phi_F.function, ctrl.time)
+    potentialFieldOutputObj.write(phi_F.function, ctrl.time)
 
     # !!! VTK cannot write a vector field on a 1D grid.
     # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
@@ -1037,9 +1041,17 @@ if ctrl.field_output_interval is not None:
     # ElectricFieldOutputFile << negElectricField_F.function
     
 
-########## INIT.2. Recompute initial fields including initial particle spacecharge
-##########         and random electric field
+########## INIT.2. Compute initial particle densities and recompute initial fields
+##########         including particle spacecharge.
 
+# Open XDMF output files for species cell number-densities
+cellNumberDensityOutputObjs = {}
+if ctrl.cell_number_density_output_interval is not None:
+    for s in particle_P.species_names:
+        cellNumberDensityOutputFile = ctrl.title + "-" + s + ".xdmf"
+        cellNumberDensityOutputObjs[s] = df_m.XDMFFile(cellNumberDensityOutputFile)
+        cellNumberDensityDict_F[s].function.rename(s+"-n", s + "_label")
+    
 # Open the particle output file and write the header
 if ctrl.particle_output_interval is not None:
     particle_P.initialize_particle_output_file(ctrl)
@@ -1097,9 +1109,9 @@ if particle_P.initial_particles_dict is not None:
         
     # Write out the initial fields (with contribution from initial particles and external fields)
     if ctrl.field_output_interval is not None:
-        phi_F.function.rename("phi", "phi_label")
+# this was done above       phi_F.function.rename("phi", "phi_label")
 # VTK output is deprecated: potentialFieldOutputFile << phi_F.function
-        potentialFieldOutputFile.write(phi_F.function, ctrl.time)
+        potentialFieldOutputObj.write(phi_F.function, ctrl.time)
 
     # !!! VTK cannot write a vector field on a 1D grid. VTK is no longer in Dolfin.
     # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
@@ -1155,7 +1167,13 @@ for istep in range(ctrl.n_timesteps):
         cellNumberDensityDict_F[s].set_values(0.0)
 
     for s in particle_P.species_names:
-        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], dofNumberDensityDict_F[s])
+        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+        # Write a snapshot of the cell number densities
+        if ctrl.cell_number_density_output_interval is not None:
+            if ctrl.timeloop_count % ctrl.cell_number_density_output_interval == 0:
+#                cellNumberDensity = dofNumberDensity_F.function.vector().get_local()
+#                print("species", s, "has cell density", cellNumberDensity
+                cellNumberDensityOutputObjs[s].write(cellNumberDensityDict_F[s].function, ctrl.time)
         q = particle_P.charge[s]
         assembledCharge_F.multiply_add(dofNumberDensityDict_F[s], multiplier=q)
 
@@ -1199,9 +1217,9 @@ for istep in range(ctrl.n_timesteps):
     ##### RUN.5.4. Write a snapshot of the fields
     if ctrl.field_output_interval is not None:
         if ctrl.timeloop_count % ctrl.field_output_interval == 0:
-            phi_F.function.rename("phi", "phi_label")
+# this was done above            phi_F.function.rename("phi", "phi_label")
 # VTK output is deprecated: potentialFieldOutputFile << phi_F.function
-            potentialFieldOutputFile.write(phi_F.function, ctrl.time)            
+            potentialFieldOutputObj.write(phi_F.function, ctrl.time)            
     
     ########## RUN.6. Record history data for this timestep
     if particle_P.histories is not None:
