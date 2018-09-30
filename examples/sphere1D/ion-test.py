@@ -15,9 +15,9 @@ __all__ = ['Example_C',]
 """
 #### Commentary
 
-#  The radial extent of the simulation is from 'scr.rmin' to 'scr.rmax' (see SP.1).
+#  The radial extent of the simulation is from 'scr.rmin' to 'scr.rmax' (see SP.1.)
 
-#  The number of cells is 'scr.nr' (see SP.1).
+#  The number of cells is 'scr.nr' (see SP.1.)
 
 #  The Debye length is specified by the number of cells in it (see SP.1). This along
 #  with the electron temperature yields the plasma density (see SP.2).
@@ -40,14 +40,15 @@ __all__ = ['Example_C',]
 #       * The electron temperature ('scr.T_e_eV'). This is used to compute the
 #         density from the Debye length.
 
-#       * 'ion_sound_speed_multiplier'. This sets the initial ion velocity, 'vdrift_1'.
+#       * 'ion_sound_speed_multiplier' (see SP.3.). This sets the initial ion velocity, 'vdrift_1'.
 
 #       * 'vdrift_av'. The user sets this to estimate the average drift speed in the
 #         creation region.
 
 #  Key numerical parameters are:
 #
-#       * 'numberPerCell' for the ions.
+#       * 'ctrl.n_timesteps' (SC.2.)
+#       * 'numberPerCell' for the ions (PS.3.1.3.)
 #         
 
 #  Key output parameters are:
@@ -107,6 +108,7 @@ __all__ = ['Example_C',]
 ##      EXT.1. Create storage for an external electric field
 ## HST. Time-Histories
 ##      HST.1. History input
+##             HST.1.1. Particle histories
 ##             HST.1.2. Global field histories
 ##             HST.1.3. Point-probe field histories
 ##             HST.1.4. Numerical parameter histories
@@ -213,7 +215,7 @@ scr = DTscratch_C()
 # Start with the size of the computational domain
 #scr.rmin = 1.0
 scr.rmin = 0.0
-scr.rmax = 20.0 # 40.0
+scr.rmax = 8.0 # 20.0 40.0
 # Set the spatial resolution
 scr.nr = 50
 print("The mesh extends from %.3g m to %.3g m in radius" % (scr.rmin, scr.rmax))
@@ -244,7 +246,7 @@ print("T_e is set to %.3g eV, giving an electron thermal velocity of %.3g m/s" %
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-# Compute the electron plasme frequency needed to get the above Debye length
+# Compute the electron plasma frequency needed to get the above Debye length
 scr.omega_e = scr.vthermal_e/scr.lambda_D
 print("For the above electron Debye length, the electron plasma frequency is %.3g rad/s" % scr.omega_e)
 if emitInput is True:
@@ -270,7 +272,7 @@ scr.ion_mass = 100.0*scr.electron_mass
 scr.ion_charge_state = 1.0
 scr.ion_sound_speed = np_m.sqrt(scr.ion_charge_state*q_e*scr.T_e_eV/scr.ion_mass)
 # If the mesh goes to r=0, the following is used to estimate the ion drift out of the source region:
-scr.ion_sound_speed_multiplier = 10.0
+scr.ion_sound_speed_multiplier = 0.5
 print("The ion sound speed is %.3g m/s. Multiplier for initial ion drift is %.3g" % (scr.ion_sound_speed, scr.ion_sound_speed_multiplier))
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
@@ -293,16 +295,15 @@ ctrl.author = "tph"
 
 ##### SC.2. Timestepping
 
-ctrl.n_timesteps = 20 # 100
+ctrl.n_timesteps = 130 # 100
 
 ctrl.dt = 3.0e-5 # sec 4.0e-7 from sphere1D.ods
 if ctrl.dt > scr.dt_max:
     print("%s\n\tTimestep exceeds stability limit by %.3g" % (fileName, ctrl.dt/scr.dt_max))
 else:
     print("%s\n\tTimestep is %.3g of stability limit" % (fileName, ctrl.dt/scr.dt_max))
-    
-if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
+if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Initialize time counters
 ctrl.timeloop_count = 0
@@ -340,7 +341,7 @@ ctrl.particle_output_file = ctrl.title + ".h5part"
 ctrl.particle_output_interval = 1
 # Available attributes: 'species_index' and any particle-record name
 # e.g., 'weight', 'bit-flags', 'cell-index', 'unique_ID', 'crossings'
-ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'unique_ID', 'crossings')
+ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'weight', 'unique_ID', 'crossings')
 
 if emitInput is True:
     print("")
@@ -571,7 +572,8 @@ else:
 ## PS.3.1.2. Geometry of Hplus source region
 rminHplus = scr.rmin
 #rmaxHplus = rminHplus + 2.0*scr.dr_av
-rmaxHplus = rminHplus + 5.0*scr.lambda_D
+#rmaxHplus = rminHplus + 5.0*scr.lambda_D
+rmaxHplus = 3.83 # Exact boundary of cell
 HplusSourceRegion = RectangularRegion_C(particle_P.pmesh_M, rminHplus, rmaxHplus)
 
 if emitInput is True:
@@ -607,18 +609,23 @@ vdrift_av = scr.ion_sound_speed_multiplier*scr.ion_sound_speed
 # 9jun18: Give the ions a speed to get them moving
 vdrift_1 = vdrift_av
 
-# Compute the flux of ions per unit area out of the source region (assuming the ion
+# Compute the flux of ions out of the source region (assuming the ion
 # charge-density equals the electron charge-density):
-ion_flux = scr.electron_density*vdrift_av/scr.ion_charge_state
+#HERE1 this should be multiplied by the spherical area
+#ion_flux = (4.0*np_m.pi*rmaxHplus**2)*scr.electron_density*vdrift_av/scr.ion_charge_state
+ionFluxDensity = scr.electron_density*vdrift_av/scr.ion_charge_state
 
 # The ions are replenished by calling the source function
 timeStepInterval = 1 # Timesteps between invocations of the source function
 
 # The number of ions lost between source-function calls is:
-ion_loss = ion_flux*timeStepInterval*ctrl.dt
+#ion_loss = ion_flux*timeStepInterval*ctrl.dt
+ionLossDensity = ionFluxDensity*timeStepInterval*ctrl.dt
 
 # Compute a number-density increment to replace this loss
-numberDensityIncrementHplus = ion_loss/(rmaxHplus-rminHplus)
+sourceVolume = (4.0/3.0)*np_m.pi*(rmaxHplus**3 - rminHplus**3)
+#numberDensityIncrementHplus = ion_loss/sourceVolume
+numberDensityIncrementHplus = 3.0*ionLossDensity/rmaxHplus
 # Check for positivity
 if numberDensityIncrementHplus < 0:
     print("Check number density for species", ionSpeciesName, "is negative. Should be positive")
@@ -635,6 +642,16 @@ thermalSpeed = np_m.sqrt(2.0*temp_joule/ionMass)
 driftVelocityHplus = (vdrift_1,) # Truncate this velocity vector to match the
                                  # dimension of ParticleInput_C.position_coordinates.
 
+# Extimate particle motion on the mesh
+print("")
+print("Hplus ions drift %.3g average cells per timestep" % (driftVelocityHplus[0]*ctrl.dt/scr.dr_av))
+print("Hplus ions spread %.3g average cells per timestep" % (thermalSpeed*ctrl.dt/scr.dr_av))
+
+# Compute ion density at edge of the creation region
+numberDensityRate = numberDensityIncrementHplus/(timeStepInterval*ctrl.dt)
+expectedDensity = (1.0/3.0)*numberDensityRate*rmaxHplus/driftVelocityHplus[0]
+print("Expected Hplus density at %.3g is %.3g" % (rmaxHplus, expectedDensity))
+                                                   
 # Set desired particles-per-cell
 numberPerCell = 1
 
@@ -694,7 +711,7 @@ particleGenerator = particle_P.create_maxwellian_particles
 # !!!The function could provide it's own type
 #sourceDistributionType = 'functional'
 
-# Add electrons at the same rate as ions (charge is same for both in this case).
+# Add electrons at the same rate as Hplus ions (charge is same for both in this case).
 
 numberDensityIncrement = numberDensityIncrementHplus
 # Check for positivity
@@ -706,6 +723,11 @@ thermalSpeed = scr.vthermal_e
 
 # Set a drift velocity
 driftVelocity = driftVelocityHplus
+
+# Estimate particle motion on the mesh
+print("")
+print("electrons drift %.3g average cells per timestep" % (driftVelocity[0]*ctrl.dt/scr.dr_av))
+print("electrons spread %.3g average cells per timestep" % (thermalSpeed*ctrl.dt/scr.dr_av))
 
 # Set desired particles-per-cell
 numberPerCell = 10

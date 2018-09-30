@@ -161,7 +161,7 @@ class ParticleHistory_C(History_C):
 
     def __init__(self, histin, ctrl, function_dict, species_names):
         
-        """Create storage for particle time-histories.
+        """Create arrays to store particle time-histories.
 
            :param histin: A ParticleHistoryInput_C object.
            :param ctrl: A DTcontrol_C object.
@@ -171,16 +171,19 @@ class ParticleHistory_C(History_C):
            The species names are used to create function calls for the individual
            species from the base functions.
 
+           Per-physical-particle ("ppp") values are computed automatically.
+
         """
 
         # Call the parent constructor to complete setting class variables.
         super(self.__class__, self).__init__(histin, ctrl)
 
-        # Particle global histories: for each species, record the history for the sum
-        # of all the species, and for each individual species.
+        # Particle global histories: for each species, record a value for the sum-
+        # over-all-species, and for each individual species.
 
         # For each particle quantity in the requested history list, record a per-species
-        # value and a per-particle value, in addition to the value summed over species.
+        # value and a per-physical-particle ("ppp") value, in addition to the value summed
+        # over species.
         particleSpeciesHistories = []
         for hist in histin.scalar_histories:
             for sp in species_names:
@@ -197,10 +200,6 @@ class ParticleHistory_C(History_C):
         
         # Create the particle-history storage arrays
         self.data_array = np_m.zeros(self.npoints, dtype={'names': historyList, 'formats': formatList})
-        
-#        # Create the function calls for the individual species
-
-
         
         return
 #    def __init__(self, histin, ctrl, function_dict, species_names):ENDDEF

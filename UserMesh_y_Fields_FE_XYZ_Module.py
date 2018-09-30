@@ -180,8 +180,10 @@ class UserMesh_C(Mesh_C):
 
 #class UserMesh_C(Mesh_C):
     def create_mesh(self, mesh_input, plot_flag=False, plot_title=None):
-        """
-           Create a mesh according to the user's specifications.
+        """Create a mesh according to the user's specifications.
+
+           Mark the mesh with field and particle boundary-conditions.
+
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
