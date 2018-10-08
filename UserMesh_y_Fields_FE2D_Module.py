@@ -160,7 +160,8 @@ class UserMesh2DCirc_C(Mesh_C):
                    mesh boundaries for particle boundary-conditions.
         """
 
-        self.coordinate_system = 'Cartesian' # Mesh coordinates are Cartesian x-y.
+        coordinateSystem = 'Cartesian' # Mesh coordinates are Cartesian x-y, even though
+                                       # the mesh is a 2D quarter-circle.
 
         if mesh_input.mesh_file is None:
             self.create_mesh(mesh_input, plot_flag=plot_flag, plot_title=plot_title)
@@ -169,7 +170,7 @@ class UserMesh2DCirc_C(Mesh_C):
 
         # Call the parent constructor to complete setting class variables.
         mesh_file = mesh_input.mesh_file
-        super(self.__class__, self).__init__(mesh_file=mesh_file, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
+        super(self.__class__, self).__init__(mesh_file=mesh_file, coordinate_system=coordinateSystem, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
         
         self.field_boundary_dict = mesh_input.field_boundary_dict
         self.particle_boundary_dict = mesh_input.particle_boundary_dict

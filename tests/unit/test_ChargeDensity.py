@@ -54,8 +54,9 @@ class TestChargeDensity(unittest.TestCase):
         
         # Create a 1D mesh from -0.5 to 0.5
         mesh = df_m.IntervalMesh(2, -0.5, 0.5)
+        coordinateSystem = 'Cartesian'
 
-        mesh1d_M = Mesh_C(Mesh=mesh, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = Mesh_C(Mesh=mesh, coordinate_system=coordinateSystem, compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
         # Put 3 DT particles in the meshed region.
 

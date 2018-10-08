@@ -140,6 +140,9 @@ class TestFieldSolve(unittest.TestCase):
 #        yesno = raw_input("Looks OK [Y/n]?")
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
 
+#        potentialFieldOutputFile = ctrl.title + "-phi" + ".xdmf"
+#        potentialFieldOutputObj = df_m.XDMFFile(potentialFieldOutputFile)
+
         # Write the potential to a file in VTK and XML formats
         file = df_m.File('phi_test_1_1D.pvd')
         # phi_name goes into the output file; phi_label doesn't
@@ -147,6 +150,10 @@ class TestFieldSolve(unittest.TestCase):
         file << phi_F.function
         file = df_m.File('phi_test_1_1D.xml')
         file << phi_F.function
+
+        # Write the potential in XDMF format
+        xf = df_m.XDMFFile("phi_test_1_1D.xdmf")
+        xf.write(phi_F.function)
         
         # Write -E to a file in VTK and XML formats
         # !!! VTK cannot write a vector field on a 1D grid.
@@ -154,6 +161,10 @@ class TestFieldSolve(unittest.TestCase):
         # file << fieldsolveCI.negE
         file = df_m.File('negE_test_1_1D.xml')
         file << negElectricField_F.function
+
+        # Write -E in XDMF format
+        xf = df_m.XDMFFile("negE_test_1_1D.xdmf")
+        xf.write(negElectricField_F.function)
         
         # Check the 1/r^2 fall-off in E:
 
@@ -370,7 +381,8 @@ class TestFieldSolve(unittest.TestCase):
         ### Read the mesh and boundary-condition markers ###
 
         # Create the mesh object and read in the mesh and boundary markers
-        mesh1d_M = Mesh_C(mesh_file='mesh_2cell_1D.xml', field_boundary_marker_file='mesh_2cell_1D_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        coordinateSystem = 'Cartesian'
+        mesh1d_M = Mesh_C(mesh_file='mesh_2cell_1D.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_2cell_1D_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
         ### Create the charge-density vector ###
 
@@ -474,11 +486,11 @@ class TestFieldSolve(unittest.TestCase):
            The charge-density is from a file written by
            test_5_compute_charge_density_on_1Dmesh() in test_ChargeDensity.py.
 
-           Boundary values are specified here.  The potential is set to zero at the
-           outer radius at 5 meters.  The potential at the inner radius (1 meter) is
-           set to the analytic potential due to the charge.  If the solution is
-           correct, then the potential inside the radial location of the particle
-           should be flat.
+           The potential is specified at both boundaries. The potential is set to
+           zero at the outer radius at 5 meters.  The potential at the inner radius
+           (1 meter) is set to the analytic potential due to the charge.  If the
+           solution is correct, then the potential inside the radial location of the
+           particle should be flat.
 
            See Calc file test_FieldSolve.ods:test_4 for calculation of potential
 
@@ -491,6 +503,7 @@ class TestFieldSolve(unittest.TestCase):
 
         from UserMesh_y_Fields_Spherical1D_Module import UserMesh1DS_C
         from UserMesh_y_Fields_Spherical1D_Module import UserMeshInput1DS_C
+
         from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve1DS_C
 
         ### Set plot flag ###
@@ -503,7 +516,8 @@ class TestFieldSolve(unittest.TestCase):
         ### Read the mesh and boundary-condition markers ###
 
         # Create a mesh object and read in the mesh.
-        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial.xml', field_boundary_marker_file='mesh_1D_radial_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        coordinateSystem = '1D-spherical-radial'
+        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_1D_radial_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
         ### Create the charge-density vector ###
 
@@ -578,11 +592,11 @@ class TestFieldSolve(unittest.TestCase):
 
         ### Create the Poisson-solver object ###
 
-        poissonsolve = UserPoissonSolve1DS_C(phi_F,
-                                             linearSolver, preconditioner,
-                                             fieldBoundaryMarker,
-                                             phiBCs,
-                                             neg_electric_field=negElectricField_F)
+        potentialsolve = UserPoissonSolve1DS_C(phi_F,
+                                               linearSolver, preconditioner,
+                                               fieldBoundaryMarker,
+                                               phiBCs,
+                                               neg_electric_field=negElectricField_F)
 
         # Create the source term from a given density
         # (In this test, the charge comes from kinetic point particles, rather
@@ -594,7 +608,9 @@ class TestFieldSolve(unittest.TestCase):
 
         # Solve for the potential
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
-        poissonsolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
+#        poissonsolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
+        spacechargeFactor = 1.0
+        potentialsolve.solve_for_phi(assembled_charge=chargeDensity_F, assembled_charge_factor=spacechargeFactor, plot_flag=plotFlag, plot_title=plotTitle)
 
         # Write the potential to a file in VTK and XML formats
         file = df_m.File('phi_test_4_1D.pvd')
@@ -604,6 +620,22 @@ class TestFieldSolve(unittest.TestCase):
         file = df_m.File('phi_test_4_1D.xml')
         file << phi_F.function
 
+        # Write the potential in XDMF format
+        phi_file = "phi_test_4_1D.xdmf"
+        phi_file_obj = df_m.XDMFFile(phi_file)
+        phi_time = 0.0
+        phi_file_obj.write(phi_F.function, phi_time)
+
+        # Check that the potential has the analytic value at r=2.6245
+        # See test_FieldSolve.ods for values
+        phi_arr = phi_F.function.vector().get_local()
+#        print("phi_arr =", phi_arr)
+        phi_at_2_6245 = -1626964923.58637
+        ratio = phi_at_2_6245/phi_arr[5]
+        decimal_places = 1
+        self.assertAlmostEqual(ratio, 1.0, places=decimal_places, msg="phi is not correct")
+        print("test_4: phi is correct to %d decimal places; ratio = %.5g" % (decimal_places, ratio))
+        
         # Write -E to a file in VTK and XML formats
         if negElectricField_F is not None:
             negElectricField_F.function.rename("E1D", "E_label")
@@ -626,11 +658,8 @@ class TestFieldSolve(unittest.TestCase):
            The charge-density is from a file written by
            test_6_compute_charge_density_on_1Dmesh() in test_ChargeDensity.py.
 
-           Boundary values are specified here.  The potential is set to zero at the
-           outer radius at 5 meters.  The potential at the inner radius (1 meter) is
-           set to the analytic potential due to the charge.  If the solution is
-           correct, then the potential inside the radial location of the particle
-           should be flat.
+           The potential is set to zero at the outer radius at 5 meters.  At the
+           inner radius (0) no value is set, and so the slope is zero.
 
            See Calc file test_FieldSolve.ods:test_5 for calculation of potential
 
@@ -655,7 +684,8 @@ class TestFieldSolve(unittest.TestCase):
         ### Read the mesh and boundary-condition markers ###
 
         # Create a mesh object and read in the mesh.
-        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial_r0.xml', field_boundary_marker_file='mesh_1D_radial_r0_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        coordinateSystem = '1D-spherical-radial'
+        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial_r0.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_1D_radial_r0_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
         ### Create the charge-density vector ###
 
@@ -729,11 +759,11 @@ class TestFieldSolve(unittest.TestCase):
 
         ### Create the Poisson-solver object ###
 
-        poissonsolve = UserPoissonSolve1DS_C(phi_F,
-                                             linearSolver, preconditioner,
-                                             fieldBoundaryMarker,
-                                             phiBCs,
-                                             neg_electric_field=negElectricField_F)
+        potentialsolve = UserPoissonSolve1DS_C(phi_F,
+                                               linearSolver, preconditioner,
+                                               fieldBoundaryMarker,
+                                               phiBCs,
+                                               neg_electric_field=negElectricField_F)
 
         # Create the source term from a given density
         # (In this test, the charge comes from kinetic point particles, rather
@@ -745,8 +775,11 @@ class TestFieldSolve(unittest.TestCase):
 
         # Solve for the potential
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
-        poissonsolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
+#        poissonsolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
 
+        spacechargeFactor = 1.0
+        potentialsolve.solve_for_phi(assembled_charge=chargeDensity_F, assembled_charge_factor=spacechargeFactor, plot_flag=plotFlag, plot_title=plotTitle)
+        
         # Write the potential to a file in VTK and XML formats
         file = df_m.File('phi_test_5_1D.pvd')
         # phi_name goes into the output file; phi_label doesn't
@@ -764,6 +797,16 @@ class TestFieldSolve(unittest.TestCase):
             file = df_m.File("negE_test_5_1D.xml")
             file << negElectricField_F.function
 
+        # Check that -E has the analytic value at r=1.842
+        # See test_FieldSolve.ods for values
+        negE_arr = negElectricField_F.function.vector().get_local()
+#        print("negE_arr =", negE_arr)
+        negE_at_1_842 = 2649589637.58845
+        ratio = negE_at_1_842/negE_arr[5]
+        decimal_places = 2
+        self.assertAlmostEqual(ratio, 1.0, places=decimal_places, msg="negE is not correct")
+        print("test_5: negE is correct to %d decimal places; ratio = %.5g" % (decimal_places, ratio))
+        
         return
 #    def test_5_1D_poisson_solver(self):ENDDEF
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # 1D spherically-symmetric expansion of ions and electrons
 # See sphere1D.ods for setting up parameters
@@ -7,42 +7,46 @@ __version__ = 0.1
 __author__ = 'Copyright (C) 2017-2018 L. D. Hughes'
 __all__ = ['Example_C',]
 
-"""A spherical source region creates ion-electron pairs.  The electrons are hot and
-   the ions are cold, but may be given a radial velocity.  The electrons pull the
-   ions radially outward.
+"""This is a version of sphere1D.py with the electrons removed (an electron species
+   is defined, but no electron creation occurs). Inject ions at a computed rate, and
+   then check if they reach the predicted steady state density as they stream
+   outward. See sphere1D.ods and ion-test.odp.
 
 """
 #### Commentary
 
-#  The radial extent of the simulation is from 'scr.rmin' to 'scr.rmax'.
+#  The radial extent of the simulation is from 'scr.rmin' to 'scr.rmax' (see SP.1.)
 
-#  The number of cells is 'scr.nr'.
+#  The number of cells is 'scr.nr' (see SP.1.)
 
-#  The Debye length is specified by the number of cells in it.
+#  The Debye length is specified by the number of cells in it (see SP.1). This along
+#  with the electron temperature yields the plasma density (see SP.2).
 
-#  The size of the source-region where ions and electrons are created is given as a number
-#  of Debye lengths
+#  The size of the source-region where ions are created is given as a number
+#  of Debye lengths (see PS.3.1.2).
+
+#  The ions are created with a drift-velocity 'vdrift_1' (see PS.3.1.3).
+
+#  An ion flux out of the creation region is estimated from velocity 'vdrift_av'. This
+#  is used to compute the number of ions to create per injection (see sphere1D.ods).
 
 
 #  Key physical parameters are:
 
-#       * The electron temperature ('scr.T_e_eV'). This determines the electron
-#         pressure, and so the ambipolar electric field set up by the electrons.
-
 #       * The number of Debye-lengths in the simulation region.
 
-#       * The external random-electric-field amplitude
-#         ('scr.random_external_electric_field_amplitude').  This is an external energy source
-#         that heats the electrons in the source region.  Without this, cold electrons
-#         will accumulate in this region while the hotter ones escape.
+#       * The electron temperature ('scr.T_e_eV'). This is used to compute the
+#         electron density from the Debye length.
 
-#       * The potential difference ('scr.confining_potential') between the center and the
-#         edge of the simulation region.  This is the confining potential for the electrons.
-#         (This is not used as a simulation parameter if the region extends to r = 0).
+#       * 'ion_sound_speed_multiplier' (see SP.3.). This sets the initial ion velocity, 'vdrift_1'.
+
+#       * 'vdrift_av'. The user sets this to estimate the average drift speed in the
+#         creation region.
 
 #  Key numerical parameters are:
 #
-#       * 'numberPerCell' for the ions and electrons.
+#       * 'ctrl.n_timesteps' (SC.2.)
+#       * 'numberPerCell' for the ions (PS.3.1.3.)
 #         
 
 #  Key output parameters are:
@@ -70,7 +74,7 @@ __all__ = ['Example_C',]
 ##     SC.4. Output: Specify field and particle output files and output frequency.
 ## FM. Field Mesh
 ## PS. Particle Species
-##     PS.1. Define the species and provide storage.
+##     PS.1. Define the species, set apply_field switches, and provide storage.
 ##           PS.1.2. Allocate particle storage.
 ##           PS.1.3. Specify the name of the UserParticlesModule (Deprecate)
 ##     PS.2. Particle boundary conditions, particle mesh
@@ -102,6 +106,7 @@ __all__ = ['Example_C',]
 ##      EXT.1. Create storage for an external electric field
 ## HST. Time-Histories
 ##      HST.1. History input
+##             HST.1.1. Particle histories
 ##             HST.1.2. Global field histories
 ##             HST.1.3. Point-probe field histories
 ##             HST.1.4. Numerical parameter histories
@@ -208,7 +213,7 @@ scr = DTscratch_C()
 # Start with the size of the computational domain
 #scr.rmin = 1.0
 scr.rmin = 0.0
-scr.rmax = 20.0 # 40.0
+scr.rmax = 8.0 # 20.0 40.0
 # Set the spatial resolution
 scr.nr = 50
 print("The mesh extends from %.3g m to %.3g m in radius" % (scr.rmin, scr.rmax))
@@ -239,7 +244,7 @@ print("T_e is set to %.3g eV, giving an electron thermal velocity of %.3g m/s" %
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-# Compute the electron plasme frequency needed to get the above Debye length
+# Compute the electron plasma frequency needed to get the above Debye length
 scr.omega_e = scr.vthermal_e/scr.lambda_D
 print("For the above electron Debye length, the electron plasma frequency is %.3g rad/s" % scr.omega_e)
 if emitInput is True:
@@ -265,7 +270,7 @@ scr.ion_mass = 100.0*scr.electron_mass
 scr.ion_charge_state = 1.0
 scr.ion_sound_speed = np_m.sqrt(scr.ion_charge_state*q_e*scr.T_e_eV/scr.ion_mass)
 # If the mesh goes to r=0, the following is used to estimate the ion drift out of the source region:
-scr.ion_sound_speed_multiplier = 10.0
+scr.ion_sound_speed_multiplier = 0.5
 print("The ion sound speed is %.3g m/s. Multiplier for initial ion drift is %.3g" % (scr.ion_sound_speed, scr.ion_sound_speed_multiplier))
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
@@ -288,16 +293,15 @@ ctrl.author = "tph"
 
 ##### SC.2. Timestepping
 
-ctrl.n_timesteps = 10 # 100
+ctrl.n_timesteps = 130 # 100
 
 ctrl.dt = 3.0e-5 # sec 4.0e-7 from sphere1D.ods
 if ctrl.dt > scr.dt_max:
     print("%s\n\tTimestep exceeds stability limit by %.3g" % (fileName, ctrl.dt/scr.dt_max))
 else:
     print("%s\n\tTimestep is %.3g of stability limit" % (fileName, ctrl.dt/scr.dt_max))
-    
-if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
+if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Initialize time counters
 ctrl.timeloop_count = 0
@@ -311,10 +315,11 @@ np_m.random.seed(ctrl.random_seed)
 
 # Electric field control
 
-# Set the switches to empty dictionaries here if and only if you want to set per-species
-# values in PS.1.1. below.  The default is that all defined electric fields will be
-# applied to all species. If the following lines are commented out, then the forces WILL
-# BE APPLIED to all species.
+# Set the apply_field switches to empty dictionaries (i.e., {}) here if and only if you want to
+# set per-species values in PS.1.1. below.  The default (if these dicts are set to None, or
+# commented out) is that all defined electric fields will be applied to all
+# species. If the following lines are commented out, then the forces WILL BE APPLIED
+# to all species.
 
 ctrl.apply_solved_electric_field = {}
 ctrl.apply_random_external_electric_field = {}
@@ -324,12 +329,8 @@ randomExternalElectricFieldAmplitude = 0.0
 
 ##### SC.4. Output control
 
-###Set parameters for writing field output files
-ctrl.electron_density_output_file = ctrl.title + "-ne.xdmf"
-ctrl.ion_density_output_file = ctrl.title + "-ni.xdmf"
-ctrl.potential_field_output_file = ctrl.title + "-phi.xdmf"
-# VTK output is deprecated: ctrl.potential_field_output_file = ctrl.title + "-phi.pvd"
-# VTK output is deprecated: ctrl.electric_field_output_file = ctrl.title + "-E.pvd"
+###Set parameters for writing output files
+ctrl.cell_number_density_output_interval = 1
 ctrl.field_output_interval = 1
 
 ### Set parameters for writing particle output to an h5part file
@@ -338,7 +339,7 @@ ctrl.particle_output_file = ctrl.title + ".h5part"
 ctrl.particle_output_interval = 1
 # Available attributes: 'species_index' and any particle-record name
 # e.g., 'weight', 'bit-flags', 'cell-index', 'unique_ID', 'crossings'
-ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'unique_ID', 'crossings')
+ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'weight', 'unique_ID', 'crossings')
 
 if emitInput is True:
     print("")
@@ -410,7 +411,7 @@ pin.position_coordinates = ['x',] # determines the particle-storage dimensions. 
 pin.force_components = ['x',]
 pin.force_precision = np_m.float64
 
-############### PS.1. Define the species and provide storage ###############
+############### PS.1. Define the species, set apply_field switches, and provide particle storage ###############
 
 ##### PS.1.1. Basic properties and storage
 speciesName = 'electron'
@@ -569,7 +570,8 @@ else:
 ## PS.3.1.2. Geometry of Hplus source region
 rminHplus = scr.rmin
 #rmaxHplus = rminHplus + 2.0*scr.dr_av
-rmaxHplus = rminHplus + 5.0*scr.lambda_D
+#rmaxHplus = rminHplus + 5.0*scr.lambda_D
+rmaxHplus = 3.83 # Exact boundary of cell
 HplusSourceRegion = RectangularRegion_C(particle_P.pmesh_M, rminHplus, rmaxHplus)
 
 if emitInput is True:
@@ -601,22 +603,23 @@ vdrift_2 = 0.0
 vdrift_3 = 0.0
 # ... and make an estimate of the average ion drift-velocity in the source region:
 vdrift_av = scr.ion_sound_speed_multiplier*scr.ion_sound_speed
+
+# 9jun18: Give the ions a speed to get them moving
 vdrift_1 = vdrift_av
 
-# 9jun18: instead, give the ions a speed to get them moving
-
-# Compute the flux of ions per unit area out of the source region (assuming the ion
+# Compute the flux of ions out of the source region (assuming the ion
 # charge-density equals the electron charge-density):
-ion_flux = scr.electron_density*vdrift_av/scr.ion_charge_state
+ionFluxDensity = scr.electron_density*vdrift_av/scr.ion_charge_state
 
 # The ions are replenished by calling the source function
 timeStepInterval = 1 # Timesteps between invocations of the source function
 
 # The number of ions lost between source-function calls is:
-ion_loss = ion_flux*timeStepInterval*ctrl.dt
+ionLossDensity = ionFluxDensity*timeStepInterval*ctrl.dt
 
 # Compute a number-density increment to replace this loss
-numberDensityIncrementHplus = ion_loss/(rmaxHplus-rminHplus)
+#sourceVolume = (4.0/3.0)*np_m.pi*(rmaxHplus**3 - rminHplus**3)
+numberDensityIncrementHplus = 3.0*ionLossDensity/rmaxHplus
 # Check for positivity
 if numberDensityIncrementHplus < 0:
     print("Check number density for species", ionSpeciesName, "is negative. Should be positive")
@@ -630,8 +633,19 @@ thermalSpeed = np_m.sqrt(2.0*temp_joule/ionMass)
 
 #driftVelocityHplus = (vdrift_1, vdrift_2, vdrift_3)
 #driftVelocityHplus[0] = vdrift_1
-driftVelocityHplus = (vdrift_1)
+driftVelocityHplus = (vdrift_1,) # Truncate this velocity vector to match the
+                                 # dimension of ParticleInput_C.position_coordinates.
+                                 
+# Extimate and write particle motion per timestep on the mesh
+print("")
+print("Hplus ions drift %.3g average cells per timestep" % (driftVelocityHplus[0]*ctrl.dt/scr.dr_av))
+print("Hplus ions spread %.3g average cells per timestep" % (thermalSpeed*ctrl.dt/scr.dr_av))
 
+# Compute and output the ion density at edge of the creation region
+numberDensityRate = numberDensityIncrementHplus/(timeStepInterval*ctrl.dt)
+expectedDensity = (1.0/3.0)*numberDensityRate*rmaxHplus/driftVelocityHplus[0]
+print("Expected Hplus density at %.3g is %.3g" % (rmaxHplus, expectedDensity))
+                                                   
 # Set desired particles-per-cell
 numberPerCell = 1
 
@@ -691,7 +705,7 @@ particleGenerator = particle_P.create_maxwellian_particles
 # !!!The function could provide it's own type
 #sourceDistributionType = 'functional'
 
-# Add electrons at the same rate as ions (charge is same for both in this case).
+# Add electrons at the same rate as Hplus ions (charge Z is same for both in this case).
 
 numberDensityIncrement = numberDensityIncrementHplus
 # Check for positivity
@@ -703,6 +717,11 @@ thermalSpeed = scr.vthermal_e
 
 # Set a drift velocity
 driftVelocity = driftVelocityHplus
+
+# Estimate and write out particle motion on the mesh per timestep
+print("")
+print("electrons drift %.3g average cells per timestep" % (driftVelocity[0]*ctrl.dt/scr.dr_av))
+print("electrons spread %.3g average cells per timestep" % (thermalSpeed*ctrl.dt/scr.dr_av))
 
 # Set desired particles-per-cell
 numberPerCell = 10
@@ -1026,10 +1045,11 @@ potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 # Open the field output files and write the initial fields (no particles)
 if ctrl.field_output_interval is not None:
 # VTK output is deprecated: potentialFieldOutputFile = df_m.File(ctrl.potential_field_output_file)
-    potentialFieldOutputFile = df_m.XDMFFile(ctrl.potential_field_output_file)
+    potentialFieldOutputFile = ctrl.title + "-phi" + ".xdmf"
+    potentialFieldOutputObj = df_m.XDMFFile(potentialFieldOutputFile)
     phi_F.function.rename("phi", "phi_label")
 # VTK output is deprecated: potentialFieldOutputFile << phi_F.function
-    potentialFieldOutputFile.write(phi_F.function, ctrl.time)
+    potentialFieldOutputObj.write(phi_F.function, ctrl.time)
 
     # !!! VTK cannot write a vector field on a 1D grid.
     # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
@@ -1037,9 +1057,17 @@ if ctrl.field_output_interval is not None:
     # ElectricFieldOutputFile << negElectricField_F.function
     
 
-########## INIT.2. Recompute initial fields including initial particle spacecharge
-##########         and random electric field
+########## INIT.2. Compute initial particle densities and recompute initial fields
+##########         including particle spacecharge.
 
+# Open XDMF output files for species cell number-densities
+cellNumberDensityOutputObjs = {}
+if ctrl.cell_number_density_output_interval is not None:
+    for s in particle_P.species_names:
+        cellNumberDensityOutputFile = ctrl.title + "-" + s + ".xdmf"
+        cellNumberDensityOutputObjs[s] = df_m.XDMFFile(cellNumberDensityOutputFile)
+        cellNumberDensityDict_F[s].function.rename(s+"-n", s + "_label")
+    
 # Open the particle output file and write the header
 if ctrl.particle_output_interval is not None:
     particle_P.initialize_particle_output_file(ctrl)
@@ -1097,9 +1125,10 @@ if particle_P.initial_particles_dict is not None:
         
     # Write out the initial fields (with contribution from initial particles and external fields)
     if ctrl.field_output_interval is not None:
-        phi_F.function.rename("phi", "phi_label")
+# this was done above:
+#        phi_F.function.rename("phi", "phi_label")
 # VTK output is deprecated: potentialFieldOutputFile << phi_F.function
-        potentialFieldOutputFile.write(phi_F.function, ctrl.time)
+        potentialFieldOutputObj.write(phi_F.function, ctrl.time)
 
     # !!! VTK cannot write a vector field on a 1D grid. VTK is no longer in Dolfin.
     # ElectricFieldOutputFile = df_m.File(ctrl.electric_field_output_file)
@@ -1155,7 +1184,13 @@ for istep in range(ctrl.n_timesteps):
         cellNumberDensityDict_F[s].set_values(0.0)
 
     for s in particle_P.species_names:
-        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], dofNumberDensityDict_F[s])
+        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+        # Write a snapshot of the cell number densities
+        if ctrl.cell_number_density_output_interval is not None:
+            if ctrl.timeloop_count % ctrl.cell_number_density_output_interval == 0:
+#                cellNumberDensity = dofNumberDensity_F.function.vector().get_local()
+#                print("species", s, "has cell density", cellNumberDensity
+                cellNumberDensityOutputObjs[s].write(cellNumberDensityDict_F[s].function, ctrl.time)
         q = particle_P.charge[s]
         assembledCharge_F.multiply_add(dofNumberDensityDict_F[s], multiplier=q)
 
@@ -1199,9 +1234,10 @@ for istep in range(ctrl.n_timesteps):
     ##### RUN.5.4. Write a snapshot of the fields
     if ctrl.field_output_interval is not None:
         if ctrl.timeloop_count % ctrl.field_output_interval == 0:
-            phi_F.function.rename("phi", "phi_label")
+# this was done above:
+#            phi_F.function.rename("phi", "phi_label")
 # VTK output is deprecated: potentialFieldOutputFile << phi_F.function
-            potentialFieldOutputFile.write(phi_F.function, ctrl.time)            
+            potentialFieldOutputObj.write(phi_F.function, ctrl.time)            
     
     ########## RUN.6. Record history data for this timestep
     if particle_P.histories is not None:

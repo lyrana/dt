@@ -35,7 +35,7 @@ class Mesh_C(object):
     # Constructor
 
 # Examine the need for the Mesh and mesh_to_copy args:
-    def __init__(self, Mesh=None, mesh_to_copy=None, mesh_file=None, field_boundary_marker_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title="Mesh"):
+    def __init__(self, Mesh=None, mesh_to_copy=None, mesh_file=None, coordinate_system = None, field_boundary_marker_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title="Mesh"):
         """
            :param Mesh: a Dolfin Mesh object
            :param mesh_file: The name of a file containing an XML mesh
@@ -46,6 +46,8 @@ class Mesh_C(object):
            :cvar tdim: Topological dimension of the mesh
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
         # Get a ref to the mesh from the arglist,
         if Mesh is not None:
             self.mesh = Mesh
@@ -56,6 +58,12 @@ class Mesh_C(object):
         elif mesh_file is not None:
             self.mesh = df_m.Mesh(mesh_file)
 
+        if coordinate_system is not None:
+            self.coordinate_system = coordinate_system
+        else:
+            errorMsg = "%s\n None is not a valid value for coordinate_system" % (fncName)
+            raise ValueError(errorMsg)
+        
         # This section will also execute if this __init__ is called by a
         # child class.
         if self.mesh is not None:
@@ -223,6 +231,8 @@ class Mesh_C(object):
            obtain the x, y, z coordinates of the vertices.
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+
         # For each cell, get a list of the vertices in it
         # A vertex has topological dimension 0
         self.cell_vertex_dict = dict((cell.index(), cell.entities(0)) for cell in df_m.cells(self.mesh))
@@ -333,6 +343,8 @@ class Mesh_C(object):
            that have a given vertex index.
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
         # For each vertex, get a list of the cells that contain this vertex
         self.vertex_cell_dict = dict((v.index(), [c.index() for c in df_m.cells(v)]) for v in df_m.vertices(self.mesh))
 
@@ -353,6 +365,8 @@ class Mesh_C(object):
            where n0, n1, ... are the unit normal vectors on each facet.
 
         """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
         # For each cell, get a list of the vertices in it
         # (cell.entities(d) returns a list of indices).
@@ -397,6 +411,8 @@ class Mesh_C(object):
 
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
         if self.gdim == 3:
             p = df_m.Point(point['x'], point['y'], point['z'])
         elif self.gdim == 2:
@@ -446,13 +462,35 @@ class Mesh_C(object):
 
 #class Mesh_C(object):
     def compute_cell_volume_dict(self):
-        """
-           Make a dictionary giving the cell volume, indexed by
+        """Make a dictionary giving the cell volume, indexed by
            the cell index.
+
+           For Cartesian geometry, use the native Dolfin volume() function. Otherwise, the
+           volume has to be calculated from the vertex coordinates for the particular
+           geometry.
+
         """
 
-        self.cell_volume_dict = dict((cell.index(), cell.volume()) for cell in df_m.cells(self.mesh))
-
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
+        if self.coordinate_system == 'Cartesian':
+            # Use the native Dolfin volume() function
+            self.cell_volume_dict = dict((cell.index(), cell.volume()) for cell in df_m.cells(self.mesh))
+        elif self.coordinate_system == '1D-spherical-radial':
+            # Compute the volume of the spherical shell between the two vertices bounding
+            # a cell.
+            for cell in df_m.cells(self.mesh):
+                ci = cell.index()
+                coords = cell.get_vertex_coordinates()
+                x0 = coords[0]
+                x1 = coords[1]
+                volume = (4.0/3.0)*np_m.pi*(x1*x1*x1 - x0*x0*x0)
+                self.cell_volume_dict[ci] = volume
+#                print("cell", ci, "volume", volume)                
+        else:
+            errorMsg = "%s\n coordinate_system %s is unknown" % (fncName, self.coordinate_system)
+            raise ValueError(errorMsg)
+        
         return
 #    def compute_cell_volume_dict(self):ENDDEF
 
@@ -467,6 +505,8 @@ class Mesh_C(object):
         :rtype: bool
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
         cell = self.cell_dict[cell_index]
 
         if self.gdim == 3:
@@ -964,6 +1004,8 @@ class Field_C(object):
            
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
         # Temporary ndarray for the interpolated field at a point
         # Length is number of components of field (1 for scalar; 2 for 2D vector, etc.)
         fieldValue = np_m.empty(len(field_at_points.dtype.fields), dtype=field_at_points.dtype[0])
@@ -1007,6 +1049,8 @@ class Field_C(object):
            :returns: None
 
         """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
         # Storage for the interpolated field vector at a single point.
         # Length is number of components of field vector (1 for scalar; 2 for 2D vector, etc.)
@@ -1059,6 +1103,8 @@ class Field_C(object):
                      point's weight.
 
         """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
         # Should be able to use p['cell_index'] here instead of having
         # to search for the cell that contains the point.
@@ -1220,6 +1266,8 @@ class Field_C(object):
 
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+
         # Loop on the cells in the mesh
         for cell in df_m.cells(self.mesh_M.mesh):
             cellIndex = cell.index()
@@ -1353,6 +1401,8 @@ class PoissonSolve_C(object):
            [1] FBOOK, p. 3 (1.1.2), p. 309 (17.4.1).
 
         """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
         # This could be in the __init__()?
         
@@ -1491,6 +1541,8 @@ class PoissonSolve_C(object):
 
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+
         ### Assemble the A matrix for the LHS ###
 
         # If a(u,v) has coefficients that change, then it needs to be assembled
@@ -1553,6 +1605,8 @@ class PoissonSolve_C(object):
            :cvar negE: The negative gradient of the electrostatic potential
 
         """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
         negE = df_m.grad(self.u)
 
@@ -1678,6 +1732,8 @@ class CellSet_C(object):
 
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
         cell = self.cell_list[index]
 
         return cell.contains(df_m.Point(point))
@@ -1705,6 +1761,8 @@ class RectangularRegion_C(CellSet_C):
 
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
         # Use gdim, e.g., for the x,y,z coordinates of a point
         self.gdim = mesh_M.gdim
 
@@ -1728,6 +1786,9 @@ class RectangularRegion_C(CellSet_C):
            :returns: True if x[] is inside the subdomain
 
        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
         tol = 1.0e-10
 
         if self.gdim == 3:
@@ -1798,6 +1859,9 @@ class SphericalRegion_C(CellSet_C):
            :returns: True if x[] is inside the region
 
        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
         tol = 1.0e-10
 
         # The source is in the interval [xmin, xmax]
@@ -1859,6 +1923,8 @@ class CellSubDomain_C2(df_m.SubDomain):
 
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
         for cell in df_m.cells(mesh):
             p = cell.midpoint()
 

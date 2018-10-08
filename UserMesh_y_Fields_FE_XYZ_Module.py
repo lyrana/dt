@@ -164,12 +164,11 @@ class UserMesh_C(Mesh_C):
                 2. A MeshFunction that marks mesh boundaries for boundary conditions.
         """
 
-        self.coordinate_system = 'Cartesian'
-
+        coordinateSystem = 'Cartesian'
         self.create_mesh(mesh_input, plot_flag=plot_flag, plot_title=plot_title)
 
         # Call the parent constructor to complete setting class variables.
-        super(UserMesh_C, self).__init__(mesh_file=None, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag, plot_title=plot_title)
+        super(UserMesh_C, self).__init__(mesh_file=None, coordinate_system=coordinateSystem, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag, plot_title=plot_title)
 
         self.field_boundary_dict = mesh_input.field_boundary_dict
         self.particle_boundary_dict = mesh_input.particle_boundary_dict
@@ -180,8 +179,10 @@ class UserMesh_C(Mesh_C):
 
 #class UserMesh_C(Mesh_C):
     def create_mesh(self, mesh_input, plot_flag=False, plot_title=None):
-        """
-           Create a mesh according to the user's specifications.
+        """Create a mesh according to the user's specifications.
+
+           Mark the mesh with field and particle boundary-conditions.
+
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'

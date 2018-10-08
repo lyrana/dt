@@ -21,7 +21,8 @@ class TestFieldInterpolation(unittest.TestCase):
         # initializations for each test go here...
 
         # Create mesh from a file
-        mesh2D_M = Mesh_C(mesh_file="mesh_quarter_circle_crossed.xml", compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        coordinateSystem = 'Cartesian'
+        mesh2D_M = Mesh_C(mesh_file="mesh_quarter_circle_crossed.xml", coordinate_system=coordinateSystem, compute_dictionaries=True, compute_tree=True, plot_flag=False)
 
 #        df_m.plot(self.mesh, title='cylindrical mesh', axes=True)
 #        df_m.interactive()

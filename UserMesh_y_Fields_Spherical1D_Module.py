@@ -174,7 +174,10 @@ class UserMesh1DS_C(Mesh_C):
 
         # Call the parent constructor to complete setting class variables.
         meshFile = mesh_input.mesh_file
-        super(self.__class__, self).__init__(mesh_file=meshFile, compute_dictionaries=computeDictionaries, compute_tree=computeTree, plot_flag=plotFlag, plot_title=plotTitle)
+        coordinateSystem = '1D-spherical-radial' # Mesh coordinates are spherical
+                                                 # radial coordinates.
+        super(self.__class__, self).__init__(mesh_file=meshFile, coordinate_system=coordinateSystem, compute_dictionaries=computeDictionaries, compute_tree=computeTree, plot_flag=plotFlag, plot_title=plotTitle)
+
 
         self.field_boundary_dict = mesh_input.field_boundary_dict
         self.particle_boundary_dict = mesh_input.particle_boundary_dict
@@ -212,8 +215,12 @@ class UserMesh1DS_C(Mesh_C):
 
 #class UserMesh1DS_C(Mesh_C):
     def create_mesh(self, mesh_input, plot_flag=False, plot_title=None):
-        """
-           Create a mesh according to the user's specifications.
+        """Create a mesh according to the user's specifications.
+
+           Mark the mesh with field and particle boundary-conditions.
+
+           :cvar double stretch: Used to make a nonuniform mesh from a uniform mesh.
+
         """
 
         rmin = mesh_input.rmin

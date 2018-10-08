@@ -2049,9 +2049,9 @@ class Particle_C(object):
     def record_history_data(self, step, time):
         """Save requested particle history data for this timestep.
 
-           The sums over all species are calculated and stored.
+           The sum-over-all-species for each requested datum is calculated and stored.
            Values for each species are also calculated and stored.  
-           Per-particle values are also calculated and stored.
+           Per-physical-particle ("ppp") values are also calculated and stored.
 
         """
 
@@ -2086,6 +2086,7 @@ class Particle_C(object):
         self.histories.counter += 1
         
         return
+#    def record_history_data(self, step, time):ENDDEF
 
 #class Particle_C(object):
 
@@ -2187,7 +2188,7 @@ class Particle_C(object):
         if self.coordinate_system == '1D-spherical-radius':
             weightMult /= 4.0*np_m.pi # 4 \pi radians in a sphere
 
-        crossings = 0
+        crossings = 0 # The cell-crossing counter has to be initialized
         for icell in range(nCell):
             # Compute the particle weight (number of particles per macroparticle)
             weight = domain.volume[icell]*weightMult
