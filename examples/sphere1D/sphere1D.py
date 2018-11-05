@@ -7,29 +7,44 @@ __version__ = 0.1
 __author__ = 'Copyright (C) 2017-2018 L. D. Hughes'
 __all__ = ['Example_C',]
 
-"""A spherical source region creates ion-electron pairs.  The electrons are hot and
-   the ions are cold, but may be given a radial velocity.  The electrons pull the
+"""A spherical source region creates ion-electron pairs uniformly in space.  The electrons are hot and
+   the ions are cold, but may be given a small-but-finite radial velocity.  The electrons are heated by an applied The electrons pull the
    ions radially outward.
 
 """
 #### Commentary
 
-#  The radial extent of the simulation is from 'scr.rmin' to 'scr.rmax'.
+#  The radial extent of the simulation is from 'scr.rmin' to 'scr.rmax' (see SCR.1.)
 
-#  The number of cells is 'scr.nr'.
+#  The number of cells is 'scr.nr' (see SCR.1.)
 
-#  The Debye length is specified by the number of cells in it.
+#  The Debye length is specified by the number of cells in it (see SCR.1). This along
+#  with the electron temperature yields the plasma density (see SCR.2).
 
 #  The size of the source-region where ions and electrons are created is given as a number
-#  of Debye lengths
+#  of Debye lengths (see PS.3.1.2).
+
+#  The ions are created with a radial drift-velocity 'vdrift_1' (see PS.3.1.3).
+
+#  An ion flux out of the creation region is estimated from velocity 'vdrift_av'. This
+#  is used to compute the number of ions to create per injection (see sphere1D.ods).
 
 
 #  Key physical parameters are:
 
-#       * The electron temperature ('scr.T_e_eV'). This determines the electron
-#         pressure, and so the ambipolar electric field set up by the electrons.
-
 #       * The number of Debye-lengths in the simulation region.
+
+#       * The electron temperature ('scr.T_e_eV'). This is used to compute the electron
+#         density from the Debye length. The electron density and temperature determine
+#         the electron pressure, and so the ambipolar electric field set up by the
+#         electrons.
+
+
+#       * 'ion_sound_speed_multiplier' (see SCR.3.). This sets the initial ion velocity, 'vdrift_1'.
+
+#       * 'vdrift_av'. The user sets this to estimate the average ion drift speed in the
+#         creation region, and this sets the rate at which new ions/electrons are created
+#         to replace the lost ions.
 
 #       * The external random-electric-field amplitude
 #         ('scr.random_external_electric_field_amplitude').  This is an external energy source
@@ -42,7 +57,8 @@ __all__ = ['Example_C',]
 
 #  Key numerical parameters are:
 #
-#       * 'numberPerCell' for the ions and electrons.
+#       * 'ctrl.n_timesteps' (CTRL.2.)
+#       * 'numberPerCell' for the ions and electrons (PS.3.1.3.)
 #         
 
 #  Key output parameters are:
@@ -56,21 +72,21 @@ __all__ = ['Example_C',]
 ### number below, e.g., PS.<space>, or PS.1.3.<space>
 
 ## IM. Imported Modules
-## OF. Terminal output flags
+## TO. Terminal output flags
 ## PC. Physical constants
-## SP. scratch-paD for calculating parameter values.
-##     SP.1. Calculate spatial parameters
-##     SP.2. Calculate electron parameters
-##     SP.3. Calculate ion parameters
-##     SP.4. Calculate field parameters
-## SC. Simulation Control
-##     SC.1. Titles
-##     SC.2. Set timestep value and number of timesteps.
-##     SC.3. Electric field control
-##     SC.4. Output: Specify field and particle output files and output frequency.
+## SCR. scratch-paD for calculating parameter values.
+##     SCR.1. Calculate spatial parameters
+##     SCR.2. Calculate electron parameters
+##     SCR.3. Calculate ion parameters
+##     SCR.4. Calculate field parameters
+## CTRL. Simulation Control
+##     CTRL.1. Titles
+##     CTRL.2. Set timestep value and number of timesteps.
+##     CTRL.3. Electric field control
+##     CTRL.4. Output: Specify field and particle output files and output frequency.
 ## FM. Field Mesh
 ## PS. Particle Species
-##     PS.1. Define the species and provide storage.
+##     PS.1. Define the species, set the "apply-field" switches, and provide storage.
 ##           PS.1.2. Allocate particle storage.
 ##           PS.1.3. Specify the name of the UserParticlesModule (Deprecate)
 ##     PS.2. Particle boundary conditions, particle mesh
@@ -102,6 +118,7 @@ __all__ = ['Example_C',]
 ##      EXT.1. Create storage for an external electric field
 ## HST. Time-Histories
 ##      HST.1. History input
+##             HST.1.1. Particle histories
 ##             HST.1.2. Global field histories
 ##             HST.1.3. Point-probe field histories
 ##             HST.1.4. Numerical parameter histories
@@ -158,25 +175,27 @@ from UserUnits_Module import MyPlasmaUnits_C
 
 fileName = __file__+':'
 
-############################## OF. Terminal output flags ##############################
+############################## TO. Terminal output flags ##############################
 
-emitInput = True # Write input values to standard output.
+pauseAfterWarning = False # If False, don't pause after warning messages.
+
+emitInput = False # Write input values to standard output.
 emitInputOnly = False # Write input values to standard output and then quit.
-pauseAfterEmit = True # Wait for user input before continuing.  Can be changed to
+pauseAfterEmit = False # Wait for user input before continuing.  Can be changed to
                       # False by using ctrl.get_keyboard_input()
 
-pauseAfterTimestep = True # Wait for user input before continuing to the next
+pauseAfterTimestep = False # Wait for user input before continuing to the next
                           # timestep.  Can be changed to False by using
                           # ctrl.get_keyboard_input()
                       
-plotInitialFields = True
-plotFieldsEveryTimestep = True # Plot phi and -E each timestep.
-plotFinalFields = True
+plotInitialFields = False
+plotFieldsEveryTimestep = False # Plot phi and -E each timestep.
+plotFinalFields = False
 
-plotTrajectoriesOnMesh = True # Plot the trajectory particles on top of the mesh.
-plotTrajectoriesInPhaseSpace = True # Plot the 2D phase-space of trajectory particles.
+plotTrajectoriesOnMesh = False # Plot the trajectory particles on top of the mesh.
+plotTrajectoriesInPhaseSpace = False # Plot the 2D phase-space of trajectory particles.
 
-plotTimeHistories = True # Plot the recorded values vs. time.
+plotTimeHistories = False # Plot the recorded values vs. time.
 
 ############################## PC. Physical constants ##############################
 
@@ -192,7 +211,7 @@ eps_0 = MyPlasmaUnits_C.epsilon_0
 k_B = MyPlasmaUnits_C.boltzmann_constant
 
 
-############################## SP. Scratch-pad ##############################
+############################## SCR. Scratch-pad ##############################
 
 # Use the scratch-pad to compute values needed to set up the simulation
 
@@ -200,104 +219,128 @@ if emitInput is True:
     print("")
     print("********** Scratch-pad for computing simulation parameters **********")
 
-# Create a class for scratch-pad variables
+# Create an object to hold scratch-pad variables
 scr = DTscratch_C()
+# Create an object to hold simulation-control
+ctrl = DTcontrol_C()
 
-########## SP.1. Calculate spatial parameters
+########## SCR.1. Calculate spatial parameters
 
 # Start with the size of the computational domain
 #scr.rmin = 1.0
 scr.rmin = 0.0
-scr.rmax = 20.0 # 40.0
+scr.rmax = 8.0 # 20.0 40.0
 # Set the spatial resolution
 scr.nr = 50
-print("The mesh extends from %.3g m to %.3g m in radius" % (scr.rmin, scr.rmax))
-print("There are %d cells in the mesh" % scr.nr)
+if emitInput is True:
+    print("The mesh extends from %.3g m to %.3g m in radius" % (scr.rmin, scr.rmax))
+    print("There are %d cells in the mesh" % scr.nr)
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Compute a rough cell-size (The mesh can be stretched non-uniformly)
 scr.dr_av = (scr.rmax-scr.rmin)/scr.nr
-print("The average cell-size is %.3g m" % scr.dr_av)
+if emitInput is True:
+    print("The average cell-size is %.3g m" % scr.dr_av)
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Specify the desired Debye length as a multiple of the cell-size
 scr.lambda_D = 2.0*scr.dr_av
-print("The electron Debye length is chosen to be %.3g m" % scr.lambda_D)
-print("There are roughly %.3g cells per electron Debye length" % (scr.lambda_D/scr.dr_av))
-print("There are roughly %.3g Debye lengths in the computational region" % ((scr.rmax-scr.rmin)/scr.lambda_D))
-ctrl = DTcontrol_C()
 if emitInput is True:
+    print("The electron Debye length is chosen to be %.3g m" % scr.lambda_D)
+    print("There are roughly %.3g cells per electron Debye length" % (scr.lambda_D/scr.dr_av))
+    print("There are roughly %.3g Debye lengths in the computational region" % ((scr.rmax-scr.rmin)/scr.lambda_D))
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-########## SP.2. Calculate electron parameters
+########## SCR.2. Calculate electron parameters
 
 scr.electron_mass = m_e
 # Specify the electron temperature
 scr.T_e_eV = 0.02 # 6.0
 
+# Set the electron streaming parameter, which sets the accuracy of the time-integration of
+# electron orbits.
+ctrl.electron_streaming_parameter = 0.3
+    
 # Convert this to an electron thermal velocity
 scr.vthermal_e = np_m.sqrt(q_e*scr.T_e_eV/m_e)
-print("T_e is set to %.3g eV, giving an electron thermal velocity of %.3g m/s" % (scr.T_e_eV, scr.vthermal_e))
 if emitInput is True:
+    print("T_e is set to %.3g eV, giving an electron thermal velocity of %.3g m/s" % (scr.T_e_eV, scr.vthermal_e))
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-# Compute the electron plasme frequency needed to get the above Debye length
+# Compute the electron plasma frequency needed to get the above Debye length
 scr.omega_e = scr.vthermal_e/scr.lambda_D
-print("For the above electron Debye length, the electron plasma frequency is %.3g rad/s" % scr.omega_e)
 if emitInput is True:
+    print("For the above electron Debye length, the electron plasma frequency is %.3g rad/s" % scr.omega_e)
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Compute the explicit timestep limit from the electron plasma frequency
-scr.dt_max = 2.0/scr.omega_e
-print("This frequency gives a maximum stable timestep of %.3g s" % scr.dt_max)
+scr.stable_dt_max = 2.0/scr.omega_e
 if emitInput is True:
+    print("This frequency gives a maximum stable timestep of %.3g s" % scr.stable_dt_max)
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
+
+# Compute the timestep limit set by the desired streaming parameter
+scr.streaming_dt_max = ctrl.electron_streaming_parameter*scr.dr_av/scr.vthermal_e
+if emitInput is True:
+    print("The electron streaming parameter %.3g puts a limit of %.3g s on the timestep" % (ctrl.electron_streaming_parameter, scr.streaming_dt_max))
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Compute the electron density from the plasma frequency
 scr.electron_density = m_e*eps_0*(scr.omega_e/q_e)**2
-print("The above electron plasma-frequency correspondes to an electron density of %.3g per m^{-3}" % scr.electron_density)
 if emitInput is True:
+    print("The above electron plasma-frequency corresponds to an electron density of %.3g per m^{-3}" % scr.electron_density)
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-########## SP.3. Calculate ion parameters
+########## SCR.3. Calculate ion parameters
 
 scr.ion_mass = 100.0*scr.electron_mass
+if emitInput is True:
+    print("The ratio of ion mass to electron mass is %.3g" % (scr.ion_mass/scr.electron_mass))
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)    
 
 # Compute the ion sound speed
 scr.ion_charge_state = 1.0
 scr.ion_sound_speed = np_m.sqrt(scr.ion_charge_state*q_e*scr.T_e_eV/scr.ion_mass)
 # If the mesh goes to r=0, the following is used to estimate the ion drift out of the source region:
 scr.ion_sound_speed_multiplier = 0.1
-print("The ion sound speed is %.3g m/s. Multiplier for initial ion drift is %.3g" % (scr.ion_sound_speed, scr.ion_sound_speed_multiplier))
 if emitInput is True:
+    print("The ion sound speed is %.3g m/s. Multiplier for initial ion drift is %.3g" % (scr.ion_sound_speed, scr.ion_sound_speed_multiplier))
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 #electron_plasma_frequency = q_e*np_m.sqrt(n_e/(m_e*eps_0))
 
-########## SP.4. Set and calculate field parameters
+########## SCR.4. Set and calculate field parameters
 
 # Set the confining potential (in Volts)
 #scr.confining_potential = 10.0*scr.T_e_eV
 
-############################## SC. Simulation Control ##############################
+############################## CTRL. Simulation Control ##############################
 
-##### SC.1. Titles
+##### CTRL.1. Titles
 
 # Run identifier
 ctrl.title = "sphere1D"
 # Run author
 ctrl.author = "tph"
 
-##### SC.2. Timestepping
+##### CTRL.2. Timestepping
 
-ctrl.n_timesteps = 10 # 100
+ctrl.n_timesteps = 100 # 1000
 
-ctrl.dt = 1.0e-5 # sec 4.0e-7 from sphere1D.ods
-if ctrl.dt > scr.dt_max:
-    print("%s\n\tTimestep exceeds stability limit by %.3g" % (fileName, ctrl.dt/scr.dt_max))
-else:
-    print("%s\n\tTimestep is %.3g of stability limit" % (fileName, ctrl.dt/scr.dt_max))
-    
-if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
-
+ctrl.dt = 1.0e-6 # sec
+if ctrl.dt > scr.stable_dt_max:
+    print("%s\n\tThe timestep %.3g exceeds stability limit by a factor of %.3g!" % (fileName, ctrl.dt, ctrl.dt/scr.stable_dt_max))
+    if pauseAfterWarning is True:
+        emitWarning=ctrl.get_keyboard_input(fileName)
+elif ctrl.dt > scr.streaming_dt_max:
+    print("%s\n\tThe timestep %.3g exceeds the streaming limit by a factor of %.3g!" % (fileName, ctrl.dt, ctrl.dt/scr.streaming_dt_max))
+    if pauseAfterWarning is True:
+        emitWarning=ctrl.get_keyboard_input(fileName)
+#else:
+#    print("%s\n\tTimestep is %.3g of stability limit" % (fileName, ctrl.dt/scr.stable_dt_max))
+if emitInput is True:
+    print("The timestep %.3g is %.3g times the stability limit and %.3g times the streaming limit" % (ctrl.dt, ctrl.dt/scr.stable_dt_max, ctrl.dt/scr.streaming_dt_max))
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 # Initialize time counters
 ctrl.timeloop_count = 0
@@ -307,7 +350,7 @@ ctrl.time = 0.0
 ctrl.random_seed = 1
 np_m.random.seed(ctrl.random_seed)
 
-##### SC.3. Electric field control
+##### CTRL.3. Electric field control
 
 # Electric field control
 
@@ -321,9 +364,9 @@ ctrl.apply_solved_electric_field = None
 ctrl.apply_random_external_electric_field = None
 
 spacechargeFactor = 1.0
-randomExternalElectricFieldAmplitude = 0.1
+randomExternalElectricFieldAmplitude = 0.0
 
-##### SC.4. Output control
+##### CTRL.4. Output control
 
 ###Set parameters for writing field output files
 ctrl.electron_density_output_file = ctrl.title + "-ne.xdmf"
@@ -341,7 +384,7 @@ ctrl.particle_output_file = ctrl.title + ".h5part"
 ctrl.particle_output_interval = 1
 # Available attributes: 'species_index' and any particle-record name
 # e.g., 'weight', 'bit-flags', 'cell-index', 'unique_ID', 'crossings'
-ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'unique_ID', 'crossings')
+ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'weight', 'unique_ID', 'crossings')
 
 if emitInput is True:
     print("")
@@ -363,7 +406,7 @@ umi = UserMeshInput1DS_C()
 
 umi.rmin, umi.rmax = scr.rmin, scr.rmax # Mesh goes from rmin to rmax in radius
 umi.nr = scr.nr # Number of divisions in r direction
-umi.stretch = 1.3 # Stretch parameter
+umi.stretch = 1.0 # Stretch parameter
 
 #Note: more attributes are added below
 
@@ -413,7 +456,7 @@ pin.position_coordinates = ['x',] # determines the particle-storage dimensions. 
 pin.force_components = ['x',]
 pin.force_precision = np_m.float64
 
-############### PS.1. Define the species, set apply_field switches, and provide storage ###############
+############### PS.1. Define the species, set "apply-field" switches, and provide particle storage ###############
 
 ##### PS.1.1. Basic properties and storage
 speciesName = 'electron'
@@ -529,6 +572,10 @@ if emitInput is True:
 plotTitle = os.path.basename(__file__) + ": "
 mesh_M = UserMesh1DS_C(umi, compute_dictionaries=True, compute_tree=False, plot_flag=emitInput, plot_title=plotTitle)
 
+# Write the mesh in XML format so we can read it easily.
+meshFile = df_m.File('sphere1D-mesh.xml')
+meshFile << mesh_M.mesh
+
 # In this simulation, the particle mesh is the same object as the field mesh
 particle_P.pmesh_M = mesh_M
 
@@ -572,7 +619,8 @@ else:
 ## PS.3.1.2. Geometry of Hplus source region
 rminHplus = scr.rmin
 #rmaxHplus = rminHplus + 2.0*scr.dr_av
-rmaxHplus = rminHplus + 5.0*scr.lambda_D
+#rmaxHplus = rminHplus + 5.0*scr.lambda_D
+rmaxHplus = 3.681 # Near exact boundary of cell if rmax=8
 HplusSourceRegion = RectangularRegion_C(particle_P.pmesh_M, rminHplus, rmaxHplus)
 
 if emitInput is True:
@@ -610,16 +658,17 @@ vdrift_1 = vdrift_av
 
 # Compute the flux of ions per unit area out of the source region (assuming the ion
 # charge-density equals the electron charge-density):
-ion_flux = scr.electron_density*vdrift_av/scr.ion_charge_state
+ionFluxDensity = scr.electron_density*vdrift_av/scr.ion_charge_state
 
 # The ions are replenished by calling the source function
 timeStepInterval = 1 # Timesteps between invocations of the source function
 
 # The number of ions lost between source-function calls is:
-ion_loss = ion_flux*timeStepInterval*ctrl.dt
+ionLossDensity = ionFluxDensity*timeStepInterval*ctrl.dt
 
 # Compute a number-density increment to replace this loss
-numberDensityIncrementHplus = ion_loss/(rmaxHplus-rminHplus)
+#sourceVolume = (4.0/3.0)*np_m.pi*(rmaxHplus**3 - rminHplus**3)
+numberDensityIncrementHplus = 3.0*ionLossDensity/rmaxHplus
 # Check for positivity
 if numberDensityIncrementHplus < 0:
     print("Check number density for species", ionSpeciesName, "is negative. Should be positive")
@@ -632,8 +681,35 @@ temp_joule = temperature_eV*MyPlasmaUnits_C.elem_charge
 thermalSpeed = np_m.sqrt(2.0*temp_joule/ionMass)
 
 #driftVelocityHplus = (vdrift_1, vdrift_2, vdrift_3)
-driftVelocityHplus = (vdrift_1,)
+driftVelocityHplus = (vdrift_1,) # Truncate this velocity vector to match the
+                                 # dimension of ParticleInput_C.position_coordinates.
+                                 
+# Extimate and write particle motion per timestep on the mesh
+ionDriftCellsPerTimestep = driftVelocityHplus[0]*ctrl.dt/scr.dr_av
+if emitInput is True:
+    print("")
+    print("Hplus ions drift %.3g average cells per timestep" % (ionDriftCellsPerTimestep))
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
+if ionDriftCellsPerTimestep >= 1.0:
+    if pauseAfterWarning is True:
+        emitWarning=ctrl.get_keyboard_input(fileName)
 
+
+ionSpreadCellsPerTimestep = thermalSpeed*ctrl.dt/scr.dr_av
+if emitInput is True:
+    print("Hplus ions spread %.3g average cells per timestep" % (ionSpreadCellsPerTimestep))
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)    
+if ionSpreadCellsPerTimestep >= 1.0:
+    if pauseAfterWarning is True:
+        emitWarning=ctrl.get_keyboard_input(fileName)
+
+# Compute and output the ion density at edge of the creation region
+numberDensityRate = numberDensityIncrementHplus/(timeStepInterval*ctrl.dt)
+if emitInput is True:
+    expectedDensity = (1.0/3.0)*numberDensityRate*rmaxHplus/driftVelocityHplus[0]
+    print("Expected Hplus density at %.3g is %.3g" % (rmaxHplus, expectedDensity))
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)    
+                                                   
 # Set desired particles-per-cell
 numberPerCell = 1
 
@@ -693,7 +769,7 @@ particleGenerator = particle_P.create_maxwellian_particles
 # !!!The function could provide it's own type
 #sourceDistributionType = 'functional'
 
-# Add electrons at the same rate as ions (charge is same for both in this case).
+# Add electrons at the same rate as Hplus ions (charge Z is same for both in this case).
 
 numberDensityIncrement = numberDensityIncrementHplus
 # Check for positivity
@@ -706,8 +782,28 @@ thermalSpeed = scr.vthermal_e
 # Set a drift velocity
 driftVelocity = driftVelocityHplus
 
+# Estimate and write out particle motion on the mesh per timestep
+electronDriftCellsPerTimestep = driftVelocity[0]*ctrl.dt/scr.dr_av
+if emitInput is True:
+    print("")
+    print("electrons drift %.3g average cells per timestep" % (electronDriftCellsPerTimestep))
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
+    
+if electronDriftCellsPerTimestep >= 1.0:
+    if pauseAfterWarning is True:
+        emitWarning=ctrl.get_keyboard_input(fileName)
+
+electronSpreadCellsPerTimestep = thermalSpeed*ctrl.dt/scr.dr_av
+if emitInput is True:        
+    print("electrons spread %.3g average cells per timestep" % (electronSpreadCellsPerTimestep))
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
+    
+if electronSpreadCellsPerTimestep >= 1.0:
+    if pauseAfterWarning is True:
+        emitWarning=ctrl.get_keyboard_input(fileName)
+    
 # Set desired particles-per-cell
-numberPerCell = 10
+numberPerCell = 3 # 10
 
 ## PS.3.2.4. Collect the parameters for this source in a dictionary
 electronSourceParams = {'species_name': speciesName,
@@ -956,7 +1052,9 @@ if randomExternalElectricFieldAmplitude != 0.0:
                                             field_type=electricFieldFieldType)
     # Put non-zero external electric field values into the electron source region
     randomExternalElectricField_F.set_values(randomExternalElectricFieldAmplitude, subdomain=electronSourceRegion)
-    print("randomExternalElectricField values:", randomExternalElectricField_F.function_values.get_local())
+    if emitInput is True:
+        print("randomExternalElectricField values:", randomExternalElectricField_F.function_values.get_local())
+        if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)        
 else:
     randomExternalElectricField_F = None
 
@@ -1116,7 +1214,9 @@ if particle_P.initial_particles_dict is not None:
     # ElectricFieldOutputFile << negElectricField_F.function
     
 else:
-    print("(DnT INFO) %s\n\tThere are no initial particles in this simulation" % fileName)
+    if emitInput is True:
+        print("(DnT INFO) %s\n\tThere are no initial particles in this simulation" % fileName)
+        if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 ##### INIT.2.2. Record initial history data
 if particle_P.histories is not None:
@@ -1125,9 +1225,10 @@ if particle_P.histories is not None:
 
 ############################## RUN. Integrate forward in time ##############################
 
-print("")
-print("********** Integrate for %d timesteps from step %d, time %.3g, starting with %d particles **********" % (ctrl.n_timesteps, ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count()))
-#print ""
+if emitInput is True:
+    print("")
+    print("********** Integrate for %d timesteps from step %d, time %.3g, starting with %d particles **********" % (ctrl.n_timesteps, ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count()))
+    if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 for istep in range(ctrl.n_timesteps):
 

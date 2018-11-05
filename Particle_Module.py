@@ -755,6 +755,64 @@ class Particle_C(object):
         return
 #    def accumulate_number_density(self, species_name):ENDDEF
 
+#class Particle_C(object):
+
+    import pseg_cpp
+    
+    def accumulate_number_density_CPP(self, species_name, dof_number_density_F=None, cell_number_density_F=None):
+        """Compute the DoF and cell number density arrays for the specified
+           kinetic-particle species.
+
+           For the DoF array, this doesn't generate an actual number-density, but rather
+           the inner product vector {n*u_i*dx}, where n is the density function (a sum of
+           weighted delta-function) and u_i is the shape function of the i'th DoF. The
+           result needs to be divided by a volume to get a dimension of density.
+
+           For the cell array, the particle weights are summed in each cell and divided by
+           the cell volume.
+
+           This implementation loops on particles, not on cells.
+
+           :param species_name: The string name of a kinetic-particle species
+           :param cell_number_density_F: a scalar Field_C object containing cell values.
+
+           :returns: None
+
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
+        psa = self.pseg_arr[species_name] # segmented array for this species
+        (npSeg, pseg) = psa.init_out_loop()
+
+        if cell_number_density_F is not None:
+            cell_dofmap = cell_number_density_F.function_space.dofmap
+            cell_function_values = cell_number_density_F.function_values
+        
+        while isinstance(pseg, np_m.ndarray):
+            for p in pseg:
+                # Project the density function for this particle onto the DoF shape functions
+                # to get the DoF 'density'
+#                self.dof_number_density_dict[species_name].interpolate_delta_function_to_dofs(p)
+                if dof_number_density_F is not None:
+                    dof_number_density_F.interpolate_delta_function_to_dofs(p)
+            # Compute the cell number density as well, if needed.
+            if cell_number_density_F is not None:
+#                cell_number_density_F.add_weight_to_cell(p)
+#                pseg_cpp.add_weights_to_cells(pseg, cell_function_values, cell_dofmap)
+                pseg_cpp.add_weights_to_cells(pseg, cell_number_density_F)
+                
+            (npSeg, pseg) = psa.get_next_segment('out')
+
+        # Convert the cell values to a cell density    
+        if cell_number_density_F is not None:
+            cell_number_density_F.divide_by_cell_volumes()
+
+        return
+#    def accumulate_number_density_CPP(self, species_name):ENDDEF
+
+
+
 # Useless function:
 
 #class Particle_C(object):

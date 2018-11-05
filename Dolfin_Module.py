@@ -1248,9 +1248,11 @@ class Field_C(object):
 
         """
 
-        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+#        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         cellIndex = p['cell_index']
+#tph
+#        cellIndex = 1
         dofIndex = self.function_space.dofmap().cell_dofs(cellIndex) # return type: numpy.ndarray
         self.function_values[dofIndex] += p['weight']
         

@@ -8,6 +8,8 @@ import sys
 import numpy
 import unittest
 
+import DnT_pseg
+
 from Dolfin_Module import Mesh_C
 from SegmentedArrayPair_Module import SegmentedArray_C
 
@@ -95,6 +97,16 @@ class TestSegmentedArray(unittest.TestCase):
         for i in range(len(getparticle)):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
 
+        pseg_arr = self.seg_array_obj
+        pseg0 = pseg_arr[0]
+        print("pseg0 =", pseg0)
+
+        (npSeg, pseg) = pseg_arr.init_out_loop()        
+        print("npSeg=", npSeg, "DnT_pseg returns", DnT_pseg.print_DnT_pseg(pseg))
+        
+        return
+#    def test_3_put_and_getitem(self):ENDDEF
+    
     def test_4_setitem_and_getitem(self):
         """ Test putting particle data into the array using a subscript. """
 
