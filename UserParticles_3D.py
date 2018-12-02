@@ -126,8 +126,13 @@ class UserParticleBoundaryFunctions_C(object):
            :param speciesName: the species that particle p belongs to.
            :param facetIndex: the facet crossed by particle p.
         """
+
+        printInfoInvoked = False
+
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-        print(fncName, "invoked by particle", p, "of species", speciesName)
+
+        if printInfoInvoked is True:
+            print(fncName, "invoked by particle", p, "of species", speciesName)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -150,8 +155,13 @@ class UserParticleBoundaryFunctions_C(object):
     def default_bc_at_ymin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
         """Default boundary condition for particles incident on ymin.
         """
+
+        printInfoInvoked = False
+        
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-        print(fncName, "invoked by particle", p, "of species", speciesName)
+
+        if printInfoInvoked is True:        
+            print(fncName, "invoked by particle", p, "of species", speciesName)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -174,8 +184,13 @@ class UserParticleBoundaryFunctions_C(object):
         """Boundary condition for neutral_H incident on xmin.
 
         """
+
+        printInfoInvoked = False
+        
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
-        print(fncName, "invoked by particle", p, "of species", speciesName)
+
+        if printInfoInvoked is True:
+            print(fncName, "invoked by particle", p, "of species", speciesName)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG

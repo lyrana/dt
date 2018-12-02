@@ -53,8 +53,9 @@ void print_dict(py::dict dict) {
         std::cout << "key=" << std::string(py::str(item.first)) << ", "
                   << "value=" << std::string(py::str(item.second)) << std::endl;
 
-        std::cout << "type of item.first: " << typeid(item.first).name() << std::endl;
-        std::cout << "type of item.second: " << typeid(item.second).name() << std::endl;
+// This give N8pybind116handleE as the type.
+//        std::cout << "type of item.first: " << typeid(item.first).name() << std::endl;
+//        std::cout << "type of item.second: " << typeid(item.second).name() << std::endl;
     }
 
 }
@@ -124,7 +125,9 @@ void divide_by_cell_volumes(dolfin::Function& dF, const std::map<int, double> &c
       // Get the volume of the cell
       auto cellVol = cell_volume_dict.at(cellIndex);
 
-      std::cout << "type of cellVol: " << typeid(cellVol).name() << std::endl;      
+      // This gives type "d" (double?)
+      // std::cout << "type of cellVol: " << typeid(cellVol).name() << std::endl;
+      
       // Divide the value by the volume
       value[0] /= cellVol;
       // Put back the value
@@ -148,7 +151,6 @@ PYBIND11_MODULE(dolfin_cpp, m) {
 // Connect the Python symbol print_dict() to the C++ function declared as
 //         void print_dict(py::dict dict)  
   m.def("print_dict", &print_dict);
-  m.def("print_dict2", &print_dict2);
   
 // Connect the Python symbol divide_by_cell_volumes() to the C++ function declared as
 //         void divide_by_cell_volumes(dolfin::Function& dF, py::dict dict) {}

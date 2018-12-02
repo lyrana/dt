@@ -92,8 +92,8 @@ class TestCPP(unittest.TestCase):
 
         """
 
-        fncname = sys._getframe().f_code.co_name
-        print('\ntest: ', fncname, '('+__file__+')')
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName, '('+__file__+')')
 
         particle_dimension = 1
         x=1.5; x0=1.0; ux=3.0; weight = 101.1
@@ -114,7 +114,7 @@ class TestCPP(unittest.TestCase):
 
         # Get the first segment and print it
         (npSeg, pseg) = pseg_arr.init_out_loop()        
-        print("npSeg=", npSeg)
+        #print("npSeg=", npSeg)
         if particle_dimension == 1:
             print("pseg_cpp returns", pseg_cpp.print_pseg1D(pseg))
         
@@ -564,13 +564,11 @@ class TestCPP(unittest.TestCase):
             
             (npSeg, pseg) = psa.get_next_segment('out')
 
-        # Convert the cell values to a cell density
-        dolfin_cpp.print_dict(particles_P.pmesh_M.cell_volume_dict)            
+        # dolfin_cpp.print_dict(particles_P.pmesh_M.cell_volume_dict)
 
+        # Convert the cell values to a cell density in C++
         if cellNumberDensity_F is not None:
             dolfin_cpp.divide_by_cell_volumes(cellNumberDensity_F.function._cpp_object, particles_P.pmesh_M.cell_volume_dict)
-            
-#            cellNumberDensity_F.divide_by_cell_volumes()
             
         # Get an array of the density values
         cellNumberDensityCalc = cellNumberDensity_F.function.vector().get_local()
@@ -597,10 +595,9 @@ class TestCPP(unittest.TestCase):
 
         for cell in df_m.cells(pmesh2d_M.mesh):
             cellIndex = cell.index()
-#            cellVol = mesh_M.cell_volume_dict[cellIndex]
             # There's only 1 DoF in the cell, since this function uses constant DG elements
             dofIndex = cellNumberDensity_F.function_space.dofmap().cell_dofs(cellIndex) # return type: np_m.ndarray
-            print("cellNumberDensityCalc[dofIndex][0]=", cellNumberDensityCalc[dofIndex][0], "cellNumberDensityExpected[cellIndex]=",cellNumberDensityExpected[cellIndex]) 
+#            print("cellNumberDensityCalc[dofIndex][0]=", cellNumberDensityCalc[dofIndex][0], "cellNumberDensityExpected[cellIndex]=",cellNumberDensityExpected[cellIndex]) 
             self.assertAlmostEqual(cellNumberDensityCalc[dofIndex][0], cellNumberDensityExpected[cellIndex], places=4, msg="Wrong value of cellNumberDensity")
 
         return

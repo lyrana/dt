@@ -56,7 +56,7 @@ namespace py = pybind11;
 // array unless PYBIND11_NUMPY_DTYPE_EX is used.  The following struct corresponds to
 // a particle record in Python.
 
-// (x,) particle coordinates
+// For (x,) particle coordinates
 struct DnT_prec1D {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   double x_;                  // f8    8 bytes
@@ -82,7 +82,7 @@ std::ostream& operator<<(std::ostream& os, const DnT_prec1D& p) {
             << ", crossings=" << p.crossings_;
 };
 
-// (x, y) particle coordinates
+// For (x, y) particle coordinates
 struct DnT_prec2D {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   double x_;                  // f8    8 bytes
@@ -114,7 +114,7 @@ std::ostream& operator<<(std::ostream& os, const DnT_prec2D& p) {
             << ", crossings=" << p.crossings_;
 };
 
-// (x, y, z) particle coordinates
+// For (x, y, z) particle coordinates
 struct DnT_prec3D {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   double x_;                  // f8    8 bytes
@@ -158,23 +158,24 @@ std::ostream& operator<<(std::ostream& os, const DnT_prec3D& p) {
 // define a Python-callable function to write the values in a record array.
 template <typename S>
 py::list print_recarray(py::array_t<S, 0> arr) {
-  const auto req = arr.request();
-  const auto ptr = static_cast<S*>(req.ptr);
+  const auto arr_info = arr.request();  // request() returns metadata about the array (ptr, ndim, size, shape)
+  const auto p = static_cast<S*>(arr_info.ptr); // Pointer to a particle record in pseg
 
-// ~/local/include/pybind11/buffer_info.h
-// req.itemsize, req.size, req.format, req.ndim, req.shape, req.strides 
-  std::cout << "  req.itemsize=" << req.itemsize
-            << ", req.size=" << req.size
-            << ", req.format=" << req.format
-            << ", req.ndim=" << req.ndim
+// See ~/local/include/pybind11/buffer_info.h
+// arr_info attributes are:
+// itemsize, size, format, ndim, shape, strides 
+  std::cout << "  itemsize=" << arr_info.itemsize
+            << ", size=" << arr_info.size
+            << ", format=" << arr_info.format
+            << ", ndim=" << arr_info.ndim
             << std::endl;
 
-  std::cout << "sizeof S = " << sizeof(S) << std::endl;
+  std::cout << "The size the pseg record is " << sizeof(S) << " bytes" << std::endl;
   
   auto l = py::list();
-  for (ssize_t i = 0; i < req.size; i++) {
+  for (ssize_t i = 0; i < arr_info.size; i++) {
     std::stringstream ss;
-    ss << ptr[i];  // Use the above definition of "<<" to write the i'th record as a string.
+    ss << p[i];  // Use the above definition of "<<" to write the i'th record as a string.
     l.append(py::str(ss.str()));
   }
   return l;
@@ -186,14 +187,7 @@ template <typename S>
 void add_weights_to_cells(py::array_t<S, 0> pseg, dolfin::Function& dF) { // The 0 means a continguous array with C ordering
 
   const auto pseg_info = pseg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
-  const auto ptr = static_cast<S*>(pseg_info.ptr);
-  
-// Loop on the particles in pseg
-/*
-  for (auto i = 0; i < pseg_info.size; i++) {
-    std::cout << i << " x=" << ptr[i].x_ << std::endl;
-  }
-*/
+  const auto p = static_cast<S*>(pseg_info.ptr); // Pointer to a particle record in pseg
   
   std::shared_ptr< const dolfin::FunctionSpace > dFS = dF.function_space();
   std::size_t dofs_per_cell = dFS->element()->space_dimension();
@@ -210,17 +204,15 @@ void add_weights_to_cells(py::array_t<S, 0> pseg, dolfin::Function& dF) { // The
 
   // Add the particle weights to the Vector
   for (auto i = 0; i < pseg_info.size; i++) {
-    // std::cout << i << " x=" << ptr[i].x_ << std::endl;
-    auto cellIndex = ptr[i].cell_index_;
+    // std::cout << i << " x=" << p[i].x_ << std::endl;
+    auto cellIndex = p[i].cell_index_;
     // std::cout << i << " cellIndex=" << cellIndex << std::endl;
 
     // In the case of a cell density, there's only one DoF in the cell, so we use the
     // name 'dofIndex' instead of 'dofIndices':
     auto dofIndex = dDofmap->cell_dofs(cellIndex);
-//Doesn't work:    std::cout << i << " dofIndex=" << dofIndex << std::endl;
-// How can this be printed?
     
-    weight[0] = ptr[i].weight_;
+    weight[0] = p[i].weight_;  // Only 1 DoF, so there's only 1 element in 'weight[]'.
     
     //dF.vector() is a std::shared_ptr<GenericVector>
     dF.vector()->add_local(weight.data(), dofs_per_cell, dofIndex.data());
@@ -251,16 +243,17 @@ PYBIND11_MODULE(pseg_cpp, m) {
   py::class_<DnT_prec2D>(m, "DnT_prec2D");
   py::class_<DnT_prec3D>(m, "DnT_prec3D");
 
-// Register DnT_prec1 as a Numpy dtype descriptor. DnT_prec1D is of type py::dtype (a class).
+// Register DnT_prec1D as a Numpy dtype descriptor. DnT_prec1D is of type py::dtype (a class).
 //  PYBIND11_NUMPY_DTYPE(DnT_prec1D, x, x0, ux, weight, bitflags, cell_index, unique_ID, crossings);
 // The "_EX" variation allows the Python names of the variables in the record to be different from the variable names in the C++ struct.
   PYBIND11_NUMPY_DTYPE_EX(DnT_prec1D, x_, "x", x0_, "x0", ux_, "ux", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
 
+// Register DnT_prec2D and DnT_prec3D
   PYBIND11_NUMPY_DTYPE_EX(DnT_prec2D, x_, "x", y_, "y", x0_, "x0", y0_, "y0", ux_, "ux", uy_, "uy", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
 
   PYBIND11_NUMPY_DTYPE_EX(DnT_prec3D, x_, "x", y_, "y", z_, "z", x0_, "x0", y0_, "y0", z0_, "z0", ux_, "ux", uy_, "uy", uz_, "uz", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
   
-/* now DnTprec can be used as template arguments to py::array_t */
+/* now DnTprec1D, etc., can be used as template arguments to py::array_t */
 
 // Connect the Python symbol print_pseg() to the C++ function declared as:
 //                   template <typename S>
@@ -269,16 +262,16 @@ PYBIND11_MODULE(pseg_cpp, m) {
   m.def("print_pseg2D", &print_recarray<DnT_prec2D>);
   m.def("print_pseg3D", &print_recarray<DnT_prec3D>);
 
-// Connect the Python symbol f_simple() to the C++ function in braces {...}
-// This prints only one record of the array
-  m.def("f_simple", [](DnT_prec1D p) { return p.x_ * 10; });
-
 // Connect the Python symbol add_weights_to_cells() to the C++ function declared as
 //       void add_weights_to_cells(py::array_t<S, 0> pseg, dolfin::Function& dF) {}
   m.def("add_weights_to_cells1D", &add_weights_to_cells<DnT_prec1D>);
   m.def("add_weights_to_cells2D", &add_weights_to_cells<DnT_prec2D>);
   m.def("add_weights_to_cells3D", &add_weights_to_cells<DnT_prec3D>);
-  
+
+// Example: Connect the Python symbol f_simple() to the C++ function in braces {...}
+// This prints only one record of the array
+  m.def("f_simple", [](DnT_prec1D p) { return p.x_ * 10; });
+
 }
 
 

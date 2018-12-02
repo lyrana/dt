@@ -1,4 +1,3 @@
-*~
 *.bak
 *.h5
 *.h5part
@@ -7,7 +6,9 @@
 *.pvsm
 *.pyc
 *.so
+*.vtu
 *.xdmf
 *.xml
-*.vtu
+*~
+/attic
 TAGS
