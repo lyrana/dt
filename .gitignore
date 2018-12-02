@@ -1,3 +1,13 @@
-*.pyc
 *~
+*.bak
+*.h5
+*.h5part
+*.png
+*.pvd
+*.pvsm
+*.pyc
+*.so
+*.xdmf
+*.xml
+*.vtu
 TAGS
