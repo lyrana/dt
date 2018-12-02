@@ -95,6 +95,9 @@ class TestSegmentedArray(unittest.TestCase):
         for i in range(len(getparticle)):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
 
+        return
+#    def test_3_put_and_getitem(self):ENDDEF
+    
     def test_4_setitem_and_getitem(self):
         """ Test putting particle data into the array using a subscript. """
 

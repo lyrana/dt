@@ -190,6 +190,7 @@ class TestChargeDensity(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
         
         # Describe a 2D mesh from (-10,-10) to (10,10) with 2 cells on a side.
+        # The mesh is triangular, so there's a total of 4x2 = 8 cells.
         umi2d_I = UserMeshInput_C()
         umi2d_I.pmin = df_m.Point(-10.0, -10.0)
         umi2d_I.pmax = df_m.Point(10.0, 10.0)
@@ -404,6 +405,7 @@ class TestChargeDensity(unittest.TestCase):
         ########## Numerical Mesh ##########
 
         ### Describe a 2D mesh from (-10,-10) to (10,10) with 2 cells on a side.
+        # The mesh is triangular, so there's a total of 4x2 = 8 cells.
         umi2d_I = UserMeshInput_C()
         umi2d_I.pmin = df_m.Point(-10.0, -10.0)
         umi2d_I.pmax = df_m.Point(10.0, 10.0)
@@ -497,21 +499,6 @@ class TestChargeDensity(unittest.TestCase):
         crossings = 0
 
         p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID, crossings)
-
-        # # Create the DT particle record type
-        # pvars = ['x', 'y', 'z', 'ux', 'uy', 'uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
-        # pvartypes = [np_m.float64]*7
-        # pvartypes.append(np_m.int32) # bitflags
-        # pvartypes.append(np_m.int32) # cell_index
-
-        # p_dtype = {'names' : pvars, 'formats': pvartypes}
-
-        # # Put the particles into an ndarray with the above type
-        # nparticles = 3
-        # particles = np_m.empty(nparticles, dtype=p_dtype)
-        # particles[0] = p0
-        # particles[1] = p1
-        # particles[2] = p2
 
         particle_list = (p0, p1, p2)
 

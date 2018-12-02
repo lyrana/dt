@@ -527,6 +527,7 @@ class Trajectory_C(object):
 
         # Create a plotter to display the trajectory.
         # !!! Direct call to dolfin!!!
+# interactive VTK plotter is obsolete, but this still works:
         plotter=df_m.plot(mesh, title=plot_title)
 
         for sp in self.explicit_species + self.implicit_species + self.neutral_species:

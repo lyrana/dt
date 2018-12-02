@@ -311,7 +311,7 @@ class UserParticleBoundaryFunctions_C(object):
         """Default boundary condition particles incident on rmin.
         """
 
-        printInfoInvoked = True
+        printInfoInvoked = False
         
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
 
@@ -343,7 +343,7 @@ class UserParticleBoundaryFunctions_C(object):
 
         """
 
-        printInfoInvoked = True
+        printInfoInvoked = False
         
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
 

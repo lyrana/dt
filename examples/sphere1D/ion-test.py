@@ -25,7 +25,7 @@ __all__ = ['Example_C',]
 #  The size of the source-region where ions are created is given as a number
 #  of Debye lengths (see PS.3.1.2).
 
-#  The ions are created with a drift-velocity 'vdrift_1' (see PS.3.1.3).
+#  The ions are created with a radial drift-velocity 'vdrift_1' (see PS.3.1.3).
 
 #  An ion flux out of the creation region is estimated from velocity 'vdrift_av'. This
 #  is used to compute the number of ions to create per injection (see sphere1D.ods).
@@ -74,7 +74,7 @@ __all__ = ['Example_C',]
 ##     SC.4. Output: Specify field and particle output files and output frequency.
 ## FM. Field Mesh
 ## PS. Particle Species
-##     PS.1. Define the species, set apply_field switches, and provide storage.
+##     PS.1. Define the species, set the "apply-field" switches, and provide storage.
 ##           PS.1.2. Allocate particle storage.
 ##           PS.1.3. Specify the name of the UserParticlesModule (Deprecate)
 ##     PS.2. Particle boundary conditions, particle mesh
@@ -186,7 +186,7 @@ plotTimeHistories = True # Plot the recorded values vs. time.
 ############################## PC. Physical constants ##############################
 
 # DO NOT MODIFY THESE VALUES!
-# These are (abbreviations for) physical constants.
+# These are (abbreviations for) physical constants, and should not be modified.
 # Values used in the simulation should be written in terms of these.
 m_e = 1.0*MyPlasmaUnits_C.electron_mass
 q_e = 1.0*MyPlasmaUnits_C.elem_charge
@@ -258,7 +258,7 @@ if emitInput is True:
 
 # Compute the electron density from the plasma frequency
 scr.electron_density = m_e*eps_0*(scr.omega_e/q_e)**2
-print("The above electron plasma-frequency correspondes to an electron density of %.3g per m^{-3}" % scr.electron_density)
+print("The above electron plasma-frequency corresponds to an electron density of %.3g per m^{-3}" % scr.electron_density)
 if emitInput is True:
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
@@ -411,7 +411,7 @@ pin.position_coordinates = ['x',] # determines the particle-storage dimensions. 
 pin.force_components = ['x',]
 pin.force_precision = np_m.float64
 
-############### PS.1. Define the species, set apply_field switches, and provide particle storage ###############
+############### PS.1. Define the species, set "apply-field" switches, and provide particle storage ###############
 
 ##### PS.1.1. Basic properties and storage
 speciesName = 'electron'
@@ -527,6 +527,10 @@ if emitInput is True:
 plotTitle = os.path.basename(__file__) + ": "
 mesh_M = UserMesh1DS_C(umi, compute_dictionaries=True, compute_tree=False, plot_flag=emitInput, plot_title=plotTitle)
 
+# Write the mesh in XML format so we can read it easily.
+meshFile = df_m.File('ion-test-mesh.xml')
+meshFile << mesh_M.mesh
+
 # In this simulation, the particle mesh is the same object as the field mesh
 particle_P.pmesh_M = mesh_M
 
@@ -607,7 +611,7 @@ vdrift_av = scr.ion_sound_speed_multiplier*scr.ion_sound_speed
 # 9jun18: Give the ions a speed to get them moving
 vdrift_1 = vdrift_av
 
-# Compute the flux of ions out of the source region (assuming the ion
+# Compute the flux of ions per unit area out of the source region (assuming the ion
 # charge-density equals the electron charge-density):
 ionFluxDensity = scr.electron_density*vdrift_av/scr.ion_charge_state
 
@@ -632,7 +636,6 @@ temp_joule = temperature_eV*MyPlasmaUnits_C.elem_charge
 thermalSpeed = np_m.sqrt(2.0*temp_joule/ionMass)
 
 #driftVelocityHplus = (vdrift_1, vdrift_2, vdrift_3)
-#driftVelocityHplus[0] = vdrift_1
 driftVelocityHplus = (vdrift_1,) # Truncate this velocity vector to match the
                                  # dimension of ParticleInput_C.position_coordinates.
                                  
@@ -757,7 +760,7 @@ if emitInput is True:
 #   c. source region
 
 ## Note: the dictionary keys here are source-region names, NOT species names!
-# Leave out the electrons:
+# Leave out the electrons for this test:
 particleSourceDict = { #'electron_source': (electronSourceParams, particleGenerator, electronSourceRegion),
                       'Hplus_source': (HplusSourceParams, particleGenerator, HplusSourceRegion),
                       }
