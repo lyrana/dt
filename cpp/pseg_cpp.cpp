@@ -1,3 +1,4 @@
+// Copyright (C) 2018 L. D. Hughes
 // pseg_cpp uses pybind11 to create Python-callable functions coded in C++ that
 // perform computations on a single segment of the SegmentedArray_C data structure
 // used to store particles in DnT.
@@ -18,6 +19,33 @@
 
 // Dolfin C++ source:
 // GenericVector: /home/tph/workspace/dolfin/dolfin/la/
+
+/*
+Contents:
+  Particle records in C++:
+    DnT_prec1D struct and operator<<
+    DnT_prec2D struct and operator<<
+    DnT_prec3D struct and operator<<
+
+  Print a pseg array:
+    template <typename S>
+    py::list print_recarray(py::array_t<S, 0> arr)
+
+  Copy spatial coordinates from a particle record to a double array:
+    template <typename S>
+    void prec_to_double(S& p3D, double* point)
+
+  Interpolate particle weights to DoFs:
+    template <typename S>
+    void interpolate_weights_to_dofs(py::array_t<S, 0> pseg, dolfin::Function& dF)
+
+  Sum the particle weights in each cell:
+    template <typename S>
+    void add_weights_to_cells(py::array_t<S, 0> pseg, dolfin::Function& dF)
+
+  PYBIND11 interfaces to Python for all the above 
+
+*/
 
 #include <memory>
 
@@ -69,6 +97,8 @@ struct DnT_prec1D {
   int crossings_;             // i4   48
 };
 
+static const size_t PREC1D = 48;
+
 // Define the << operator for the DnT_prec1D data type. This is used in print_recarray()
 // below to print each element in the array.
 std::ostream& operator<<(std::ostream& os, const DnT_prec1D& p) {
@@ -97,6 +127,7 @@ struct DnT_prec2D {
   int unique_ID_;             // i4   68
   int crossings_;             // i4   72
 };
+static const size_t PREC2D = 72;
 
 // Define the << operator for the DnT_prec2D data type. This is used in print_recarray()
 // below to print each element in the array.
@@ -132,6 +163,7 @@ struct DnT_prec3D {
   int unique_ID_;             // i4   92
   int crossings_;             // i4   96
 };
+static const size_t PREC3D = 96;
 
 // Define the << operator for the DnT_prec3D data type. This is used in print_recarray()
 // below to print each element in the array.
@@ -181,8 +213,111 @@ py::list print_recarray(py::array_t<S, 0> arr) {
   return l;
 }
 
+// This function copies the spatial coordinates from a particle record to a double array.
+// It uses template specialization to handle particle records with different dimensions.
+template <typename S>
+void prec_to_double(S& p3D, double* point)
+{
+  // There is no generic version
+}
+template <>
+void prec_to_double<DnT_prec1D>(DnT_prec1D& p1D, double* point)
+{
+  point[0] = p1D.x_;
+}
+template <>
+void prec_to_double<DnT_prec2D>(DnT_prec2D& p2D, double* point)
+{
+  point[0] = p2D.x_;
+  point[1] = p2D.y_;
+}
+template <>
+void prec_to_double<DnT_prec3D>(DnT_prec3D& p3D, double* point)
+{
+  point[0] = p3D.x_;
+  point[1] = p3D.y_;
+  point[2] = p3D.z_;
+}
+
+// Define the C++ function interpolate_weights_to_dofs(): it's templated on the type
+// of the struct that corresponds to the Numpy pseg array. It loops over each
+// particles in pseg and adds its contribution to the DoFs in the cell contraining
+// the particle.
+template <typename S>
+void interpolate_weights_to_dofs(py::array_t<S, 0> pseg, dolfin::Function& dF) { // The 0 means a continguous array with C ordering
+
+  const auto pseg_info = pseg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+  const auto p = static_cast<S*>(pseg_info.ptr); // Pointer to a particle record in pseg
+  
+  std::shared_ptr< const dolfin::FunctionSpace > dFS = dF.function_space();
+  
+  // Variables for cell information
+  const dolfin::Mesh& mesh = *dFS->mesh();
+  std::vector<double> dof_coordinates;
+  ufc::cell ufc_cell;
+
+  // Variables for evaluating basis
+  const std::size_t rank = dFS->element()->value_rank();
+  std::size_t size_basis = 1;
+  for (std::size_t i = 0; i < rank; ++i)
+    size_basis *= dFS->element()->value_dimension(i);
+  std::size_t dofs_per_cell = dFS->element()->space_dimension();
+  std::vector<double> basis(size_basis);
+
+// This vector holds the values contributed by a particle to the density array.
+  std::vector<double> weights(dofs_per_cell);
+  
+  // Variables for adding local information to vector
+  double basis_sum;
+  
+  std::shared_ptr< const dolfin::GenericDofMap > dDofmap = dFS->dofmap();
+
+  // Print the DoF map. In this case it maps cell indices to DoF indices.
+  // dFS->print_dofmap();
+
+  // Add the particle weights to the Vector
+  double point[] = {0.0, 0.0, 0.0};
+  for (auto ip = 0; ip < pseg_info.size; ip++) {
+    // std::cout << ip << " x=" << p[ip].x_ << std::endl;
+
+    // Copy spatial coordinates of p[ip] to a double[] for passing to evaluate_basis()
+    prec_to_double<S>(p[ip], point);
+    
+    auto cellIndex = p[ip].cell_index_;
+    // std::cout << ip << " cellIndex=" << cellIndex << std::endl;
+
+    // Get the indices of the DoFs in this cell.
+    auto dofIndices = dDofmap->cell_dofs(cellIndex);
+    
+    // Get the cell object containing this particle
+    dolfin::Cell cell(mesh, static_cast<std::size_t>(cellIndex));
+    // Get the coordinates of the DoFs in this cell
+    cell.get_coordinate_dofs(dof_coordinates);
+
+    // Evaluate all basis functions at the point[]
+    cell.get_cell_data(ufc_cell);
+    for (std::size_t i = 0; i < dofs_per_cell; ++i)
+    {
+      dFS->element()->evaluate_basis(i, basis.data(),
+                                     point,  // const double* x
+                                     dof_coordinates.data(),
+                                     ufc_cell.orientation);
+      basis_sum = 0.0;
+      for (const auto& v : basis)
+        basis_sum += v;
+      weights[i] = p[ip].weight_*basis_sum;
+    }
+
+    //dF.vector() is a std::shared_ptr<GenericVector>
+    dF.vector()->add_local(weights.data(), dofs_per_cell, dofIndices.data());
+    
+  }
+  
+}
+
 // Define the C++ function add_weights_to_cells(): it's templated on the type of the
-// struct that corresponds to the Numpy pseg array. It loops over the particles in pseg and adds their weights to a cell-density array
+// struct that corresponds to the Numpy pseg array. It loops over the particles in
+// pseg and adds their weights to a cell-density array.
 template <typename S>
 void add_weights_to_cells(py::array_t<S, 0> pseg, dolfin::Function& dF) { // The 0 means a continguous array with C ordering
 
@@ -268,6 +403,12 @@ PYBIND11_MODULE(pseg_cpp, m) {
   m.def("add_weights_to_cells2D", &add_weights_to_cells<DnT_prec2D>);
   m.def("add_weights_to_cells3D", &add_weights_to_cells<DnT_prec3D>);
 
+// Connect the Python symbol interpolate_weights_to_dofs to the C++ function declared as
+//       void interpolate_weights_to_dofs(py::array_t<S, 0> pseg, dolfin::Function& dF) {}
+  m.def("interpolate_weights_to_dofs1D", &interpolate_weights_to_dofs<DnT_prec1D>);
+  m.def("interpolate_weights_to_dofs2D", &interpolate_weights_to_dofs<DnT_prec2D>);
+  m.def("interpolate_weights_to_dofs3D", &interpolate_weights_to_dofs<DnT_prec3D>);
+  
 // Example: Connect the Python symbol f_simple() to the C++ function in braces {...}
 // This prints only one record of the array
   m.def("f_simple", [](DnT_prec1D p) { return p.x_ * 10; });

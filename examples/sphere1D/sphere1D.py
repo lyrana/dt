@@ -173,6 +173,9 @@ from RecordedData_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
+import pseg_cpp
+import dolfin_cpp
+
 fileName = __file__+':'
 
 ############################## TO. Terminal output flags ##############################
@@ -1179,10 +1182,10 @@ if particle_P.initial_particles_dict is not None:
     ## Accumulate number-density from kinetic particles
     ## and sum into the total charge-density.
     for s in particle_P.species_names:
-        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+#        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+        particle_P.accumulate_number_density_CPP(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
         q = particle_P.charge[s]
         assembledCharge_F.multiply_add(dofNumberDensityDict_F[s], multiplier=q)        
-
 # This duplicates the above loop!
 #    particle_P.accumulate_charge_density_from_particles(assembledCharge_F)
 
@@ -1265,7 +1268,8 @@ for istep in range(ctrl.n_timesteps):
         cellNumberDensityDict_F[s].set_values(0.0)
 
     for s in particle_P.species_names:
-        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+#        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+        particle_P.accumulate_number_density_CPP(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
         # Write a snapshot of the cell number densities
         if ctrl.cell_number_density_output_interval is not None:
             if ctrl.timeloop_count % ctrl.cell_number_density_output_interval == 0:

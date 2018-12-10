@@ -1,3 +1,4 @@
+// Copyright (C) 2018 L. D. Hughes
 // dolfin_cpp uses pybind11 to create Python-callable functions coded in C++ that
 // perform computations on Dolfin objects used in DnT.
 
@@ -11,6 +12,17 @@
 
 // Dolfin C++ source:
 // GenericVector: /home/tph/workspace/dolfin/dolfin/la/
+
+/*
+Contents:
+
+  Print a Python dictionary:
+    void print_dict(py::dict dict)
+
+  Divide the values of a cell function by the cell volumes:
+    void divide_by_cell_volumes(dolfin::Function& dF, const std::map<int, double> &cell_volume_dict)
+
+*/
 
 #include <memory>
 
@@ -46,44 +58,16 @@
 
 namespace py = pybind11;
 
+//! Print the key:value pairs in a Python dictionary
 void print_dict(py::dict dict) {
-    /* Easily interact with Python types */
     for (auto item : dict)
     {
         std::cout << "key=" << std::string(py::str(item.first)) << ", "
                   << "value=" << std::string(py::str(item.second)) << std::endl;
 
-// This give N8pybind116handleE as the type.
+// These give N8pybind116handleE as the type.
 //        std::cout << "type of item.first: " << typeid(item.first).name() << std::endl;
 //        std::cout << "type of item.second: " << typeid(item.second).name() << std::endl;
-    }
-
-}
-
-
-void print_dict2(py::dict vol_dict) {
-
-//  py::object obj = ...;
-//  MyClass *cls = obj.cast<MyClass *>();
-
-  std::map<char,int> dict_map;
-  dict_map  = vol_dict.cast<std::map<char,int> >();
-
-  for (auto item : dict_map)
-  {
-    std::cout << "key=" << item.first << std::endl;
-  }
-    
-
-//std::map<char,int> first
-  
-    for (auto item : vol_dict)
-    {
-        std::cout << "key=" << std::string(py::str(item.first)) << ", "
-                  << "value=" << std::string(py::str(item.second)) << std::endl;
-
-        std::cout << "type of item.first: " << typeid(item.first).name() << std::endl;
-        std::cout << "type of item.second: " << typeid(item.second).name() << std::endl;
     }
 
 }
@@ -145,7 +129,7 @@ void divide_by_cell_volumes(dolfin::Function& dF, const std::map<int, double> &c
 // bindings. The method module::def() generates binding code that exposes the C++
 // functions to Python.
 
-// // Create a variable 'm' of type py::module
+// Create a variable 'm' of type py::module
 PYBIND11_MODULE(dolfin_cpp, m) {
 
 // Connect the Python symbol print_dict() to the C++ function declared as
@@ -153,7 +137,7 @@ PYBIND11_MODULE(dolfin_cpp, m) {
   m.def("print_dict", &print_dict);
   
 // Connect the Python symbol divide_by_cell_volumes() to the C++ function declared as
-//         void divide_by_cell_volumes(dolfin::Function& dF, py::dict dict) {}
+//         void divide_by_cell_volumes(dolfin::Function& dF, py::dict dict)
   m.def("divide_by_cell_volumes", &divide_by_cell_volumes);
   
 }
