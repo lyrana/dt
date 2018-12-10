@@ -19,6 +19,10 @@ import h5py
 
 from Dolfin_Module import Mesh_C
 
+import pseg_cpp
+import dolfin_cpp
+
+
 #STARTCLASS
 class ParticleInput_C(object):
     """Particle input class.
@@ -757,8 +761,6 @@ class Particle_C(object):
 
 #class Particle_C(object):
 
-    import pseg_cpp
-    
     def accumulate_number_density_CPP(self, species_name, dof_number_density_F=None, cell_number_density_F=None):
         """Compute the DoF and cell number density arrays for the specified
            kinetic-particle species.
@@ -791,24 +793,33 @@ class Particle_C(object):
             cell_function_values = cell_number_density_F.function_values
         
         while isinstance(pseg, np_m.ndarray):
-            for p in pseg:
+#            for p in pseg:
                 # Project the density function for this particle onto the DoF shape functions
                 # to get the DoF 'density'
 #                self.dof_number_density_dict[species_name].interpolate_delta_function_to_dofs(p)
-                if dof_number_density_F is not None:
-                    dof_number_density_F.interpolate_delta_function_to_dofs(p)
+#                if dof_number_density_F is not None:
+#                    dof_number_density_F.interpolate_delta_function_to_dofs(p)
+
+            if dof_number_density_F is not None:
+#FIXME: call the 1D, 2D, or 3D version as needed
+                if self.particle_dimension == 1:
+                    pseg_cpp.interpolate_weights_to_dofs1D(pseg, dof_number_density_F.function._cpp_object)
+                    
             # Compute the cell number density as well, if needed.
             if cell_number_density_F is not None:
 #                cell_number_density_F.add_weight_to_cell(p)
 #                pseg_cpp.add_weights_to_cells(pseg, cell_function_values, cell_dofmap)
-#FIXME: call the 1D, 2D, or 3D version as needed                
-                pseg_cpp.add_weights_to_cells3D(pseg, cellNumberDensity_F.function._cpp_object)
+#FIXME: call the 1D, 2D, or 3D version as needed
+                if self.particle_dimension == 1:
+                    pseg_cpp.add_weights_to_cells1D(pseg, cell_number_density_F.function._cpp_object)
                 
             (npSeg, pseg) = psa.get_next_segment('out')
 
-        # Convert the cell values to a cell density    
+        # After all the particles have been summed, convert the cell values
+        # to a cell density
         if cell_number_density_F is not None:
-            cell_number_density_F.divide_by_cell_volumes()
+            dolfin_cpp.divide_by_cell_volumes(cell_number_density_F.function._cpp_object, self.pmesh_M.cell_volume_dict)
+#            cell_number_density_F.divide_by_cell_volumes()
 
         return
 #    def accumulate_number_density_CPP(self, species_name):ENDDEF
