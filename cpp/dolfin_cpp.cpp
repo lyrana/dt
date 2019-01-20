@@ -119,6 +119,133 @@ void divide_by_cell_volumes(dolfin::Function& dF, const std::map<int, double> &c
     }
 }
 
+//! Determine if a point is inside a cell
+/*!
+    \param dF is a dolfin function defined on the cells of a mesh. dF.vector() is a
+    std::shared_ptr<GenericVector>.
+
+    \param cell_vertex_dict is a reference to a python dict containing cell vertices.
+
+    \return void
+*/
+
+// void cell_contains_point(const std::map<int, dolfin::Cell&> &cell_dict) {}
+
+/*
+void cell_contains_point(dolfin::Mesh& mesh, const std::map<std::size_t, const dolfin::Cell& c> &cell_dict, std::size_t icell, double point)
+{
+  // Get the vertices of this cell
+  auto cell = cell_volume_dict[icell];
+  
+  p0 = 0.0;
+  mesh.coordinates();
+
+}
+*/
+
+ //bool cell_contains_point_1d(dolfin::Mesh& mesh, py::list& vertices, double point)
+ //bool cell_contains_point_1d(dolfin::Mesh& mesh, py::array_t<dolfin::uint32> vertices, double point)
+
+ //bool cell_contains_point_1d(dolfin::Mesh& mesh, py::array_t<unsigned int> vertices, double point)
+
+bool cell_contains_point_1d(dolfin::Mesh& mesh, unsigned int v0, unsigned int v1, double point)
+{
+//  std::size_t v0 = vertices[0];
+//  std::size_t v1 = vertices[1];
+  
+// Use this for a Python list of ints called vertices[]:
+  
+//  auto v0 = vertices[0].cast<int>();
+//  auto v1 = vertices[1].cast<int>();
+  
+//  auto v0 = vertices[0];
+//  auto v1 = vertices[1];
+
+//  cout << "v0: " << v0 << "v1: " << v1 << std::endl;
+  
+  double p0 = mesh.coordinates()[v0];
+  double p1 = mesh.coordinates()[v1];
+  
+  if (p0 > p1)
+    std::swap(p0, p1);
+  return p0 <= point and point <= p1;
+}
+
+bool cell_contains_point_1d_bak(double p0, double p1, double point)
+{
+  if (p0 > p1)
+    std::swap(p0, p1);
+  return p0 <= point and point <= p1;
+}
+
+
+// Evaluate a dolfin Function at a set of points      
+// This is the C++ version of a Python function in Dolfin_Module.py:
+//     interpolate_field_to_points(self, points, field_at_points)
+template <typename S>
+void interpolate_field_to_points(dolfin::Function& field,
+                                 py::array_t<S, 0> points,
+                                 py::array_t<double> field_at_points)
+{
+  const auto points_info = points.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+  const auto p = static_cast<S*>(points_info.ptr); // Pointer to a record in points
+  
+  std::shared_ptr< const dolfin::FunctionSpace > fieldSpace = field.function_space();
+  
+  // Variables for cell information
+  const dolfin::Mesh& mesh = *fieldSpace->mesh();
+//  std::vector<double> dof_coordinates;
+  ufc::cell ufc_cell;
+
+  double point[] = {0.0, 0.0, 0.0};
+  for (auto ip = 0; ip < points_info.size; ip++) {
+    // std::cout << ip << " x=" << p[ip].x_ << std::endl;
+
+    // Copy spatial coordinates of p[ip] to a double[] for passing to evaluate_basis()
+    // ?? Can p[ip] be passed directly?
+    // Or write a special form of eval!
+    prec_to_double<S>(p[ip], point);
+    
+    auto cellIndex = p[ip].cell_index_;
+    // std::cout << ip << " cellIndex=" << cellIndex << std::endl;
+
+    // Get the indices of the DoFs in this cell.
+//    auto dofIndices = dDofmap->cell_dofs(cellIndex);
+    
+    // Get the cell object containing this particle
+    dolfin::Cell cell(mesh, static_cast<std::size_t>(cellIndex));
+    cell.get_cell_data(ufc_cell);
+
+    // Get the coordinates of the DoFs in this cell
+    // cell.get_coordinate_dofs(dof_coordinates);
+
+    // Evaluate the function at point
+    // See dolfin/dolfin/function/Function.cpp
+    field::eval(values, point, cell, ufc_cell);
+
+/*    
+    for (std::size_t i = 0; i < dofs_per_cell; ++i)
+    {
+      fieldSpace->element()->evaluate_basis(i, basis.data(),
+                                     point,  // const double* x
+                                     dof_coordinates.data(),
+                                     ufc_cell.orientation);
+      basis_sum = 0.0;
+      for (const auto& v : basis)
+        basis_sum += v;
+      weights[i] = p[ip].weight_*basis_sum;
+    }
+
+    //field.vector() is a std::shared_ptr<GenericVector>
+    field.vector()->add_local(weights.data(), dofs_per_cell, dofIndices.data());
+*/
+    
+  }
+
+}
+
+
+
 
 // Below is the interface code that makes the above functions callable from Python
 
@@ -139,7 +266,8 @@ PYBIND11_MODULE(dolfin_cpp, m) {
 // Connect the Python symbol divide_by_cell_volumes() to the C++ function declared as
 //         void divide_by_cell_volumes(dolfin::Function& dF, py::dict dict)
   m.def("divide_by_cell_volumes", &divide_by_cell_volumes);
-  
+
+  m.def("cell_contains_point_1d", &cell_contains_point_1d);
 }
 
 

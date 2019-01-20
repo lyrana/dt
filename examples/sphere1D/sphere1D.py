@@ -173,8 +173,7 @@ from RecordedData_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
-import pseg_cpp
-import dolfin_cpp
+import dnt_cpp
 
 fileName = __file__+':'
 
@@ -328,7 +327,7 @@ ctrl.author = "tph"
 
 ##### CTRL.2. Timestepping
 
-ctrl.n_timesteps = 100 # 1000
+ctrl.n_timesteps = 100 # 100 1000
 
 ctrl.dt = 1.0e-6 # sec
 if ctrl.dt > scr.stable_dt_max:

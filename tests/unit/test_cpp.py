@@ -23,11 +23,10 @@ from UserMesh_y_Fields_FE_XYZ_Module import *
 from UserUnits_Module import MyPlasmaUnits_C
 
 # Use the C++ functions in .so libraries
-import pseg_cpp
-import dolfin_cpp
+import dnt_cpp
 
 class TestCPP(unittest.TestCase):
-    """Test the C++ functions in pseg_cpp.so and dolfin_cpp.so"""
+    """Test the C++ functions in dnt_cpp.so"""
     
     def setUp(self):
 
@@ -84,11 +83,13 @@ class TestCPP(unittest.TestCase):
 
 #class TestCPP(unittest.TestCase):
     def test_1_print_pseg(self):
-        """Check the print_pseg function in pseg_cpp.so.
+        """Check the print_pseg function in dnt_cpp.so.
 
            Make two 1D particle tuples and put them into a SegmentedArray_C
-           object. Pass the first segment to pseg_cpp and check that
+           object. Pass the first segment to dnt_cpp and check that
            the printout from print_pseg1D() is correct.
+
+           The 
 
         """
 
@@ -115,8 +116,11 @@ class TestCPP(unittest.TestCase):
         # Get the first segment and print it
         (npSeg, pseg) = pseg_arr.init_out_loop()        
         #print("npSeg=", npSeg)
+
+        print("Python print gives pseg = ", pseg)
+        
         if particle_dimension == 1:
-            print("pseg_cpp returns", pseg_cpp.print_pseg1D(pseg))
+            print("dnt_cpp print gives", dnt_cpp.print_pseg1D(pseg))
         
         return
 #    def test_1_print_pseg:ENDDEF
@@ -337,7 +341,7 @@ class TestCPP(unittest.TestCase):
 
            This is a copy of
            test_ChargeDensity.py:test_2_interpolate_particle_density_to_2D_mesh(self),
-           using pseg_cpp.so instead of pure Python.
+           using dnt_cpp.so instead of pure Python.
 
            Macroparticles with 3D coordinates are created within a 2D meshed region
            and are weighted to nodal points on the mesh by integrating with the nodal
@@ -511,7 +515,7 @@ class TestCPP(unittest.TestCase):
         while isinstance(pseg, np_m.ndarray):
 
             # Call the (x, y, z) version:
-            pseg_cpp.interpolate_weights_to_dofs3D(pseg, dofNumberDensity_F.function._cpp_object)
+            dnt_cpp.interpolate_weights_to_dofs3D(pseg, dofNumberDensity_F.function._cpp_object)
             (npSeg, pseg) = psa.get_next_segment('out')
 
         # Get a np_m array of the calculated values
@@ -566,7 +570,7 @@ class TestCPP(unittest.TestCase):
         while isinstance(pseg, np_m.ndarray):
 
             # Call the 3D (x, y, z) version:
-            pseg_cpp.add_weights_to_cells3D(pseg, cellNumberDensity_F.function._cpp_object)
+            dnt_cpp.add_weights_to_cells3D(pseg, cellNumberDensity_F.function._cpp_object)
             
             (npSeg, pseg) = psa.get_next_segment('out')
 
@@ -574,7 +578,7 @@ class TestCPP(unittest.TestCase):
 
         # Convert the cell values to a cell density in C++
         if cellNumberDensity_F is not None:
-            dolfin_cpp.divide_by_cell_volumes(cellNumberDensity_F.function._cpp_object, particles_P.pmesh_M.cell_volume_dict)
+            dnt_cpp.divide_by_cell_volumes(cellNumberDensity_F.function._cpp_object, particles_P.pmesh_M.cell_volume_dict)
             
         # Get an array of the density values
         cellNumberDensityCalc = cellNumberDensity_F.function.vector().get_local()

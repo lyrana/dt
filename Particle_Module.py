@@ -19,8 +19,9 @@ import h5py
 
 from Dolfin_Module import Mesh_C
 
-import pseg_cpp
-import dolfin_cpp
+#import pseg_cpp
+#import dolfin_cpp
+import dnt_cpp
 
 #STARTCLASS
 class ParticleInput_C(object):
@@ -761,7 +762,7 @@ class Particle_C(object):
 #class Particle_C(object):
     def accumulate_number_density_CPP(self, species_name, dof_number_density_F=None, cell_number_density_F=None):
         """Compute the DoF and cell number density arrays for the specified
-           kinetic-particle species.
+           kinetic-particle species using C++ functions.
 
            For the DoF array, this doesn't generate an actual number-density, but rather
            the inner product vector {n*u_i*dx}, where n is the density function (a sum of
@@ -786,38 +787,34 @@ class Particle_C(object):
         (npSeg, pseg) = psa.init_out_loop()
 
 #FIXME: this is done inside the C++ function        
-        if cell_number_density_F is not None:
-            cell_dofmap = cell_number_density_F.function_space.dofmap
-            cell_function_values = cell_number_density_F.function_values
+#        if cell_number_density_F is not None:
+#            cell_dofmap = cell_number_density_F.function_space.dofmap
+#            cell_function_values = cell_number_density_F.function_values
         
         while isinstance(pseg, np_m.ndarray):
-#            for p in pseg:
-                # Project the density function for this particle onto the DoF shape functions
-                # to get the DoF 'density'
-#                self.dof_number_density_dict[species_name].interpolate_delta_function_to_dofs(p)
-#                if dof_number_density_F is not None:
-#                    dof_number_density_F.interpolate_delta_function_to_dofs(p)
-
             if dof_number_density_F is not None:
-#FIXME: call the 1D, 2D, or 3D version as needed
-                if self.particle_dimension == 1:
-                    pseg_cpp.interpolate_weights_to_dofs1D(pseg, dof_number_density_F.function._cpp_object)
-                    
-            # Compute the cell number density as well, if needed.
+            # Project the density function for the particles onto the DoF shape functions
+            # to get the DoF 'density'
+                if self.particle_dimension == 3:
+                    dnt_cpp.interpolate_weights_to_dofs3D(pseg, dof_number_density_F.function._cpp_object)
+                elif self.particle_dimension == 2:
+                    dnt_cpp.interpolate_weights_to_dofs2D(pseg, dof_number_density_F.function._cpp_object)
+                elif self.particle_dimension == 1:
+                    dnt_cpp.interpolate_weights_to_dofs1D(pseg, dof_number_density_F.function._cpp_object)
+            # Compute the cell number density as well, if requested.
             if cell_number_density_F is not None:
-#                cell_number_density_F.add_weight_to_cell(p)
-#                pseg_cpp.add_weights_to_cells(pseg, cell_function_values, cell_dofmap)
-#FIXME: call the 1D, 2D, or 3D version as needed
-                if self.particle_dimension == 1:
-                    pseg_cpp.add_weights_to_cells1D(pseg, cell_number_density_F.function._cpp_object)
-                
+                if self.particle_dimension == 3:
+                    dnt_cpp.add_weights_to_cells3D(pseg, cell_number_density_F.function._cpp_object)
+                elif self.particle_dimension == 2:
+                    dnt_cpp.add_weights_to_cells2D(pseg, cell_number_density_F.function._cpp_object)
+                elif self.particle_dimension == 1:
+                    dnt_cpp.add_weights_to_cells1D(pseg, cell_number_density_F.function._cpp_object)
             (npSeg, pseg) = psa.get_next_segment('out')
 
         # After all the particles have been summed, convert the cell values
         # to a cell density
         if cell_number_density_F is not None:
-            dolfin_cpp.divide_by_cell_volumes(cell_number_density_F.function._cpp_object, self.pmesh_M.cell_volume_dict)
-#            cell_number_density_F.divide_by_cell_volumes()
+            dnt_cpp.divide_by_cell_volumes(cell_number_density_F.function._cpp_object, self.pmesh_M.cell_volume_dict)
 
         return
 #    def accumulate_number_density_CPP(self, species_name):ENDDEF
@@ -870,7 +867,7 @@ class Particle_C(object):
 
         """
 
-        printInfoBoundaryCrossing = False
+        printInfoBoundaryCrossing = True
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
@@ -898,9 +895,7 @@ class Particle_C(object):
             if self.get_species_particle_count(sn) == 0: continue
 
             # negE is long enough to hold one particle segment worth
-            # of values.  If segment length is the same for all
-            # species, this could be a Field_Particle class array,
-            # i.e., one that persists.
+            # of vector field values.
 
 #           Accelerate and move all the particles in this species
 #            (npSeg, psegIn, psegOut) = psa.init_inout_loop()
@@ -1040,7 +1035,7 @@ class Particle_C(object):
                     facetCrossCount = 0
                     tStart = time - dt
                     dtRemaining = dt
-                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
+                    while not pmesh_M.is_inside_cpp(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
                         # there's a boundary-condition on that facet.
@@ -1153,7 +1148,7 @@ class Particle_C(object):
                                 psegOut[ipOut]['cell_index'] = pCellIndexNew
                                 pCellIndex = pCellIndexNew # Needed for the next iteration of the while loop.
                         else: # The crossed faced is NO_FACET, which shouldn't happen.
-                            errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
+                            errorMsg = "%s The cell index of the facet crossed is NO_FACET (%d). This should not happen since the particle has left its initial cell!" % (fncName, cFacet)
                             sys.exit(errorMsg)
 #                       END:if cFacet != pmesh_M.NO_FACET:
 #                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)

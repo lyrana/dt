@@ -12,7 +12,7 @@ import numpy as np_m
 
 class SegmentedArray_C(object):
     """This class implements a segmented array of items.  Each
-    segments is a NUMPY array.  Each item in these arrays is a
+    segment is a NUMPY array.  Each item in these arrays is a
     record. The fields in the record have names and data types. All
     segments are the same length and use the same record type.
 
@@ -26,12 +26,14 @@ class SegmentedArray_C(object):
 
     SegList[n-1]['x'] is an array containing all the x values in the nth segment
     SegList[n-1]['x'][0] is the x value of the first item in the nth segment
-    SegList[n-1][0] is a 'data record' with the the x, y, z values of the first item in the nth segment
+    SegList[n-1][0] is a 'data record' with the x, y, z values of the first item in
+                    the nth segment
     SegList[n-1][0]['x'] is the x value of the first item in the nth segment
     
-    Print the field names of the record in segment n: SegList[n-1].dtype.names 
-    Print all the values of field 'x' in the nth segment: SegList[n-1]['x'] 
+    Print the field names of the record in segment n: SegList[n-1].dtype.names
+    Print all the values of field 'x' in the nth segment: SegList[n-1]['x']
     Print the byte stride between 'x' values: SegList[0].strides
+
     """
 
 #    SegmentLength = 100 # static class attribute
