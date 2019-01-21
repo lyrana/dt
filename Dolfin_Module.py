@@ -19,6 +19,8 @@ import dolfin as df_m
 import matplotlib.pyplot as mplot_m
 import numpy as np_m
 
+import dnt_cpp
+
 #STARTCLASS
 class Mesh_C(object):
     """Mesh_C defines the mesh. UserMesh_C is a subclass that adds
@@ -102,7 +104,8 @@ class Mesh_C(object):
             # Compute lookup dictionaries
             if compute_dictionaries is True:
                 self.compute_cell_dict()
-                self.compute_cell_entity_index_dict('vertex') # Get vertex indices from a cell index
+                self.compute_cell_vertex_dict() # Get vertex indices from a cell index
+#               self.compute_cell_entity_index_dict('vertex') # Get vertex indices from a cell index
                 self.compute_cell_entity_index_dict('facet') # Get facet indices from a cell index
                 self.compute_vertex_cell_dict() # Get cell indices from a vertex index
 
@@ -494,10 +497,11 @@ class Mesh_C(object):
         return
 #    def compute_cell_volume_dict(self):ENDDEF
 
+#class Mesh_C(object):
     def is_inside(self, point, cell_index):
         """Check if a point lies within a give cell
 
-        :param point: a tuple of coordinates (x), (x,y), or (x, y, z)
+        :param point: a numpy structure containing coordinates (x), (x,y), or (x, y, z)
                       with field names 'x', 'y', 'z'
         :param cell_index: a (global?) cell index
 
@@ -517,6 +521,102 @@ class Mesh_C(object):
             p = df_m.Point(point['x'])
 
         return cell.contains(p)
+#    def is_inside(self, point, cell_index):ENDDEF
+
+#class Mesh_C(object):
+    def is_inside_cpp_bak(self, point, cell_index):
+        """Check if a point lies within a give cell
+
+        :param point: a record array of coordinates (x), (x,y), or (x, y, z)
+                      with field names 'x', 'y', 'z'
+        :param cell_index: a (global?) cell index
+
+        :returns: True iff the point is inside the cell.
+        :rtype: bool
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
+#        cell = self.cell_dict[cell_index]
+
+        # Get the cell vertices
+        vertices = self.cell_vertex_dict[cell_index]
+        
+        # Get the coordinates of the cell vertices
+        p0 = self.mesh.coordinates()[vertices[0]]
+        p1 = self.mesh.coordinates()[vertices[1]]
+
+        YesOrNo = dnt_cpp.cell_contains_point_1d(p0, p1, point['x'])
+        
+        return YesOrNo
+#    def is_inside_cpp_bak(self, point, cell_index):ENDDEF
+
+
+#class Mesh_C(object):
+    def is_inside_CPP(self, point, cell_index):
+        """Check if a point lies within a give cell
+
+        :param point: a record array of coordinates (x), (x,y), or (x, y, z)
+                      with field names 'x', 'y', 'z'
+        :param cell_index: a (global?) cell index
+
+        :returns: True iff the point is inside the cell.
+        :rtype: bool
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+        
+
+        if self.tdim == 3:
+            cell = self.cell_dict[cell_index]
+            p = df_m.Point(point['x'], point['y'], point['z'])
+            return cell.contains(p)
+        elif self.tdim == 2:
+            cell = self.cell_dict[cell_index]
+            p = df_m.Point(point['x'], point['y'])
+            return cell.contains(p)
+
+        elif self.tdim == 1:
+
+            # Use the C++ version below
+            # p = df_m.Point(point['x'])
+
+
+            # Get the cell vertices
+            vertices = self.cell_vertex_dict[cell_index]
+        
+        # Get the coordinates of the cell vertices
+
+        # mesh.coordinates is interfaced in dolfin/python/src/mesh.cpp
+        # and returns self.geometry().x().data()
+#        p0 = self.mesh.coordinates()[vertices[0]]
+#        p1 = self.mesh.coordinates()[vertices[1]]
+
+#        YesOrNo = dnt_cpp.cell_contains_point_1d(p0, p1, point['x'])
+
+#        YesOrNo = dnt_cpp.cell_contains_point_1d(self.mesh, self.cell_dict, cell_index, point['x'])
+
+#        YesOrNo = dnt_cpp.cell_contains_point_1d(self.mesh, vertices, point['x'])
+
+# v1:
+#        YesOrNo = dnt_cpp.cell_contains_point_1d(self.mesh, vertices[0], vertices[1], point['x'])
+# v2:
+#        print("type of vertices is", type(vertices))
+#        YesOrNo = dnt_cpp.cell_contains_point_1d_v2(self.mesh,
+#                                                 vertices, # a List
+#                                                 point) # point maps to a DnT_pstruct in C++
+
+# v3:
+#        print("type of vertices is", type(vertices))
+
+            YesOrNo = dnt_cpp.cell_contains_point_1d(self.mesh,
+                                                     vertices, # a numpy array
+                                                     point) # point maps to a DnT_pstruct in C++
+        
+            return YesOrNo
+
+        return
+#    def is_inside_CPP(self, point, cell_index):ENDDEF
 
 #class Mesh_C(object):
     def find_facet(self, r0, dr, cell_index):
@@ -995,8 +1095,10 @@ class Field_C(object):
     def interpolate_field_to_points(self, points, field_at_points):
         """Interpolate the field in this Field_C object to the given points.
 
-           :param points: (input) Array of points (usually, these are particle locations).
-           :type points: ndarray
+           :param points: (input) Array of points (e.g., particle locations).
+           :type points: A Numpy ndarray, or structured array, containing the point
+                         coordinates as p[i][0], p[i][1], p[i][2], for point p[i].
+
            :param field_at_points: (output) The calculated field values at the points.
            :type field_at_points: Numpy ndarray.
 
@@ -1006,14 +1108,18 @@ class Field_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
         
-        # Temporary ndarray for the interpolated field at a point
-        # Length is number of components of field (1 for scalar; 2 for 2D vector, etc.)
-        fieldValue = np_m.empty(len(field_at_points.dtype.fields), dtype=field_at_points.dtype[0])
+        # Make a temporary ndarray for the interpolated field at a *single* point.  It's
+        # length is the number of force components to be applied to particles (1 for
+        # scalar; 2 for 2D vector, etc.). This is the same number as
+        # ParticleInput_C.force_components.
+        numberFieldComponents = len(field_at_points.dtype.fields) 
+        fieldValue = np_m.empty(numberFieldComponents, dtype=field_at_points.dtype[0])
 #        fieldValue = np_m.empty(self.mesh_gdim, dtype=vFpoints.dtype[0])
 
-        #TODO: could fieldValue be a re-used array?
+        # TODO: could fieldValue be a re-used array? Yes. E.g., a Field_C function
+        # could be called during initialization of a simulation to create it.
 
-# Loop on the points (usually particle locations):
+# Loop on the points (e.g., particle locations):
 
         for ip in range(points.shape[0]):
 
@@ -1024,7 +1130,9 @@ class Field_C(object):
             self.function(p, values=fieldValue)
 #            field_at_points[ip] = fieldValue
 # 25aug18: Had to change to this to:
-            for d in range(self.mesh_gdim):
+#            for d in range(self.mesh_gdim):
+# 1jan19: Changed above to:
+            for d in range(numberFieldComponents):
                 field_at_points[ip][d] = fieldValue[d]
 
 #        print 'field_at_points = ', field_at_points
@@ -1062,7 +1170,7 @@ class Field_C(object):
         stdDeviation = 1.0 # For the Gaussian random-number generator
         numberOfValues = 1 # For the Gaussian random-number generator
         
-        # Loop on the points (usually particle locations):
+        # Loop on the points (e.g., particle locations):
     
         for ip in range(points.shape[0]): # shape[0] is the first dimension of 'points'
 

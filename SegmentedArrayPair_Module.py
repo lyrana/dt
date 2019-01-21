@@ -12,11 +12,11 @@ import numpy as np_m
 
 class SegmentedArray_C(object):
     """This class implements a segmented array of items.  Each
-    segments is a NUMPY array.  Each item in these arrays is a
-    record. The fields in the record have names and data types. All
-    segments are the same length and use the same record type.
+    segment is a Numpy structured array, i.e., each item in the array is a
+    structure. The data fields in the structure have names and data types. All
+    segments are the same length and use the same structure type.
 
-    The segments are always full of records, except possibly the
+    The segments are always full of structures, except possibly the
     last one.
 
     SegList[0] is the first NUMPY array.
@@ -26,11 +26,12 @@ class SegmentedArray_C(object):
 
     SegList[n-1]['x'] is an array containing all the x values in the nth segment
     SegList[n-1]['x'][0] is the x value of the first item in the nth segment
-    SegList[n-1][0] is a 'data record' with the the x, y, z values of the first item in the nth segment
+    SegList[n-1][0] is a 'data structure' with the x, y, z values of the first item in
+                    the nth segment
     SegList[n-1][0]['x'] is the x value of the first item in the nth segment
     
-    Print the field names of the record in segment n: SegList[n-1].dtype.names 
-    Print all the values of field 'x' in the nth segment: SegList[n-1]['x'] 
+    Print the field names of the structure in segment n: SegList[n-1].dtype.names
+    Print all the values of field 'x' in the nth segment: SegList[n-1]['x']
     Print the byte stride between 'x' values: SegList[0].strides
     """
 
@@ -93,14 +94,14 @@ class SegmentedArray_C(object):
 #class SegmentedArray_C(object):
     def put(self, item_input):
         """Adds an item to the 'out' SegmentedArray, without specifying an
-           index.  The item is a tuple containing a complete record.
+           index.  The item is a tuple containing a complete structure.
            Creates a new Segment, if needed.  This assumes that all
            the segments, except maybe the last one, are full.
 
-           :param item_input: A tuple containing a complete item record
+           :param item_input: A tuple containing a complete item structure
            :type input_item: tuple(float,...)
            :var int full_index: The full index into the SA.
-           :return: (item record, full SA index)
+           :return: (item structure, full SA index)
         """
 
         # Abbreviations
