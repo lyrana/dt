@@ -37,7 +37,7 @@ void add_weights_to_cells(py::array_t<PS, 0> pseg, dolfin::Function& dF) {
   
   std::shared_ptr< const dolfin::GenericDofMap > dDofmap = dFS->dofmap();
 
-  // Print the DoF map. In this case it's cell indices to DoF indices.
+  // Print the DoF map. In this case it's a map of cell indices to DoF indices.
   // dFS->print_dofmap();
 
   // Add the particle weights to the Vector
@@ -64,7 +64,7 @@ void add_weights_to_cells(py::array_t<PS, 0> pseg, dolfin::Function& dF) {
 
 // Define the C++ function interpolate_weights_to_dofs(): it's templated on the type
 // of the struct that corresponds to the Numpy pseg array. It loops over each
-// particles in pseg and adds its contribution to the DoFs in the cell contraining
+// particle in pseg and adds its contribution to the DoFs in the cell contraining
 // the particle.
 template <typename PS>
 void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) { // The 0 means a continguous array with C ordering
@@ -79,7 +79,7 @@ void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) 
   std::vector<double> dof_coordinates;
   ufc::cell ufc_cell;
 
-  // Variables for evaluating basis
+  // Variables for evaluating the cell basis functions
   const std::size_t rank = dFS->element()->value_rank();
   std::size_t size_basis = 1;
   for (std::size_t i = 0; i < rank; ++i)
@@ -89,9 +89,6 @@ void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) 
 
 // This vector holds the values contributed by a particle to the density array.
   std::vector<double> weights(dofs_per_cell);
-  
-  // Variables for adding local information to vector
-  double basis_sum;
   
   std::shared_ptr< const dolfin::GenericDofMap > dDofmap = dFS->dofmap();
 
@@ -104,6 +101,8 @@ void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) 
     // std::cout << ip << " x=" << p[ip].x_ << std::endl;
 
     // Copy spatial coordinates of p[ip] to a double[] for passing to evaluate_basis()
+
+    //TODO: Could p[] be used directly, avoiding the copy?
     pstruct_to_double<PS>(p[ip], point);
     
     auto cellIndex = p[ip].cell_index_;
@@ -125,7 +124,7 @@ void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) 
                                      point,  // const double* x
                                      dof_coordinates.data(),
                                      ufc_cell.orientation);
-      basis_sum = 0.0;
+      double basis_sum = 0.0;
       for (const auto& v : basis)
         basis_sum += v;
       weights[i] = p[ip].weight_*basis_sum;
@@ -138,7 +137,7 @@ void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) 
   
 }
 
-// Either of these works:
+// Either of these works to make the needed specialized versions of the templated functions:
 
 // void force_DnT_pstruct1D_instances(py::array_t<DnT_pstruct1D, 0> pseg, dolfin::Function& dF)
 // {

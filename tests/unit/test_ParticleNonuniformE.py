@@ -190,7 +190,7 @@ class TestParticleNonuniformE(unittest.TestCase):
     def test_1_electric_field_push_1step(self):
         """ Check that the electric field push is correct.  
 
-            Push sample particles for 1 step on a 2D 1/4-circle mesh.
+            Push test particles for 1 step on a 2D 1/4-circle mesh.
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'

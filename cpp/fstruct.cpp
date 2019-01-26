@@ -32,7 +32,6 @@ std::ostream& operator<<(std::ostream& os, const DnT_fstruct3D& fs) {
 };
 
 
-
 // Define the C++ function print_fstructarray(): it's templated on the type of the struct
 // that corresponds to the Numpy structured array. It takes the array of structs, writes
 // all the values into a string, and returns the string. This function is used later to

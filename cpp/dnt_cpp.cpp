@@ -15,7 +15,6 @@ PYBIND11_MODULE(dnt_cpp, m) {
 
 // typeinfo may be registered before the dtype descriptor for scalar casts to work...
 
-
 ///
 // Allow Python types to be used in C++
 ///  
@@ -28,9 +27,9 @@ PYBIND11_MODULE(dnt_cpp, m) {
   py::class_<DnT_pstruct3D>(m, "DnT_pstruct3D");
 
 // The following statements allow the Numpy structured types DnT_pstructXD to be used in C++.
-// In particular they can be used as template arguments to py::array_t.
+// In particular they can be used as template arguments to the Numpy array type py::array_t.
   
-// Register DnT_pstruct1D as a Numpy dtype descriptor. DnT_pstruct1D is of type py::dtype (a class).
+// Register DnT_pstruct1D as a Numpy dtype descriptor. DnT_pstruct1D is of type py::dtype (a pybind11 class).
 //  PYBIND11_NUMPY_DTYPE(DnT_pstruct1D, x, x0, ux, weight, bitflags, cell_index, unique_ID, crossings);
 // The "_EX" variation allows the Python names of the variables in the structure to be different from the variable names in the C++ struct.
   PYBIND11_NUMPY_DTYPE_EX(DnT_pstruct1D, x_, "x", x0_, "x0", ux_, "ux", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
@@ -49,7 +48,6 @@ PYBIND11_MODULE(dnt_cpp, m) {
 // Connect the Python symbol divide_by_cell_volumes() to the C++ function declared as
 //         void divide_by_cell_volumes(dolfin::Function& dF, py::dict dict)
   m.def("divide_by_cell_volumes", &divide_by_cell_volumes);
-
   
 ///
 // Bindings for particle-to-mesh operations
@@ -110,8 +108,8 @@ PYBIND11_MODULE(dnt_cpp, m) {
 // dolfin.cpp:
 
   m.def("cell_contains_point_1d", &cell_contains_point_1d);
-  m.def("cell_contains_point_1d_v1", &cell_contains_point_1d_v1);
-  m.def("cell_contains_point_1d_v2", &cell_contains_point_1d_v2);
+//  m.def("cell_contains_point_1d_v1", &cell_contains_point_1d_v1);
+//  m.def("cell_contains_point_1d_v2", &cell_contains_point_1d_v2);
 
 // Example: Connect the Python symbol f_simple() to the C++ function in braces {...}
 // This prints only one record of the array

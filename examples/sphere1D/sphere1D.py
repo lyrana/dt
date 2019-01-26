@@ -173,8 +173,6 @@ from RecordedData_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
 
-import dnt_cpp
-
 fileName = __file__+':'
 
 ############################## TO. Terminal output flags ##############################

@@ -501,7 +501,7 @@ class Mesh_C(object):
     def is_inside(self, point, cell_index):
         """Check if a point lies within a give cell
 
-        :param point: a record array of coordinates (x), (x,y), or (x, y, z)
+        :param point: a numpy structure containing coordinates (x), (x,y), or (x, y, z)
                       with field names 'x', 'y', 'z'
         :param cell_index: a (global?) cell index
 
@@ -553,7 +553,7 @@ class Mesh_C(object):
 
 
 #class Mesh_C(object):
-    def is_inside_cpp(self, point, cell_index):
+    def is_inside_CPP(self, point, cell_index):
         """Check if a point lies within a give cell
 
         :param point: a record array of coordinates (x), (x,y), or (x, y, z)
@@ -616,7 +616,7 @@ class Mesh_C(object):
             return YesOrNo
 
         return
-#    def is_inside_cpp(self, point, cell_index):ENDDEF
+#    def is_inside_CPP(self, point, cell_index):ENDDEF
 
 #class Mesh_C(object):
     def find_facet(self, r0, dr, cell_index):
@@ -1096,8 +1096,8 @@ class Field_C(object):
         """Interpolate the field in this Field_C object to the given points.
 
            :param points: (input) Array of points (e.g., particle locations).
-           :type points: A Numpy ndarray containing the point coordinates as p[i][0],
-                         p[i][1], p[i][2], for point p[i].
+           :type points: A Numpy ndarray, or structured array, containing the point
+                         coordinates as p[i][0], p[i][1], p[i][2], for point p[i].
 
            :param field_at_points: (output) The calculated field values at the points.
 
@@ -1110,9 +1110,10 @@ class Field_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
         
-        # Make a temporary ndarray for the interpolated field at a *single* point.
-        # It's length is the number of force components to be a pplied to particles
-        # vector, etc.). This is the same number as ParticleInput_C.force_components.
+        # Make a temporary ndarray for the interpolated field at a *single* point.  It's
+        # length is the number of force components to be applied to particles (1 for
+        # scalar; 2 for 2D vector, etc.). This is the same number as
+        # ParticleInput_C.force_components.
         numberFieldComponents = len(field_at_points.dtype.fields) 
         fieldValue = np_m.empty(numberFieldComponents, dtype=field_at_points.dtype[0])
 #        fieldValue = np_m.empty(self.mesh_gdim, dtype=vFpoints.dtype[0])

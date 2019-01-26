@@ -32,13 +32,15 @@ void interpolate_field_to_points(dolfin::Function& field,
                                  py::array_t<S, 0> points,
                                  py::array_t<double> field_at_points);
 
+/*
 template <typename S>
 void interpolate_field_to_points_v1(dolfin::Function& field,
-                                 py::array_t<S, 0> points,
-                                 py::array_t<double> field_at_points);
+                                    py::array_t<S, 0> points,
+                                    py::array_t<double> field_at_points);
+*/
 
 bool cell_contains_point_1d(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct1D point);
 
-bool cell_contains_point_1d_v1(dolfin::Mesh& mesh, unsigned int v0, unsigned int v1, double point);
+//bool cell_contains_point_1d_v1(dolfin::Mesh& mesh, unsigned int v0, unsigned int v1, double point);
 
-bool cell_contains_point_1d_v2(dolfin::Mesh& mesh, py::list vertices, DnT_pstruct1D point);
+//bool cell_contains_point_1d_v2(dolfin::Mesh& mesh, py::list vertices, DnT_pstruct1D point);

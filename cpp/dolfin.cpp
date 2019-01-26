@@ -144,88 +144,66 @@ void interpolate_field_to_points_v1(dolfin::Function& field,
     // Evaluate the function at the point
     // See dolfin/dolfin/function/Function.cpp
 
-// why does this not work?    
-//    field.eval(Eigen::Map<Eigen::VectorXd> mvalues(values, 3), Eigen::Map<const Eigen::VectorXd> mpoint(point, 3), cell, ufc_cell);
-// Because the "Eigen::Map<Eigen::VectorXd> mvalues(values, 3)" has to be constructed in a separate statement(?)
 
-//    Eigen::VectorXd evalues(3); // for a 3D point
-//    const Eigen::Map<Eigen::VectorXd> mpoint(point, 3);
-// compiles:
-//    field.eval(evalues, mpoint, cell, ufc_cell);
-
-// Various "const" and "cast" variations:
-//    Eigen::Map<Eigen::VectorXd> mvalues(values, 3);    
-//    const Eigen::Map<Eigen::VectorXd> mpoint(point, 3);
-// compiles:
-//    field.eval(mvalues, mpoint, cell, ufc_cell);
-
-//    Eigen::Map<Eigen::VectorXd> mvalues(values, 3);    
-//    const Eigen::Map<Eigen::VectorXd> mpoint(const_cast<double*>(point), 3);
-// compiles:
-//    field.eval(mvalues, mpoint, cell, ufc_cell);
-    
-//    Eigen::Map<Eigen::VectorXd> mvalues(values, 3);    
-//    Eigen::Map<const Eigen::VectorXd> mpoint(const_cast<double*>(point), 3);
-// compiles:
-//    field.eval(mvalues, mpoint, cell, ufc_cell);
-
-//compiles, but don't know what it means
-//    Eigen::Ref<Eigen::VectorXd> rvalues(values, 3);
-//    Eigen::Ref<const Eigen::VectorXd> rpoint(point, 3);
-//    field.eval(rvalues, rpoint, cell, ufc_cell);
-
-
-// This version uses the Eigen signature:
+// This version of eval() uses the Eigen signature:
     
 //    void Function::eval(Eigen::Ref<Eigen::VectorXd> values,
 //                        Eigen::Ref<const Eigen::VectorXd> x,
 //                        const Cell& dolfin_cell, const ufc::cell& ufc_cell) const
     
+// why does this not work?    
+//    field.eval(Eigen::Map<Eigen::VectorXd> mvalues(values, 3), Eigen::Map<const Eigen::VectorXd> mpoint(point, 3), cell, ufc_cell);
+// Because the "Eigen::Map<Eigen::VectorXd> mvalues(values, 3)" has to be constructed in a separate statement (see following).
+
     Eigen::Map<Eigen::VectorXd> mvalues(values, 3);    
     Eigen::Map<const Eigen::VectorXd> mpoint(point, 3);
     field.eval(mvalues, mpoint, cell, ufc_cell);
 
-
-// This version uses the dolfin::Array signature
+// This version of eval() uses the dolfin::Array signature
     
 //    void Function::eval(Array<double>& values, const Array<double>& x,
 //                    const Cell& dolfin_cell, const ufc::cell& ufc_cell) const
 
     // Copy the values to field_at_points (which is a py::array_t<double>)
     // The vector (a rank-1 tensor) has field.value_dimension() components
+
+//TODO: Can field_at_point[] be used directly, instead of copying?
+
+    double_to_fstruct<FS>(values, field_at_points[ip]);
+    
 /*    
     for (std::size_t i = 0; i < field.value_dimension(0); ++i)
     {
       field_at_points[ip];
     }
 */
-    double_to_fstruct<FS>(values, field_at_points[ip]);
 
-//    field.eval(Eigen::Ref<Eigen::VectorXd> mvalues(values, 3), Eigen::Ref<const Eigen::VectorXd> mpoint(point, 3), cell, ufc_cell);
-    
-/*    
-    for (std::size_t i = 0; i < dofs_per_cell; ++i)
-    {
-      functionSpace->element()->evaluate_basis(i, basis.data(),
-                                     point,  // const double* x
-                                     dof_coordinates.data(),
-                                     ufc_cell.orientation);
-      basis_sum = 0.0;
-      for (const auto& v : basis)
-        basis_sum += v;
-      weights[i] = p[ip].weight_*basis_sum;
-    }
-
-    //field.vector() is a std::shared_ptr<GenericVector>
-    field.vector()->add_local(weights.data(), dofs_per_cell, dofIndices.data());
-*/
-    
   }
 
 }
 
-
 //! Test whether a point lies within the cell defined by the vertices.
+
+bool cell_contains_point_1d(dolfin::Mesh& mesh,
+                               py::array_t<int> vertices,
+                               DnT_pstruct1D point)
+{
+  auto v = vertices.unchecked<1>(); // See pybind11 docs
+  
+  auto v0 = v(0);
+  auto v1 = v(1);
+
+//  std::cout << "v0: " << v0 << " v1: " << v1 << std::endl;
+  
+  double p0 = mesh.coordinates()[v0];
+  double p1 = mesh.coordinates()[v1];
+  
+  if (p0 > p1)
+    std::swap(p0, p1);
+  return p0 <= point.x_ and point.x_ <= p1;
+}
+
+// Older versions:
 
 bool cell_contains_point_1d_v1(dolfin::Mesh& mesh, unsigned int v0, unsigned int v1, double point)
 {
@@ -270,26 +248,6 @@ bool cell_contains_point_1d_v2(dolfin::Mesh& mesh,
 //  m.def("f_simple", [](DnT_pstruct1D p) { return p.x_ * 10; });
 
 
-  
-  double p0 = mesh.coordinates()[v0];
-  double p1 = mesh.coordinates()[v1];
-  
-  if (p0 > p1)
-    std::swap(p0, p1);
-  return p0 <= point.x_ and point.x_ <= p1;
-}
-
-bool cell_contains_point_1d(dolfin::Mesh& mesh,
-                               py::array_t<int> vertices,
-                               DnT_pstruct1D point)
-
-{
-  auto v = vertices.unchecked<1>();
-  
-  auto v0 = v(0);
-  auto v1 = v(1);
-
-//  std::cout << "v0: " << v0 << " v1: " << v1 << std::endl;
   
   double p0 = mesh.coordinates()[v0];
   double p1 = mesh.coordinates()[v1];

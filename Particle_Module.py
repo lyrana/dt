@@ -19,8 +19,6 @@ import h5py
 
 from Dolfin_Module import Mesh_C
 
-#import pseg_cpp
-#import dolfin_cpp
 import dnt_cpp
 
 #STARTCLASS
@@ -701,6 +699,7 @@ class Particle_C(object):
                         pseg[ip]['cell_index'] = self.pmesh_M.compute_cell_index(pseg[ip])
     #                    print 'ip, index =', ip, pseg[ip]['cell_index']
 # Check that is_inside() confirms the cell index:
+                    #     while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
                         if not self.pmesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']):
                             errorMsg = "%s\tDnT ERROR: is_inside() check failed for particle %d" % (fncName, ip)
                             sys.exit(errorMsg)
@@ -761,7 +760,7 @@ class Particle_C(object):
 
 #class Particle_C(object):
     def accumulate_number_density_CPP(self, species_name, dof_number_density_F=None, cell_number_density_F=None):
-        """Compute the DoF and cell number density arrays for the specified
+        """Compute the DoF and cell number-density arrays for the specified
            kinetic-particle species using C++ functions.
 
            For the DoF array, this doesn't generate an actual number-density, but rather
@@ -786,11 +785,6 @@ class Particle_C(object):
         psa = self.pseg_arr[species_name] # segmented array for this species
         (npSeg, pseg) = psa.init_out_loop()
 
-#FIXME: this is done inside the C++ function        
-#        if cell_number_density_F is not None:
-#            cell_dofmap = cell_number_density_F.function_space.dofmap
-#            cell_function_values = cell_number_density_F.function_values
-        
         while isinstance(pseg, np_m.ndarray):
             if dof_number_density_F is not None:
             # Project the density function for the particles onto the DoF shape functions
@@ -1035,7 +1029,9 @@ class Particle_C(object):
                     facetCrossCount = 0
                     tStart = time - dt
                     dtRemaining = dt
-                    while not pmesh_M.is_inside_cpp(psegOut[ipOut], pCellIndex):
+# TODO: fix the CPP version to allow DnT_pstruct args of any dimension.
+#                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
+                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
                         # there's a boundary-condition on that facet.
@@ -1340,6 +1336,7 @@ class Particle_C(object):
                     facetCrossCount = 0
                     tStart = time - dt
                     dtRemaining = dt
+#                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
                     while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case

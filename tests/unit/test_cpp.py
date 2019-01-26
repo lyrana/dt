@@ -86,8 +86,8 @@ class TestCPP(unittest.TestCase):
         """Check the print_pseg function in dnt_cpp.so.
 
            Make two 1D particle tuples and put them into a SegmentedArray_C
-           object. Pass the first segment to dnt_cpp and check that
-           the printout from print_pseg1D() is correct.
+           object. Pass the first segment to C++ and check that the printout from
+           print_pseg1D() is correct.
 
            The 
 

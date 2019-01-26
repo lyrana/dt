@@ -1,9 +1,9 @@
 // Copyright (C) 2018, 2019 L. D. Hughes
 
-// A Numpy structured array corresponds to an array of struct in C/C++. The struct
+// A Numpy structured array corresponds to an array of structs in C/C++. The struct
 // member-variable names have to be the same as the field names in the Python structured
 // array unless PYBIND11_NUMPY_DTYPE_EX is used.  The following struct corresponds to
-// a particle structure in Python.
+// arrays of 1D, 2D, and 3D field vectors in Python.
 
 /*
 Contents:
@@ -41,7 +41,7 @@ Contents:
 
 namespace py = pybind11;
 
-// For (x,) particle coordinates
+// For (x,) field components
 struct DnT_fstruct1D {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   double x_;                  // f8    8 bytes
@@ -50,7 +50,7 @@ struct DnT_fstruct1D {
 // Declare the << operator for the DnT_fstruct1D data type. This is used in print_fstructarray()
 std::ostream& operator<<(std::ostream& os, const DnT_fstruct1D& p);
 
-// For (x, y) particle coordinates
+// For (x, y) field components
 struct DnT_fstruct2D {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   double x_;                  // f8    8 bytes
@@ -60,7 +60,7 @@ struct DnT_fstruct2D {
 // Declare the << operator for the DnT_fstruct2D data type. This is used in print_fstructarray()
 std::ostream& operator<<(std::ostream& os, const DnT_fstruct2D& p);
 
-// For (x, y, z) particle coordinates
+// For (x, y, z) field components
 struct DnT_fstruct3D {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   double x_;                  // f8    8 bytes
@@ -78,7 +78,7 @@ std::ostream& operator<<(std::ostream& os, const DnT_fstruct3D& p);
 template <typename FS>
 py::list print_fstructarray(py::array_t<FS, 0> arr);
 
-// This function copies the spatial coordinates from a field structure array to a double array.
+// This function copies the spatial components from a field structure array to a double array.
 // It uses template specialization to handle field structures with different dimensions.
 template <typename FS>
 void fstruct_to_double(FS& fs, double* components);

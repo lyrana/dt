@@ -73,7 +73,7 @@ py::list print_pstructarray(py::array_t<S, 0> arr) {
 // arr_info attributes are:
 // itemsize, size, format, ndim, shape, strides 
   std::cout << "pstruct.cpp:print_pstructarray():"
-            << "  itemsize=" << arr_info.itemsize
+            << " itemsize=" << arr_info.itemsize
             << ", size=" << arr_info.size
             << ", format=" << arr_info.format
             << ", ndim=" << arr_info.ndim
