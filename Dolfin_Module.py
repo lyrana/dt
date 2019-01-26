@@ -1100,10 +1100,12 @@ class Field_C(object):
                          coordinates as p[i][0], p[i][1], p[i][2], for point p[i].
 
            :param field_at_points: (output) The calculated field values at the points.
-           :type field_at_points: Numpy ndarray.
+
+           :type field_at_points: A Numpy ndarray containing the field components at
+                                  each point position.
 
            :returns: None
-           
+
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'

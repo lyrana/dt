@@ -33,6 +33,7 @@ class SegmentedArray_C(object):
     Print the field names of the structure in segment n: SegList[n-1].dtype.names
     Print all the values of field 'x' in the nth segment: SegList[n-1]['x']
     Print the byte stride between 'x' values: SegList[0].strides
+
     """
 
 #    SegmentLength = 100 # static class attribute
