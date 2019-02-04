@@ -157,22 +157,22 @@ void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) 
 
 // or
 
-void force_DnT_pstruct_instances()
+void pseg_DnT_pstruct_instances()
 {
   py::array_t<DnT_pstruct1D, 0> pseg1D;
   py::array_t<DnT_pstruct2D, 0> pseg2D;
   py::array_t<DnT_pstruct3D, 0> pseg3D;
   dolfin::Function dolfinFunction;
-  dolfin::Function& dF = dolfinFunction;
+  dolfin::Function& dFref = dolfinFunction;
 
   // c++filt said that the following symbols were not in the .so file.  These
   // statements force the compiler to make these specialized versions of the
   // templated function in pseg.o.
-  add_weights_to_cells<DnT_pstruct1D>(pseg1D, dF);
-  add_weights_to_cells<DnT_pstruct2D>(pseg2D, dF);
-  add_weights_to_cells<DnT_pstruct3D>(pseg3D, dF);
+  add_weights_to_cells<DnT_pstruct1D>(pseg1D, dFref);
+  add_weights_to_cells<DnT_pstruct2D>(pseg2D, dFref);
+  add_weights_to_cells<DnT_pstruct3D>(pseg3D, dFref);
   
-  interpolate_weights_to_dofs<DnT_pstruct1D>(pseg1D, dF);
-  interpolate_weights_to_dofs<DnT_pstruct2D>(pseg2D, dF);
-  interpolate_weights_to_dofs<DnT_pstruct3D>(pseg3D, dF);
+  interpolate_weights_to_dofs<DnT_pstruct1D>(pseg1D, dFref);
+  interpolate_weights_to_dofs<DnT_pstruct2D>(pseg2D, dFref);
+  interpolate_weights_to_dofs<DnT_pstruct3D>(pseg3D, dFref);
 }

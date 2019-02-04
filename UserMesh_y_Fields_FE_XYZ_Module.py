@@ -400,8 +400,8 @@ class UserMesh_C(Mesh_C):
         # Make a plot of the mesh, with non-zero values showing marked
         # boundaries
         if (plot_flag):
-            df_m.plot(mesh_df, title=plotTitle, axes=True)
-#            df_m.plot(fieldBoundaryMarker, title='field boundary marks', axes=True)
+            df_m.plot(mesh_df, title=plotTitle)
+# VTK:           df_m.plot(fieldBoundaryMarker, title='field boundary marks', axes=True)
             mplot_m.show()
 #            yesno = raw_input("Just called show() in create_mesh")
 
