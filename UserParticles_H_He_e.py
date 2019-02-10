@@ -69,8 +69,8 @@ class UserParticleDistributions_C(object):
 
         # Set initial phase-space coordinates and macroparticle weight for each particle
 
-#        (x0, y0, z0) = (0.0, 0.01, 0.02)
-        (x0, y0, z0) = (-0.001, 0.01, 0.02)
+        (x0, y0, z0) = (0.0, 0.01, 0.02)
+#        (x0, y0, z0) = (-0.001, 0.01, 0.02)
         
 # test cell_index:
 #        (x0, y0, z0) = (0.029, 0.016, 0.02)

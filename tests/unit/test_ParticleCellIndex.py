@@ -183,7 +183,8 @@ class TestParticleCellIndex(unittest.TestCase):
         umi3D.cells_on_side = (4, 4, 4)
         # Create mesh
         self.pmesh3D = UserMesh_C(umi3D, compute_tree=True, plot_flag=plotFlag)
-        self.pmesh3D.compute_cell_entity_index_dict('vertex')
+#        self.pmesh3D.compute_cell_entity_index_dict('vertex')
+        self.pmesh3D.compute_cell_vertex_dict()
         self.pmesh3D.compute_cell_dict()
 
         # pmesh is the owner of the compute_index function?
@@ -219,7 +220,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # the cell midpoint using the BB tree.  Compare that to the
         # index value stored in the cell object.
         # Make a particle-like point from the midpoint
-        print("1D test")
+#        print("1D test")
         for cell in df_m.cells(self.pmesh1D.mesh):
             midpt = cell.midpoint()
             # Have to convert the Point to a 1-element pseg-type array
@@ -244,7 +245,7 @@ class TestParticleCellIndex(unittest.TestCase):
         # the cell midpoint using the BB tree.  Compare that to the
         # index value stored in the cell object.
         # Make a particle-like point from the midpoint
-        print("2D test")
+#        print("2D test")
         for cell in df_m.cells(self.pmesh2D.mesh):
             midpt = cell.midpoint()
             # Have to convert the Point to a 1-element pseg-type array
@@ -258,7 +259,7 @@ class TestParticleCellIndex(unittest.TestCase):
             self.assertEqual(cell_index, cell.index(), msg = "2D cell index is not correct")
 
         # 3D mesh
-        print("3D test")
+#        print("3D test")
         # Make a particle-like point from the midpoint
         for cell in df_m.cells(self.pmesh3D.mesh):
             midpt = cell.midpoint()
@@ -311,15 +312,17 @@ class TestParticleCellIndex(unittest.TestCase):
                     # Can't use slice syntax here, because the dtype is inhomogeneous.
 
                     # Compute and store the cell index
-#                    for dim in range(1,4):
-                    for dim in range(1,3):
+                    for dim in range(1,4):
                         if dim == 1:
+#                            print("1D test")
                             pmesh_M = self.pmesh1D
 #                        spatial_components = spatial_coordinates[0:dim]
 #                        p = np_m.array([pseg[ip][comp] for comp in spatial_components])
                         if dim == 2:
+#                            print("2D test")
                             pmesh_M = self.pmesh2D
                         elif dim == 3:
+#                            print("3D test")
                             pmesh_M = self.pmesh3D
 # Put a particle outside the mesh to see what cell index is returned:
 #                            p[0] = p[0] + 100.0

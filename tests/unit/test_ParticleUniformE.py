@@ -239,7 +239,7 @@ class TestParticleUniformE(unittest.TestCase):
 #            print 'expected = ', p_expected[isp]
             for ic in range(ncoords):
 #            for ix in range(len(getparticle)):
-                self.assertAlmostEqual(getparticle[ic], p_expected[isp][ic], msg="Particle is not in correct position")
+                self.assertAlmostEqual(getparticle[ic], p_expected[isp][ic], msg="Particle is not in correct position after 1 step")
             isp += 1
 
         return
@@ -315,7 +315,7 @@ class TestParticleUniformE(unittest.TestCase):
 #            print 'expected = ', p_expected[isp], 'for species', sp
             for ic in range(ncoords):
 #            for ix in range(len(getparticle)):
-                self.assertAlmostEqual(getparticle[ic], p_expected[isp][ic], msg="Particle is not in correct position")
+                self.assertAlmostEqual(getparticle[ic], p_expected[isp][ic], msg="Particle is not in correct position after 10 steps")
             isp += 1
 
         return
