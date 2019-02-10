@@ -1,5 +1,5 @@
 #include "dolfin.h"
-// #include "pstruct.h"
+#include "predicates.h"
 
 namespace py = pybind11;
 
@@ -184,11 +184,18 @@ void interpolate_field_to_points_v1(dolfin::Function& field,
 
 //! Test whether a point lies within the cell defined by the vertices.
 
-bool cell_contains_point_1d(dolfin::Mesh& mesh,
-                               py::array_t<int> vertices,
-                               DnT_pstruct1D point)
+/*!
+    Overload on the number of particle coordinates: 1D, 2D, 3D 
+ */
+
+/// Versions using DnT_struct
+
+// 1D version using a DnT_pstruct
+bool cell_contains_point(dolfin::Mesh& mesh,
+                         py::array_t<int> vertices,
+                         DnT_pstruct1D ps1d)
 {
-  auto v = vertices.unchecked<1>(); // See pybind11 docs
+  auto v = vertices.unchecked<1>(); // <1> is the number of array indices. See pybind11 docs.
   
   auto v0 = v(0);
   auto v1 = v(1);
@@ -200,60 +207,257 @@ bool cell_contains_point_1d(dolfin::Mesh& mesh,
   
   if (p0 > p1)
     std::swap(p0, p1);
-  return p0 <= point.x_ and point.x_ <= p1;
+  return p0 <= ps1d.x_ and ps1d.x_ <= p1;
 }
 
-// Older versions:
+// 2D version using a DnT_pstruct
+// Based on dolfin/dolfin/geometry/CollisionPredicates.cpp: collides_triangle_point_2d()
 
-bool cell_contains_point_1d_v1(dolfin::Mesh& mesh, unsigned int v0, unsigned int v1, double point)
+bool cell_contains_point(dolfin::Mesh& mesh,
+                         py::array_t<int> vertices,
+                         DnT_pstruct2D ps2d)
 {
-//  std::size_t v0 = vertices[0];
-//  std::size_t v1 = vertices[1];
+  auto v = vertices.unchecked<1>(); // <1> is the number of array indices. See pybind11 docs.
   
-// Use this for a Python list of ints called vertices[]:
-  
-//  auto v0 = vertices[0].cast<int>();
-//  auto v1 = vertices[1].cast<int>();
-  
-//  auto v0 = vertices[0];
-//  auto v1 = vertices[1];
+  auto v0 = v(0);
+  auto v1 = v(1);
+  auto v2 = v(2);
 
-//  cout << "v0: " << v0 << "v1: " << v1 << std::endl;
+//  std::cout << "v0: " << v0 << " v1: " << v1 << std::endl;
+  
+  int meshDimension = 2;
+  // mesh.coordinates() returns a 1D array of doubles: x0, y0, x1, y1,... in this
+  // case.  So the value of x for vertex n is at n*2.
+  double* p0 = &mesh.coordinates()[v0*meshDimension];
+  double* p1 = &mesh.coordinates()[v1*meshDimension];
+  double* p2 = &mesh.coordinates()[v2*meshDimension];
+
+  // Copy the struct coordinates to a double array
+  double point[] = {0.0, 0.0};
+  pstruct_to_double<DnT_pstruct2D>(ps2d, point);
+
+  // The rest is code copied from CollisionPredicates.cpp
+  
+  const double ref = dnt::_orient2d(p0, p1, p2);
+
+  if (ref > 0.0)
+  {
+    return (dnt::_orient2d(p1, p2, point) >= 0.0 and
+            dnt::_orient2d(p2, p0, point) >= 0.0 and
+            dnt::_orient2d(p0, p1, point) >= 0.0);
+  }
+  else if (ref < 0.0)
+  {
+    return (dnt::_orient2d(p1, p2, point) <= 0.0 and
+	    dnt::_orient2d(p2, p0, point) <= 0.0 and
+	    dnt::_orient2d(p0, p1, point) <= 0.0);
+  }
+  else
+  {
+    return ((dnt::_orient2d(p0, p1, point) == 0.0 and
+	     dnt::_collides_segment_point_1d(p0[0], p1[0], point[0]) and
+	     dnt::_collides_segment_point_1d(p0[1], p1[1], point[1])) or
+	    (dnt::_orient2d(p1, p2, point) == 0.0 and
+	     dnt::_collides_segment_point_1d(p1[0], p2[0], point[0]) and
+	     dnt::_collides_segment_point_1d(p1[1], p2[1], point[1])) or
+	    (dnt::_orient2d(p2, p0, point) == 0.0 and
+	     dnt::_collides_segment_point_1d(p2[0], p0[0], point[0]) and
+	     dnt::_collides_segment_point_1d(p2[1], p0[1], point[1])));
+  }
+
+}
+
+// 3D version using a DnT_pstruct
+
+// Test version, for a 1D mesh only
+
+bool cell_contains_point(dolfin::Mesh& mesh,
+                         py::array_t<int> vertices,
+                         DnT_pstruct3D point)
+{
+  auto v = vertices.unchecked<1>(); // <1> is the number of array indices. See pybind11 docs.
+  
+  auto v0 = v(0);
+  auto v1 = v(1);
+
+//  std::cout << "v0: " << v0 << " v1: " << v1 << std::endl;
+
+// 1D mesh version:
   
   double p0 = mesh.coordinates()[v0];
   double p1 = mesh.coordinates()[v1];
-  
-  if (p0 > p1)
-    std::swap(p0, p1);
-  return p0 <= point and point <= p1;
-}
 
-bool cell_contains_point_1d_v2(dolfin::Mesh& mesh,
-                               py::list vertices,
-                               DnT_pstruct1D point)
+  // Copy the struct coordinates to a double array
+//  double point[] = {0.0, 0.0, 0.0};
+//  pstruct_to_double<DnT_pstruct3D>(ps3d, point);
 
-{
-//  std::size_t v0 = vertices[0];
-//  std::size_t v1 = vertices[1];
-  
-// Use this for a Python list of ints called vertices[]:
-  auto v0 = vertices[0].cast<int>();
-  auto v1 = vertices[1].cast<int>();
-  
-//  auto v0 = vertices[0];
-//  auto v1 = vertices[1];
-
-  std::cout << "v0: " << v0 << "v1: " << v1 << std::endl;
-  
-//  m.def("f_simple", [](DnT_pstruct1D p) { return p.x_ * 10; });
-
-
-  
-  double p0 = mesh.coordinates()[v0];
-  double p1 = mesh.coordinates()[v1];
-  
   if (p0 > p1)
     std::swap(p0, p1);
   return p0 <= point.x_ and point.x_ <= p1;
 }
 
+
+/// Versions that pass x, y, z directly as doubles
+
+// 1D based on passing x as a double
+bool cell_contains_point(dolfin::Mesh& mesh,
+                         py::array_t<int> vertices,
+                         double& x)
+{
+  auto v = vertices.unchecked<1>(); // <1> is the number of array indices. See pybind11 docs.
+  
+  auto v0 = v(0);
+  auto v1 = v(1);
+
+//  std::cout << "v0: " << v0 << " v1: " << v1 << std::endl;
+//  std::cout << "x: " << x << std::endl;
+  
+  double p0 = mesh.coordinates()[v0];
+  double p1 = mesh.coordinates()[v1];
+
+  if (p0 > p1)
+    std::swap(p0, p1);
+  return p0 <= x and x <= p1;
+}
+
+// 2D version based on passing x and y as doubles
+// Based on dolfin/dolfin/geometry/CollisionPredicates.cpp: collides_triangle_point_2d()
+
+bool cell_contains_point(dolfin::Mesh& mesh,
+                         py::array_t<int> vertices,
+                         double& x, double& y)
+{
+  auto v = vertices.unchecked<1>(); // <1> is the number of array indices. See pybind11 docs.
+
+  auto v0 = v(0);
+  auto v1 = v(1);
+  auto v2 = v(2);
+
+//  std::cout << "v0: " << v0 << " v1: " << v1 << " v2: " << v2 << std::endl;
+//  std::cout << "x: " << x << " y: " << y << std::endl;
+  
+  int meshDimension = 2;
+  // mesh.coordinates() returns a 1D array of doubles: x0, y0, x1, y1,... in this
+  // case.  So the value of x for vertex n is at n*2.
+  double* p0 = &mesh.coordinates()[v0*meshDimension];
+  double* p1 = &mesh.coordinates()[v1*meshDimension];
+  double* p2 = &mesh.coordinates()[v2*meshDimension];
+
+  // std::cout << "p0: " << p0[0] << ", " << p0[1] << "\n"
+  //           << "p1: " << p1[0] << ", " << p1[1] << "\n"
+  //           << "p2: " << p2[0] << ", " << p2[1]
+  //           << std::endl;
+  
+  // Copy the struct coordinates to a double array
+  double point[] = {x, y};
+//  std::cout << "px: " << point[0] << " py: " << point[1] << std::endl;
+
+  // The rest is code copied from CollisionPredicates.cpp
+
+  const double ref = dnt::_orient2d(p0, p1, p2);
+
+  if (ref > 0.0)
+  {
+    return (dnt::_orient2d(p1, p2, point) >= 0.0 and
+            dnt::_orient2d(p2, p0, point) >= 0.0 and
+            dnt::_orient2d(p0, p1, point) >= 0.0);
+  }
+  else if (ref < 0.0)
+  {
+    return (dnt::_orient2d(p1, p2, point) <= 0.0 and
+	    dnt::_orient2d(p2, p0, point) <= 0.0 and
+	    dnt::_orient2d(p0, p1, point) <= 0.0);
+  }
+  else
+  {
+    return ((dnt::_orient2d(p0, p1, point) == 0.0 and
+	     dnt::_collides_segment_point_1d(p0[0], p1[0], point[0]) and
+	     dnt::_collides_segment_point_1d(p0[1], p1[1], point[1])) or
+	    (dnt::_orient2d(p1, p2, point) == 0.0 and
+	     dnt::_collides_segment_point_1d(p1[0], p2[0], point[0]) and
+	     dnt::_collides_segment_point_1d(p1[1], p2[1], point[1])) or
+	    (dnt::_orient2d(p2, p0, point) == 0.0 and
+	     dnt::_collides_segment_point_1d(p2[0], p0[0], point[0]) and
+	     dnt::_collides_segment_point_1d(p2[1], p0[1], point[1])));
+  }
+
+}
+
+// 3D version based on passing x, y, z as doubles
+// Based on dolfin/dolfin/geometry/CollisionPredicates.cpp: collides_tetrahedron_point_3d()
+
+bool cell_contains_point(dolfin::Mesh& mesh,
+                         py::array_t<int> vertices,
+                         double& x, double& y, double& z)
+{
+  auto v = vertices.unchecked<1>(); // <1> is the number of array indices. See pybind11 docs.
+
+  auto v0 = v(0);
+  auto v1 = v(1);
+  auto v2 = v(2);
+  auto v3 = v(3);
+
+//  std::cout << "v0: " << v0 << " v1: " << v1 << " v2: " << v2 << " v3: " << v3 << std::endl;
+//  std::cout << "x: " << x << " y: " << y << " z: " << z << std::endl;
+  
+  int meshDimension = 3;
+  // mesh.coordinates() returns a 1D array of doubles: x0, y0, z0, x1, y1, z1,... in this
+  // case.  So the value of x for vertex n is at n*2.
+  double* p0 = &mesh.coordinates()[v0*meshDimension];
+  double* p1 = &mesh.coordinates()[v1*meshDimension];
+  double* p2 = &mesh.coordinates()[v2*meshDimension];
+  double* p3 = &mesh.coordinates()[v3*meshDimension];
+
+  // std::cout << "p0: " << p0[0] << ", " << p0[1] << ", " << p0[2] << "\n"
+  //           << "p1: " << p1[0] << ", " << p1[1] << ", " << p1[2] << "\n"
+  //           << "p2: " << p2[0] << ", " << p2[1] << ", " << p2[2] << "\n"
+  //           << "p3: " << p3[0] << ", " << p3[1] << ", " << p3[2]
+  //           << std::endl;
+  
+  // Copy the point coordinates to a double array
+  double point[] = {x, y, z};
+//  std::cout << "Point coords px: " << point[0] << " py: " << point[1] <<" pz: " << point[2] << std::endl;
+
+  const double ref = dnt::_orient3d(p0, p1, p2, p3);
+
+  if (ref > 0.0)
+  {
+    return (dnt::_orient3d(p0, p1, p2, point) >= 0.0 and
+	    dnt::_orient3d(p0, p3, p1, point) >= 0.0 and
+	    dnt::_orient3d(p0, p2, p3, point) >= 0.0 and
+	    dnt::_orient3d(p1, p3, p2, point) >= 0.0);
+  }
+  else if (ref < 0.0)
+  {
+    return (dnt::_orient3d(p0, p1, p2, point) <= 0.0 and
+	    dnt::_orient3d(p0, p3, p1, point) <= 0.0 and
+	    dnt::_orient3d(p0, p2, p3, point) <= 0.0 and
+	    dnt::_orient3d(p1, p3, p2, point) <= 0.0);
+  }
+  else
+  {
+    dolfin::dolfin_error("cell_contains_point (3D)",
+                         "compute tetrahedron point collision",
+                         "Not implemented for degenerate tetrahedron");
+  }
+
+  return false;
+}
+  
+void dolfin_DnT_pstruct_instances()
+{
+  dolfin::Mesh mesh;
+  dolfin::Mesh& meshRef = mesh;
+  py::array_t<int> vertices;
+  DnT_pstruct1D ps1D;
+  DnT_pstruct2D ps2D;
+  DnT_pstruct3D ps3D;
+
+  // c++filt said that the following symbols were not in the .so file.  These
+  // statements force the compiler to make these specialized versions of the
+  // templated function in dolfin.o.
+
+  cell_contains_point(meshRef, vertices, ps1D);
+  cell_contains_point(meshRef, vertices, ps2D);
+  cell_contains_point(meshRef, vertices, ps3D);
+}

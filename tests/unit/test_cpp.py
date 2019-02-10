@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 __version__ = 0.1
-__author__ = 'Copyright (C) 2018 L. D. Hughes'
+__author__ = 'Copyright (C) 2018, 2019 L. D. Hughes'
 #__all__ = []
 
 import sys
@@ -611,6 +611,347 @@ class TestCPP(unittest.TestCase):
         return
 #    def test_3_particle_densities_on_2D_mesh(self):ENDDEF    
 
+#class TestCPP(unittest.TestCase):
+    def test_4_3D_particle_in_1D_mesh(self):
+        """Test the C++ function that tests if a particle is in a cell.
+
+           Macroparticles with 3D coordinates are created within a 1D meshed
+           region. Then we check if the C++ function correctly shows that the
+           particle is in the given cell.
+           
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName, '('+__file__+')')
+        
+        # Describe a 2D mesh from (-10,-10) to (10,10) with 2 cells on a side.
+        # The mesh is triangular, so there's a total of 4x2 = 8 cells.
+        umi2d_I = UserMeshInput_C()
+        umi2d_I.pmin = df_m.Point(-10.0, -10.0)
+        umi2d_I.pmax = df_m.Point(10.0, 10.0)
+        umi2d_I.cells_on_side = (2, 2)
+        umi2d_I.diagonal = 'left'
+
+        # UserMesh_FE_XYZ_Module can make the mesh from the above input.
+        plotFlag = False
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
+
+        pmesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
+#        pmesh2d_M.compute_cell_vertex_dict()
+#        pmesh2d_M.compute_cell_dict()
+
+        ########## Kinetic particles ##########
+
+        # Create an instance of the DTparticleInput class
+        pin = self.pin = ParticleInput_C()
+        # Set up particle variables
+        pin.precision = np_m.float64
+
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.force_components = ['x', 'y', 'z']
+        pin.force_precision = np_m.float64
+
+        ### Particle species input
+
+        # Give the properties of the particle species.  The charges and masses
+        # are normally those of the physical particles, and not the
+        # computational macroparticles.
+
+        speciesName = 'plasma_electrons'
+        charge = -1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.electron_mass
+        dynamics = 'implicit'
+        plasmaElectron_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        speciesName = 'H_plus'
+        charge = 2.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.AMU
+        dynamics = 'implicit'
+        Hplus_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        # Add these two species to particle input
+        pin.particle_species = (plasmaElectron_S, Hplus_S,)
+
+        # Make the particle object from pin...
+        particles_P = Particle_C(pin, print_flag=False)
+
+        # ...and attach the particle mesh
+        particles_P.pmesh_M = pmesh2d_M
+
+        # Put 3 particles inside the meshed region
+
+        x0 = -5.0; y0 = -5.0; z0 = 0.0
+        ux0 = 0.0; uy0 = 0.0; uz0 = 0.0
+        weight0 = 2.0e10 # number of electrons per macroparticle
+        bitflags0 = 0b0
+        cell_index0 = 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
+
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID, crossings)
+
+        # 2nd particle
+        x1 = 1.0; y1 = 1.0; z1 = 1.0
+        ux1 = uy1 = 0.0; uz1 = -uz0
+        weight1 = 3.0e10
+        bitflags1 = 0b0
+        cell_index1 = 6
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
+
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID, crossings)
+
+        # 3nd particle
+        x2 = -9.0; y2 = 1.0; z2 = 1.0
+        ux2 = uy2 = 0.0; uz2 = -uz0
+        weight2 = 4.0e10
+        bitflags2 = 0b0
+        cell_index2 = 4 # Particle lies on boundary between 0 and 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
+
+        p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID, crossings)
+
+        # Put the particles into an ndarray with the above type
+        nparticles = 3
+        particles = (p0, p1, p2)
+
+        ### Put these particles into a SegmentedArray_C.
+
+        # Put 3 electrons into storage
+        species_name = 'plasma_electrons'
+
+        number_of_macroparticles = len(particles)
+
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+
+        for i in range(number_of_macroparticles):
+#            print ('species_name, particles[i] = ', species_name, particles[i])
+            p, pindex = pseg_arr.put(particles[i])
+
+
+        # Put 3 ions into storage, re-using the above particle data, with some changes
+        species_name = 'H_plus'
+
+        z0 = 10.0
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID, crossings)
+        
+        z1 = 11.0
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID, crossings)
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+
+        z2 = 12.0
+        p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID, crossings)
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+
+        particles = (p0, p1, p2)
+        
+        for i in range(number_of_macroparticles):
+#            print 'species_name, particles[i] = ', species_name, particles[i]
+            p, pindex = pseg_arr.put(particles[i])
+
+
+        # Check that the cells contains the particles using is_inside_CPP()
+
+        species_name = 'plasma_electrons'
+
+        OK_count = 0
+        for species_name in ['plasma_electrons', 'H_plus']:
+            psa = particles_P.pseg_arr[species_name] # segmented array for this species
+
+            (npSeg, pseg) = psa.init_out_loop()
+            while isinstance(pseg, np_m.ndarray):
+                for i in range(number_of_macroparticles):
+                    p = pseg[i]
+                    YesNo = particles_P.pmesh_M.is_inside_CPP(p, p['cell_index'])
+                    if YesNo is True:
+                        OK_count += 1
+#                        print("OK_count:", OK_count)
+#                        print("particle", p, "is in the correct cell:", p['cell_index'])
+                    else:
+                        print("particle", p, "is NOT in the correct cell:", p['cell_index'])
+                (npSeg, pseg) = psa.get_next_segment('out')
+
+        self.assertEqual(6, OK_count, msg="A 3D particle is not in the expected 2D cell")
+
+        return
+#    def test_3_particle_densities_on_2D_mesh(self):ENDDEF    
+
+#class TestCPP(unittest.TestCase):
+    def test_4_3D_particle_in_2D_mesh(self):
+        """Test the C++ function that tests if a particle is in a cell.
+
+           Macroparticles with 3D coordinates are created within a 2D meshed
+           region. Then we check if the C++ function correctly shows that the
+           particle is in the given cell.
+           
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName, '('+__file__+')')
+        
+        # Describe a 2D mesh from (-10,-10) to (10,10) with 2 cells on a side.
+        # The mesh is triangular, so there's a total of 4x2 = 8 cells.
+        umi2d_I = UserMeshInput_C()
+        umi2d_I.pmin = df_m.Point(-10.0, -10.0)
+        umi2d_I.pmax = df_m.Point(10.0, 10.0)
+        umi2d_I.cells_on_side = (2, 2)
+        umi2d_I.diagonal = 'left'
+
+        # UserMesh_FE_XYZ_Module can make the mesh from the above input.
+        plotFlag = False
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
+
+        pmesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
+#        pmesh2d_M.compute_cell_vertex_dict()
+#        pmesh2d_M.compute_cell_dict()
+
+        ########## Kinetic particles ##########
+
+        # Create an instance of the DTparticleInput class
+        pin = self.pin = ParticleInput_C()
+        # Set up particle variables
+        pin.precision = np_m.float64
+
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.force_components = ['x', 'y', 'z']
+        pin.force_precision = np_m.float64
+
+        ### Particle species input
+
+        # Give the properties of the particle species.  The charges and masses
+        # are normally those of the physical particles, and not the
+        # computational macroparticles.
+
+        speciesName = 'plasma_electrons'
+        charge = -1.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.electron_mass
+        dynamics = 'implicit'
+        plasmaElectron_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        speciesName = 'H_plus'
+        charge = 2.0*MyPlasmaUnits_C.elem_charge
+        mass = 1.0*MyPlasmaUnits_C.AMU
+        dynamics = 'implicit'
+        Hplus_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        # Add these two species to particle input
+        pin.particle_species = (plasmaElectron_S, Hplus_S,)
+
+        # Make the particle object from pin...
+        particles_P = Particle_C(pin, print_flag=False)
+
+        # ...and attach the particle mesh
+        particles_P.pmesh_M = pmesh2d_M
+
+        # Put 3 particles inside the meshed region
+
+        x0 = -5.0; y0 = -5.0; z0 = 0.0
+        ux0 = 0.0; uy0 = 0.0; uz0 = 0.0
+        weight0 = 2.0e10 # number of electrons per macroparticle
+        bitflags0 = 0b0
+        cell_index0 = 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
+
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID, crossings)
+
+        # 2nd particle
+        x1 = 1.0; y1 = 1.0; z1 = 1.0
+        ux1 = uy1 = 0.0; uz1 = -uz0
+        weight1 = 3.0e10
+        bitflags1 = 0b0
+        cell_index1 = 6
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
+
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID, crossings)
+
+        # 3nd particle
+        x2 = -9.0; y2 = 1.0; z2 = 1.0
+        ux2 = uy2 = 0.0; uz2 = -uz0
+        weight2 = 4.0e10
+        bitflags2 = 0b0
+        cell_index2 = 4 # Particle lies on boundary between 0 and 1
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        crossings = 0
+
+        p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID, crossings)
+
+        # Put the particles into an ndarray with the above type
+        nparticles = 3
+        particles = (p0, p1, p2)
+
+        ### Put these particles into a SegmentedArray_C.
+
+        # Put 3 electrons into storage
+        species_name = 'plasma_electrons'
+
+        number_of_macroparticles = len(particles)
+
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+
+        for i in range(number_of_macroparticles):
+#            print ('species_name, particles[i] = ', species_name, particles[i])
+            p, pindex = pseg_arr.put(particles[i])
+
+
+        # Put 3 ions into storage, re-using the above particle data, with some changes
+        species_name = 'H_plus'
+
+        z0 = 10.0
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        p0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, bitflags0, cell_index0, unique_ID, crossings)
+        
+        z1 = 11.0
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+        p1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, bitflags1, cell_index1, unique_ID, crossings)
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+
+        z2 = 12.0
+        p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID, crossings)
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+
+        particles = (p0, p1, p2)
+        
+        for i in range(number_of_macroparticles):
+#            print 'species_name, particles[i] = ', species_name, particles[i]
+            p, pindex = pseg_arr.put(particles[i])
+
+
+        # Check that the cells contains the particles using is_inside_CPP()
+
+        species_name = 'plasma_electrons'
+
+        OK_count = 0
+        for species_name in ['plasma_electrons', 'H_plus']:
+            psa = particles_P.pseg_arr[species_name] # segmented array for this species
+
+            (npSeg, pseg) = psa.init_out_loop()
+            while isinstance(pseg, np_m.ndarray):
+                for i in range(number_of_macroparticles):
+                    p = pseg[i]
+                    YesNo = particles_P.pmesh_M.is_inside_CPP(p, p['cell_index'])
+                    if YesNo is True:
+                        OK_count += 1
+#                        print("OK_count:", OK_count)
+#                        print("particle", p, "is in the correct cell:", p['cell_index'])
+                    else:
+                        print("particle", p, "is NOT in the correct cell:", p['cell_index'])
+                (npSeg, pseg) = psa.get_next_segment('out')
+
+        self.assertEqual(6, OK_count, msg="A 3D particle is not in the expected 2D cell")
+
+        return
+#    def test_3_particle_densities_on_2D_mesh(self):ENDDEF    
 
 #class TestCPP(unittest.TestCase): ENDCLASS
 

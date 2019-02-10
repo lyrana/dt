@@ -213,7 +213,8 @@ class TestParticleMigration(unittest.TestCase):
         # Create a 3D particle mesh
         self.pmesh3D_M = UserMesh_C(umi3D, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 3D")
         # Explicitly compute dictionaries needed
-        self.pmesh3D_M.compute_cell_entity_index_dict('vertex')
+#        self.pmesh3D_M.compute_cell_entity_index_dict('vertex')
+        self.pmesh3D_M.compute_cell_vertex_dict()
         self.pmesh3D_M.compute_cell_entity_index_dict('facet')
         self.pmesh3D_M.compute_cell_dict()
         self.pmesh3D_M.compute_cell_facet_normals_dict()

@@ -107,9 +107,22 @@ PYBIND11_MODULE(dnt_cpp, m) {
 
 // dolfin.cpp:
 
-  m.def("cell_contains_point_1d", &cell_contains_point_1d);
-//  m.def("cell_contains_point_1d_v1", &cell_contains_point_1d_v1);
-//  m.def("cell_contains_point_1d_v2", &cell_contains_point_1d_v2);
+//  m.def("cell_contains_point", &cell_contains_point<DnT_pstruct1D>);
+//  m.def("cell_contains_point", &cell_contains_point<DnT_pstruct2D>);
+
+// Works with std=c++11:  
+  m.def("cell_contains_point", (bool (*) (dolfin::Mesh&, py::array_t<int>, DnT_pstruct1D)) &cell_contains_point);
+  m.def("cell_contains_point", (bool (*) (dolfin::Mesh&, py::array_t<int>, DnT_pstruct2D)) &cell_contains_point);
+  m.def("cell_contains_point", (bool (*) (dolfin::Mesh&, py::array_t<int>, DnT_pstruct3D)) &cell_contains_point);
+
+  m.def("cell_contains_point", (bool (*) (dolfin::Mesh&, py::array_t<int>, double&)) &cell_contains_point);
+  m.def("cell_contains_point", (bool (*) (dolfin::Mesh&, py::array_t<int>, double&, double&)) &cell_contains_point);
+  m.def("cell_contains_point", (bool (*) (dolfin::Mesh&, py::array_t<int>, double&, double&, double&)) &cell_contains_point);
+  
+// Works with std=c++14:  
+//  m.def("cell_contains_point", py::overload_cast<dolfin::Mesh&, py::array_t<int>, DnT_pstruct1D>(&cell_contains_point), "1D point");
+//  m.def("cell_contains_point", py::overload_cast<dolfin::Mesh&, py::array_t<int>, DnT_pstruct2D>(&cell_contains_point), "2D point");
+//  m.def("cell_contains_point", py::overload_cast<dolfin::Mesh&, py::array_t<int>, DnT_pstruct3D>(&cell_contains_point), "3D point");
 
 // Example: Connect the Python symbol f_simple() to the C++ function in braces {...}
 // This prints only one record of the array

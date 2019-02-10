@@ -27,9 +27,9 @@
 #include "fstruct.h"
 
 void divide_by_cell_volumes(dolfin::Function& dF, const std::map<int, double> &cell_volume_dict);
-template <typename S>
+template <typename PS>
 void interpolate_field_to_points(dolfin::Function& field,
-                                 py::array_t<S, 0> points,
+                                 py::array_t<PS, 0> points,
                                  py::array_t<double> field_at_points);
 
 /*
@@ -39,8 +39,14 @@ void interpolate_field_to_points_v1(dolfin::Function& field,
                                     py::array_t<double> field_at_points);
 */
 
-bool cell_contains_point_1d(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct1D point);
+//template <typename PS>
+//bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, PS point);
 
-//bool cell_contains_point_1d_v1(dolfin::Mesh& mesh, unsigned int v0, unsigned int v1, double point);
+// Distinguish functions by their arguments
+bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct1D point);
+bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct2D point);
+bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct3D point);
 
-//bool cell_contains_point_1d_v2(dolfin::Mesh& mesh, py::list vertices, DnT_pstruct1D point);
+bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x);
+bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x, double& y);
+bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x, double& y, double& z);

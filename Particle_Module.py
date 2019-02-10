@@ -699,8 +699,8 @@ class Particle_C(object):
                         pseg[ip]['cell_index'] = self.pmesh_M.compute_cell_index(pseg[ip])
     #                    print 'ip, index =', ip, pseg[ip]['cell_index']
 # Check that is_inside() confirms the cell index:
-                    #     while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
-                        if not self.pmesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']):
+#                        if not self.pmesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']):
+                        if not self.pmesh_M.is_inside_CPP(pseg[ip], pseg[ip]['cell_index']):
                             errorMsg = "%s\tDnT ERROR: is_inside() check failed for particle %d" % (fncName, ip)
                             sys.exit(errorMsg)
 #                        else:
@@ -1030,8 +1030,8 @@ class Particle_C(object):
                     tStart = time - dt
                     dtRemaining = dt
 # TODO: fix the CPP version to allow DnT_pstruct args of any dimension.
-#                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
-                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
+#                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
+                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
                         # there's a boundary-condition on that facet.
@@ -1336,8 +1336,8 @@ class Particle_C(object):
                     facetCrossCount = 0
                     tStart = time - dt
                     dtRemaining = dt
-#                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
-                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
+#                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
+                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
                         # there's a boundary-condition on that facet.

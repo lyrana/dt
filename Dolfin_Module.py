@@ -155,8 +155,8 @@ class Mesh_C(object):
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
         print(fncName)
 
-        print_string = ' mesh_tdim = ' + str(self.mesh_tdim)
-        print_string += '\nmesh_gdim = ' + str(self.mesh_gdim)
+        print_string = ' mesh tdim = ' + str(self.geometry().dim())
+        print_string += '\nmesh gdim = ' + str(self.topology().dim())
 
         return print_string
 #     def __str__(self):ENDDEF
@@ -501,12 +501,15 @@ class Mesh_C(object):
     def is_inside(self, point, cell_index):
         """Check if a point lies within a give cell
 
-        :param point: a numpy structure containing coordinates (x), (x,y), or (x, y, z)
-                      with field names 'x', 'y', 'z'
-        :param cell_index: a (global?) cell index
+           Use the topological dimension "tdim" since the number of parameters used to
+           do the test is tdim. Being "inside a cell" is a topological property.
 
-        :returns: True iff the point is inside the cell.
-        :rtype: bool
+           :param point: a numpy structure containing coordinates (x), (x,y), or (x, y, z)
+                      with field names 'x', 'y', 'z'
+           :param cell_index: a (global?) cell index
+
+           :returns: True iff the point is inside the cell.
+           :rtype: bool
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
@@ -517,6 +520,11 @@ class Mesh_C(object):
             p = df_m.Point(point['x'], point['y'], point['z'])
         elif self.gdim == 2:
             p = df_m.Point(point['x'], point['y'])
+#            print("is_inside: p is:", p.x(), p.y())
+            vertex_coords = np_m.array(cell.get_vertex_coordinates()).reshape((-1, self.gdim))
+#            print("is_inside: cell index is:", cell_index)
+#            print("is_inside: vertices are:", self.cell_vertex_dict[cell_index])
+#            print("is_inside: cell vertex coordinates are:", vertex_coords)
         else:
             p = df_m.Point(point['x'])
 
@@ -554,68 +562,39 @@ class Mesh_C(object):
 
 #class Mesh_C(object):
     def is_inside_CPP(self, point, cell_index):
-        """Check if a point lies within a give cell
+        """Check if a point lies within a give cell.
 
-        :param point: a record array of coordinates (x), (x,y), or (x, y, z)
+           Use the topological dimension "tdim" since the number of parameters used to
+           do the test is tdim. Being "inside a cell " is a topological property.
+
+           :param point: a structured array of coordinates (x), (x,y), or (x, y, z)
                       with field names 'x', 'y', 'z'
-        :param cell_index: a (global?) cell index
+           :param cell_index: a (global?) cell index
 
-        :returns: True iff the point is inside the cell.
-        :rtype: bool
+           :returns: True iff the point is inside the cell.
+           :rtype: bool
+
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
         
-
+        vertices = self.cell_vertex_dict[cell_index]
+        
         if self.tdim == 3:
-            cell = self.cell_dict[cell_index]
-            p = df_m.Point(point['x'], point['y'], point['z'])
-            return cell.contains(p)
+            YesOrNo = dnt_cpp.cell_contains_point(self.mesh,
+                                                  vertices, # a numpy array
+                                                  point['x'], point['y'], point['z'])
+
         elif self.tdim == 2:
-            cell = self.cell_dict[cell_index]
-            p = df_m.Point(point['x'], point['y'])
-            return cell.contains(p)
-
+            YesOrNo = dnt_cpp.cell_contains_point(self.mesh,
+                                                  vertices, # a numpy array
+                                                  point['x'], point['y'])
         elif self.tdim == 1:
-
-            # Use the C++ version below
-            # p = df_m.Point(point['x'])
-
-
-            # Get the cell vertices
-            vertices = self.cell_vertex_dict[cell_index]
+            YesOrNo = dnt_cpp.cell_contains_point(self.mesh,
+                                                  vertices, # a numpy array
+                                                  point['x'])
         
-        # Get the coordinates of the cell vertices
-
-        # mesh.coordinates is interfaced in dolfin/python/src/mesh.cpp
-        # and returns self.geometry().x().data()
-#        p0 = self.mesh.coordinates()[vertices[0]]
-#        p1 = self.mesh.coordinates()[vertices[1]]
-
-#        YesOrNo = dnt_cpp.cell_contains_point_1d(p0, p1, point['x'])
-
-#        YesOrNo = dnt_cpp.cell_contains_point_1d(self.mesh, self.cell_dict, cell_index, point['x'])
-
-#        YesOrNo = dnt_cpp.cell_contains_point_1d(self.mesh, vertices, point['x'])
-
-# v1:
-#        YesOrNo = dnt_cpp.cell_contains_point_1d(self.mesh, vertices[0], vertices[1], point['x'])
-# v2:
-#        print("type of vertices is", type(vertices))
-#        YesOrNo = dnt_cpp.cell_contains_point_1d_v2(self.mesh,
-#                                                 vertices, # a List
-#                                                 point) # point maps to a DnT_pstruct in C++
-
-# v3:
-#        print("type of vertices is", type(vertices))
-
-            YesOrNo = dnt_cpp.cell_contains_point_1d(self.mesh,
-                                                     vertices, # a numpy array
-                                                     point) # point maps to a DnT_pstruct in C++
-        
-            return YesOrNo
-
-        return
+        return YesOrNo
 #    def is_inside_CPP(self, point, cell_index):ENDDEF
 
 #class Mesh_C(object):
