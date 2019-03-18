@@ -16,7 +16,7 @@ from DT_Module import DTcontrol_C
 
 from Dolfin_Module import Field_C
 
-from SegmentedArrayPair_Module import SegmentedArray_C
+from SegmentedArrayPair_Module import SegmentedArrayPair_C
 
 from Particle_Module import *
 from Particle_Module import *

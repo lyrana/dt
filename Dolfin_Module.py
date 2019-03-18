@@ -599,7 +599,7 @@ class Mesh_C(object):
 
 #class Mesh_C(object):
     def find_facet(self, r0, dr, cell_index):
-        """Compute the cell facet crossed in traveling along a
+        """Find the cell facet crossed in traveling along a
            displacement vector dr from position r0.
 
            The facet crossed is the one with the smallest value of the
@@ -638,8 +638,9 @@ class Mesh_C(object):
 
         gDim = self.gdim # The geometric dimension of the mesh
 
-        dx = self.dx
-        x0 = self.x0
+        dx = self.dx # scratch space
+        x0 = self.x0 # scratch space
+        
         dx[:] = dr[0:gDim] # Convert displacement vector to a vector with
                           # dimension equal to the number of mesh dimensions.
         x0[:] = r0[0:gDim]

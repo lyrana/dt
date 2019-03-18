@@ -104,7 +104,7 @@ class TestFieldInterpolation(unittest.TestCase):
 
         points = np_m.array([p0, p1, p2])
 
-#        self.SegList.append(np.empty(SegmentedArray_C.SegmentLength, dtype=item_dict))
+#        self.SegList.append(np.empty(SegmentedArrayPair_C.SegmentLength, dtype=item_dict))
 
         # dtype of E field at the particles
         Ecomps = ['x', 'y',]

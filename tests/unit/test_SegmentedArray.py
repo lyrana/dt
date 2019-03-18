@@ -9,7 +9,7 @@ import numpy
 import unittest
 
 from Dolfin_Module import Mesh_C
-from SegmentedArrayPair_Module import SegmentedArray_C
+from SegmentedArrayPair_Module import SegmentedArrayPair_C
 
 class TestSegmentedArray(unittest.TestCase):
     """Test the classes in SegmentedArray_Module.py"""
@@ -43,7 +43,7 @@ class TestSegmentedArray(unittest.TestCase):
 
         metadata = {'names' : pvars, 'formats': pvartypes}
         
-        self.seg_array_obj = SegmentedArray_C(self.segment_length, metadata)
+        self.seg_array_obj = SegmentedArrayPair_C(self.segment_length, metadata)
 
         # put a particle into the array
 

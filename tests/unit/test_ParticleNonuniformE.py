@@ -20,7 +20,7 @@ from Dolfin_Module import Field_C
 
 from Particle_Module import *
 
-from SegmentedArrayPair_Module import SegmentedArray_C
+from SegmentedArrayPair_Module import SegmentedArrayPair_C
 
 from UserUnits_Module import MyPlasmaUnits_C
 

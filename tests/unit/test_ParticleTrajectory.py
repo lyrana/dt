@@ -21,7 +21,7 @@ from Particle_Module import *
 
 from RecordedData_Module import *
 
-from SegmentedArrayPair_Module import SegmentedArray_C
+from SegmentedArrayPair_Module import SegmentedArrayPair_C
 
 from UserMesh_y_Fields_FE2D_Module import *
 

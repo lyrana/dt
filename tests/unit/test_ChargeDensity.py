@@ -515,7 +515,7 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
@@ -526,7 +526,7 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = 3
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
@@ -724,7 +724,7 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
@@ -931,7 +931,7 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
@@ -1139,7 +1139,7 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]

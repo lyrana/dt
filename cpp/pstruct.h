@@ -32,12 +32,14 @@ Contents:
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
-#include <pybind11/eigen.h>
+// #include <pybind11/eigen.h>
 #include <pybind11/operators.h>
 
 namespace py = pybind11;
 
-// For (x,) particle coordinates
+/*! \struct DnT_pstruct1D
+    \brief struct for (x,) particle coordinates.
+*/
 struct DnT_pstruct1D {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   double x_;                  // f8    8 bytes
@@ -53,7 +55,9 @@ struct DnT_pstruct1D {
 // Declare the << operator for the DnT_pstruct1D data type. This is used in print_pstructarray()
 std::ostream& operator<<(std::ostream& os, const DnT_pstruct1D& p);
 
-// For (x, y) particle coordinates
+/*! \struct DnT_pstruct2D
+    \brief struct for (x, y) particle coordinates
+*/
 struct DnT_pstruct2D {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   double x_;                  // f8    8 bytes
@@ -72,7 +76,9 @@ struct DnT_pstruct2D {
 // Declare the << operator for the DnT_pstruct2D data type. This is used in print_pstructarray()
 std::ostream& operator<<(std::ostream& os, const DnT_pstruct2D& p);
 
-// For (x, y, z) particle coordinates
+/*! \struct DnT_pstruct3D
+    \brief struct for (x, y, z) particle coordinates
+*/
 struct DnT_pstruct3D {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   double x_;                  // f8    8 bytes

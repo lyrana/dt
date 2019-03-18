@@ -461,3 +461,17 @@ void dolfin_DnT_pstruct_instances()
   cell_contains_point(meshRef, vertices, ps2D);
   cell_contains_point(meshRef, vertices, ps3D);
 }
+
+//! Find the cell facet crossed in traveling along a displacement vector dr from position r0
+
+/*!
+    Overload on the number of particle coordinates: 1D, 2D, 3D 
+ */
+
+/// Versions using DnT_struct
+
+// 1D version using a DnT_pstruct
+//bool cell_contains_point(dolfin::Mesh& mesh,
+//                         py::array_t<int> vertices,
+//                         DnT_pstruct1D ps1d)
+

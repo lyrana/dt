@@ -15,7 +15,7 @@ import matplotlib.pyplot as mplot_m
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 from Particle_Module import *
-from SegmentedArrayPair_Module import SegmentedArray_C
+from SegmentedArrayPair_Module import SegmentedArrayPair_C
 
 # Here's the user's mesh definition for test_2
 from UserMesh_y_Fields_FE_XYZ_Module import *
@@ -53,8 +53,11 @@ class TestCPP(unittest.TestCase):
         pvartypes.append(np_m.int32)
 
         metadata = {'names' : pvars, 'formats': pvartypes}
-        self.seg_array_obj1D = SegmentedArray_C(self.segment_length, metadata)
+        self.seg_array_obj1D = SegmentedArrayPair_C(self.segment_length, metadata)
 
+        # Create C++ version of a SegmentedArray for 1D particles
+        self.seg_array_obj_Cpp1D = dnt_cpp.SegmentedArrayPair_Cpp1D(self.segment_length)
+        
         self.pvars1D = pvars
         self.particle_dtype1D = {'names' : pvars, 'formats': pvartypes}
 
@@ -74,8 +77,11 @@ class TestCPP(unittest.TestCase):
         pvartypes.append(np_m.int32)
 
         metadata = {'names' : pvars, 'formats': pvartypes}
-        self.seg_array_obj3D = SegmentedArray_C(self.segment_length, metadata)
+        self.seg_array_obj3D = SegmentedArrayPair_C(self.segment_length, metadata)
 
+        # Create C++ version of a SegmentedArray object for 3D particles
+        self.seg_array_obj_Cpp3D = dnt_cpp.SegmentedArrayPair_Cpp3D(self.segment_length)
+        
         self.pvars3D = pvars
         self.particle_dtype3D = {'names' : pvars, 'formats': pvartypes}
 
@@ -85,7 +91,7 @@ class TestCPP(unittest.TestCase):
     def test_1_print_pseg(self):
         """Check the print_pseg function in dnt_cpp.so.
 
-           Make two 1D particle tuples and put them into a SegmentedArray_C
+           Make two 1D particle tuples and put them into a SegmentedArrayPair_C
            object. Pass the first segment to C++ and check that the printout from
            print_pseg1D() is correct.
 
@@ -103,7 +109,7 @@ class TestCPP(unittest.TestCase):
         unique_ID = 7
         crossings = 5
 
-        # Put two particles into the SegmentedArray_C
+        # Put two particles into the SegmentedArrayPair_C
         
         pseg_arr = self.seg_array_obj1D
         putparticle = (x, x0, ux, weight, bitflags, cell_index, unique_ID, crossings)
@@ -456,7 +462,7 @@ class TestCPP(unittest.TestCase):
 
         number_of_macroparticles = len(particles)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print ('species_name, particles[i] = ', species_name, particles[i])
@@ -467,7 +473,7 @@ class TestCPP(unittest.TestCase):
 
 #         number_of_macroparticles = 3
 
-#         pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+#         pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
 #         for i in range(number_of_macroparticles):
 # #            print 'species_name, particles[i] = ', species_name, particles[i]
@@ -717,14 +723,14 @@ class TestCPP(unittest.TestCase):
         nparticles = 3
         particles = (p0, p1, p2)
 
-        ### Put these particles into a SegmentedArray_C.
+        ### Put these particles into a SegmentedArrayPair_C.
 
         # Put 3 electrons into storage
         species_name = 'plasma_electrons'
 
         number_of_macroparticles = len(particles)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print ('species_name, particles[i] = ', species_name, particles[i])
@@ -747,7 +753,7 @@ class TestCPP(unittest.TestCase):
         p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID, crossings)
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         particles = (p0, p1, p2)
         
@@ -780,10 +786,10 @@ class TestCPP(unittest.TestCase):
         self.assertEqual(6, OK_count, msg="A 3D particle is not in the expected 2D cell")
 
         return
-#    def test_3_particle_densities_on_2D_mesh(self):ENDDEF    
+#    def test_4_3D_particle_in_1D_mesh(self):ENDDEF
 
 #class TestCPP(unittest.TestCase):
-    def test_4_3D_particle_in_2D_mesh(self):
+    def test_5_3D_particle_in_2D_mesh(self):
         """Test the C++ function that tests if a particle is in a cell.
 
            Macroparticles with 3D coordinates are created within a 2D meshed
@@ -888,14 +894,14 @@ class TestCPP(unittest.TestCase):
         nparticles = 3
         particles = (p0, p1, p2)
 
-        ### Put these particles into a SegmentedArray_C.
+        ### Put these particles into a SegmentedArrayPair_C.
 
         # Put 3 electrons into storage
         species_name = 'plasma_electrons'
 
         number_of_macroparticles = len(particles)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print ('species_name, particles[i] = ', species_name, particles[i])
@@ -918,7 +924,7 @@ class TestCPP(unittest.TestCase):
         p2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, bitflags2, cell_index2, unique_ID, crossings)
         unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         particles = (p0, p1, p2)
         
@@ -951,7 +957,92 @@ class TestCPP(unittest.TestCase):
         self.assertEqual(6, OK_count, msg="A 3D particle is not in the expected 2D cell")
 
         return
-#    def test_3_particle_densities_on_2D_mesh(self):ENDDEF    
+#    def test_5_3D_particle_in_2D_mesh(self):ENDDEF
+
+#class TestCPP(unittest.TestCase):
+    def test_6_nSeg_Cpp(self):
+        """Check that one segment is created by the ctor of class SegmentedArrayPair.
+
+           This is a copy of test_1_nSeg in test_SegmentedArray.py
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName, '('+__file__+')')
+
+        print("nSeg for 1D = ", self.seg_array_obj_Cpp1D.get_number_of_segments())
+
+        print("Exiting the test")
+        
+        return
+#    def test_6_nSeg_Cpp(self):ENDDEF
+
+
+    def test_7_put_and_getitem(self):
+        """Test putting particle data into the array using 'put'. 
+
+           This is a Python version of a slightly modified version of
+           test_3_put_and_getitem(self).
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName, '('+__file__+')')
+
+        print("nSeg for 3D = ", self.seg_array_obj_Cpp3D.get_number_of_segments())
+        
+        x=0.0; y=1.0; z=2.0; ux=3.0; uy=4; uz=5.0; weight = 101.1
+        x0=x; y0=y; z0=z
+        bitflags = 0b00 # initialize all bits to 0
+        bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
+#        cell_index = -1
+        cell_index = Mesh_C.NO_CELL
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1        
+        crossings = 0
+
+        # Trim the number of coordinates here to match "position_coordinates" variable above
+        putparticle = (x,y,z, x0,y0,z0, ux,uy,uz, weight, bitflags, cell_index, unique_ID, crossings)
+
+        self.seg_array_obj3D.put(putparticle)
+
+        # Get the item back out by subscripting and check it
+        getparticle = self.seg_array_obj3D[0]
+        for i in range(len(getparticle)):
+            self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
+
+        return
+#    def test_7_put_and_getitem(self):ENDDEF
+
+    def test_7_put_and_getitem_CPP(self):
+        """Test putting particle data into the array using 'put'. 
+
+           This is a C++ version of a the previous test.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName, '('+__file__+')')
+        
+        x=0.0; y=1.0; z=2.0; ux=3.0; uy=4; uz=5.0; weight = 101.1
+        x0=x; y0=y; z0=z
+        bitflags = 0b00 # initialize all bits to 0
+        bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
+#        cell_index = -1
+        cell_index = Mesh_C.NO_CELL
+        unique_ID = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1        
+        crossings = 0
+
+        # Trim the number of coordinates here to match "position_coordinates" variable above
+        putparticle = (x,y,z, x0,y0,z0, ux,uy,uz, weight, bitflags, cell_index, unique_ID, crossings)
+
+        self.seg_array_obj_Cpp3D.put(putparticle)
+
+        # Get the item back out by subscripting and check it
+        getparticle = self.seg_array_obj_Cpp3D[0]
+        for i in range(len(getparticle)):
+            self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
+
+        return
+#    def test_7_put_and_getitem_CPP(self):ENDDEF
 
 #class TestCPP(unittest.TestCase): ENDCLASS
 

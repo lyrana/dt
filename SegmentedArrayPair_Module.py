@@ -1,16 +1,16 @@
-# SegmentedArray
+# SegmentedArrayPair
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-__all__ = ['SegmentedArray_C.SegList',
-           'SegmentedArray_C.nSeg', ]
+__all__ = ['SegmentedArrayPair_C.SegList',
+           'SegmentedArrayPair_C.nSeg', ]
 
 # use initial underscores for locals
 
 import sys
 import numpy as np_m
 
-class SegmentedArray_C(object):
+class SegmentedArrayPair_C(object):
     """This class implements a segmented array of items.  Each
     segment is a Numpy structured array, i.e., each item in the array is a
     structure. The data fields in the structure have names and data types. All
@@ -39,7 +39,7 @@ class SegmentedArray_C(object):
 #    SegmentLength = 100 # static class attribute
 # Provide a classmethod to set this value?
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def __init__(self, segment_length, item_dtype):
         """Set up the segmented array.
         """
@@ -79,7 +79,7 @@ class SegmentedArray_C(object):
 #        self.SegmentsWithHoles = []
 #    def __init__(self, segment_length, item_dict): ENDDEF
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def reset_array(self):
         """Set the first available slot to the start of the segmented
            array.
@@ -92,7 +92,7 @@ class SegmentedArray_C(object):
         return
 #   def reset_array(self):ENDDEF
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def put(self, item_input):
         """Adds an item to the 'out' SegmentedArray, without specifying an
            index.  The item is a tuple containing a complete structure.
@@ -140,7 +140,7 @@ class SegmentedArray_C(object):
         return vec[self.FirstAvailableOffset[outSA]-1], full_index
 #    def put(self, item_input):ENDDEF
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def get(self, i):
         """Returns a REFERENCE to the i'th item from the 'out'
            SegmentedArray, since that's the up-to-date array.  The
@@ -158,9 +158,9 @@ class SegmentedArray_C(object):
         return self.SegListPair[outSA][seg][offset]
 #    def get(self, i):ENDDEF
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def __getitem__(self, i):
-        """Defines subscripting on a SegmentedArray_C object, i.e.,
+        """Defines subscripting on a SegmentedArrayPair_C object, i.e.,
            b=a[i]. The indexing is zero-based.
 
            Returns a reference to the i'th item stored in the
@@ -181,7 +181,7 @@ class SegmentedArray_C(object):
         (seg, offset) = divmod(i, self.SEGMENTLENGTH)
         return self.SegListPair[outSA][seg][offset]
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def __setitem__(self, i, value):
         """Defines assignments, i.e., a[i] = value.
            Assumes that storage location 'i' already exists.
@@ -200,7 +200,7 @@ class SegmentedArray_C(object):
 
         return
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def add_segment(self, theSA):
         """Adds another Segment to the selected Segmented Array to store more items.
         """
@@ -209,16 +209,12 @@ class SegmentedArray_C(object):
         self.nSeg[theSA] += 1
         self.SegListPair[theSA].append(np_m.empty(self.SEGMENTLENGTH, dtype=self.ItemType))
 #        self.SegListPair[theSA].append(np_m.zeros(self.SEGMENTLENGTH, dtype=self.ItemType))
-
-        # A list of the locations of unneeded items in the segment
-##        self.HoleIndices[self.nSeg] = self.HoleIndices.append(np.empty(self.SegmentLength, dtype=int))
-        # Initialize this list to -1 to indicate no holes.
-##        self.HoleIndices[self.nSeg][:] = -1
-
         self.FirstNotFullSegment[theSA] += 1
         self.FirstAvailableOffset[theSA] = 0
 
-#class SegmentedArray_C(object):
+        return
+    
+#class SegmentedArrayPair_C(object):
     def init_out_loop(self):
         """Initialize a loop over the segments of the 'out' array.
 
@@ -254,7 +250,7 @@ class SegmentedArray_C(object):
         return (lastItem, self.SegListPair[outSA][segIndex][0:lastItem])
 #    def init_out_loop(self): ENDDEF
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def init_inout_loop(self):
         """Initialize a loop over the segments.  The loop should use
            get_next_segment('in') and get_next_out_segment() in the
@@ -315,7 +311,7 @@ class SegmentedArray_C(object):
 
 #    def init_inout_loop(self): ENDDEF
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def get_next_segment(self, InOut):
         """Returns a reference to the next segment of either the 'in'
            or 'out' array, and the number of active items.
@@ -348,7 +344,7 @@ class SegmentedArray_C(object):
         return (lastItem, self.SegListPair[theSA][segIndex][0:lastItem])
 #    def get_next_in_segment(self): ENDDEF
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def get_next_out_segment(self):
         """Returns a reference to the next segment of the 'out' array.
            This method is similar to the put() method above, since the
@@ -376,7 +372,7 @@ class SegmentedArray_C(object):
         return self.SegListPair[outSA][segIndex]
 #    def get_next_out_segment(self): ENDDEF
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def get_number_of_segments(self):
         """Returns the current number of segments in the 'in' and
            'out' arrays.
@@ -388,7 +384,7 @@ class SegmentedArray_C(object):
 
         return (self.nSeg[inSA], self.nSeg[outSA])
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def get_number_of_items(self):
         """Returns the total number of items currently stored in the
            'out' array.
@@ -401,7 +397,7 @@ class SegmentedArray_C(object):
 
         return self.FirstNotFullSegment[outSA]*self.SEGMENTLENGTH + self.FirstAvailableOffset[outSA]
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def set_number_of_items(self, InOut, n_items):
         """Sets the number of active items currently stored.
 
@@ -425,7 +421,7 @@ class SegmentedArray_C(object):
 
         return
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def get_item_capacity(self):
         """Returns the total number of items currently stored.
         """
@@ -437,7 +433,7 @@ class SegmentedArray_C(object):
         return (self.nSeg[inSA]*self.SEGMENTLENGTH, self.nSeg[outSA]*self.SEGMENTLENGTH)
 #        return self.nSeg[cSA]*self.SEGMENTLENGTH
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def get_number_of_mbytes(self):
         """Returns the number of megabytes allocated for the item arrays.
         """
@@ -449,7 +445,7 @@ class SegmentedArray_C(object):
         return (self.nSeg[inSA]*self.SegListPair[inSA][0].nbytes/(1.0e6),
                 self.nSeg[outSA]*self.SegListPair[outSA][0].nbytes/(1.0e6))
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def compress(self):
         """Fill in empty positions in each segment due to items that
         are no longer needed.  Should completely empty segments be
@@ -462,14 +458,14 @@ class SegmentedArray_C(object):
         pass
 #    def compress(self): ENDDEF
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def compress_segment(self, i):
         """Fill in empty positions in a segment
         """
 #    def compress_segment(self, i): ENDDEF
 
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def get_full_indices(self, i_in, i_out):
         """
            This computes the full indices of a particular item in the
@@ -491,7 +487,7 @@ class SegmentedArray_C(object):
         return (full_index_in, full_index_out)
 #    def get_full_indices(self, i_in, i_out):ENDDEF
 
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def get_full_index(self, indx, InOut):
         """
            This computes the full index of a particular item in either the 'in' or 'out'
@@ -513,7 +509,7 @@ class SegmentedArray_C(object):
         return full_index
 #    def get_full_index(self, indx, inout):ENDDEF
         
-#class SegmentedArray_C(object):
+#class SegmentedArrayPair_C(object):
     def delete_item(self, full_index):
         """Deletes an item given its full index.
         """
@@ -537,4 +533,4 @@ class SegmentedArray_C(object):
         pass
 #    def delete_item(self, full_index): ENDDEF
 
-#class SegmentedArray_C(object): ENDCLASS
+#class SegmentedArrayPair_C(object): ENDCLASS

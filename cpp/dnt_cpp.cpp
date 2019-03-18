@@ -1,5 +1,6 @@
 #include "dolfin.h"
 #include "pseg.h"
+#include "SegmentedArrayPair_Cpp.h"
 
 namespace py = pybind11;
 
@@ -9,6 +10,49 @@ namespace py = pybind11;
 // a variable of type py::module which is the main interface for creating
 // bindings. The method module::def() generates binding code that exposes the C++
 // functions to Python.
+
+
+namespace dnt {
+
+  // Helper functions for templated classes are put into an anonymous
+  // namespace, which makes them available only in this file.
+  
+  namespace {
+
+    // Interface to the C++ class SegmentedArrayPair_Cpp
+    template <typename PS>
+    void makeSegmentedArrayPair_Cpp(py::module &m, std::string const & PStype)
+    {
+      using SAP = SegmentedArrayPair_Cpp<PS>;
+      std::string pyclass_name = std::string("SegmentedArrayPair_Cpp") + PStype;
+      py::class_<SAP>(m, pyclass_name.c_str())
+
+        // ctors
+        // The ctor args types become template parameters
+//        .def(py::init<int>())
+        .def(py::init<py::ssize_t>())
+
+        // member functions
+        .def("get_number_of_segments", &SAP::get_number_of_segments)
+        .def("put", &SAP::put);
+    }
+
+/*
+void declare_array(py::module &m, std::string &typestr) {
+    using Class = Array2D<T>;
+    std::string pyclass_name = std::string("Array2D") + typestr;
+    py::class_<Class>(m, pyclass_name.c_str(), py::buffer_protocol(), py::dynamic_attr())
+    .def(py::init<>())
+    .def(py::init<Class::xy_t, Class::xy_t, T>())
+    .def("size",      &Class::size)
+    .def("width",     &Class::width)
+    .def("height",    &Class::height);
+*/
+      
+  } // anonymous namespace
+
+
+
 
 // // Create a variable 'm' of type py::module
 PYBIND11_MODULE(dnt_cpp, m) {
@@ -20,7 +64,7 @@ PYBIND11_MODULE(dnt_cpp, m) {
 ///  
   
 //  py::class_() creates Python bindings for a C++ class or struct-style data
-// structure.  The following statements connect the Python names DnT_pstructXD to C++
+// structure.  The following statements connect the Python names DnT_pstruct?D to C++
 // structs with the same names.
   py::class_<DnT_pstruct1D>(m, "DnT_pstruct1D");
   py::class_<DnT_pstruct2D>(m, "DnT_pstruct2D");
@@ -90,7 +134,8 @@ PYBIND11_MODULE(dnt_cpp, m) {
 // Bindings for printing functions
 ///
 
-// pseg.cpp:  
+// C++ functions defined in pseg.cpp:
+  
 // Connect the Python symbol print_pstructarray() to the C++ function declared as:
 //                   template <typename S>
 //                   py::list print_pstructarray(py::array_t<S, 0> arr) {}
@@ -105,7 +150,7 @@ PYBIND11_MODULE(dnt_cpp, m) {
 // Bindings for other functions
 ///
 
-// dolfin.cpp:
+// C++ functions defined in dolfin.cpp:
 
 //  m.def("cell_contains_point", &cell_contains_point<DnT_pstruct1D>);
 //  m.def("cell_contains_point", &cell_contains_point<DnT_pstruct2D>);
@@ -128,5 +173,16 @@ PYBIND11_MODULE(dnt_cpp, m) {
 // This prints only one record of the array
   m.def("f_simple", [](DnT_pstruct1D p) { return p.x_ * 10; });
 
+
+// C++ functions defined in SegmentedArrayPair_Cpp.h
+  
+  // Interface to the C++ class SegmentedArrayPair_Cpp
+
+  // Create the classes SegmentedArrayPair_Cpp1D/2D/3D
+  makeSegmentedArrayPair_Cpp<DnT_pstruct1D>(m, "1D");
+  makeSegmentedArrayPair_Cpp<DnT_pstruct2D>(m, "2D");
+  makeSegmentedArrayPair_Cpp<DnT_pstruct3D>(m, "3D");
+  
 }
 
+} // namespace dnt
