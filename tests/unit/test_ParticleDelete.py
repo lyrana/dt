@@ -251,7 +251,7 @@ class TestParticleDeletion(unittest.TestCase):
                     putparticle[10] = 0b00 # initialize all bits to 0
 
                 # Store the particle
-                p, pindex = p_P.pseg_arr[sp].put(putparticle)
+                p, pindex = p_P.pseg_arr[sp].push_back(putparticle)
 
                 ## Add the new particles to the trajectory object.
                 if p['bitflags'] & p_P.TRAJECTORY_FLAG != 0:

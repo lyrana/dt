@@ -93,7 +93,7 @@ class SegmentedArrayPair_C(object):
 #   def reset_array(self):ENDDEF
 
 #class SegmentedArrayPair_C(object):
-    def put(self, item_input):
+    def push_back(self, item_input):
         """Adds an item to the 'out' SegmentedArray, without specifying an
            index.  The item is a tuple containing a complete structure.
            Creates a new Segment, if needed.  This assumes that all
@@ -138,7 +138,7 @@ class SegmentedArrayPair_C(object):
         self.FirstAvailableOffset[outSA] += 1
 
         return vec[self.FirstAvailableOffset[outSA]-1], full_index
-#    def put(self, item_input):ENDDEF
+#    def push_back(self, item_input):ENDDEF
 
 #class SegmentedArrayPair_C(object):
     def get(self, i):
@@ -347,7 +347,7 @@ class SegmentedArrayPair_C(object):
 #class SegmentedArrayPair_C(object):
     def get_next_out_segment(self):
         """Returns a reference to the next segment of the 'out' array.
-           This method is similar to the put() method above, since the
+           This method is similar to the push_back() method above, since the
            'out' array is effectively scratch space.
 
            :return: reference to next segment of the 'out' array.

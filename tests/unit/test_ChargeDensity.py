@@ -519,7 +519,7 @@ class TestChargeDensity(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            p, pindex = pseg_arr.push_back(particle_list[i])
 
         # Ions
         species_name = 'H_plus'
@@ -530,7 +530,7 @@ class TestChargeDensity(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            p, pindex = pseg_arr.push_back(particle_list[i])
 
 
         ########## Source for the electric field ##########
@@ -728,7 +728,7 @@ class TestChargeDensity(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            p, pindex = pseg_arr.push_back(particle_list[i])
 
         ########## Source for the electric field ##########
 
@@ -935,7 +935,7 @@ class TestChargeDensity(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            p, pindex = pseg_arr.push_back(particle_list[i])
 
         # Check that we set the right cell index above
         computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)
@@ -1143,7 +1143,7 @@ class TestChargeDensity(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            p, pindex = pseg_arr.push_back(particle_list[i])
 
         # Check that we set the right cell index above
         computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)

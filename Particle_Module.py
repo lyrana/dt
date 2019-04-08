@@ -490,7 +490,7 @@ class Particle_C(object):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = psegArrSp.put(particle_list[i])
+            p, pindex = psegArrSp.push_back(particle_list[i])
             # Check if this particle has the trajectory flag turned on
             if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
 # or: p['bitflags'] should work?
@@ -2586,7 +2586,7 @@ class Particle_C(object):
                 particle[3*pDim+4] = crossings
                     
                 # Store the particle
-                p, pindex = psegArrSp.put(particle)
+                p, pindex = psegArrSp.push_back(particle)
 
                 # If the particle is tagged as a trajectory particle, initialize its
                 # trajectory information. Note: if this is being called by

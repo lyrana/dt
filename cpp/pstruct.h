@@ -8,9 +8,9 @@
 /*
 Contents:
   Particle structs in C++:
-    DnT_pstruct1D struct and operator<<
-    DnT_pstruct2D struct and operator<<
-    DnT_pstruct3D struct and operator<<
+    dnt::pstruct1D struct and operator<<
+    dnt::pstruct2D struct and operator<<
+    dnt::pstruct3D struct and operator<<
 
   Put a pseg array in a Python list:
     template <typename PS>
@@ -37,79 +37,239 @@ Contents:
 
 namespace py = pybind11;
 
-/*! \struct DnT_pstruct1D
-    \brief struct for (x,) particle coordinates.
+namespace dnt
+
+{
+
+  /*! \class Ptype
+      \brief Ptype is an enum class enumerating the particle structure types.
+  */
+  enum class Ptype
+  {
+    cartesian_x,
+    cartesian_x_y,
+    cartesian_x_y_z
+  };
+  
+/*! \struct Pstruct
+
+  \brief The Pstruct for an unspecified particle structure type.
+
+  \param PT is the particle structure type.
+  \sa Ptype, Pstruct_cartesian_x, 
+
 */
-struct DnT_pstruct1D {
-// Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
-  double x_;                  // f8    8 bytes
-  double x0_;                 // f8   16 
-  double ux_;                 // f8   24
-  double weight_;             // f8   32
-  int bitflags_;              // i4   36
-  int cell_index_;            // i4   40
-  int unique_ID_;             // i4   44
-  int crossings_;             // i4   48
-};
+  template <Ptype PT>
+  class Pstruct {
+    
+  public:
 
-// Declare the << operator for the DnT_pstruct1D data type. This is used in print_pstructarray()
-std::ostream& operator<<(std::ostream& os, const DnT_pstruct1D& p);
-
-/*! \struct DnT_pstruct2D
-    \brief struct for (x, y) particle coordinates
+/*    
+    push_back(py::tuple ptuple)
+    {
+      std::cout << "Hello from the set" << std::endl;
+    }
 */
-struct DnT_pstruct2D {
-// Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
-  double x_;                  // f8    8 bytes
-  double y_;                  // f8   16
-  double x0_;                 // f8   24
-  double y0_;                 // f8   32
-  double ux_;                 // f8   40
-  double uy_;                 // f8   48
-  double weight_;             // f8   56
-  int bitflags_;              // i4   60
-  int cell_index_;            // i4   64
-  int unique_ID_;             // i4   68
-  int crossings_;             // i4   72
-};
 
-// Declare the << operator for the DnT_pstruct2D data type. This is used in print_pstructarray()
-std::ostream& operator<<(std::ostream& os, const DnT_pstruct2D& p);
+/*    
+    friend std::ostream& operator<<(std::ostream& os, const Pstruct<PT>& p)
+    {
+      T ptype;
+      
+      switch(ptype)
+      {
+      case Ptype::cartesian_x     : os << "cartesian_x"; break;
+      case Ptype::cartesian_x_y   : os << "cartesian_x_y"; break;
+      case Ptype::cartesian_x_y_z : os << "cartesian_x_y_z"; break;
+      default              : os.setstate(std::ios_base::failbit);
+      }
+      return os;
+    }
 
-/*! \struct DnT_pstruct3D
-    \brief struct for (x, y, z) particle coordinates
 */
-struct DnT_pstruct3D {
-// Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
-  double x_;                  // f8    8 bytes
-  double y_;                  // f8   16
-  double z_;                  // f8   24
-  double x0_;                 // f8   32
-  double y0_;                 // f8   40
-  double z0_;                 // f8   48
-  double ux_;                 // f8   56
-  double uy_;                 // f8   64
-  double uz_;                 // f8   72
-  double weight_;             // f8   80
-  int bitflags_;              // i4   84
-  int cell_index_;            // i4   88
-  int unique_ID_;             // i4   92
-  int crossings_;             // i4   96
-};
+  };
+  
+/*! \struct Pstruct_cartesian_x
 
-// Declare the << operator for the DnT_pstruct3D data type. This is used in print_pstructarray()
-std::ostream& operator<<(std::ostream& os, const DnT_pstruct3D& p);
+  \brief struct for (x,) particle coordinates.
+
+  \sa Ptype, Pstruct,
+
+*/
+  template<>
+    class Pstruct<Ptype::cartesian_x>
+    {
+      // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
+    public:
+      double x_;                  // 1 f8    8 bytes
+      double x0_;                 // 2 f8   16 
+      double ux_;                 // 3 f8   24
+      double weight_;             // 4 f8   32
+      int bitflags_;              // 5 i4   36
+      int cell_index_;            // 6 i4   40
+      int unique_ID_;             // 7 i4   44
+      int crossings_;             // 8 i4   48
+
+    public:
+      //! Set the member values from a tuple
+      void set_from_tuple(py::tuple p)
+      {
+        x_ = p[0].cast<double>();
+        x0_ = p[1].cast<double>();
+        ux_ = p[2].cast<double>();
+        weight_ = p[3].cast<double>();
+        bitflags_ = p[4].cast<int>();
+        cell_index_ = p[5].cast<int>();
+        unique_ID_ = p[6].cast<int>();
+        crossings_ = p[7].cast<int>();
+      }
+
+      //! Put the member values into a tuple
+      py::tuple as_tuple()
+        {
+          // Create a tuple containing the member values
+          return py::make_tuple(x_, x0_, ux_, weight_, bitflags_, cell_index_, unique_ID_, crossings_);
+        }
+    
+      // Declare the << operator for the pstruct1D data type. This is used in print_pstructarray()
+      friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x>& p)
+      {
+        os << "cartesian_x. fixme";
+        return os;
+      }
+    }; // class Pstruct<Ptype::cartesian_x>
+
+/*! \struct pstruct2D
+  \brief struct for (x, y) particle coordinates
+*/
+  template<>
+    class Pstruct<Ptype::cartesian_x_y>
+    {
+      // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
+    public:
+      double x_;                  // 1  f8    8 bytes
+      double y_;                  // 2  f8   16
+      double x0_;                 // 3  f8   24
+      double y0_;                 // 4  f8   32
+      double ux_;                 // 5  f8   40
+      double uy_;                 // 6  f8   48
+      double weight_;             // 7  f8   56
+      int bitflags_;              // 8  i4   60
+      int cell_index_;            // 9  i4   64
+      int unique_ID_;             // 10 i4   68
+      int crossings_;             // 11 i4   72
+
+    public:
+      //! Set the member values from a tuple
+      void set_from_tuple(py::tuple p)
+      {
+        x_ = p[0].cast<double>();
+        y_ = p[1].cast<double>();
+        x0_ = p[2].cast<double>();
+        y0_ = p[3].cast<double>();
+        ux_ = p[4].cast<double>();
+        uy_ = p[5].cast<double>();
+        weight_ = p[6].cast<double>();
+        bitflags_ = p[7].cast<int>();
+        cell_index_ = p[8].cast<int>();
+        unique_ID_ = p[9].cast<int>();
+        crossings_ = p[10].cast<int>();
+      }
+
+      //! Put the member values into a tuple
+      py::tuple as_tuple()
+        {
+          // Create a tuple containing the member values
+          return py::make_tuple(x_, y_, x0_, y0_, ux_, uy_, weight_, bitflags_, cell_index_, unique_ID_, crossings_);
+        }
+    
+      // Declare the << operator for the pstruct1D data type. This is used in print_pstructarray()
+      friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x_y>& p)
+      {
+        os << "cartesian_x_y. fixme";
+        return os;
+      }
+      
+    }; // class Pstruct<Ptype::cartesian_x_y>
+
+
+/*! \struct pstruct3D
+  \brief struct for (x, y, z) particle coordinates
+*/
+  template<>
+    class Pstruct<Ptype::cartesian_x_y_z>
+  {
+// Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
+  public:
+    double x_;                  // 1  f8    8 bytes
+    double y_;                  // 2  f8   16
+    double z_;                  // 3  f8   24
+    double x0_;                 // 4  f8   32
+    double y0_;                 // 5  f8   40
+    double z0_;                 // 6  f8   48
+    double ux_;                 // 7  f8   56
+    double uy_;                 // 8  f8   64
+    double uz_;                 // 9  f8   72
+    double weight_;             // 10 f8   80
+    int bitflags_;              // 11 i4   84
+    int cell_index_;            // 12 i4   88
+    int unique_ID_;             // 13 i4   92
+    int crossings_;             // 14 i4   96
+
+  public:
+      //! Set the member values from a tuple
+      void set_from_tuple(py::tuple p)
+      {
+        x_ = p[0].cast<double>();
+        y_ = p[1].cast<double>();
+        z_ = p[2].cast<double>();
+        x0_ = p[3].cast<double>();
+        y0_ = p[4].cast<double>();
+        z0_ = p[5].cast<double>();
+        ux_ = p[6].cast<double>();
+        uy_ = p[7].cast<double>();
+        uz_ = p[8].cast<double>();
+        weight_ = p[9].cast<double>();
+        bitflags_ = p[10].cast<int>();
+        cell_index_ = p[11].cast<int>();
+        unique_ID_ = p[12].cast<int>();
+        crossings_ = p[13].cast<int>();
+      }
+
+      //! Put the member values into a tuple
+      py::tuple as_tuple()
+        {
+          // Create a tuple containing the member values
+          return py::make_tuple(x_, y_, z_, x0_, y0_, z0_, ux_, uy_, uz_, weight_, bitflags_, cell_index_, unique_ID_, crossings_);
+        }
+    
+      // Declare the << operator for the pstruct1D data type. This is used in print_pstructarray()
+      friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x_y_z>& p)
+      {
+        os << "cartesian_x_y_z. fixme";
+        return os;
+      }
+    
+  }; // class Pstruct<Ptype::cartesian_x_y_z>
+
+// Declare the << operator for the pstruct3D data type. This is used in print_pstructarray()
+//  std::ostream& operator<<(std::ostream& os, const pstruct3D& p);
 
 // Declare the C++ function print_pstructarray(): it's templated on the type of the struct
 // that corresponds to the Numpy structured array. It takes the array of structs, writes
 // all the values into a string, and returns the string. This function is used later to
 // define a Python-callable function to write the values in a structured array.
-template <typename PS>
-py::list print_pstructarray(py::array_t<PS, 0> arr);
+
+  
+  /* template <typename PS> */
+  /*   py::list print_pstructarray(py::array_t<PS, 0> arr); */
 
 // This function copies the spatial coordinates from a particle struct to a double array.
 // It uses template specialization to handle particle structs with different dimensions.
-template <typename PS>
-void pstruct_to_double(PS& ps, double* point);
+  
+  /* template <typename PS> */
+  /*   void pstruct_to_double(PS& ps, double* point); */
+
+} // namespace dnt
 
 #endif

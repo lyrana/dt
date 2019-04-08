@@ -73,7 +73,7 @@ class TestSegmentedArray(unittest.TestCase):
             for i in range(len(names)):
                 self.assertEqual(names[i], self.pvars[i], msg="Field names are not correct")
 
-    def test_3_put_and_getitem(self):
+    def test_3_push_and_getitem(self):
         """ Test putting particle data into the array using 'put'. """
 
         fncname = sys._getframe().f_code.co_name
@@ -88,7 +88,7 @@ class TestSegmentedArray(unittest.TestCase):
         # Trim the number of coordinates here to match "position_coordinates" variable above
         putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index)
 
-        self.seg_array_obj.put(putparticle)
+        self.seg_array_obj.push_back(putparticle)
 
         # Get the item back out by subscripting and check it
         getparticle = self.seg_array_obj[0]
@@ -96,7 +96,7 @@ class TestSegmentedArray(unittest.TestCase):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
 
         return
-#    def test_3_put_and_getitem(self):ENDDEF
+#    def test_3_push_and_getitem(self):ENDDEF
     
     def test_4_setitem_and_getitem(self):
         """ Test putting particle data into the array using a subscript. """
@@ -134,7 +134,7 @@ class TestSegmentedArray(unittest.TestCase):
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):
             putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
-            self.seg_array_obj.put(putparticle)
+            self.seg_array_obj.push_back(putparticle)
             x += dx
 
         # Check that there are now 2 segments
@@ -162,13 +162,13 @@ class TestSegmentedArray(unittest.TestCase):
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):
             putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
-            self.seg_array_obj.put(putparticle)
+            self.seg_array_obj.push_back(putparticle)
             x += dx
 
         # Add more particles, so there are 2 particles in the 3rd segment
         for i in range(self.segment_length+1):
             putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
-            self.seg_array_obj.put(putparticle)
+            self.seg_array_obj.push_back(putparticle)
             x += dx
 
         # Check that there are now 3 segments

@@ -113,9 +113,9 @@ class TestCPP(unittest.TestCase):
         
         pseg_arr = self.seg_array_obj1D
         putparticle = (x, x0, ux, weight, bitflags, cell_index, unique_ID, crossings)
-        pseg_arr.put(putparticle)
+        pseg_arr.push_back(putparticle)
         putparticle = (x+0.5, x0+0.5, ux+0.5, weight, bitflags, cell_index, unique_ID+1, crossings)
-        pseg_arr.put(putparticle)
+        pseg_arr.push_back(putparticle)
 
         # Get the first segment and print it
         (npSeg, pseg) = pseg_arr.init_out_loop()        
@@ -466,7 +466,7 @@ class TestCPP(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print ('species_name, particles[i] = ', species_name, particles[i])
-            p, pindex = pseg_arr.put(particles[i])
+            p, pindex = pseg_arr.push_back(particles[i])
 
         # Ions
 #         species_name = 'H_plus'
@@ -734,7 +734,7 @@ class TestCPP(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print ('species_name, particles[i] = ', species_name, particles[i])
-            p, pindex = pseg_arr.put(particles[i])
+            p, pindex = pseg_arr.push_back(particles[i])
 
 
         # Put 3 ions into storage, re-using the above particle data, with some changes
@@ -759,7 +759,7 @@ class TestCPP(unittest.TestCase):
         
         for i in range(number_of_macroparticles):
 #            print 'species_name, particles[i] = ', species_name, particles[i]
-            p, pindex = pseg_arr.put(particles[i])
+            p, pindex = pseg_arr.push_back(particles[i])
 
 
         # Check that the cells contains the particles using is_inside_CPP()
@@ -905,7 +905,7 @@ class TestCPP(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print ('species_name, particles[i] = ', species_name, particles[i])
-            p, pindex = pseg_arr.put(particles[i])
+            p, pindex = pseg_arr.push_back(particles[i])
 
 
         # Put 3 ions into storage, re-using the above particle data, with some changes
@@ -930,7 +930,7 @@ class TestCPP(unittest.TestCase):
         
         for i in range(number_of_macroparticles):
 #            print 'species_name, particles[i] = ', species_name, particles[i]
-            p, pindex = pseg_arr.put(particles[i])
+            p, pindex = pseg_arr.push_back(particles[i])
 
 
         # Check that the cells contains the particles using is_inside_CPP()
@@ -977,11 +977,11 @@ class TestCPP(unittest.TestCase):
 #    def test_6_nSeg_Cpp(self):ENDDEF
 
 
-    def test_7_put_and_getitem(self):
+    def test_7_push_and_getitem(self):
         """Test putting particle data into the array using 'put'. 
 
            This is a Python version of a slightly modified version of
-           test_3_put_and_getitem(self).
+           test_3_push_and_getitem(self).
 
         """
 
@@ -1002,7 +1002,7 @@ class TestCPP(unittest.TestCase):
         # Trim the number of coordinates here to match "position_coordinates" variable above
         putparticle = (x,y,z, x0,y0,z0, ux,uy,uz, weight, bitflags, cell_index, unique_ID, crossings)
 
-        self.seg_array_obj3D.put(putparticle)
+        self.seg_array_obj3D.push_back(putparticle)
 
         # Get the item back out by subscripting and check it
         getparticle = self.seg_array_obj3D[0]
@@ -1010,9 +1010,9 @@ class TestCPP(unittest.TestCase):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
 
         return
-#    def test_7_put_and_getitem(self):ENDDEF
+#    def test_7_push_and_getitem(self):ENDDEF
 
-    def test_7_put_and_getitem_CPP(self):
+    def test_7_push_and_getitem_CPP(self):
         """Test putting particle data into the array using 'put'. 
 
            This is a C++ version of a the previous test.
@@ -1034,7 +1034,7 @@ class TestCPP(unittest.TestCase):
         # Trim the number of coordinates here to match "position_coordinates" variable above
         putparticle = (x,y,z, x0,y0,z0, ux,uy,uz, weight, bitflags, cell_index, unique_ID, crossings)
 
-        self.seg_array_obj_Cpp3D.put(putparticle)
+        self.seg_array_obj_Cpp3D.push_back(putparticle)
 
         # Get the item back out by subscripting and check it
         getparticle = self.seg_array_obj_Cpp3D[0]
@@ -1042,7 +1042,7 @@ class TestCPP(unittest.TestCase):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
 
         return
-#    def test_7_put_and_getitem_CPP(self):ENDDEF
+#    def test_7_push_and_getitem_CPP(self):ENDDEF
 
 #class TestCPP(unittest.TestCase): ENDCLASS
 
