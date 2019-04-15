@@ -1526,9 +1526,11 @@ class Particle_C(object):
 #            print 'sn = ', sn
 
 #        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
+            
+            if self.get_species_particle_count(sn) == 0: continue
             psa = self.pseg_arr[sn] # segmented array for this species
 
-            if self.get_species_particle_count(sn) == 0: continue
+            dnt_cpp.move_neutral_particle_segment(psa)
 
 #           Move all the particles in this species
             (npSeg, psegIn, psegOut) = psa.init_inout_loop() # (number of particles in
@@ -1548,7 +1550,6 @@ class Particle_C(object):
 
 
 
-                dnt_cpp.move_neutral_particle_segment(psegIn, psegOut)
                     
                 for ipIn in range(npSeg): # Loop on the particles in this 'in'
                                            # segment

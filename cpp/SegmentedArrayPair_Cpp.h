@@ -1,17 +1,18 @@
-/*! \file SegmentedArray_Cpp.h
+/*! \file SegmentedArrayPair_Cpp.h
 
   \brief This file has the source code for a C++ implementation of SegmentedArray storage.
 
   \namespace dnt
 
-  \sa SegmentedArrayPair_Cpp
 */
 
 #ifndef SEGMENTEDARRAYPAIR_CPP_H
 #define SEGMENTEDARRAYPAIR_CPP_H
 
-// C++ program to demonstrate factory method design pattern 
 #include <iostream>
+// uncomment to disable assert()
+// #define NDEBUG
+#include <cassert>
 #include "pstruct.h"
 
 //using namespace std; 
@@ -21,6 +22,18 @@
 
 namespace dnt
 {
+  /*! \class WhichArray
+
+      \brief WhichArray is an enum class to tag the 'in' and 'out' arrays of a
+             SegmentedArrayPair
+
+  */
+  enum class WhichArray
+  {
+    in_array,
+    out_array
+  };
+  
 /*! \class SegmentedArrayPair_Cpp
     \brief The SegmentedArrayPair_Cpp class is a C++ version of the Python class SegmentedArrayPair_C.
 
@@ -30,7 +43,7 @@ namespace dnt
     types. All segments are the same length and use the same struct
     type.
 
-    The class is templated on the struct (PS) that it has to
+    The class is templated on the struct (PT) that it has to
     store.
 
     The segments are always full of structs, except possibly the
@@ -39,10 +52,10 @@ namespace dnt
     SegList[0] is the first Numpy array.
     SegList[n-1] is the nth Numpy array.
 
-    \sa Ptype, DnT_pstruct1D, DnT_pstruct2D, DnT_pstruct3D
+    \param PT is the type of particle struct.
+    \sa Ptype, Pstruct, WhichArray
 
 */
-//  template<typename T>
   template<Ptype PT>
   class SegmentedArrayPair_Cpp
   {
@@ -81,8 +94,8 @@ namespace dnt
       allocate_a_segment() creates a Numpy array of length segmentLength for the PT
       particle type, and returns a pointer to it.
 
-      \param segmentLength is the array length
-      \return pointer to the Numpy array
+      \param segmentLength is the length of the Numpy array to be allocated
+      \return pointer to the new Numpy array
 
     */
     py::array_t<Pstruct<PT>, 0> allocate_a_segment(const py::ssize_t segmentLength) 
@@ -92,13 +105,13 @@ namespace dnt
       return py::array_t<Pstruct<PT>, 0>(segmentLength);
     }
 
-//! Add another segment to the specified SegmentedArray in order to store more items.
-/*!
+    //! Add another segment to the specified SegmentedArray in order to store more items.
+    /*!
 
-  \param theSA (0 or 1) identifies which of the two SegmentedArrays needs a new segment.
-  \return void
+      \param theSA (0 or 1) identifies which of the two SegmentedArrays needs a new segment.
+      \return void
 
-*/
+    */
     void add_segment(unsigned theSA)
     {
       nSeg[theSA] += 1;
@@ -111,42 +124,46 @@ namespace dnt
     
   public:
 
-    //    py::ssize_t segmentLength;
-    //    std::vector<py::array_t<Pstruct<PT>,0>> segListPair[2];    
-    //    unsigned outSegmentedArray;
-    
     //! The one and only ctor.
     /*!
 
-      \param PT is the type of particle struct.
       \param segment_length is the number of structs stored in one segment of the array.
 
       \sa Ptype
 
     */
-  SegmentedArrayPair_Cpp(py::ssize_t segment_length): segmentLength(segment_length), nSeg{0, 0}, nPmax{0, 0}, firstNotFullSegment{0, 0}, firstAvailableOffset{0, 0}, currentSegment{0, 0}, inSegmentedArray(1), outSegmentedArray(0) {
-      std::cout << "Hello from the SegmentedArrayPair_Cpp ctor" << std::endl;
-      for (auto iSA : {0, 1})
-        {
-          // Add the Numpy arrays for the first segment pair
-          //            SegListPair[iSA].append(np_m.empty(self.SEGMENTLENGTH, dtype=item_dtype))
+    SegmentedArrayPair_Cpp(py::ssize_t segment_length):
+      segmentLength(segment_length),
+      nSeg{0, 0},
+      nPmax{0, 0},
+      firstNotFullSegment{0, 0},
+      firstAvailableOffset{0, 0},
+      currentSegment{0, 0},
+      inSegmentedArray(1),
+      outSegmentedArray(0)
+      {
+        std::cout << "Hello from the SegmentedArrayPair_Cpp ctor" << std::endl;
+        for (auto iSA : {0, 1})
+          {
+            // Add the Numpy arrays for the first segment pair
+            //            SegListPair[iSA].append(np_m.empty(self.SEGMENTLENGTH, dtype=item_dtype))
         
-          //          seg_list_pair[iSA] = new SegList;
-          //          seg_list_pair[iSA] = new std::vector<py::array_t<PS,0>>;
-          // Create the structured array
-          //          std::cout << "ctor segmentLength is " << segmentLength << std::endl;
-          py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment(segmentLength);
-          segListPair[iSA].push_back(newSegment);
+            //          seg_list_pair[iSA] = new SegList;
+            //          seg_list_pair[iSA] = new std::vector<py::array_t<PS,0>>;
+            // Create the structured array
+            //          std::cout << "ctor segmentLength is " << segmentLength << std::endl;
+            py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment(segmentLength);
+            segListPair[iSA].push_back(newSegment);
 
-          //          std::cout << "type of the item in the vector is"
+            //          std::cout << "type of the item in the vector is"
         
-          //            self.SegListPair[iSA].append(np_m.zeros(self.SEGMENTLENGTH, dtype=item_dtype))
-          // Count the number of segments:
-          nSeg[iSA] = segListPair[iSA].size();
-          // Maximum number of particles that can be stored at present
-          nPmax[iSA] = nSeg[iSA]*segmentLength;
-        }
-    }
+            //            self.SegListPair[iSA].append(np_m.zeros(self.SEGMENTLENGTH, dtype=item_dtype))
+            // Count the number of segments:
+            nSeg[iSA] = segListPair[iSA].size();
+            // Maximum number of particles that can be stored at present
+            nPmax[iSA] = nSeg[iSA]*segmentLength;
+          }
+      }
 
     // The dtor (See pybind 8.5 Non-public destructors)
     ~SegmentedArrayPair_Cpp()
@@ -172,18 +189,52 @@ namespace dnt
         return segmentLength;
       }
     
-    //! Return a py::tuple with the number of segments in the two segment lists.
+    //! Return a py::tuple with the current number of segments in the 'in' and 'out' arrays.
     py::tuple get_number_of_segments()
       {
-        return py::make_tuple(nSeg[0], nSeg[1]);
+        // Abbreviations
+        auto inSA = inSegmentedArray;
+        auto outSA = outSegmentedArray;
+        
+        return py::make_tuple(nSeg[inSA], nSeg[outSA]);
       }
 
-    py::ssize_t get_number_of_segments0()
-      //    int get_number_of_segments()
+
+    //! Return the number of items stored in the 'out' array
+      py::ssize_t get_number_of_items()
       {
-        return nSeg[0];
+        // Abbreviations
+        auto outSA = outSegmentedArray;
+
+        return firstNotFullSegment[outSA]*segmentLength + firstAvailableOffset[outSA];
       }
 
+    //! Return the total number of items that can currently be stored.
+    py::tuple get_capacity()
+      {
+        // Abbreviations
+        auto inSA = inSegmentedArray;
+        auto outSA = outSegmentedArray;
+
+        return py::make_tuple(nSeg[inSA]*segmentLength, nSeg[outSA]*segmentLength);
+      }
+
+    //! Return the number of megabytes allocated for the item arrays
+    py::tuple get_number_of_mbytes()
+      {
+        // Abbreviations
+        auto inSA = inSegmentedArray;
+        auto outSA = outSegmentedArray;
+
+        // Get the number of bytes in one segment (a structured Numpy array)
+        py::buffer_info pseg_info = segListPair[outSA][0].request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+        py::ssize_t itembytes = pseg_info.itemsize;
+        py::ssize_t nitems = pseg_info.size;
+        py::ssize_t nbytes = nitems*itembytes;
+        
+        return py::make_tuple(nSeg[inSA]*nbytes/(1.0e6), nSeg[outSA]*nbytes/(1.0e6));
+      }
+    
     //! Add an item to the 'out' SegmentedArray.
     /*!
 
@@ -256,14 +307,14 @@ namespace dnt
     /*!
 
       Given the full SegmentedArray index of a stored item, return the Numpy array
-      and the offset of the item in the array.  This is used, e.g., to provide access
-      to the item in Python.
+      (segment) and the offset of the item in the array.  This is used, e.g., to
+      provide access to the item in Python.
 
       \param full_index is the full SA index of the item.
       \return the tuple: (Numpy array, item offset)
 
     */
-    py::tuple get_array_and_offset(py::ssize_t full_index)
+    py::tuple get_segment_and_offset(py::ssize_t full_index)
       {
 
         // (seg, offset) = divmod(i, self.SEGMENTLENGTH)
@@ -292,6 +343,130 @@ namespace dnt
         const auto parray = static_cast<Pstruct<PT>*>(seg_info.ptr); // Pointer to a structured Numpy array
         return parray[offset].as_tuple();
       }
+
+    //! Initialize a loop over the all the array segments.
+    /*!
+
+      The loop should call get_next_segment('in') and get_next_out_segment() in the
+      iteration loop.
+
+      \return The tuple: (number of items in the first segment of 'in' SA,
+                          ref to first segment of 'in' SA,
+                          ref to first segment of 'out' SA)
+    */
+    py::tuple init_inout_loop()
+      {
+        // Abbreviations
+        auto inSA = inSegmentedArray;
+        auto outSA = outSegmentedArray;
+
+        currentSegment[0] = 0;
+        currentSegment[1] = 0;
+
+        /* Swap the two SegmentedArrays in the pair, so that the current 'out' array
+           becomes the 'in' array.
+           The 'in' array appears on the RHS of expressions, i.e., it contains input
+           values for an expression.
+           The 'out' array appears on the LHS of expressions, i.e., it is the result
+           of evaluating an expression. It's like a scratch array: it's initial values
+           don't matter, just it's length.
+        */
+
+        inSA = (inSA+1) % 2;
+        outSA = (outSA+1) % 2;
+        
+        py::ssize_t lastItem = 0;
+        if (firstNotFullSegment[inSA] == 0)
+          {
+            lastItem = firstAvailableOffset[inSA];
+            if (lastItem == 0) return py::make_tuple(0, NULL, NULL);
+          }
+        else
+          {
+            lastItem = segmentLength;
+          }
+
+        inSegmentedArray = inSA;
+        outSegmentedArray = outSA;
+
+        py::ssize_t segIndex = 0;
+
+        return py::make_tuple(lastItem, segListPair[inSA][segIndex], segListPair[outSA][segIndex]);
+      }
+
+    /*! Returns a tuple with a reference to the next segment of either the 'in' or
+        'out' array, and the number of active items.
+
+        \param in_out is a enum, either in_array or out_array.
+        \return The tuple (number of active items in the next array segment, 
+                           reference to next array segment)
+
+    */
+    py::tuple get_next_segment(WhichArray in_out)
+      {
+        unsigned theSA(2); // The value 2 is for initialization; should never occur below.
+        if (in_out == WhichArray::in_array)
+          theSA = inSegmentedArray;
+        else
+          if (in_out == WhichArray::out_array)
+            theSA = outSegmentedArray;
+        
+        assert(theSA == 0 || theSA == 1);
+
+        currentSegment[theSA] += 1;
+        py::ssize_t segIndex = currentSegment[theSA];
+
+        // If the segment index exceeds occupied limit, return NULL.
+        if (segIndex > firstNotFullSegment[theSA]) return py::make_tuple(0, NULL);
+        //  If this is the last segment and it's empty, return NULL.
+        //  ===> This should cause the caller to break out of the loop <===
+        //  If it's not empty, return the non-empty items
+        py::ssize_t lastItem;
+        if (firstNotFullSegment[theSA] == segIndex)
+          {
+            lastItem = firstAvailableOffset[theSA];
+            if (lastItem == 0) return py::make_tuple(0, NULL);
+          }
+        else
+          {
+            lastItem = segmentLength;
+          }
+        return py::make_tuple(lastItem, segListPair[theSA][segIndex]);
+      }
+    
+    //! Return a reference to the next segment of the 'out' array.
+    /*!
+
+      This method looks similar to the push_back() method above, since the 'out'
+      array is effectively scratch space.
+
+      \return: A reference to next segment of the 'out' array.
+
+    */
+    py::array_t<Pstruct<PT>, 0> get_next_out_segment()
+      {
+        // Abbreviations
+        auto outSA = outSegmentedArray;
+        currentSegment[outSA] += 1;
+        py::ssize_t segIndex = currentSegment[outSA];
+
+        // If another segment is already available, use it. Otherwise, allocate a new
+        // segment.
+        if (segIndex < nSeg[outSA])
+          {
+            firstNotFullSegment[outSA] += 1;
+            firstAvailableOffset[outSA] = 0;
+          }
+        else
+          {
+            // The following call increments the variables firstNotFullSegment[] and
+            // nSeg[], and sets firstAvailableOffset[] = 0
+            add_segment(outSA);
+          }
+        
+        return segListPair[outSA][segIndex];        
+      }
+    
     
   }; // class SegmentedArrayPair_Cpp
 

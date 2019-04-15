@@ -35,6 +35,8 @@ namespace dnt {
       callable from Python.
 
       \param PT specifies the Ptype of the particle struct that needs to be stored.
+      \param m is a py::module object created by PYBIND11_MODULE
+      \param PStype is a string used to identify the particle type being stored.
       \return void
       \sa Ptype, SegmentedArrayPair_Cpp
 
@@ -55,10 +57,19 @@ namespace dnt {
 //        .def(py::init<int>())
         .def(py::init<py::ssize_t>())
 
-        // The following makes the SegmentedArrayPair_Cpp member functions for
-        // particle type PT. The source for these is in SegmentedArrayPair_Cpp.h.
+        // The following creates the bindings to SegmentedArrayPair_Cpp member
+        // functions for particle type PT. The source for these is in
+        // SegmentedArrayPair_Cpp.h.
+        .def("get_as_tuple", &SAP::get_as_tuple)
+        .def("get_capacity", &SAP::get_capacity)
+        .def("get_next_out_segment", &SAP::get_next_out_segment)
+        .def("get_next_segment", &SAP::get_next_segment)
+        .def("get_number_of_items", &SAP::get_number_of_items)
+        .def("get_number_of_mbytes", &SAP::get_number_of_mbytes)
         .def("get_number_of_segments", &SAP::get_number_of_segments)
-        .def("push_back", &SAP::push_back)
+        .def("get_segment_and_offset", &SAP::get_segment_and_offset)
+        .def("init_inout_loop", &SAP::init_inout_loop)
+        .def("push_back", &SAP::push_back);
 
         /*        
         .def("__getitem__", [](SAP& self, std::size_t full_index)
@@ -84,8 +95,6 @@ namespace dnt {
                //               return self[index];
              });
         */
-        .def("get_array_and_offset", &SAP::get_array_and_offset)
-        .def("get_as_tuple", &SAP::get_as_tuple); // py::class_<SAP>
         
     } // void makeSegmentedArrayPair_Cpp(py::module &m, std::string const & PStype)
 
@@ -130,7 +139,7 @@ namespace dnt {
   
     // Interface to the C++ class SegmentedArrayPair_Cpp
 
-    // Create the classes SegmentedArrayPair_Cpp1D/2D/3D
+    // Create the classes "SegmentedArrayPair_Cpp_cartesian_x/_x_y/_x_y_z"
     makeSegmentedArrayPair_Cpp<Ptype::cartesian_x>(m, "cartesian_x");
     makeSegmentedArrayPair_Cpp<Ptype::cartesian_x_y>(m, "cartesian_x_y");
     makeSegmentedArrayPair_Cpp<Ptype::cartesian_x_y_z>(m, "cartesian_x_y_z");

@@ -177,10 +177,11 @@ class TestSegmentedArray(unittest.TestCase):
 
         # Check the current capacity
         nmax_expected = nseg_out*self.segment_length
-        nmax_in, nmax_out = self.seg_array_obj.get_item_capacity()
+        nmax_in, nmax_out = self.seg_array_obj.get_capacity()
         self.assertEqual(nmax_expected, nmax_out, msg="Capacity returned is not correct")
 
         # Check the current number of megabytes allocated for the particle arrays
+        #     These sizes need to be set for each case separately
         n_double64 = 7
         n_bytes_per_double = 8
         n_int32 = 2

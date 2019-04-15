@@ -77,7 +77,7 @@ class TestPstruct(unittest.TestCase):
 #        print("#1 seg_index", seg_index, "full_index", full_index)
 
         # Retrieve the particle using the returned Numpy array it's in.
-        (parray, offset) = seg_arr.get_array_and_offset(full_index)
+        (parray, offset) = seg_arr.get_segment_and_offset(full_index)
         getparticle = parray[offset]
 #        print("#1 particle at offset", offset, "is", getparticle)
         # Check the returned values against the input values
@@ -98,7 +98,7 @@ class TestPstruct(unittest.TestCase):
 #        print("#2 seg_index", seg_index, "full_index", full_index)
 
         # Retrieve the particle using the returned Numpy array it's in.
-        (parray, offset) = seg_arr.get_array_and_offset(full_index)
+        (parray, offset) = seg_arr.get_segment_and_offset(full_index)
         getparticle = parray[offset]
 #        print("#2 particle at offset", offset, "is", getparticle)
         # Check the returned values against the input values
@@ -148,7 +148,7 @@ class TestPstruct(unittest.TestCase):
         (seg_index, full_index) = seg_arr.push_back(putparticle)
 
         # Retrieve the particle using the returned Numpy array it's in.
-        (parray, offset) = seg_arr.get_array_and_offset(full_index)
+        (parray, offset) = seg_arr.get_segment_and_offset(full_index)
 #        print("#1 particle at offset", offset, "is", parray[offset])
         # Retrieve the particle using get_as_tuple(full_index)
         getparticle = seg_arr.get_as_tuple(full_index)
@@ -195,7 +195,7 @@ class TestPstruct(unittest.TestCase):
         (seg_index, full_index) = seg_arr.push_back(putparticle)
 
         # Retrieve the particle using the returned Numpy array it's in.
-        (parray, offset) = seg_arr.get_array_and_offset(full_index)
+        (parray, offset) = seg_arr.get_segment_and_offset(full_index)
 #        print("#1 particle at offset", offset, "is", parray[offset])
         # Retrieve the particle using get_as_tuple(full_index)
         getparticle = seg_arr.get_as_tuple(full_index)
@@ -207,6 +207,74 @@ class TestPstruct(unittest.TestCase):
         
         return
 #    def test_3_Cpp_cartesian_x_y_z(self):ENDDEF
+
+    def test_4_several_segments(self):
+        """ Test the creation of several new segments.
+        """
+
+        fncname = sys._getframe().f_code.co_name
+        print('\ntest: ', fncname, '('+__file__+')')
+
+        # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
+        seg_array_obj_Cpp_cartesian_x_y_z = dnt_pstruct.SegmentedArrayPair_Cpp_cartesian_x_y_z(self.segment_length)        
+
+        x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
+        bitflags = 0b00 # initialize all bits to 0
+        bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
+        NO_CELL = -1
+        cell_index = NO_CELL
+
+        unique_ID = 1
+        crossings = 5
+
+        dx = 0.2
+
+        seg_arr = seg_array_obj_Cpp_cartesian_x_y_z
+        
+        # Put in more particles than one segment can hold
+        for i in range(self.segment_length+1):
+            putparticle = (x,y,z, x0,y0,z0, ux,uy,uz, weight, bitflags, cell_index, unique_ID, crossings)
+            seg_arr.push_back(putparticle)
+            x += dx
+            unique_ID += 1
+
+        # Add the same number again, so there are 2 particles in the 3rd segment
+        for i in range(self.segment_length+1):
+            putparticle = (x,y,z, x0,y0,z0, ux,uy,uz, weight, bitflags, cell_index, unique_ID, crossings)
+            seg_arr.push_back(putparticle)
+            x += dx
+            unique_ID += 1
+
+        # Check that there are now 3 segments
+        nseg_in, nseg_out = seg_arr.get_number_of_segments()
+        self.assertEqual(nseg_out, 3, msg="Should have 3 segments now.")
+
+        # Check the current capacity
+        nmax_expected = nseg_out*self.segment_length
+        nmax_in, nmax_out = seg_arr.get_capacity()
+        self.assertEqual(nmax_expected, nmax_out, msg="Capacity returned is not correct")
+
+        # Check the current number of megabytes allocated for the particle arrays
+        n_double64 = 10 # Number of doubles in the structure
+        n_bytes_per_double = 8 # Bytes per double
+        n_int32 = 4 # Number of ints in the structure
+        n_bytes_per_int = 4 # Bytes per int
+
+        mb_expected = (n_double64*n_bytes_per_double+n_int32*n_bytes_per_int)*nmax_out/1.0e6
+        mb_in, mb_out = seg_arr.get_number_of_mbytes()
+        self.assertAlmostEqual(mb_out, mb_expected, msg="MB allocated is not correct")
+
+        # Check the number of items currently stored
+        n_expected = (nseg_out-1)*self.segment_length+2
+        n = seg_arr.get_number_of_items()
+        self.assertEqual(n_expected, n, msg="Count of stored items is not currect")
+
+        # Get the last particle out using a full index and check it
+        getparticle = seg_arr.get_as_tuple(2*self.segment_length+1)
+        for i in range(len(getparticle)):
+            self.assertEqual(getparticle[i], putparticle[i], msg="Last particle in Segment 3 is not correct")
+        return
+#    def test_4_several_segments(self): ENDDEF
 
 #class TestPstruct(unittest.TestCase):ENDCLASS
 
