@@ -1,4 +1,4 @@
-/*! \file dnt_pstruct.cpp
+/*! \file segmentedarraypair_pyb.cpp
 
   \brief This file creates a shared library with the Python bindings for
   SegmentedArray storage that's created in C++.
@@ -9,7 +9,7 @@
   SegmentedArray storage.
 
 */
-#include "SegmentedArrayPair_Cpp.h"
+#include "SegmentedArrayPair.h"
 
 namespace py = pybind11;
 
@@ -29,7 +29,7 @@ namespace dnt {
     //! Make SegmentedArray storage for particular particle types.
     /*!
 
-      makeSegmentedArrayPair_Cpp() is a 'helper' function. It causes the compiler to
+      makeSegmentedArrayPair() is a 'helper' function. It causes the compiler to
       make the specialized SegmentedArray storage class and member functions for the
       type of particle struct specified by a Ptype template parameter. These are then
       callable from Python.
@@ -38,16 +38,16 @@ namespace dnt {
       \param m is a py::module object created by PYBIND11_MODULE
       \param PStype is a string used to identify the particle type being stored.
       \return void
-      \sa Ptype, SegmentedArrayPair_Cpp
+      \sa Ptype, SegmentedArrayPair
 
      */
     template <Ptype PT>
-    void makeSegmentedArrayPair_Cpp(py::module &m, std::string const & PStype)
+    void makeSegmentedArrayPair(py::module &m, std::string const & PStype)
     {
-      using SAP = SegmentedArrayPair_Cpp<PT>;
+      using SAP = SegmentedArrayPair<PT>;
       // Make a class name with the particle structure type appended to
-      // "SegmentedArrayPair_Cpp"
-      std::string pyclass_name = std::string("SegmentedArrayPair_Cpp_") + PStype;
+      // "SegmentedArrayPair"
+      std::string pyclass_name = std::string("SegmentedArrayPair_") + PStype;
       
       // Create the Python binding for 
       py::class_<SAP>(m, pyclass_name.c_str())
@@ -57,9 +57,9 @@ namespace dnt {
 //        .def(py::init<int>())
         .def(py::init<py::ssize_t>())
 
-        // The following creates the bindings to SegmentedArrayPair_Cpp member
+        // The following creates the bindings to SegmentedArrayPair member
         // functions for particle type PT. The source for these is in
-        // SegmentedArrayPair_Cpp.h.
+        // SegmentedArrayPair.h.
         .def("get_as_tuple", &SAP::get_as_tuple)
         .def("get_capacity", &SAP::get_capacity)
         .def("get_next_out_segment", &SAP::get_next_out_segment)
@@ -96,14 +96,14 @@ namespace dnt {
              });
         */
         
-    } // void makeSegmentedArrayPair_Cpp(py::module &m, std::string const & PStype)
+    } // void makeSegmentedArrayPair(py::module &m, std::string const & PStype)
 
   } // namespace none
   
-  // Interface to the C++ class SegmentedArrayPair_Cpp
+  // Interface to the C++ class SegmentedArrayPair
 
   // Create a variable 'm' of type py::module
-  PYBIND11_MODULE(dnt_pstruct, m)
+  PYBIND11_MODULE(segmentedarraypair, m)
   {
 
 //    m.def("divide_by_cell_volumes", &divide_by_cell_volumes);
@@ -135,16 +135,16 @@ namespace dnt {
     PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x_y>, x_, "x", y_, "y", x0_, "x0", y0_, "y0", ux_, "ux", uy_, "uy", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
     PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x_y_z>, x_, "x", y_, "y", z_, "z", x0_, "x0", y0_, "y0", z0_, "z0", ux_, "ux", uy_, "uy", uz_, "uz", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
 
-// C++ classes and functions defined in SegmentedArrayPair_Cpp.h
+// C++ classes and functions defined in SegmentedArrayPair.h
   
-    // Interface to the C++ class SegmentedArrayPair_Cpp
+    // Interface to the C++ class SegmentedArrayPair
 
-    // Create the classes "SegmentedArrayPair_Cpp_cartesian_x/_x_y/_x_y_z"
-    makeSegmentedArrayPair_Cpp<Ptype::cartesian_x>(m, "cartesian_x");
-    makeSegmentedArrayPair_Cpp<Ptype::cartesian_x_y>(m, "cartesian_x_y");
-    makeSegmentedArrayPair_Cpp<Ptype::cartesian_x_y_z>(m, "cartesian_x_y_z");
+    // Create the classes "SegmentedArrayPair_cartesian_x/_x_y/_x_y_z"
+    makeSegmentedArrayPair<Ptype::cartesian_x>(m, "cartesian_x");
+    makeSegmentedArrayPair<Ptype::cartesian_x_y>(m, "cartesian_x_y");
+    makeSegmentedArrayPair<Ptype::cartesian_x_y_z>(m, "cartesian_x_y_z");
       
-  } // PYBIND11_MODULE(dnt_pstruct, m)
+  } // PYBIND11_MODULE(segmentedarraypair, m)
 
   
 } // namespace dnt

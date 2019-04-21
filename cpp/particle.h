@@ -1,14 +1,14 @@
-/*! \file Particle_Cpp.h
+/*! \file particle.h
 
   \brief This file has the source code for a C++ implementation of Particle storage.
 
   \namespace dnt
 
-  \sa SegmentedArrayPair_Cpp
+  \sa SegmentedArrayPair
 */
 
-#ifndef PARTICLE_CPP_H
-#define PARTICLE_CPP_H
+#ifndef PARTICLE_H
+#define PARTICLE_H
 
 // C++ program to demonstrate factory method design pattern 
 #include <iostream>
@@ -21,16 +21,16 @@
 
 namespace dnt
 {
-/*! \class Particle_Cpp
-    \brief The Particle_Cpp class is a C++ version of the Python class Particle_C.
+/*! \class particle
+    \brief The particle class is a C++ version of the Python class Particle_C.
 
     This class implements 
 
-    \sa Segmentedarraypair_Cpp
+    \sa Segmentedarraypair
 
 */
   template<Ptype PT>
-  class SegmentedArrayPair_Cpp
+  class SegmentedArrayPair
   {
 
   private:
@@ -47,7 +47,7 @@ namespace dnt
     \return void
 
   */
-  //      using SAP = SegmentedArrayPair_Cpp<PT>;
+  //      using SAP = SegmentedArrayPair<PT>;
   template <typename S>
   void pstruct_to_double(S& p3D, double* point)
   {
@@ -63,12 +63,12 @@ namespace dnt
    
   }
   template <Ptype PT>
-  void move_neutral_particles(SegmentedArrayPair_Cpp<PT>& psa)
+  void move_neutral_particles(SegmentedArrayPair<PT>& psa)
   {
 
     // Start looping over the segments
   }
-  void move_neutral_particles(SegmentedArrayPair_Cpp<Ptype::cartesian_x>& psa)
+  void move_neutral_particles(SegmentedArrayPair<Ptype::cartesian_x>& psa)
   {
     
   }

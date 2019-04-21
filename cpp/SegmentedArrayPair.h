@@ -1,4 +1,4 @@
-/*! \file SegmentedArrayPair_Cpp.h
+/*! \file SegmentedArrayPair.h
 
   \brief This file has the source code for a C++ implementation of SegmentedArray storage.
 
@@ -6,14 +6,14 @@
 
 */
 
-#ifndef SEGMENTEDARRAYPAIR_CPP_H
-#define SEGMENTEDARRAYPAIR_CPP_H
+#ifndef SEGMENTEDARRAYPAIR_H
+#define SEGMENTEDARRAYPAIR_H
 
 #include <iostream>
 // uncomment to disable assert()
 // #define NDEBUG
 #include <cassert>
-#include "pstruct.h"
+#include "Pstruct.h"
 
 //using namespace std; 
 
@@ -34,8 +34,8 @@ namespace dnt
     out_array
   };
   
-/*! \class SegmentedArrayPair_Cpp
-    \brief The SegmentedArrayPair_Cpp class is a C++ version of the Python class SegmentedArrayPair_C.
+/*! \class SegmentedArrayPair
+    \brief The SegmentedArrayPair class is a C++ version of the Python class SegmentedArrayPair_C.
 
     This class implements a segmented array of items.  Each segment is
     a Numpy structured array, i.e., each item in the array is a
@@ -57,7 +57,7 @@ namespace dnt
 
 */
   template<Ptype PT>
-  class SegmentedArrayPair_Cpp
+  class SegmentedArrayPair
   {
 
   private:
@@ -132,7 +132,7 @@ namespace dnt
       \sa Ptype
 
     */
-    SegmentedArrayPair_Cpp(py::ssize_t segment_length):
+    SegmentedArrayPair(py::ssize_t segment_length):
       segmentLength(segment_length),
       nSeg{0, 0},
       nPmax{0, 0},
@@ -142,7 +142,7 @@ namespace dnt
       inSegmentedArray(1),
       outSegmentedArray(0)
       {
-        std::cout << "Hello from the SegmentedArrayPair_Cpp ctor" << std::endl;
+        std::cout << "Hello from the SegmentedArrayPair ctor" << std::endl;
         for (auto iSA : {0, 1})
           {
             // Add the Numpy arrays for the first segment pair
@@ -166,10 +166,10 @@ namespace dnt
       }
 
     // The dtor (See pybind 8.5 Non-public destructors)
-    ~SegmentedArrayPair_Cpp()
+    ~SegmentedArrayPair()
       {
       
-        std::cout << "The dtor ~SegmentedArrayPair_Cpp has been called" << std::endl;
+        std::cout << "The dtor ~SegmentedArrayPair has been called" << std::endl;
       
         // Release the Numpy arrays?  No: this causes a crash. The
         // syntax may be wrong below. How should this memory be released?
@@ -468,13 +468,13 @@ namespace dnt
       }
     
     
-  }; // class SegmentedArrayPair_Cpp
+  }; // class SegmentedArrayPair
 
 
 /*
   void pseg_DnT_pstruct_instances()
   {
-    SegmentedArrayPair_Cpp<DnT_pstruct1D> seg_array_obj(1);
+    SegmentedArrayPair<DnT_pstruct1D> seg_array_obj(1);
   }
 */
   
