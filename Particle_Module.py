@@ -977,7 +977,7 @@ class Particle_C(object):
                     # use slice syntax unless the array data are homogeneous.
 
                     # Get the next 'out' segment if the current 'out' segment is
-                    # full.
+                    # full. If there are no more 'out' segments, allocate a new one.
                     if ipOut == self.SEGMENT_LENGTH:
                         psegOut = psa.get_next_out_segment()
                         ipOut = 0 # Reset the slot counter for the new 'out' segment
@@ -1279,11 +1279,12 @@ class Particle_C(object):
                     # Skip deleted particles
                     if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0:
                         indexChange = True # Particle SA indices are stale past
-                                          # this point due to deletions.
+                                           # this point due to deletions.
                         continue # skip to the next particle
 
-                    # If this 'out segment is full, get the next 'out' segment,
-                    # provided there are still some 'in' particles to advance.
+                    # If this 'out' segment is full, get the next 'out' segment,
+                    # since there are still some 'in' particles to advance.  If
+                    # there are no more 'out' segments, allocate a new one.
                     if ipOut == self.SEGMENT_LENGTH:
                         psegOut = psa.get_next_out_segment()
                         ipOut = 0 # Reset the counter for the new segment
@@ -1456,8 +1457,9 @@ class Particle_C(object):
 #                                print "mover: Removing particle with ID", psegIn[ipIn]['unique_ID'], "ipIn", ipIn, "from trajectories", ", ipOut is", ipOut
                                 self.remove_trajectory_particleId(sn, ipIn, psegOut[ipOut], step, time, dt)
 
-                    # Check if we've reached the end of this segment.  If
-                    # so, we need to start writing on a new segment.
+                    # Check if we've reached the end of this segment.  If so, we need
+                    # to start writing on a new segment.  If there are no more
+                    # segments, allocate a new one.
                     if (ipOut == self.SEGMENT_LENGTH):
                         particleCount += self.SEGMENT_LENGTH
 #                        ipOut = 0 # This will cause get_next_out_segment() to be called
@@ -1530,7 +1532,8 @@ class Particle_C(object):
             if self.get_species_particle_count(sn) == 0: continue
             psa = self.pseg_arr[sn] # segmented array for this species
 
-            dnt_cpp.move_neutral_particle_segment(psa)
+#HERE is the C++ code
+            dnt_cpp.move_neutral_particle_species(psa)
 
 #           Move all the particles in this species
             (npSeg, psegIn, psegOut) = psa.init_inout_loop() # (number of particles in
@@ -1564,7 +1567,8 @@ class Particle_C(object):
                         continue # skip to the next particle
 
                     # If this 'out segment is full, get the next 'out' segment,
-                    # provided there are still some 'in' particles to advance.
+                    # provided there are still some 'in' particles to advance.  If
+                    # there are no more 'out' segments, allocate a new one.
                     if ipOut == self.SEGMENT_LENGTH:
                         psegOut = psa.get_next_out_segment()
                         ipOut = 0 # Reset the counter for the new segment
@@ -1863,8 +1867,8 @@ class Particle_C(object):
             # ipIn counts through the 'in' segment
             for ipIn in range(npSeg):
 
-                # Get the next 'out' segment if the current 'out' segment is
-                # full.
+                # Get the next 'out' segment if the current 'out' segment is full.
+                # If there are no more 'out' segments, allocate a new one.
                 if ipOut == self.SEGMENT_LENGTH:
                     psegOut = psa.get_next_out_segment()
                     ipOut = 0 # Reset the counter for the new segment

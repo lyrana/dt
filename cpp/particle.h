@@ -12,7 +12,7 @@
 
 // C++ program to demonstrate factory method design pattern 
 #include <iostream>
-#include "pstruct.h"
+#include "Pstruct.h"
 
 //using namespace std; 
 

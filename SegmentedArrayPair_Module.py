@@ -350,7 +350,12 @@ class SegmentedArrayPair_C(object):
            This method looks similar to the push_back() method above, since the
            'out' array is effectively scratch space.
 
+           If this function is called, it assumes that you need space
+           to write on, so it will allocate a new segment if we're out
+           of 'out' segments.
+
            :return: reference to next segment of the 'out' array.
+
         """
 
         # Abbreviations

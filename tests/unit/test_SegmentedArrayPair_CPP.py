@@ -41,7 +41,7 @@ class TestPstruct(unittest.TestCase):
         return
 
 #class TestPstruct(unittest.TestCase):
-    def test_1_Cpp_cartesian_x(self):
+    def test_1_CPP_cartesian_x(self):
         """Create a SegmentedArray for the "cartesian_x" particle type.
 
            Make two 1D particle tuples and put them into a SegmentedArrayPair
@@ -53,7 +53,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray for cartesian_x particles
-        seg_array_obj_Cpp_cartesian_x = segmentedarraypair.SegmentedArrayPair_cartesian_x(self.segment_length)
+        seg_array_obj_CPP_cartesian_x = segmentedarraypair.SegmentedArrayPair_cartesian_x(self.segment_length)
         
         particle_dimension = 1
         x=1.5; x0=1.0; ux=3.0; weight = 101.1
@@ -68,7 +68,7 @@ class TestPstruct(unittest.TestCase):
 
         # Put two particles into a SegmentedArray store
         
-        seg_arr = seg_array_obj_Cpp_cartesian_x
+        seg_arr = seg_array_obj_CPP_cartesian_x
 
         # particle #1
         putparticle = (x, x0, ux, weight, bitflags, cell_index, unique_ID, crossings)
@@ -113,9 +113,9 @@ class TestPstruct(unittest.TestCase):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
         
         return
-#    def test_1_Cpp_cartesian_x(self):ENDDEF
+#    def test_1_CPP_cartesian_x(self):ENDDEF
 
-    def test_2_Cpp_cartesian_x_y(self):
+    def test_2_CPP_cartesian_x_y(self):
         """Create a SegmentedArray for the "cartesian_x_y" particle type.
 
            Make a 3D particle tuple and put it into a SegmentedArrayPair object
@@ -127,7 +127,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_x_y particles
-        seg_array_obj_Cpp_cartesian_x_y = segmentedarraypair.SegmentedArrayPair_cartesian_x_y(self.segment_length)        
+        seg_array_obj_CPP_cartesian_x_y = segmentedarraypair.SegmentedArrayPair_cartesian_x_y(self.segment_length)        
         
         # Create a cartesian_x_y particle and put it into the SegmentedArray
         x=0.0; x0=x; y=1.0; y0=y; ux=3.0; uy=4; weight = 101.1
@@ -144,7 +144,7 @@ class TestPstruct(unittest.TestCase):
 
         # Put this particle into the SegmentedArray store
         
-        seg_arr = seg_array_obj_Cpp_cartesian_x_y
+        seg_arr = seg_array_obj_CPP_cartesian_x_y
         (seg_index, full_index) = seg_arr.push_back(putparticle)
 
         # Retrieve the particle using the returned Numpy array it's in.
@@ -159,10 +159,10 @@ class TestPstruct(unittest.TestCase):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
         
         return
-#    def test_2_Cpp_cartesian_x_y(self):ENDDEF
+#    def test_2_CPP_cartesian_x_y(self):ENDDEF
 
 
-    def test_3_Cpp_cartesian_x_y_z(self):
+    def test_3_CPP_cartesian_x_y_z(self):
         """Create a SegmentedArray for the "cartesian_x_y_z" particle type.
 
            Make a 3D particle tuple and put it into a SegmentedArrayPair object
@@ -174,7 +174,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
-        seg_array_obj_Cpp_cartesian_x_y_z = segmentedarraypair.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
+        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
         
         # Create a cartesian_x_y_z particle and put it into the SegmentedArray
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
@@ -191,7 +191,7 @@ class TestPstruct(unittest.TestCase):
 
         # Put this particle into the SegmentedArray store
         
-        seg_arr = seg_array_obj_Cpp_cartesian_x_y_z
+        seg_arr = seg_array_obj_CPP_cartesian_x_y_z
         (seg_index, full_index) = seg_arr.push_back(putparticle)
 
         # Retrieve the particle using the returned Numpy array it's in.
@@ -206,7 +206,7 @@ class TestPstruct(unittest.TestCase):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
         
         return
-#    def test_3_Cpp_cartesian_x_y_z(self):ENDDEF
+#    def test_3_CPP_cartesian_x_y_z(self):ENDDEF
 
     def test_4_several_segments(self):
         """ Test the creation of several new segments.
@@ -216,7 +216,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncname, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
-        seg_array_obj_Cpp_cartesian_x_y_z = segmentedarraypair.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
+        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
 
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
@@ -229,7 +229,7 @@ class TestPstruct(unittest.TestCase):
 
         dx = 0.2
 
-        seg_arr = seg_array_obj_Cpp_cartesian_x_y_z
+        seg_arr = seg_array_obj_CPP_cartesian_x_y_z
         
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):

@@ -64,6 +64,9 @@ namespace dnt
     
   public:
 
+    static int DELETE_FLAG;
+    static int TRAJECTORY_FLAG;
+    
 /*    
     push_back(py::tuple ptuple)
     {
@@ -88,6 +91,13 @@ namespace dnt
 
 */
   };
+  //  class Pstruct ENDCLASS
+
+  // Set the bit patters for flags  
+  template <Ptype PT>
+    int Pstruct<PT>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+  template <Ptype PT>
+    int Pstruct<PT>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
   
 /*! \struct Pstruct_cartesian_x
 
@@ -137,7 +147,8 @@ namespace dnt
         os << "cartesian_x. fixme";
         return os;
       }
-    }; // class Pstruct<Ptype::cartesian_x>
+    };
+  // class Pstruct<Ptype::cartesian_x> ENDCLASS
 
 /*! \struct pstruct2D
   \brief struct for (x, y) particle coordinates
@@ -190,7 +201,8 @@ namespace dnt
         return os;
       }
       
-    }; // class Pstruct<Ptype::cartesian_x_y>
+    };
+  // class Pstruct<Ptype::cartesian_x_y> ENDCLASS
 
 
 /*! \struct pstruct3D
@@ -250,7 +262,8 @@ namespace dnt
         return os;
       }
     
-  }; // class Pstruct<Ptype::cartesian_x_y_z>
+  };
+  // class Pstruct<Ptype::cartesian_x_y_z> ENDCLASS
 
 // Declare the << operator for the pstruct3D data type. This is used in print_pstructarray()
 //  std::ostream& operator<<(std::ostream& os, const pstruct3D& p);
