@@ -125,6 +125,9 @@ __all__ = ['Example_C',]
 ##      HST.2. Create the history objects
 ## CHK. Check the input
 ## INIT. Initialization
+
+## Initialize Python-to-C++
+
 ##       INIT.1. Do an initial field solve without particles
 ##       INIT.2. Recompute initial fields including initial particle spacecharge
 ##               and random electric field
@@ -1113,6 +1116,11 @@ if particleBoundaryDict is not None and particle_P.pmesh_M.particle_boundary_mar
 #TODO: add check on ctrl.apply_external_electric_field and apply_solved_electric_field, to ensure that the Field_C objects exist.    
 
 ############################## INIT. Initialization ##############################
+
+# Python-to-C++
+
+# Make particle-advance things accessible to C++
+
 
 ########## INIT.1. Do an initial field solve without particles
 

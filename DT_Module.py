@@ -39,20 +39,27 @@ class DTcontrol_C(object):
         # Dimensions
 #        self.particle_dimension = None
 
-        self.use_particles = None
-        self.PARTICLE_SEGMENT_LENGTH = None
-
-        self.E0 = None
-        self.B0 = None
 
         # Electric field switches
         
+        self.E0 = None
+        self.B0 = None
+
         # To control the application of the solved and external electric fields by
         # species, these can be refs to dictionaries that have True/False values
         # for each species.
         self.apply_solved_electric_field = None
         self.apply_external_electric_field = None
         self.apply_random_external_electric_field = None
+
+        # Particle controls
+
+        self.use_particles = None
+        self.PARTICLE_SEGMENT_LENGTH = None
+
+        # Maximum number of facet-crossing that a particle will be tracked
+        # before exit() is called.
+        self.MAX_FACET_CROSS_COUNT = 100
         
         # Random number seed
         self.random_seed = np_m.random.seed(1)

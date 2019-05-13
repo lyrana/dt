@@ -1,4 +1,4 @@
-/*! \file segmentedarraypair_pyb.cpp
+/*! \file dnt_pyb.cpp
 
   \brief This file creates a shared library with the Python bindings for
   SegmentedArray storage that's created in C++.
@@ -9,7 +9,7 @@
   SegmentedArray storage.
 
 */
-#include "SegmentedArrayPair.h"
+#include "dnt.h"
 
 namespace py = pybind11;
 
@@ -29,7 +29,7 @@ namespace dnt {
     //! Make SegmentedArray storage for particular particle types.
     /*!
 
-      makeSegmentedArrayPair() is a 'helper' function. It causes the compiler to
+      makeDnt() is a 'helper' function. It causes the compiler to
       make the specialized SegmentedArray storage class and member functions for the
       type of particle struct specified by a Ptype template parameter. These are then
       callable from Python.
@@ -38,16 +38,16 @@ namespace dnt {
       \param m is a py::module object created by PYBIND11_MODULE
       \param PStype is a string used to identify the particle type being stored.
       \return void
-      \sa Ptype, SegmentedArrayPair
+      \sa Ptype, Dnt
 
      */
     template <Ptype PT>
-    void makeSegmentedArrayPair(py::module &m, std::string const & PStype)
+    void makeDnt(py::module &m, std::string const & PStype)
     {
       using SAP = SegmentedArrayPair<PT>;
       // Make a class name with the particle structure type appended to
       // "SegmentedArrayPair"
-      std::string pyclass_name = std::string("SegmentedArrayPair_") + PStype;
+      std::string pyclass_name = std::string("Dnt_") + PStype;
       
       // Create the Python binding for 
       py::class_<SAP>(m, pyclass_name.c_str())
@@ -57,9 +57,9 @@ namespace dnt {
 //        .def(py::init<int>())
         .def(py::init<py::ssize_t>())
 
-        // The following creates the bindings to SegmentedArrayPair member
+        // The following creates the bindings to Dnt member
         // functions for particle type PT. The source for these is in
-        // SegmentedArrayPair.h.
+        // Dnt.h.
         .def("get_as_tuple", &SAP::get_as_tuple)
         .def("get_capacity", &SAP::get_capacity)
         .def("get_next_out_segment", &SAP::get_next_out_segment)
@@ -96,14 +96,14 @@ namespace dnt {
              });
         */
         
-    } // void makeSegmentedArrayPair(py::module &m, std::string const & PStype)
+    } // void makeDnt(py::module &m, std::string const & PStype)
 
   } // namespace none
   
-  // Interface to the C++ class SegmentedArrayPair
+  // Interface to the C++ class Dnt
 
   // Create a variable 'm' of type py::module
-  PYBIND11_MODULE(segmentedarraypair_pyb, m)
+  PYBIND11_MODULE(dnt_cpp, m)
   {
 
 //    m.def("divide_by_cell_volumes", &divide_by_cell_volumes);
@@ -128,17 +128,14 @@ namespace dnt {
 //    py::class_<DnT_pstruct3D>(m, "DnT_pstruct3D");
 
 // Register DnT_pstruct1D as a Numpy dtype descriptor. DnT_pstruct1D is of type py::dtype (a pybind11 class).
-// The "_EX" variation allows the Python names of the variables in the structure to be different from the variable names in the C++ struct.
-
-// Are these declarations needed?
-    
+// The "_EX" variation allows the Python names of the variables in the structure to be different from the variable names in the C++ struct.    
     PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x>, x_, "x", x0_, "x0", ux_, "ux", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
 
 // Register DnT_pstruct2D and DnT_pstruct3D
     PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x_y>, x_, "x", y_, "y", x0_, "x0", y0_, "y0", ux_, "ux", uy_, "uy", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
     PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x_y_z>, x_, "x", y_, "y", z_, "z", x0_, "x0", y0_, "y0", z0_, "z0", ux_, "ux", uy_, "uy", uz_, "uz", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
 
-// C++ classes and functions defined in SegmentedArrayPair.h
+// C++ classes and functions defined in Dnt.h
   
     // Interface to the C++ class SegmentedArrayPair
 
@@ -147,7 +144,7 @@ namespace dnt {
     makeSegmentedArrayPair<Ptype::cartesian_x_y>(m, "cartesian_x_y");
     makeSegmentedArrayPair<Ptype::cartesian_x_y_z>(m, "cartesian_x_y_z");
       
-  } // PYBIND11_MODULE(segmentedarraypair, m)
+  } // PYBIND11_MODULE(dnt, m)
 
   
 } // namespace dnt

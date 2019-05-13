@@ -379,7 +379,7 @@ namespace dnt
         if (firstNotFullSegment[inSA] == 0)
           {
             lastItem = firstAvailableOffset[inSA];
-            if (lastItem == 0) return py::make_tuple(0, NULL, NULL);  // WILL THIS WORK FOR RETURNING BOTH NUMPY ARRAY AND DATA POINTERS?
+            if (lastItem == 0) return py::make_tuple(0, nullptr, nullptr);  // WILL THIS WORK FOR RETURNING BOTH NUMPY ARRAY AND DATA POINTERS?
           }
         else
           {
@@ -441,16 +441,16 @@ namespace dnt
         currentSegment[theSA] += 1;
         py::ssize_t segIndex = currentSegment[theSA];
 
-        // If the segment index exceeds occupied limit, return NULL.
-        if (segIndex > firstNotFullSegment[theSA]) return py::make_tuple(0, NULL);
-        //  If this is the last segment and it's empty, return NULL.
+        // If the segment index exceeds occupied limit, return nullptr.
+        if (segIndex > firstNotFullSegment[theSA]) return py::make_tuple(0, nullptr);
+        //  If this is the last segment and it's empty, return nullptr.
         //  ===> This should cause the caller to break out of the loop <===
         //  If it's not empty, return the non-empty items
         py::ssize_t lastItem;
         if (firstNotFullSegment[theSA] == segIndex)
           {
             lastItem = firstAvailableOffset[theSA];
-            if (lastItem == 0) return py::make_tuple(0, NULL);
+            if (lastItem == 0) return py::make_tuple(0, nullptr);
           }
         else
           {

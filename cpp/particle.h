@@ -29,6 +29,17 @@ namespace dnt
     \sa Segmentedarraypair
 
 */
+
+// These are static values in class Mesh_C
+  int Mesh_C_NO_CELL = -1; // size_t?
+  int Mesh_C_NO_FACET = -1; // size_t?
+  
+  class CppData
+  {
+    // 
+    NO_FACET;
+    NO_CELL;
+  }
   template<Ptype PT>
   class SegmentedArrayPair
   {

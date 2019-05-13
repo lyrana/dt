@@ -19,7 +19,7 @@ import h5py
 
 from Dolfin_Module import Mesh_C
 
-import dnt_cpp
+#import dnt_cpp
 
 #STARTCLASS
 class ParticleInput_C(object):
@@ -133,9 +133,10 @@ class Particle_C(object):
     DELETE_FLAG = 0b1 # the lowest bit is 1
 #    TRAJECTORY_FLAG = 0b10 # the second lowest bit is 1
     TRAJECTORY_FLAG = 0b1 << 1 # the second lowest bit is 1
-    # Maximum number of facet-crossing that a particle will be tracke
+    # Maximum number of facet-crossing that a particle will be tracked
     # before exit() is called.
-    MAX_FACET_CROSS_COUNT = 100
+# Moved to DT_control_C    
+#    MAX_FACET_CROSS_COUNT = 100
     # Initialize the unique particle ID sequence. The first particle gets ID = 0.
     # Need to parallize this variable to get unique values when using multiple
     # processors.  Maybe have a processor ID in addition?
@@ -1025,7 +1026,7 @@ class Particle_C(object):
                     pCellIndex = psegOut[ipOut]['cell_index']
 
 #                    print fncName, ": ip, pindex", ip, pCellIndex, "cell index:", pmesh_M.compute_cell_index(pseg[ip])
-                    mLastFacet = pmesh_M.NO_FACET
+                    mLastFacet = Mesh_C.NO_FACET
                     facetCrossCount = 0
                     tStart = time - dt
                     dtRemaining = dt
@@ -1039,8 +1040,8 @@ class Particle_C(object):
 
                         facetCrossCount += 1
                         # Check for an abnormal number of facet crossings:
-                        if facetCrossCount > self.MAX_FACET_CROSS_COUNT:
-                            errorMsg = "%s\tExiting because MAX_FACET_CROSS_COUNT = %d was exceeded!" % (fncName, self.MAX_FACET_CROSS_COUNT)
+                        if facetCrossCount > ctrl.MAX_FACET_CROSS_COUNT:
+                            errorMsg = "%s\tExiting because MAX_FACET_CROSS_COUNT = %d was exceeded!" % (fncName, ctrl.MAX_FACET_CROSS_COUNT)
                             sys.exit(errorMsg)
 
                         # Compute dx[], the move vector that starts in
@@ -1070,7 +1071,7 @@ class Particle_C(object):
                         # of the crossed facet, (2) the fraction of the move that's in the
                         # current cell, and (3) the vector normal to the crossed facet.
                         (cFacet, dxFraction, facetNormal) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
-                        if cFacet != pmesh_M.NO_FACET: # If the particle crossed a facet...
+                        if cFacet != Mesh_C.NO_FACET: # If the particle crossed a facet...
 
                             tStart = tStart + dxFraction*dtRemaining # The starting time in the new cell
                             dtFraction = dxFraction*dtRemaining
@@ -1133,9 +1134,9 @@ class Particle_C(object):
                             # If the particle has left the mesh, and has been deleted, end
                             # the search.  If it hasn't been deleted (e.g., reflected),
                             # continue tracking it.
-                            if pCellIndexNew == pmesh_M.NO_CELL:
+                            if pCellIndexNew == Mesh_C.NO_CELL:
                                 if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 1:
-                                    psegOut[ipOut]['cell_index'] = pmesh_M.NO_CELL
+                                    psegOut[ipOut]['cell_index'] = Mesh_C.NO_CELL
                                     break # Breaks out of the facet-crossing 'while' loop.
                                 # else: The boundary did not absorb the particle, so the
                                 # particle is now at the cell boundary and the cell index
@@ -1146,7 +1147,7 @@ class Particle_C(object):
                         else: # The crossed faced is NO_FACET, which shouldn't happen.
                             errorMsg = "%s The cell index of the facet crossed is NO_FACET (%d). This should not happen since the particle has left its initial cell!" % (fncName, cFacet)
                             sys.exit(errorMsg)
-#                       END:if cFacet != pmesh_M.NO_FACET:
+#                       END:if cFacet != Mesh_C.NO_FACET:
 #                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
 
                     # Record the number of facet-crossings
@@ -1333,7 +1334,7 @@ class Particle_C(object):
 #                    print fncName, ": ip, pindex", ipOut, pCellIndex, "cell index:", pmesh_M.compute_cell_index(psegOut[ipOut])
 
                     # Loop until the particle is in the current cell
-                    mLastFacet = pmesh_M.NO_FACET
+                    mLastFacet = Mesh_C.NO_FACET
                     facetCrossCount = 0
                     tStart = time - dt
                     dtRemaining = dt
@@ -1363,7 +1364,7 @@ class Particle_C(object):
 
 # could return the crossing-point in pCoord2[]
                         (cFacet, dxFraction, facetNormal) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
-                        if cFacet != pmesh_M.NO_FACET:
+                        if cFacet != Mesh_C.NO_FACET:
 #                            print "facet crossed is", cFacet
                             tStart = tStart + dxFraction*dtRemaining # The starting time in the new cell
                             dtRemaining = (1.0 - dxFraction)*dtRemaining
@@ -1410,9 +1411,9 @@ class Particle_C(object):
                             # If the particle has left the mesh, and has been deleted, end
                             # the search.  If it hasn't been deleted (e.g., reflected),
                             # continue tracking it.
-                            if pCellIndexNew == pmesh_M.NO_CELL:
+                            if pCellIndexNew == Mesh_C.NO_CELL:
                                 if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 1:
-                                    psegOut[ipOut]['cell_index'] = pmesh_M.NO_CELL
+                                    psegOut[ipOut]['cell_index'] = Mesh_C.NO_CELL
                                     break # Breaks out of the facet-crossing 'while' loop.
                                 # else: The boundary did not absorb the particle, so the
                                 # particle is now at the cell boundary and the cell index
@@ -1424,7 +1425,7 @@ class Particle_C(object):
                         else: # The crossed faced is NO_FACET, which shouldn't happen.
                             errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
                             sys.exit(errorMsg)
-#                       END:if cFacet != pmesh_M.NO_FACET:
+#                       END:if cFacet != Mesh_C.NO_FACET:
 #                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
 
                     # Record the number of facet-crossings
@@ -1533,7 +1534,8 @@ class Particle_C(object):
             psa = self.pseg_arr[sn] # segmented array for this species
 
 #HERE is the C++ code
-            dnt_cpp.move_neutral_particle_species(psa)
+#            particle_cpp.move_neutral_particle_species(psa, pmesh_M.mesh, cell_vertex_dict)
+            particle_cpp.move_neutral_particle_species(ctrl, psa, pmesh_M.mesh, cell_vertex_dict, self)
 
 #           Move all the particles in this species
             (npSeg, psegIn, psegOut) = psa.init_inout_loop() # (number of particles in
@@ -1617,7 +1619,7 @@ class Particle_C(object):
 #                    print fncName, ": ip, pindex", ipOut, pCellIndex, "cell index:", pmesh_M.compute_cell_index(psegOut[ipOut])
 
                     # Loop until the particle is in the current cell
-                    mLastFacet = pmesh_M.NO_FACET
+                    mLastFacet = Mesh_C.NO_FACET
                     facetCrossCount = 0
                     tStart = time - dt
                     dtRemaining = dt
@@ -1647,7 +1649,7 @@ class Particle_C(object):
 
 # could return the crossing-point in pCoord2[]
                         (cFacet, dxFraction, facetNormal) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
-                        if cFacet != pmesh_M.NO_FACET:
+                        if cFacet != Mesh_C.NO_FACET:
 #                            print "facet crossed is", cFacet
                             tStart = tStart + dxFraction*dtRemaining # The starting time in the new cell
                             dtRemaining = (1.0 - dxFraction)*dtRemaining
@@ -1694,9 +1696,9 @@ class Particle_C(object):
                             # If the particle has left the mesh, and has been deleted, end
                             # the search.  If it hasn't been deleted (e.g., reflected),
                             # continue tracking it.
-                            if pCellIndexNew == pmesh_M.NO_CELL:
+                            if pCellIndexNew == Mesh_C.NO_CELL:
                                 if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 1:
-                                    psegOut[ipOut]['cell_index'] = pmesh_M.NO_CELL
+                                    psegOut[ipOut]['cell_index'] = Mesh_C.NO_CELL
                                     break # Breaks out of the facet-crossing 'while' loop.
                                 # else: The boundary did not absorb the particle, so the
                                 # particle is now at the cell boundary and the cell index
@@ -1708,7 +1710,7 @@ class Particle_C(object):
                         else: # The crossed faced is NO_FACET, which shouldn't happen.
                             errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
                             sys.exit(errorMsg)
-#                       END:if cFacet != pmesh_M.NO_FACET:
+#                       END:if cFacet != Mesh_C.NO_FACET:
 #                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
 
                     # Record the number of facet-crossings

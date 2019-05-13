@@ -24,10 +24,10 @@ import unittest
 # from UserUnits_Module import MyPlasmaUnits_C
 
 # Use the C++ functions in the segmentedarraypair.so library
-import segmentedarraypair
+import segmentedarraypair_pyb
 
 class TestPstruct(unittest.TestCase):
-    """Test the C++ functions in segmentedarraypair.so"""
+    """Test the C++ functions in segmentedarraypair_pyb.so"""
     
     def setUp(self):
 
@@ -53,7 +53,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray for cartesian_x particles
-        seg_array_obj_CPP_cartesian_x = segmentedarraypair.SegmentedArrayPair_cartesian_x(self.segment_length)
+        seg_array_obj_CPP_cartesian_x = segmentedarraypair_pyb.SegmentedArrayPair_cartesian_x(self.segment_length)
         
         particle_dimension = 1
         x=1.5; x0=1.0; ux=3.0; weight = 101.1
@@ -127,7 +127,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_x_y particles
-        seg_array_obj_CPP_cartesian_x_y = segmentedarraypair.SegmentedArrayPair_cartesian_x_y(self.segment_length)        
+        seg_array_obj_CPP_cartesian_x_y = segmentedarraypair_pyb.SegmentedArrayPair_cartesian_x_y(self.segment_length)        
         
         # Create a cartesian_x_y particle and put it into the SegmentedArray
         x=0.0; x0=x; y=1.0; y0=y; ux=3.0; uy=4; weight = 101.1
@@ -174,7 +174,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
-        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
+        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair_pyb.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
         
         # Create a cartesian_x_y_z particle and put it into the SegmentedArray
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
@@ -216,7 +216,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncname, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
-        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
+        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair_pyb.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
 
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0

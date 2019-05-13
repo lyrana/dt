@@ -19,7 +19,7 @@ import dolfin as df_m
 import matplotlib.pyplot as mplot_m
 import numpy as np_m
 
-import dnt_cpp
+#import dnt_cpp
 
 #STARTCLASS
 class Mesh_C(object):

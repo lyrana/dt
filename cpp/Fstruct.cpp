@@ -1,5 +1,5 @@
 
-#include "fstruct.h"
+#include "Fstruct.h"
 
 namespace py = pybind11;
 

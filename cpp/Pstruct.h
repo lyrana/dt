@@ -20,7 +20,7 @@ Contents:
     template <typename PS>
     void pstruct_to_double(PS& ps, double* point)
 
-  The PYBIND11 interfaces to Python for all the above.
+  There are currently no PYBIND11 interfaces for the above.
 
 */
 
@@ -38,7 +38,6 @@ Contents:
 namespace py = pybind11;
 
 namespace dnt
-
 {
 
   /*! \class Ptype
@@ -93,7 +92,8 @@ namespace dnt
   };
   //  class Pstruct ENDCLASS
 
-  // Set the bit patters for flags  
+  // Set the bit patterns for flags. These are static class members, so they're set
+  // outside the ctor.
   template <Ptype PT>
     int Pstruct<PT>::DELETE_FLAG = 0b1;  // the lowest bit is 1
   template <Ptype PT>

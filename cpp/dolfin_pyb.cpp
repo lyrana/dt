@@ -55,7 +55,7 @@ void declare_array(py::module &m, std::string &typestr) {
 
 
 // // Create a variable 'm' of type py::module
-PYBIND11_MODULE(dnt_cpp, m) {
+PYBIND11_MODULE(dolfin_cpp, m) {
 
 // typeinfo may be registered before the dtype descriptor for scalar casts to work...
 

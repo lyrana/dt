@@ -13,7 +13,8 @@ namespace dnt
 {
 // Define the << operator for the DnT_pstruct1D data type. This is used in print_pstructarray()
 // below to print each element in the array.
-  std::ostream& operator<<(std::ostream& os, const Ptype& p)
+  std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x>& p)
+  //  std::ostream& operator<<(std::ostream& os, const Ptype& p)
   {
     return os <<   "x=" << p.x_
               << ", x0=" << p.x0_
@@ -27,7 +28,7 @@ namespace dnt
 
 // Define the << operator for the DnT_pstruct2D data type. This is used in print_pstructarray()
 // below to print each element in the array.
-  std::ostream& operator<<(std::ostream& os, const DnT_pstruct2D& p) {
+  std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x_y>& p) {
     return os <<   "x=" << p.x_
               << ", y=" << p.y_
               << ", x0=" << p.x0_
@@ -43,7 +44,7 @@ namespace dnt
 
 // Define the << operator for the DnT_pstruct3D data type. This is used in print_pstructarray()
 // below to print each element in the array.
-  std::ostream& operator<<(std::ostream& os, const DnT_pstruct3D& p) {
+  std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x_y_z>& p) {
     return os <<   "x=" << p.x_
               << ", y=" << p.y_
               << ", z=" << p.z_
@@ -66,10 +67,10 @@ namespace dnt
 // that corresponds to the Numpy structured array. It takes the array of structs, writes
 // all the values into a string, and returns the string. This function is used later to
 // define a Python-callable function to write the values in a structured array.
-  template <typename S>
-  py::list print_pstructarray(py::array_t<S, 0> arr) {
+  template <Ptype PT>
+  py::list print_pstructarray(py::array_t<Pstruct<PT>, 0> arr) {
     const auto arr_info = arr.request();  // request() returns metadata about the array (ptr, ndim, size, shape)
-    const auto p = static_cast<S*>(arr_info.ptr); // Pointer to a particle structure in pseg
+    const auto p = static_cast<Pstruct<PT>*>(arr_info.ptr); // Pointer to a particle structure in pseg
 
 // See ~/local/include/pybind11/buffer_info.h
 // arr_info attributes are:
@@ -81,7 +82,7 @@ namespace dnt
               << ", ndim=" << arr_info.ndim
               << std::endl;
 
-    std::cout << "pstruct.cpp:print_pstructarray(): The size one structure is " << sizeof(S) << " bytes" << std::endl;
+    std::cout << "pstruct.cpp:print_pstructarray(): The size one structure is " << sizeof(Pstruct<PT>) << " bytes" << std::endl;
   
     auto l = py::list();
     for (ssize_t i = 0; i < arr_info.size; i++) {
@@ -94,30 +95,30 @@ namespace dnt
 
 // This function copies the spatial coordinates from a particle structure to a double array.
 // It uses template specialization to handle particle structures with different dimensions.
-  template <typename S>
-  void pstruct_to_double(S& p3D, double* point)
+  template <Ptype PT>
+  void pstruct_to_double(Pstruct<PT>& p, double* point)
   {
     // There is no generic version
   }
   template <>
-  void pstruct_to_double<DnT_pstruct1D>(DnT_pstruct1D& p1D, double* point)
+  void pstruct_to_double<Pstruct<Ptype::cartesian_x>(Pstruct<Ptype::cartesian_x& p, double* point)
   {
-    point[0] = p1D.x_;
-    // how about point = &(p1D.x_);
+    point[0] = p.x_;
+    // how about point = &(p.x_);
    
   }
   template <>
-  void pstruct_to_double<DnT_pstruct2D>(DnT_pstruct2D& p2D, double* point)
+  void pstruct_to_double<Pstruct<Ptype::cartesian_x_y>(Pstruct<Ptype::cartesian_x_y& p, double* point)
   {
-    point[0] = p2D.x_;
-    point[1] = p2D.y_;
+    point[0] = p.x_;
+    point[1] = p.y_;
   }
   template <>
-  void pstruct_to_double<DnT_pstruct3D>(DnT_pstruct3D& p3D, double* point)
+  void pstruct_to_double<Pstruct<Ptype::cartesian_x_y_z>(Pstruct<Ptype::cartesian_x_y_z& p, double* point)
   {
-    point[0] = p3D.x_;
-    point[1] = p3D.y_;
-    point[2] = p3D.z_;
+    point[0] = p.x_;
+    point[1] = p.y_;
+    point[2] = p.z_;
   }
 
 //! Force the compiler to generate the specialized forms of the templated function print_pstructarray()
@@ -125,7 +126,7 @@ namespace dnt
 /*!
   The templated signature is:
   template <typename S>
-  py::list print_pstructarray(py::array_t<S, 0> arr) {
+  py::list print_pstructarray(py::array_t<Pstruct<PT>, 0> arr) {
 */
 
   void force_DnT_print_pstructarray_instances()

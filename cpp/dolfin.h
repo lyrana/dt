@@ -23,8 +23,10 @@
 
 #include <Eigen/Dense>
 
-#include "pstruct.h"
-#include "fstruct.h"
+#include "Pstruct.h"
+#include "Fstruct.h"
+
+// Put these in namespace dnt:
 
 void divide_by_cell_volumes(dolfin::Function& dF, const std::map<int, double> &cell_volume_dict);
 template <typename PS>
@@ -43,10 +45,12 @@ void interpolate_field_to_points_v1(dolfin::Function& field,
 //bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, PS point);
 
 // Distinguish functions by their arguments
+// These are NOT used!
 bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct1D point);
 bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct2D point);
 bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct3D point);
 
+// These ARE used!
 bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x);
 bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x, double& y);
 bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x, double& y, double& z);
