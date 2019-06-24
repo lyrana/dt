@@ -20,6 +20,10 @@ import h5py
 from Dolfin_Module import Mesh_C
 
 #import dnt_cpp
+# Use the C++ functions in the segmentedarraypair.so library
+import segmentedarraypair_cpp
+import p_cpp_cartesian_x_y_z as p_cpp
+
 
 #STARTCLASS
 class ParticleInput_C(object):
@@ -105,7 +109,7 @@ class ParticleSpecies_C(object):
 #class ParticleSpecies_C(object):ENDCLASS
 
 #STARTCLASS
-import SegmentedArrayPair_Module as SA_M
+#import SegmentedArrayPair_Module as SA_M
 
 class Particle_C(object):
     """Particle_C contains the attributes of a plasma that is represented kinetically (particle positions and velocities):
@@ -157,7 +161,14 @@ class Particle_C(object):
         particleSpecies = particle_input.particle_species
 
         # The spatial coordinates of a particle
-        self.position_coordinates = particle_input.position_coordinates
+#        self.position_coordinates = particle_input.position_coordinates
+        if self.coordinate_system == 'cartesian_x':
+            self.position_coordinates = ['x',]
+        elif self.coordinate_system == 'cartesian_x_y':
+            self.position_coordinates = ['x', 'y',]
+        elif self.coordinate_system == 'cartesian_x_y_z':
+            self.position_coordinates = ['x', 'y', 'z']
+
         self.particle_dimension = len(self.position_coordinates)
 
         # These are the position coordinates at the start of a push
@@ -291,8 +302,21 @@ class Particle_C(object):
             # for particles using segmented vectors indexed by the
             # species name.
 
-#            self.pseg_arr[speciesName] = SA_M.SegmentedArrayPair_C(segment_length, metadata)
-            self.pseg_arr[speciesName] = SA_M.SegmentedArrayPair_C(self.SEGMENT_LENGTH, self.particle_dtype)
+            useCplusplus = True
+            
+            if useCplusplus is True:
+                # Use the C++ SegmentedArrayPair class for particle storage.  This
+                # avoids having to call back to Python from C++ to manage the
+                # storage.
+                if self.coordinate_system == 'cartesian_x':
+                    self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
+                elif self.coordinate_system == 'cartesian_x_y':
+                    self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y(self.SEGMENT_LENGTH)
+                elif self.coordinate_system == 'cartesian_x_y_z':
+                    self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y_z(self.SEGMENT_LENGTH)
+            else:
+                # Use the Python SegmentedArray class for particle storage
+                self.pseg_arr[speciesName] = SA_M.SegmentedArrayPair_C(self.SEGMENT_LENGTH, self.particle_dtype)
 
             # Initialize particle count for each species
             self.particle_count[speciesName] = 0
@@ -477,11 +501,15 @@ class Particle_C(object):
         # Check the length of the particle data by looking at the
         # datatype of the first segment of the segmented array.
 
-        if len(particle_list[0]) != len(psegArrSp[0].dtype):
-            errorMsg = fncName + "\tDnT ERROR: Species %s. Expecting particle data tuple %s, but data for first particle is: %s, which does not match up. Check UserParticles" %  (species_name, psegArrSp[0].dtype.names, particle_list[0])
+# FIX for C++ version of psegArrSp:
+
+##        if len(particle_list[0]) != len(psegArrSp[0].dtype):
+##            errorMsg = fncName + "\tDnT ERROR: Species %s. Expecting particle data tuple %s, but data for first particle is: %s, which does not match up. Check UserParticles" %  (species_name, psegArrSp[0].dtype.names, particle_list[0])
+
+            
 #            print fncName, "Expect particle data for", psegArrSp[0].dtype.names
 #            print "First particle is:", particle_list[0]
-            sys.exit(errorMsg)
+##            sys.exit(errorMsg)
 
         # Add the particles to storage and set up trajectories
 
@@ -490,15 +518,16 @@ class Particle_C(object):
 #        print 'index = ', self.particle_dtype['names'].index('bitflags')
 
         for i in range(number_of_macroparticles):
-#            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = psegArrSp.push_back(particle_list[i])
+            print('species_name, particle_list[i] = ', species_name, particle_list[i])
+            segIndex, fullIndex = psegArrSp.push_back(particle_list[i])
             # Check if this particle has the trajectory flag turned on
+            p = psegArrSp.get_item(fullIndex)
             if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
 # or: p['bitflags'] should work?
                 if self.traj_T is not None:
-#                    print 'pindex for trajectory = ', pindex
+#                    print 'fullIndex for trajectory = ', fullIndex
                     dynamicsType = self.dynamics[species_name]
-                    self.traj_T.create_trajectory(species_name, pindex, dynamicsType, unique_id_int=p['unique_ID'])
+                    self.traj_T.create_trajectory(species_name, fullIndex, dynamicsType, unique_id_int=p['unique_ID'])
                 else:
 # Instead of printing this message, a traj_T object could be created here.
                     if printWarningNoTrajectory: print(fncName, "\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet.")
@@ -601,11 +630,11 @@ class Particle_C(object):
         species_number = 0.0
         psa = self.pseg_arr[species_name] # segmented array for this species
 
-        # Loop over the particle 'out' segments
+        # Loop over the particle "out" segments
         (npSeg, pseg) = psa.init_out_loop()
         while isinstance(pseg, np_m.ndarray):
             species_number += np_m.sum(pseg['weight'])
-            (npSeg, pseg) = psa.get_next_segment('out')
+            (npSeg, pseg) = psa.get_next_segment("out")
 
         if printSpeciesNumberFlag:
             print(fncName, "\tprintSpeciesNumberFlag=True:", species_name, "species has kinetic energy", species_number)
@@ -661,14 +690,14 @@ class Particle_C(object):
         species_KE = 0.0
         psa = self.pseg_arr[species_name] # segmented array for this species
 
-        # Loop over the particle 'out' segments
+        # Loop over the particle "out" segments
         (npSeg, pseg) = psa.init_out_loop()
         while isinstance(pseg, np_m.ndarray):
             # Sum of 0.5*m*u^2 for particles in this segment
             for ucomp in self.velocity_coordinates:
                 species_KE += np_m.sum(pseg['weight']*pseg[ucomp]**2)
             
-            (npSeg, pseg) = psa.get_next_segment('out')
+            (npSeg, pseg) = psa.get_next_segment("out")
 
         species_KE *= 0.5*self.mass[species_name]
 
@@ -698,15 +727,16 @@ class Particle_C(object):
     #                for ip in xrange(pseg.size):
                     for ip in range(npSeg):
                         pseg[ip]['cell_index'] = self.pmesh_M.compute_cell_index(pseg[ip])
-    #                    print 'ip, index =', ip, pseg[ip]['cell_index']
+                        print('ip, index =', ip, pseg[ip]['cell_index'])
 # Check that is_inside() confirms the cell index:
-#                        if not self.pmesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']):
-                        if not self.pmesh_M.is_inside_CPP(pseg[ip], pseg[ip]['cell_index']):
+                        if not self.pmesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']):
+#                        if not self.pmesh_M.is_inside_CPP(pseg[ip], pseg[ip]['cell_index']):
                             errorMsg = "%s\tDnT ERROR: is_inside() check failed for particle %d" % (fncName, ip)
                             sys.exit(errorMsg)
 #                        else:
 #                            print fncName, "*** is_inside check passes for particle", pseg[ip], "***"
-                    (npSeg, pseg) = psa.get_next_segment('out')
+#                    (npSeg, pseg) = psa.get_next_segment('O')
+                    (npSeg, pseg) = psa.get_next_segment("out")
         else:
             print(fncName, "\tDnT WARNING: The reference to pmesh_M is None")
 
@@ -750,7 +780,7 @@ class Particle_C(object):
                 # Compute the cell number density as well, if needed.
                 if cell_number_density_F is not None:
                     cell_number_density_F.add_weight_to_cell(p)
-            (npSeg, pseg) = psa.get_next_segment('out')
+            (npSeg, pseg) = psa.get_next_segment("out")
 
         # Convert the cell values to a cell density    
         if cell_number_density_F is not None:
@@ -804,7 +834,7 @@ class Particle_C(object):
                     dnt_cpp.add_weights_to_cells2D(pseg, cell_number_density_F.function._cpp_object)
                 elif self.particle_dimension == 1:
                     dnt_cpp.add_weights_to_cells1D(pseg, cell_number_density_F.function._cpp_object)
-            (npSeg, pseg) = psa.get_next_segment('out')
+            (npSeg, pseg) = psa.get_next_segment("out")
 
         # After all the particles have been summed, convert the cell values
         # to a cell density
@@ -898,7 +928,7 @@ class Particle_C(object):
             (npSeg, psegIn, psegOut) = psa.init_inout_loop()
             particleCount = 0
             # ipOut counts particles being written to the current
-            # 'out' segment.
+            # "out" segment.
             ipOut = 0
             indexChange = False # Flag to indicate if particle SA indices have
                                 # changed.  This affects, e.g., trajectories, which
@@ -968,8 +998,8 @@ class Particle_C(object):
 
                 """
 
-                # Loop on the particles in this 'in' segment.
-                # ipIn counts through the 'in' segment
+                # Loop on the particles in this "in" segment.
+                # ipIn counts through the "in" segment
                 for ipIn in range(npSeg):
 #                for ip in xrange(pseg.size):
 
@@ -977,13 +1007,13 @@ class Particle_C(object):
                     # of the ith item So pseg[i][0:3] is 'x', 'y', 'z', be we can't
                     # use slice syntax unless the array data are homogeneous.
 
-                    # Get the next 'out' segment if the current 'out' segment is
-                    # full. If there are no more 'out' segments, allocate a new one.
+                    # Get the next "out" segment if the current "out" segment is
+                    # full. If there are no more "out" segments, allocate a new one.
                     if ipOut == self.SEGMENT_LENGTH:
                         psegOut = psa.get_next_out_segment()
-                        ipOut = 0 # Reset the slot counter for the new 'out' segment
+                        ipOut = 0 # Reset the slot counter for the new "out" segment
 
-                    # COPY everything from 'in' to 'out', to ensure weights, flags, etc. get copied.
+                    # COPY everything from "in" to "out", to ensure weights, flags, etc. get copied.
                     psegOut[ipOut] = psegIn[ipIn] 
 
                     # Accelerate the particle with the field components in Eseg
@@ -1121,7 +1151,7 @@ class Particle_C(object):
 
                                     # Get the storage index that currently identifies this
                                     # particle in the trajectory list.
-                                    fullIndex = psa.get_full_index(ipIn, 'in')
+                                    fullIndex = psa.get_full_index(ipIn, "in")
 # Why is the None here for E? Because a particle may have gone out-of-bounds?  In that case, could compute E at initial coords instead of final coords.
 
 # Can I just send the interpolated E-field value?
@@ -1158,9 +1188,9 @@ class Particle_C(object):
                     # pseg[ip]['cell_index'] = compute_cell_index(Point(p))
 
                     # Check that this particle has not been deleted before
-                    # incrementing the 'out' particle counter.
+                    # incrementing the "out" particle counter.
                     if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 0: # If this particle has not been deleted...
-                        # If particle indices in the 'out' SA have changed (i.e.,
+                        # If particle indices in the "out" SA have changed (i.e.,
                         # indexChange is True) due to deletions, then update this
                         # particle's index where needed.  E.g., if this is a
                         # trajectory particle, update its SA index in the list of
@@ -1171,7 +1201,7 @@ class Particle_C(object):
 #                                    print "mover: indexChange is true: updating the trajectory particle ID for particle", psegIn[ipIn]['unique_ID'], "ipIn =", ipIn, "ipOut =", ipOut
                                     self.update_trajectory_particleId(sn, ipIn, ipOut)
 
-                        # Advance the 'out' array counter for the next particle
+                        # Advance the "out" array counter for the next particle
                         ipOut += 1
                     else: # This particle has been deleted
                         indexChange = True # This indicates that particle SA indices
@@ -1191,17 +1221,17 @@ class Particle_C(object):
 
                 # Done with this segment.
                 # Get the next one, if it exists.
-                (npSeg, psegIn) = psa.get_next_segment('in')
+                (npSeg, psegIn) = psa.get_next_segment("in")
             # End of while isinstance(psegIn, np_m.ndarray)
 
             # Set values that will be used to keep track of the particle arrays
             if (ipOut != self.SEGMENT_LENGTH): # This catches the case where we exit the loop
                                                # when ipOut = SEGMENT_LENGTH and there are no
-                                               # more 'in' segments.  Otherwise, we would add
+                                               # more "in" segments.  Otherwise, we would add
                                                # SEGMENT_LENGTH to particleCount twice.
                 
                 particleCount += ipOut
-            psa.set_number_of_items('out', particleCount)
+            psa.set_number_of_items("out", particleCount)
             # End of loop over segmented array
 
 # Compute new density here?
@@ -1263,15 +1293,15 @@ class Particle_C(object):
                                                       # segment)
             particleCount = 0
             # ipOut counts particles being written to the current
-            # 'out' segment.
+            # "out" segment.
             ipOut = 0
             indexChange = False # Flag to indicate if particle SA indices have
                                 # changed.  This affects, e.g., trajectories, which
                                 # use SA indices to identify particles chosen for
                                 # trajectory plots.
             while isinstance(psegIn, np_m.ndarray): # Keep looping until we run
-                                                    # out of 'in' segments
-                for ipIn in range(npSeg): # Loop on the particles in this 'in'
+                                                    # out of "in" segments
+                for ipIn in range(npSeg): # Loop on the particles in this "in"
                                            # segment
                     # psegIn[ipIn] has the 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values of ith item
                     # So psegIn[ipIn][0:3] is 'x', 'y', 'z'.
@@ -1283,9 +1313,9 @@ class Particle_C(object):
                                            # this point due to deletions.
                         continue # skip to the next particle
 
-                    # If this 'out' segment is full, get the next 'out' segment,
-                    # since there are still some 'in' particles to advance.  If
-                    # there are no more 'out' segments, allocate a new one.
+                    # If this "out" segment is full, get the next "out" segment,
+                    # since there are still some "in" particles to advance.  If
+                    # there are no more "out" segments, allocate a new one.
                     if ipOut == self.SEGMENT_LENGTH:
                         psegOut = psa.get_next_out_segment()
                         ipOut = 0 # Reset the counter for the new segment
@@ -1401,7 +1431,7 @@ class Particle_C(object):
 
                                     # Get the storage index that currently identifies this
                                     # particle in the trajectory list of particles.
-                                    fullIndex = psa.get_full_index(ipIn, 'in')
+                                    fullIndex = psa.get_full_index(ipIn, "in")
                                     self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True)
                                 # A reference to dx[] is available in the BC function class.
                                 self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
@@ -1432,9 +1462,9 @@ class Particle_C(object):
                     psegOut[ipOut]['crossings'] = facetCrossCount
                     
                     # Check that this particle has not been deleted before
-                    # incrementing the 'out' particle counter.
+                    # incrementing the "out" particle counter.
                     if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 0: # If this particle has not been deleted...
-                        # If particle indices in the 'out' SA have changed (i.e.,
+                        # If particle indices in the "out" SA have changed (i.e.,
                         # indexChange is True) due to deletions, then update this
                         # particle's index where needed.  E.g., if this is a
                         # trajectory particle, update its SA index in the list of
@@ -1445,7 +1475,7 @@ class Particle_C(object):
 #                                    print "mover: indexChange is true: updating the trajectory particle ID for particle", psegIn[ipIn]['unique_ID'], "ipIn =", ipIn, "ipOut =", ipOut
                                     self.update_trajectory_particleId(sn, ipIn, ipOut)
 
-                        # Advance the 'out' array counter for the next particle
+                        # Advance the "out" array counter for the next particle
                         ipOut += 1
                     else: # This particle has been deleted
                         indexChange = True # This indicates that particle SA indices
@@ -1464,21 +1494,21 @@ class Particle_C(object):
                     if (ipOut == self.SEGMENT_LENGTH):
                         particleCount += self.SEGMENT_LENGTH
 #                        ipOut = 0 # This will cause get_next_out_segment() to be called
-                                   # above, if there are more 'in' particles to be processed.
+                                   # above, if there are more "in" particles to be processed.
 
-                # Done with this segment.
+                # Done with this "in" segment.
                 # Get the next one, if it exists.
-                (npSeg, psegIn) = psa.get_next_segment('in')
+                (npSeg, psegIn) = psa.get_next_segment("in")
             # End of while isinstance(psegIn, np_m.ndarray)                                   
                 
 
             # Set values that will be used to keep track of the particle arrays
             if (ipOut != self.SEGMENT_LENGTH): # This catches the case where we exit the loop
                                                # when ipOut = SEGMENT_LENGTH and there are no
-                                               # more 'in' segments.  Otherwise, we would add
+                                               # more "in" segments.  Otherwise, we would add
                                                # SEGMENT_LENGTH to particleCount twice.
                 particleCount += ipOut
-            psa.set_number_of_items('out', particleCount)
+            psa.set_number_of_items("out", particleCount)
             # Loop over segmented array ends
 
 # Compute new density here?
@@ -1535,7 +1565,9 @@ class Particle_C(object):
 
 #HERE is the C++ code
 #            particle_cpp.move_neutral_particle_species(psa, pmesh_M.mesh, cell_vertex_dict)
-            particle_cpp.move_neutral_particle_species(ctrl, psa, pmesh_M.mesh, cell_vertex_dict, self)
+#            particle_cpp.move_neutral_particle_species(ctrl, psa, pmesh_M.mesh, cell_vertex_dict, self)
+#            particle_cpp.move_neutral_particle_species(sn, ctrl, self)
+            p_cpp.move_neutral_particle_species(sn, ctrl, self)
 
 #           Move all the particles in this species
             (npSeg, psegIn, psegOut) = psa.init_inout_loop() # (number of particles in
@@ -1544,19 +1576,19 @@ class Particle_C(object):
                                                       # segment)
             particleCount = 0
             # ipOut counts particles being written to the current
-            # 'out' segment.
+            # "out" segment.
             ipOut = 0
             indexChange = False # Flag to indicate if particle SA indices have
                                 # changed.  This affects, e.g., trajectories, which
                                 # use SA indices to identify particles chosen for
                                 # trajectory plots.
             while isinstance(psegIn, np_m.ndarray): # Keep looping until we run
-                                                    # out of 'in' segments
+                                                    # out of "in" segments
 
 
 
                     
-                for ipIn in range(npSeg): # Loop on the particles in this 'in'
+                for ipIn in range(npSeg): # Loop on the particles in this "in"
                                            # segment
                     # psegIn[ipIn] has the 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values of ith item
                     # So psegIn[ipIn][0:3] is 'x', 'y', 'z'.
@@ -1568,9 +1600,9 @@ class Particle_C(object):
                                           # this point due to deletions.
                         continue # skip to the next particle
 
-                    # If this 'out segment is full, get the next 'out' segment,
-                    # provided there are still some 'in' particles to advance.  If
-                    # there are no more 'out' segments, allocate a new one.
+                    # If this 'out segment is full, get the next "out" segment,
+                    # provided there are still some "in" particles to advance.  If
+                    # there are no more "out" segments, allocate a new one.
                     if ipOut == self.SEGMENT_LENGTH:
                         psegOut = psa.get_next_out_segment()
                         ipOut = 0 # Reset the counter for the new segment
@@ -1686,7 +1718,7 @@ class Particle_C(object):
 
                                     # Get the storage index that currently identifies this
                                     # particle in the trajectory list of particles.
-                                    fullIndex = psa.get_full_index(ipIn, 'in')
+                                    fullIndex = psa.get_full_index(ipIn, "in")
                                     self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True)
                                 # A reference to dx[] is available in the BC function class.
                                 self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
@@ -1717,9 +1749,9 @@ class Particle_C(object):
                     psegOut[ipOut]['crossings'] = facetCrossCount
                     
                     # Check that this particle has not been deleted before
-                    # incrementing the 'out' particle counter.
+                    # incrementing the "out" particle counter.
                     if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 0: # If this particle has not been deleted...
-                        # If particle indices in the 'out' SA have changed (i.e.,
+                        # If particle indices in the "out" SA have changed (i.e.,
                         # indexChange is True) due to deletions, then update this
                         # particle's index where needed.  E.g., if this is a
                         # trajectory particle, update its SA index in the list of
@@ -1730,7 +1762,7 @@ class Particle_C(object):
 #                                    print "mover: indexChange is true: updating the trajectory particle ID for particle", psegIn[ipIn]['unique_ID'], "ipIn =", ipIn, "ipOut =", ipOut
                                     self.update_trajectory_particleId(sn, ipIn, ipOut)
 
-                        # Advance the 'out' array counter for the next particle
+                        # Advance the "out" array counter for the next particle
                         ipOut += 1
                     else: # This particle has been deleted
                         indexChange = True # This indicates that particle SA indices
@@ -1748,20 +1780,20 @@ class Particle_C(object):
                     if (ipOut == self.SEGMENT_LENGTH):
                         particleCount += self.SEGMENT_LENGTH
 #                        ipOut = 0 # This will cause get_next_out_segment() to be called
-                                   # above, if there are more 'in' particles to be processed.
+                                   # above, if there are more "in" particles to be processed.
 
                 # Done with this segment.
                 # Get the next one, if it exists.
-                (npSeg, psegIn) = psa.get_next_segment('in')
+                (npSeg, psegIn) = psa.get_next_segment("in")
             # End of while isinstance(psegIn, np_m.ndarray)                                   
                 
             # Set values that will be used to keep track of the particle arrays
             if (ipOut != self.SEGMENT_LENGTH): # This catches the case where we exit the loop
                                                # when ipOut = SEGMENT_LENGTH and there are no
-                                               # more 'in' segments.  Otherwise, we would add
+                                               # more "in" segments.  Otherwise, we would add
                                                # SEGMENT_LENGTH to particleCount twice.
                 particleCount += ipOut
-            psa.set_number_of_items('out', particleCount)
+            psa.set_number_of_items("out", particleCount)
             # Loop over segmented array ends
 
 # Compute new density here?
@@ -1857,7 +1889,7 @@ class Particle_C(object):
 
         # Loop on segments until a None value is returned
         particleCount = 0
-        # ipOut counts through the 'out' array
+        # ipOut counts through the "out" array
         ipOut = 0
         while isinstance(psegIn, np_m.ndarray):
 #            print "type pseg = ", type(pseg)
@@ -1865,17 +1897,17 @@ class Particle_C(object):
 #            print pseg
             # Accelerate this block of particles
 
-            # Loop on the particles in this 'in' segment.
-            # ipIn counts through the 'in' segment
+            # Loop on the particles in this "in" segment.
+            # ipIn counts through the "in" segment
             for ipIn in range(npSeg):
 
-                # Get the next 'out' segment if the current 'out' segment is full.
-                # If there are no more 'out' segments, allocate a new one.
+                # Get the next "out" segment if the current "out" segment is full.
+                # If there are no more "out" segments, allocate a new one.
                 if ipOut == self.SEGMENT_LENGTH:
                     psegOut = psa.get_next_out_segment()
                     ipOut = 0 # Reset the counter for the new segment
 
-                    # COPY everything from 'in' to 'out', to ensure weights, flags, etc. get copied.
+                    # COPY everything from "in" to "out", to ensure weights, flags, etc. get copied.
                     psegOut[ipOut] = psegIn[ipIn]
 
                 # Accelerate the particle
@@ -1892,18 +1924,18 @@ class Particle_C(object):
                 ipOut += 1
                 # Check if we've reached the end of this segment.  If
                 # so, we need to start writing on a new segment.  But
-                # don't increment to a new 'out' segment unless there
-                # are actually more 'in' particles to process.
+                # don't increment to a new "out" segment unless there
+                # are actually more "in" particles to process.
                 if (ipOut == self.SEGMENT_LENGTH):
                     particleCount += self.SEGMENT_LENGTH
                     
             # Done with this segment.
             # Get the next one, if it exists.
-            (npSeg, psegIn) = psa.get_next_segment('in')
+            (npSeg, psegIn) = psa.get_next_segment("in")
 
         # Set values that will be used to keep track of the particle arrays
         particleCount += ipOut
-        psa.set_number_of_items('out', particleCount)
+        psa.set_number_of_items("out", particleCount)
 
         return
 #    def move_particles_in_uniform_fields(self, species_name, ctrl, print_flag = False):ENDDEF
@@ -1939,13 +1971,13 @@ class Particle_C(object):
            remaining particles, and have to be updated.
 
            :param str sn: The name of the current species being advanced.
-           :param int i_in: The particle's index in the current 'in' segment.
-           :param int i_out: The particle's index in the current 'out' segment.
+           :param int i_in: The particle's index in the current "in" segment.
+           :param int i_out: The particle's index in the current "out" segment.
         """
 
         psa = self.pseg_arr[sn] # The segmented array for this species
 
-        # Obtain the full indices of this particle in the 'in' and 'out' arrays.
+        # Obtain the full indices of this particle in the "in" and "out" arrays.
         (full_index_in, full_index_out) = psa.get_full_indices(i_in, i_out)
 
         # Find the position of full_index_in in the trajectory storage list.  This is
@@ -1974,7 +2006,7 @@ class Particle_C(object):
            trying to interpolate it.
 
            :param str sn: The name of the current species being advanced
-           :param int i_in: The particle's index in the current 'in' segment
+           :param int i_in: The particle's index in the current "in" segment
            :param p: The current attributes of the particle being deleted. These are
                      recorded as the last point on the trajectory.
            :param int step: The current simulation step
@@ -2006,7 +2038,7 @@ class Particle_C(object):
         p_arr = self.one_particle_arr
 
         # Obtain the full index of this particle
-        full_index_in = psa.get_full_index(i_in, 'in')
+        full_index_in = psa.get_full_index(i_in, "in")
 #tph
 #        print "remove_traj: The full index of particle", i_in, "is", full_index_in, ". The unique_ID is", p['unique_ID']
 
@@ -2254,7 +2286,7 @@ class Particle_C(object):
                 if ip == traj_T.NO_PINDEX: continue
 
                 # Retrieve the particle using its full index
-                p_arr[0] = pseg_arr.get(ip) # pulls value from the 'out' array.
+                p_arr[0] = pseg_arr.get_item(ip) # pulls value from the "out" array.
 
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
@@ -2317,7 +2349,7 @@ class Particle_C(object):
                 if ip == traj_T.NO_PINDEX: continue
 
                 # Retrieve particle using its full index
-                p_arr[0] = psegArrSp.get(ip) # pulls value from the 'out' array.
+                p_arr[0] = psegArrSp.get_item(ip) # pulls value from the "out" array.
 
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
@@ -2367,7 +2399,7 @@ class Particle_C(object):
                 if ip == traj_T.NO_PINDEX: continue
 
                 # Retrieve particle using its full index
-                p_arr[0] = psegArrSp.get(ip) # pulls value from the 'out' array.
+                p_arr[0] = psegArrSp.get_item(ip) # pulls value from the "out" array.
 
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
@@ -2593,19 +2625,21 @@ class Particle_C(object):
                 particle[3*pDim+4] = crossings
                     
                 # Store the particle
-                p, pindex = psegArrSp.push_back(particle)
+#                p, pindex = psegArrSp.push_back(particle)
+                segIndex, fullIndex = psegArrSp.push_back(particle)
 
                 # If the particle is tagged as a trajectory particle, initialize its
                 # trajectory information. Note: if this is being called by
                 # initialize_particles(), the E-field has not been computed yet.
+                p = psegArrSp[fullIndex]
                 if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
                     if self.traj_T is not None:
-                        print("A trajectory will be recorded for particle", pindex, "of species:", speciesName)
+                        print("A trajectory will be recorded for particle", fullIndex, "of species:", speciesName)
                         dynamicsType = self.dynamics[speciesName]
-                        self.traj_T.create_trajectory(speciesName, pindex, dynamicsType)
+                        self.traj_T.create_trajectory(speciesName, fullIndex, dynamicsType)
                         # Record the initial datum for this new trajectory
 
-                        self.record_trajectory_datum(speciesName, p, pindex, step, time, neg_E_field=None, external_E_field=None)
+                        self.record_trajectory_datum(speciesName, p, fullIndex, step, time, neg_E_field=None, external_E_field=None)
                     else:
 # Instead of printing this message, a traj_T object could be created here?
                         if printWarningNoTrajectory is True: print(fncName, "\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet.")
@@ -2750,7 +2784,7 @@ class Particle_C(object):
 #                    print "h5Buf is:", h5Buf[aOff:aOff+npSpecies]
                     aOff += npSpecies
                 else:
-                    ## Loop over the segments of the 'out' array to get the attribute pA
+                    ## Loop over the segments of the "out" array to get the attribute pA
                     psa = self.pseg_arr[s] # segmented array for this species
                     (npSeg, pseg) = psa.init_out_loop()
 #                    particleCount = 0
@@ -2760,7 +2794,7 @@ class Particle_C(object):
                         h5Buf[aOff:aOff+npSeg] = pseg[pA] # Copy all the values of attribute pA to
                                                           # contiguous locations in the buffer.
                         aOff += npSeg # Advance the offset by the number of values just copied.
-                        (npSeg, pseg) = psa.get_next_segment('out')
+                        (npSeg, pseg) = psa.get_next_segment("out")
 
 #            print "h5Buf is:", h5Buf[0:aOff]
             dset = group.create_dataset(pA, data=h5Buf[0:aOff])

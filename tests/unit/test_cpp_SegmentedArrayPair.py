@@ -23,11 +23,26 @@ import unittest
 
 # from UserUnits_Module import MyPlasmaUnits_C
 
-# Use the C++ functions in the segmentedarraypair.so library
-import segmentedarraypair_pyb
+# Use the C++ functions in the segmentedarraypair_cpp.so library
+import segmentedarraypair_cpp
 
-class TestPstruct(unittest.TestCase):
-    """Test the C++ functions in segmentedarraypair_pyb.so"""
+class TestSegmentedArrayPair(unittest.TestCase):
+    """Test the C++ functions in segmentedarraypair_cpp.so
+
+       Functions tested:
+           py::tuple     get_as_tuple(py::ssize_t full_index)
+           py::tuple     get_capacity()
+           py::ssize_t   get_number_of_items()
+           py::tuple     get_number_of_segments()
+           py::tuple     get_segment_and_offset(py::ssize_t full_index)
+
+           py::tuple     init_inout_loop(bool returnDataPtrs = false)
+
+           py::tuple     push_back(py::tuple item_input)
+
+
+
+    """
     
     def setUp(self):
 
@@ -40,7 +55,7 @@ class TestPstruct(unittest.TestCase):
 
         return
 
-#class TestPstruct(unittest.TestCase):
+#class TestSegmentedArrayPair(unittest.TestCase):
     def test_1_CPP_cartesian_x(self):
         """Create a SegmentedArray for the "cartesian_x" particle type.
 
@@ -53,7 +68,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray for cartesian_x particles
-        seg_array_obj_CPP_cartesian_x = segmentedarraypair_pyb.SegmentedArrayPair_cartesian_x(self.segment_length)
+        seg_array_obj_CPP_cartesian_x = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x(self.segment_length)
         
         particle_dimension = 1
         x=1.5; x0=1.0; ux=3.0; weight = 101.1
@@ -127,7 +142,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_x_y particles
-        seg_array_obj_CPP_cartesian_x_y = segmentedarraypair_pyb.SegmentedArrayPair_cartesian_x_y(self.segment_length)        
+        seg_array_obj_CPP_cartesian_x_y = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y(self.segment_length)        
         
         # Create a cartesian_x_y particle and put it into the SegmentedArray
         x=0.0; x0=x; y=1.0; y0=y; ux=3.0; uy=4; weight = 101.1
@@ -174,7 +189,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
-        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair_pyb.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
+        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
         
         # Create a cartesian_x_y_z particle and put it into the SegmentedArray
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
@@ -216,7 +231,7 @@ class TestPstruct(unittest.TestCase):
         print('\ntest: ', fncname, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
-        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair_pyb.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
+        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
 
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
@@ -276,7 +291,72 @@ class TestPstruct(unittest.TestCase):
         return
 #    def test_4_several_segments(self): ENDDEF
 
-#class TestPstruct(unittest.TestCase):ENDCLASS
+    def test_5_loop_over_segments(self):
+        """ Test looping over the data in segments.
+
+        """
+
+        fncname = sys._getframe().f_code.co_name
+        print('\ntest: ', fncname, '('+__file__+')')
+
+        # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
+        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
+
+        x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
+        bitflags = 0b00 # initialize all bits to 0
+        bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
+        NO_CELL = -1
+        cell_index = NO_CELL
+
+        unique_ID = 1
+        crossings = 5
+
+        dx = 0.2
+
+        seg_arr = seg_array_obj_CPP_cartesian_x_y_z
+        
+        # Put in more particles than one segment can hold
+        for i in range(self.segment_length+1):
+            putparticle = (x,y,z, x0,y0,z0, ux,uy,uz, weight, bitflags, cell_index, unique_ID, crossings)
+            seg_arr.push_back(putparticle)
+            x += dx
+            unique_ID += 1
+
+        # Add the same number again, so there are 2 particles in the 3rd segment
+        for i in range(self.segment_length+1):
+            putparticle = (x,y,z, x0,y0,z0, ux,uy,uz, weight, bitflags, cell_index, unique_ID, crossings)
+            seg_arr.push_back(putparticle)
+            x += dx
+            unique_ID += 1
+
+        # Start a loop over segments.
+
+        # 1. Retrieve pointers to the arrays in the Numpy array objects in the SAP
+        (npSeg, psegIn, psegOut) = seg_arr.init_inout_loop(returnDataPtrs=True)
+        segmentCount = 1
+
+        while psegIn is not None:
+            print("Number of particles in plain array", segmentCount, "is", npSeg)
+            (npSeg, psegIn) = seg_arr.get_next_segment("in", returnDataPtr=True)
+            segmentCount += 1
+
+        # 2. Retrieve the Numpy array objects from the SAP
+        # Note: since the "in" segment was not copied to the "out" segment since the
+        # last call to init_inout_loop(), we need to uncomment the swapPair
+        # modification in SegmentedArrayPair.h:init_inout_loop(). Otherwise, we'll
+        # get the empty member of the SAP.
+        (npSeg, psegIn, psegOut) = seg_arr.init_inout_loop()
+        segmentCount = 1
+        
+        while isinstance(psegIn, np_m.ndarray):
+            print("Number of particles in Numpy structured array object", segmentCount, "is", npSeg)
+            (npSeg, psegIn) = seg_arr.get_next_segment("in")
+            segmentCount += 1
+
+            
+        return
+#    def test_5_loop_over_segments(self): ENDDEF
+#class TestSegmentedArrayPair(unittest.TestCase):ENDCLASS
 
 if __name__ == '__main__':
     unittest.main()

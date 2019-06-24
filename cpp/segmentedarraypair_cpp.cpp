@@ -1,4 +1,4 @@
-/*! \file segmentedarraypair_pyb.cpp
+/*! \file segmentedarraypair_cpp.cpp
 
   \brief This file creates a shared library with the Python bindings for
   SegmentedArray storage that's created in C++.
@@ -60,26 +60,34 @@ namespace dnt {
         // The following creates the bindings to SegmentedArrayPair member
         // functions for particle type PT. The source for these is in
         // SegmentedArrayPair.h.
+        .def("get_as_list", &SAP::get_as_list)
         .def("get_as_tuple", &SAP::get_as_tuple)
         .def("get_capacity", &SAP::get_capacity)
-        .def("get_next_out_segment", &SAP::get_next_out_segment)
-        .def("get_next_segment", &SAP::get_next_segment)
+        .def("get_item", &SAP::get_item)
+        .def("get_next_out_segment", &SAP::get_next_out_segment, py::arg("returnDataPtr") = false)
+        .def("get_next_segment", &SAP::get_next_segment, py::arg(), py::arg("returnDataPtr") = false)
         .def("get_number_of_items", &SAP::get_number_of_items)
         .def("get_number_of_mbytes", &SAP::get_number_of_mbytes)
         .def("get_number_of_segments", &SAP::get_number_of_segments)
         .def("get_segment_and_offset", &SAP::get_segment_and_offset)
-        .def("init_inout_loop", &SAP::init_inout_loop)
-        .def("push_back", &SAP::push_back);
-
-        /*        
+        .def("init_inout_loop", &SAP::init_inout_loop, py::arg("returnDataPtrs") = false)
+        .def("init_out_loop", &SAP::init_out_loop, py::arg("returnDataPtr") = false)
+        .def("push_back", (py::tuple (SAP::*) (py::tuple)) &SAP::push_back)
+        .def("push_back", (py::tuple (SAP::*) (py::list)) &SAP::push_back)
+        .def("set_number_of_items", &SAP::set_number_of_items);
+      //        .def("push_back", &SAP::push_back);
+             
+      // cf. ~/workspace/dolfin/python/src/geometry.cpp for __getitem__
+        /*
         .def("__getitem__", [](SAP& self, std::size_t full_index)
              {
                //               if (index > 2)
                //                 throw py::index_error("Out of range");
 
                // (seg, offset) = divmod(i, self.SEGMENTLENGTH)
-               auto seg = (py::ssize_t) full_index / self.segmentLength;
-               auto offset = full_index % self.segmentLength;
+               auto segmentLength = self.get_segment_length();
+               auto seg = (py::ssize_t) full_index / segmentLength;
+               auto offset = full_index % segmentLength;
       
                auto outSA = self.outSegmentedArray;
 
@@ -87,8 +95,7 @@ namespace dnt {
                const auto pseg = static_cast<Pstruct<PT>*>(pseg_info.ptr); // Pointer to a  structured Numpy array
 
                //        vec[firstAvailableOffset[outSA]] = item_input;
-               auto ip = firstAvailableOffset[outSA];
-
+               //               auto ip = firstAvailableOffset[outSA];
                
                return self.segListPair[outSA][seg][offset];
                
@@ -103,7 +110,7 @@ namespace dnt {
   // Interface to the C++ class SegmentedArrayPair
 
   // Create a variable 'm' of type py::module
-  PYBIND11_MODULE(segmentedarraypair_pyb, m)
+  PYBIND11_MODULE(segmentedarraypair_cpp, m)
   {
 
 //    m.def("divide_by_cell_volumes", &divide_by_cell_volumes);
@@ -138,6 +145,13 @@ namespace dnt {
     PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x_y>, x_, "x", y_, "y", x0_, "x0", y0_, "y0", ux_, "ux", uy_, "uy", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
     PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x_y_z>, x_, "x", y_, "y", z_, "z", x0_, "x0", y0_, "y0", z0_, "z0", ux_, "ux", uy_, "uy", uz_, "uz", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
 
+//  py::class_() creates Python bindings for a C++ class or struct-style data structure
+//  py::class_<DnT_prec1D>(m, "DnT_prec1D");
+//  py::class_<DnT_prec2D>(m, "DnT_prec2D");
+//  py::class_<DnT_prec3D>(m, "DnT_prec3D");
+
+
+    
 // C++ classes and functions defined in SegmentedArrayPair.h
   
     // Interface to the C++ class SegmentedArrayPair
@@ -147,7 +161,7 @@ namespace dnt {
     makeSegmentedArrayPair<Ptype::cartesian_x_y>(m, "cartesian_x_y");
     makeSegmentedArrayPair<Ptype::cartesian_x_y_z>(m, "cartesian_x_y_z");
       
-  } // PYBIND11_MODULE(segmentedarraypair, m)
+  } // ENDDEF: PYBIND11_MODULE(segmentedarraypair, m)
 
   
 } // namespace dnt

@@ -345,7 +345,7 @@ class TestParticleCellIndex(unittest.TestCase):
                         else:
                             self.assertTrue(False, msg = "A particle is outside the mesh")
 
-                # Done with this segment.
+                # Done with this "in" segment.
                 # Get the next one, if it exists.
                 (np_seg, pseg) = psa.get_next_segment('out')
 

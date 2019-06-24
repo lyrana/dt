@@ -34,6 +34,7 @@ Contents:
 #include <pybind11/stl.h>
 // #include <pybind11/eigen.h>
 #include <pybind11/operators.h>
+//#include <pybind11/cast.h>
 
 namespace py = pybind11;
 
@@ -59,10 +60,10 @@ namespace dnt
 
 */
   template <Ptype PT>
-  class Pstruct {
-    
-  public:
+    class Pstruct {
 
+  public:
+    // These are static class members, so they're set outside the ctor. See below.
     static int DELETE_FLAG;
     static int TRAJECTORY_FLAG;
     
@@ -109,8 +110,13 @@ namespace dnt
   template<>
     class Pstruct<Ptype::cartesian_x>
     {
+      
       // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
     public:
+    // These are static class members, so they're set outside the ctor. See below.
+      static int DELETE_FLAG;
+      static int TRAJECTORY_FLAG;
+      
       double x_;                  // 1 f8    8 bytes
       double x0_;                 // 2 f8   16 
       double ux_;                 // 3 f8   24
@@ -121,8 +127,9 @@ namespace dnt
       int crossings_;             // 8 i4   48
 
     public:
-      //! Set the member values from a tuple
-      void set_from_tuple(py::tuple p)
+      //! Set the member values from a py::tuple
+      //      void set_from_tuple(py::tuple p)
+      void set_from_list_or_tuple(py::tuple p)
       {
         x_ = p[0].cast<double>();
         x0_ = p[1].cast<double>();
@@ -133,6 +140,22 @@ namespace dnt
         unique_ID_ = p[6].cast<int>();
         crossings_ = p[7].cast<int>();
       }
+      // void set_from_tuple(py::tuple p) ENDDEF
+
+      //! Set the member values from a py::list
+      //      void set_from_list(py::list p)
+      void set_from_list_or_tuple(py::list p)
+      {
+        x_ = p[0].cast<double>();
+        x0_ = p[1].cast<double>();
+        ux_ = p[2].cast<double>();
+        weight_ = p[3].cast<double>();
+        bitflags_ = p[4].cast<int>();
+        cell_index_ = p[5].cast<int>();
+        unique_ID_ = p[6].cast<int>();
+        crossings_ = p[7].cast<int>();
+      }
+      // void set_from_list(py::list p) ENDDEF
 
       //! Put the member values into a tuple
       py::tuple as_tuple()
@@ -140,7 +163,35 @@ namespace dnt
           // Create a tuple containing the member values
           return py::make_tuple(x_, x0_, ux_, weight_, bitflags_, cell_index_, unique_ID_, crossings_);
         }
-    
+      // py::tuple as_tuple() ENDDEF
+
+      //! Put the member values into a py::list
+      py::list as_list()
+        {
+          // Create a list containing the member values
+          auto l = py::list();
+          l.append(x_);
+          l.append(x0_);
+          l.append(ux_);
+          l.append(weight_);
+          l.append(bitflags_);
+          l.append(cell_index_);
+          l.append(unique_ID_);
+          l.append(crossings_);
+          
+          return l;
+        }
+      // py::list as_list() ENDDEF
+      
+      //! Put the member values into a py::dict
+      py::dict as_dict()
+        {
+          using namespace pybind11::literals;          
+          // Create a dictionary containing the member values
+          return py::dict("x"_a=x_, "x0"_a=x0_, "ux"_a=ux_, "weight"_a=weight_, "bitflags"_a=bitflags_, "cell_index"_a=cell_index_, "unique_ID"_a=unique_ID_, "crossings"_a=crossings_);
+        }
+      // py::tuple as_dict() ENDDEF
+      
       // Declare the << operator for the pstruct1D data type. This is used in print_pstructarray()
       friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x>& p)
       {
@@ -148,8 +199,16 @@ namespace dnt
         return os;
       }
     };
-  // class Pstruct<Ptype::cartesian_x> ENDCLASS
+  // ENDCLASS: class Pstruct<Ptype::cartesian_x>
 
+  // Initialize static class members
+  
+  // Set the bit patterns for flags. These are static class members, so they're set
+  // outside the ctor.
+    int Pstruct<Ptype::cartesian_x>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+    int Pstruct<Ptype::cartesian_x>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
+
+    
 /*! \struct pstruct2D
   \brief struct for (x, y) particle coordinates
 */
@@ -158,6 +217,10 @@ namespace dnt
     {
       // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
     public:
+      // These are static class members, so they're set outside the ctor. See below.
+      static int DELETE_FLAG;
+      static int TRAJECTORY_FLAG;
+      
       double x_;                  // 1  f8    8 bytes
       double y_;                  // 2  f8   16
       double x0_;                 // 3  f8   24
@@ -186,6 +249,22 @@ namespace dnt
         unique_ID_ = p[9].cast<int>();
         crossings_ = p[10].cast<int>();
       }
+      //! Set the member values from a list
+//      void set_from_list(py::list p)
+      void set_from_list_or_tuple(py::list p)
+      {
+        x_ = p[0].cast<double>();
+        y_ = p[1].cast<double>();
+        x0_ = p[2].cast<double>();
+        y0_ = p[3].cast<double>();
+        ux_ = p[4].cast<double>();
+        uy_ = p[5].cast<double>();
+        weight_ = p[6].cast<double>();
+        bitflags_ = p[7].cast<int>();
+        cell_index_ = p[8].cast<int>();
+        unique_ID_ = p[9].cast<int>();
+        crossings_ = p[10].cast<int>();
+      }
 
       //! Put the member values into a tuple
       py::tuple as_tuple()
@@ -194,6 +273,36 @@ namespace dnt
           return py::make_tuple(x_, y_, x0_, y0_, ux_, uy_, weight_, bitflags_, cell_index_, unique_ID_, crossings_);
         }
     
+      //! Put the member values into a py::list
+      py::list as_list()
+        {
+          // Create a list containing the member values
+          auto l = py::list();
+          l.append(x_);
+          l.append(y_);
+          l.append(x0_);
+          l.append(y0_);
+          l.append(ux_);
+          l.append(uy_);
+          l.append(weight_);
+          l.append(bitflags_);
+          l.append(cell_index_);
+          l.append(unique_ID_);
+          l.append(crossings_);
+          
+          return l;
+        }
+      // py::list as_list() ENDDEF
+      
+      //! Put the member values into a dictionary
+      py::dict as_dict()
+        {
+          using namespace pybind11::literals;          
+          // Create a dictionary containing the member values
+          return py::dict("x"_a=x_, "y"_a=y_, "x0"_a=x0_, "y0"_a=y0_, "ux"_a=ux_, "uy"_a=uy_, "weight"_a=weight_, "bitflags"_a=bitflags_, "cell_index"_a=cell_index_, "unique_ID"_a=unique_ID_, "crossings"_a=crossings_);
+        }
+      // py::tuple as_dict() ENDDEF
+
       // Declare the << operator for the pstruct1D data type. This is used in print_pstructarray()
       friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x_y>& p)
       {
@@ -204,6 +313,13 @@ namespace dnt
     };
   // class Pstruct<Ptype::cartesian_x_y> ENDCLASS
 
+  // Initialize static class members
+  
+  // Set the bit patterns for flags. These are static class members, so they're set
+  // outside the ctor.
+    int Pstruct<Ptype::cartesian_x_y>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+    int Pstruct<Ptype::cartesian_x_y>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
+
 
 /*! \struct pstruct3D
   \brief struct for (x, y, z) particle coordinates
@@ -213,6 +329,10 @@ namespace dnt
   {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   public:
+    // These are static class members, so they're set outside the ctor. See below.
+    static int DELETE_FLAG;
+    static int TRAJECTORY_FLAG;
+    
     double x_;                  // 1  f8    8 bytes
     double y_;                  // 2  f8   16
     double z_;                  // 3  f8   24
@@ -247,6 +367,25 @@ namespace dnt
         unique_ID_ = p[12].cast<int>();
         crossings_ = p[13].cast<int>();
       }
+      //! Set the member values from a list
+//      void set_from_list(py::list p)
+      void set_from_list_or_tuple(py::list p)
+      {
+        x_ = p[0].cast<double>();
+        y_ = p[1].cast<double>();
+        z_ = p[2].cast<double>();
+        x0_ = p[3].cast<double>();
+        y0_ = p[4].cast<double>();
+        z0_ = p[5].cast<double>();
+        ux_ = p[6].cast<double>();
+        uy_ = p[7].cast<double>();
+        uz_ = p[8].cast<double>();
+        weight_ = p[9].cast<double>();
+        bitflags_ = p[10].cast<int>();
+        cell_index_ = p[11].cast<int>();
+        unique_ID_ = p[12].cast<int>();
+        crossings_ = p[13].cast<int>();
+      }
 
       //! Put the member values into a tuple
       py::tuple as_tuple()
@@ -255,6 +394,39 @@ namespace dnt
           return py::make_tuple(x_, y_, z_, x0_, y0_, z0_, ux_, uy_, uz_, weight_, bitflags_, cell_index_, unique_ID_, crossings_);
         }
     
+      //! Put the member values into a py::list
+      py::list as_list()
+        {
+          // Create a list containing the member values
+          auto l = py::list();
+          l.append(x_);
+          l.append(y_);
+          l.append(z_);
+          l.append(x0_);
+          l.append(y0_);
+          l.append(z0_);
+          l.append(ux_);
+          l.append(uy_);
+          l.append(uz_);
+          l.append(weight_);
+          l.append(bitflags_);
+          l.append(cell_index_);
+          l.append(unique_ID_);
+          l.append(crossings_);
+          
+          return l;
+        }
+      // py::list as_list() ENDDEF
+      
+      //! Put the member values into a dictionary
+      py::dict as_dict()
+        {
+          using namespace pybind11::literals;          
+          // Create a dictionary containing the member values
+          return py::dict("x"_a=x_, "y"_a=y_, "z"_a=z_, "x0"_a=x0_, "y0"_a=y0_, "z0"_a=z0_, "ux"_a=ux_, "uy"_a=uy_, "uz"_a=uz_, "weight"_a=weight_, "bitflags"_a=bitflags_, "cell_index"_a=cell_index_, "unique_ID"_a=unique_ID_, "crossings"_a=crossings_);
+        }
+      // py::tuple as_dict() ENDDEF
+
       // Declare the << operator for the pstruct1D data type. This is used in print_pstructarray()
       friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x_y_z>& p)
       {
@@ -264,6 +436,15 @@ namespace dnt
     
   };
   // class Pstruct<Ptype::cartesian_x_y_z> ENDCLASS
+
+  // Initialize static class members
+  
+  // Set the bit patterns for flags. These are static class members, so they're set
+  // outside the ctor.
+    int Pstruct<Ptype::cartesian_x_y_z>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+    int Pstruct<Ptype::cartesian_x_y_z>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
+
+  
 
 // Declare the << operator for the pstruct3D data type. This is used in print_pstructarray()
 //  std::ostream& operator<<(std::ostream& os, const pstruct3D& p);

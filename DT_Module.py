@@ -56,10 +56,9 @@ class DTcontrol_C(object):
 
         self.use_particles = None
         self.PARTICLE_SEGMENT_LENGTH = None
-
         # Maximum number of facet-crossing that a particle will be tracked
         # before exit() is called.
-        self.MAX_FACET_CROSS_COUNT = 100
+        self.MAX_FACET_CROSS_COUNT = None
         
         # Random number seed
         self.random_seed = np_m.random.seed(1)

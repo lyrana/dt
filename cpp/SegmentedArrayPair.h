@@ -24,14 +24,16 @@ namespace dnt
 {
   /*! \class WhichArray
 
-      \brief WhichArray is an enum class to tag the 'in' and 'out' arrays of a
+      \brief WhichArray is an enum class to tag the 'I' and 'O' arrays of a
              SegmentedArrayPair
 
   */
   enum class WhichArray
   {
-    in_array,
-    out_array
+    //   'I',
+    //   'O',
+    in_array='I',
+    out_array='O'
   };
   
 /*! \class SegmentedArrayPair
@@ -62,7 +64,7 @@ namespace dnt
 
   private:
 //    int segmentLength;
-    py::ssize_t segmentLength;
+    const py::ssize_t segmentLength;
 
     // Make a pair of empty list of segments
 
@@ -104,6 +106,7 @@ namespace dnt
       // No pointer is passed, so Numpy will allocate the buffer
       return py::array_t<Pstruct<PT>, 0>(segmentLength);
     }
+
 
     //! Add another segment to the specified SegmentedArray in order to store more items.
     /*!
@@ -182,13 +185,15 @@ namespace dnt
         /* } */
       } 
 
+
     //! Return the segment length
     py::ssize_t get_segment_length()
       {
         return segmentLength;
       }
     
-    //! Return a py::tuple with the current number of segments in the 'in' and 'out' arrays.
+
+    //! Return a py::tuple with the current number of segments in the "in" and "out" arrays.
     py::tuple get_number_of_segments()
       {
         // Abbreviations
@@ -199,13 +204,43 @@ namespace dnt
       }
 
 
-    //! Return the number of items stored in the 'out' array
+    //! Return the number of items stored in the "out" array
       py::ssize_t get_number_of_items()
       {
         // Abbreviations
         auto outSA = outSegmentedArray;
 
         return firstNotFullSegment[outSA]*segmentLength + firstAvailableOffset[outSA];
+      }
+
+      //! Sets the number of active items currently stored.
+      /*! 
+          \param string in_out: Either "in" or "out" depending on whether
+                                we're dealing with the in or out SA.
+
+          \return: Nothing is returned.
+      */
+      void set_number_of_items(std::string in_out, py::ssize_t n_items)
+      {
+        unsigned theSA(2); // Initialized to avoid a "may be uninitialized" warning
+        if (in_out.compare("in") == 0)
+          theSA = inSegmentedArray;
+        else
+          if (in_out.compare("out") == 0)
+            theSA = outSegmentedArray;
+
+        assert(theSA == 0 || theSA == 1);
+
+        // Compute the segment and offset of the last item. The
+        // zero-based index of the last item is n_items-1
+        // (seg, offset) = divmod(n_items-1, self.segmentLength)
+        auto seg = (py::ssize_t) (n_items-1) / segmentLength;
+        auto offset = (n_items - 1) % segmentLength;
+
+        firstNotFullSegment[theSA] = seg;
+        firstAvailableOffset[theSA] = offset+1;
+
+        return;
       }
 
     //! Return the total number of items that can currently be stored.
@@ -234,7 +269,8 @@ namespace dnt
         return py::make_tuple(nSeg[inSA]*nbytes/(1.0e6), nSeg[outSA]*nbytes/(1.0e6));
       }
     
-    //! Add an item to the 'out' SegmentedArray.
+
+    //! Add an item to the "out" SegmentedArray.
     /*!
 
       \param item_input is a tuple containing a complete item structure
@@ -288,7 +324,9 @@ namespace dnt
                 pseg[ip][i] = item_input[i];
                 }
         */
-        pseg[ip].set_from_tuple(item_input); // OR use an overloaded .set() function.
+        
+        // pseg[ip].set_from_tuple(item_input); // OR use an overloaded .set() function.
+        pseg[ip].set_from_list_or_tuple(item_input); // OR use an overloaded .set() function.
 
         // Compute the full zero-based index of the particle for return
         auto full_index = firstNotFullSegment[outSA]*segmentLength + firstAvailableOffset[outSA];
@@ -301,16 +339,69 @@ namespace dnt
         // Return the index in this segment, and the full index
         return py::make_tuple(ip, full_index);
       }
+    // py::tuple push_back(py::tuple item_input) ENDDEF
+
+    // #undef LIST
+#define LIST
+#ifdef LIST
+    py::tuple push_back(py::list item_input)
+      {
+        // Abbreviations
+        auto outSA = outSegmentedArray;
+
+        /*        
+                  If we've reached the end of the current segment, we need to
+                  switch to the next segment, if there is one, or else add a new
+                  segment.
+        */
+        if (firstAvailableOffset[outSA] == segmentLength)
+          {
+            // If another segment is already available, use
+            // it. Otherwise, allocate a new segment.
+            currentSegment[outSA] += 1;
+            if (currentSegment[outSA] < nSeg[outSA])
+              {
+                firstNotFullSegment[outSA] += 1;
+                firstAvailableOffset[outSA] = 0;
+              }                  
+            else
+              {
+                // The following call increments firstNotFullSegment[] and
+                // nSeg[], and sets firstAvailableOffset[] = 0
+                add_segment(outSA);
+              };
+        
+          };
+        
+        py::buffer_info pseg_info = segListPair[outSA][firstNotFullSegment[outSA]].request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+        const auto pseg = static_cast<Pstruct<PT>*>(pseg_info.ptr); // Pointer to a structured Numpy array
+
+        auto ip = firstAvailableOffset[outSA];
+        //        pseg[ip].set_from_list(item_input); // OR use an overloaded .set() function.
+        pseg[ip].set_from_list_or_tuple(item_input); // OR use an overloaded .set() function.
+
+        // Compute the full zero-based index of the particle for return
+        auto full_index = firstNotFullSegment[outSA]*segmentLength + firstAvailableOffset[outSA];
+        //Increment the next available slot for next time
+        firstAvailableOffset[outSA] += 1;
+
+        // Return the index in this segment, and the full index
+        return py::make_tuple(ip, full_index);
+      }
+    //py::tuple push_back(py::list item_input) ENDDEF
+
+#endif
+
     
     //! Get the Numpy array and offset given a full SA index.
     /*!
 
-      Given the full SegmentedArray index of a stored item, return the Numpy array
-      (segment) and the offset of the item in the array.  This is used, e.g., to
-      provide access to the item in Python.
+      Given the full SegmentedArray index of a stored item, return a reference to the
+      Numpy array (segment) and the offset of the item in the array.  This can be
+      used, e.g., to provide access to the stored item in Python.
 
       \param full_index is the full SA index of the item.
-      \return the tuple: (Numpy array, item offset)
+      \return the tuple: (Numpy array reference, item offset)
 
     */
     py::tuple get_segment_and_offset(py::ssize_t full_index)
@@ -328,10 +419,47 @@ namespace dnt
         //        return self.segListPair[outSA][seg][offset];
         
         return py::make_tuple(segListPair[outSA][seg], offset);
-        
       }
 
-    //! Get a tuple containing the item values at a full SA index
+    /*    
+    //! Return the item a full SA index
+    Pstruct<PT>& get_item(py::ssize_t full_index)
+      {
+        auto seg = (py::ssize_t) full_index / segmentLength;
+        auto offset = full_index % segmentLength;
+      
+        auto outSA = outSegmentedArray;
+        py::buffer_info seg_info = segListPair[outSA][seg].request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+        const auto parray = static_cast<Pstruct<PT>*>(seg_info.ptr); // Pointer to a structured Numpy array
+        return parray[offset];
+      }
+    */
+
+
+    //! Return a copy of an item, as a py::dict, given the full SA index
+    py::dict get_item(py::ssize_t full_index)
+      {
+        auto seg = (py::ssize_t) full_index / segmentLength;
+        auto offset = full_index % segmentLength;
+      
+        auto outSA = outSegmentedArray;
+        py::buffer_info seg_info = segListPair[outSA][seg].request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+        const auto parray = static_cast<Pstruct<PT>*>(seg_info.ptr); // Pointer to a structured Numpy array
+        // parray[offset]; // contains the particle data
+          // Make a dictionary from this
+        return parray[offset].as_dict();  
+      }
+    
+    
+    //! Get a copy of an item's values, as a py::tuple, given the full SA index of the item.
+    /*!  Note that the returned py::tuple cannot be modified. It the returned copy of
+         the item values is to be modified, use get_as_list() instead.
+
+         If the stored item needs to be modified, use get_segment_and_offset() to get
+         access to it.
+
+         \sa get_segment_and_offset, get_as_list
+     */
     py::tuple get_as_tuple(py::ssize_t full_index)
       {
         auto seg = (py::ssize_t) full_index / segmentLength;
@@ -342,19 +470,102 @@ namespace dnt
         const auto parray = static_cast<Pstruct<PT>*>(seg_info.ptr); // Pointer to a structured Numpy array
         return parray[offset].as_tuple();
       }
+    // py::tuple get_as_tuple(py::ssize_t full_index) ENDDEF
 
+
+    //! Get a copy of an item's values, as a py::list, given the full SA index of the item.
+    /*!  The returned py::list can be modified, but this does not modify the stored item.
+
+         If the stored item needs to be modified, use get_segment_and_offset() to get
+         access to it.
+
+         \sa get_segment_and_offset, get_as_tuple
+
+     */
+    py::list get_as_list(py::ssize_t full_index)
+      {
+        auto seg = (py::ssize_t) full_index / segmentLength;
+        auto offset = full_index % segmentLength;
+      
+        auto outSA = outSegmentedArray;
+        py::buffer_info seg_info = segListPair[outSA][seg].request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+        const auto parray = static_cast<Pstruct<PT>*>(seg_info.ptr); // Pointer to a structured Numpy array
+        return parray[offset].as_list();
+      }
+    // py::list get_as_list(py::ssize_t full_index) ENDDEF
+
+
+    //! Initialize a loop over the segments of the "out" array.
+    /*!
+
+      This function is used to start a loop that doesn't change the positions of the
+      items, so the "in" array isn't needed.
+
+      \param returnDataPtr: if true, return pointers to the data instead of Numpy arrays
+      \return The tuple: (number of items in the first segment of "out" SA,
+                          ref to first segment of "out" SA)
+    */
+    py::tuple init_out_loop(bool returnDataPtr = false)
+      //    py::tuple init_out_loop()
+      {
+        // Abbreviations
+        auto outSA = outSegmentedArray;
+
+        // std::cout << "init_out_loop(): out segment is using pair index " << outSA << std::endl;
+        
+        // This is used to count through the segments
+        currentSegment[outSA] = 0;
+
+        py::ssize_t lastItem = 0;
+        // If the first segment is also the last segment, the number of items in it
+        // may be less than the length of the segment
+        if (firstNotFullSegment[outSA] == 0)
+          {
+            lastItem = firstAvailableOffset[outSA];
+            //          HERE:
+            //            if (lastItem == 0) return py::make_tuple(0, 0);  // WILL THIS WORK FOR RETURNING BOTH NUMPY ARRAY AND DATA POINTERS?
+            if (lastItem == 0) return py::make_tuple(0, nullptr);  // WILL THIS WORK FOR RETURNING BOTH NUMPY ARRAY AND DATA POINTERS?
+          }
+        else
+          {
+            lastItem = segmentLength;
+          }
+
+        py::ssize_t segIndex = 0;
+        auto outSeg = segListPair[outSA][segIndex];
+
+        // Return either the Numpy arrays, or the pointers to the data
+        // bool returnDataPtr = false;
+        if (returnDataPtr == true)
+          {
+            // Pointers to the data:
+            py::buffer_info outSeg_info = outSeg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+            const auto outSegData = static_cast<Pstruct<PT>*>(outSeg_info.ptr); // Pointer to a structured Numpy array
+            return py::make_tuple(lastItem, outSegData);
+          }
+        else
+          {
+            // Numpy arrays:
+            return py::make_tuple(lastItem, outSeg);
+          }
+      }
+    // py::tuple init_out_loop(bool returnDataPtr = false) ENDDEF
+
+
+    bool swapPair = true;
     //! Initialize a loop over the all the array segments.
     /*!
 
-      The loop should call get_next_segment('in') and get_next_out_segment() in the
+      The loop should call get_next_segment("in") and get_next_out_segment() in the
       iteration loop.
 
       \param returnDataPtrs: if true, return pointers to the data instead of Numpy arrays
-      \return The tuple: (number of items in the first segment of 'in' SA,
-                          ref to first segment of 'in' SA,
-                          ref to first segment of 'out' SA)
+      \return The tuple: (number of items in the first segment of "in" SA,
+                          ref to first segment of "in" SA,
+                          ref to first segment of "out" SA)
     */
     py::tuple init_inout_loop(bool returnDataPtrs = false)
+      //    py::tuple init_inout_loop()
       {
         // Abbreviations
         auto inSA = inSegmentedArray;
@@ -363,23 +574,36 @@ namespace dnt
         currentSegment[0] = 0;
         currentSegment[1] = 0;
 
-        /* Swap the two SegmentedArrays in the pair, so that the current 'out' array
-           becomes the 'in' array.
-           The 'in' array appears on the RHS of expressions, i.e., it contains input
+        /* Swap the two SegmentedArrays in the pair, so that the current "out" array
+           becomes the "in" array.
+           The "in" array appears on the RHS of expressions, i.e., it contains input
            values for an expression.
-           The 'out' array appears on the LHS of expressions, i.e., it is the result
+           The "out" array appears on the LHS of expressions, i.e., it is the result
            of evaluating an expression. It's like a scratch array: it's initial values
            don't matter, just it's length.
         */
+        
+        if (swapPair)
+          {
+            inSA = (inSA+1) % 2;
+            outSA = (outSA+1) % 2;
+          }
 
-        inSA = (inSA+1) % 2;
-        outSA = (outSA+1) % 2;
+        /*
+          Uncomment the following for testing only. E.g., suppose we call this function,
+          but the subsequent code don't actually copy the "in" to the "out" segment, and
+          then we want to call this function again. By setting swapPair = false, we will
+          get back the same segments as on the first call. Otherwise, the segments will be
+          swapped on the second call.
+        */
+        // swapPair = !swapPair;
         
         py::ssize_t lastItem = 0;
         if (firstNotFullSegment[inSA] == 0)
           {
             lastItem = firstAvailableOffset[inSA];
             if (lastItem == 0) return py::make_tuple(0, nullptr, nullptr);  // WILL THIS WORK FOR RETURNING BOTH NUMPY ARRAY AND DATA POINTERS?
+            //            if (lastItem == 0) return py::make_tuple(0, (Pstruct<PT>*) nullptr, (Pstruct<PT>*) nullptr);  // WILL THIS WORK FOR RETURNING BOTH NUMPY ARRAY AND DATA POINTERS?
           }
         else
           {
@@ -393,9 +617,13 @@ namespace dnt
         auto inSeg = segListPair[inSA][segIndex];
         auto outSeg = segListPair[outSA][segIndex];
 
+        // std::cout << "init_inout_loop(): out segment is using pair index " << outSA << std::endl;
+
         // Return either the Numpy arrays, or the pointers to the data
+        // bool returnDataPtrs = false;
         if (returnDataPtrs == true)
           {
+// The following code doesn't work: make_tuple can't seem to convert the data pointer. May be able to use a 'capsule'
             // Pointers to the data:
             // in:
             py::buffer_info inSeg_info = inSeg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
@@ -404,7 +632,8 @@ namespace dnt
             py::buffer_info outSeg_info = outSeg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
             const auto outSegData = static_cast<Pstruct<PT>*>(outSeg_info.ptr); // Pointer to a structured Numpy array
 
-            return py::make_tuple(lastItem, inSegData, outSegData);
+            //            return py::make_tuple(lastItem, inSegData, outSegData);
+            return py::make_tuple(lastItem, py::capsule(inSegData, "inSegData pointer", nullptr), py::capsule(outSegData, "outSegData pointer", nullptr));
           }
         else
           {
@@ -415,25 +644,32 @@ namespace dnt
         // orig: return py::make_tuple(lastItem, segListPair[inSA][segIndex], segListPair[outSA][segIndex]);
         
       }
-    // py::tuple init_inout_loop(bool returnDataPtrs = false) ENDDEF
+    // ENDDEF: py::tuple init_inout_loop(bool returnDataPtrs = false)
 
-    /*! Return a tuple with a reference to the next segment of either the 'in' or
-        'out' array, and the number of active items.
 
-        \param in_out is a enum, either in_array or out_array.
+    /*! Return a tuple with a reference to the next segment of either the "in" or
+        "out" array, and the number of active items.
+
+        \param in_out is a string, either "in" or "out".
         \param returnDataPtr: if true, return a pointer to the data instead of a Numpy array
         \return The tuple (number of active items in the next array segment, 
                            reference to next array segment)
 
     */
-    py::tuple get_next_segment(WhichArray in_out, bool returnDataPtr = false)
+    
+    //    py::tuple get_next_segment(WhichArray in_out, bool returnDataPtr = false)
+    
+    //    py::tuple get_next_segment(WhichArray in_out)
+    //    py::tuple get_next_segment(char in_out)
+    //    py::tuple get_next_segment(std::string in_out, bool returnDataPtr = false)
+    py::tuple get_next_segment(std::string in_out, bool returnDataPtr = false)
       {
         unsigned theSA(2); // The value 2 is for initialization; should never occur
                            // below (see assert).
-        if (in_out == WhichArray::in_array)
+        if (in_out.compare("in") == 0)
           theSA = inSegmentedArray;
         else
-          if (in_out == WhichArray::out_array)
+          if (in_out.compare("out") == 0)
             theSA = outSegmentedArray;
         
         assert(theSA == 0 || theSA == 1);
@@ -442,7 +678,11 @@ namespace dnt
         py::ssize_t segIndex = currentSegment[theSA];
 
         // If the segment index exceeds occupied limit, return nullptr.
+        //        if (segIndex > firstNotFullSegment[theSA]) return py::make_tuple(0, (Pstruct<PT>*) nullptr);
+        //        if (segIndex > firstNotFullSegment[theSA]) return py::make_tuple(0, (py::array_t<Pstruct<PT>,0>) nullptr);
+        //        if (segIndex > firstNotFullSegment[theSA]) return py::make_tuple(0, 0);
         if (segIndex > firstNotFullSegment[theSA]) return py::make_tuple(0, nullptr);
+
         //  If this is the last segment and it's empty, return nullptr.
         //  ===> This should cause the caller to break out of the loop <===
         //  If it's not empty, return the non-empty items
@@ -450,6 +690,9 @@ namespace dnt
         if (firstNotFullSegment[theSA] == segIndex)
           {
             lastItem = firstAvailableOffset[theSA];
+            //            if (lastItem == 0) return py::make_tuple(0, (Pstruct<PT>*) nullptr);
+            //            if (lastItem == 0) return py::make_tuple(0, (py::array_t<Pstruct<PT>,0>) nullptr);
+            //            if (lastItem == 0) return py::make_tuple(0, 0);
             if (lastItem == 0) return py::make_tuple(0, nullptr);
           }
         else
@@ -460,13 +703,14 @@ namespace dnt
         auto seg = segListPair[theSA][segIndex];
         
         // Return either the Numpy array, or the pointer to the data
-        
+        // bool returnDataPtr = false;        
         if (returnDataPtr == true)
           {
             // Pointer to the data:
             py::buffer_info seg_info = seg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
             const auto segData = static_cast<Pstruct<PT>*>(seg_info.ptr); // Pointer to a structured Numpy array
-            return py::make_tuple(lastItem, segData);
+            //            return py::make_tuple(lastItem, segData);
+            return py::make_tuple(lastItem, py::capsule(segData));
           }
         else
           {
@@ -475,25 +719,27 @@ namespace dnt
           }
         //        return py::make_tuple(lastItem, segListPair[theSA][segIndex]);
       }
-    // py::tuple get_next_segment(WhichArray in_out, bool returnDataPtr = false) ENDDEF
+    // ENDDEF py::tuple get_next_segment(WhichArray in_out, bool returnDataPtr = false)
     
-    //! Return a tuple containing a reference to the next segment of the 'out' array.
+
+    //! Return a tuple containing a reference to the next segment of the "out" array.
     /*!
 
       If this function is called, it assumes that you need space to write on, so it
-      will allocate a new segment if we're out of 'out' segments.
+      will allocate a new segment if we're out of "out" segments.
 
-      This method looks similar to the push_back() method above, since the 'out'
+      This method looks similar to the push_back() method above, since the "out"
       array returned is effectively scratch space, i.e., it is only written to.
 
       A tuple is returned because the return can be either a Numpy array or a data
       pointer. The tuple allows for either one.
 
       \param returnDataPtr: if true, return a pointer to the data instead of a Numpy array
-      \return: A tuple containing a reference to next segment of the 'out' array.
+      \return: A tuple containing a reference to next segment of the "out" array.
 
     */
     py::tuple get_next_out_segment(bool returnDataPtr = false)
+      //    py::tuple get_next_out_segment()
       //  py::array_t<Pstruct<PT>, 0> get_next_out_segment(bool returnDataPtr = false)
       {
         // Abbreviations
@@ -516,7 +762,7 @@ namespace dnt
           }
 
         auto seg = segListPair[outSA][segIndex];
-
+        // bool returnDataPtr = false;
         if (returnDataPtr == true)
           {
             // Pointer to the data:

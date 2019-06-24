@@ -20,13 +20,16 @@ from Particle_Module import *
 # Here's the mesh definition for this test
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
-#import segmentedarraypair_pyb
-
-import test_pyb
+# The C++ functions are bound to Python names in a .so
+#import p_pyb_cartesian_x
 
 #STARTCLASS
-class TestPybind11(unittest.TestCase):
+class TestPybParticleAdvance(unittest.TestCase):
     """Test use of pybind11 to interface with C++
+
+       Use a C++ function to advance particles, passing needed parameters from
+       Python.  Neutral helium is the only species.  Initial particles are specified
+       in UserParticles_3D.py.
 
     """
     
@@ -42,30 +45,28 @@ class TestPybind11(unittest.TestCase):
         # Set up particle variables
         pin.precision = np_m.float64
         pin.particle_integration_loop = 'loop-on-particles'
+
+        # The particle coordinate system is 3D Cartesian
+        pin.coordinate_system = 'cartesian_x_y_z'
+
         # Use the 3 position coordinates, since we're doing 1, 2, and 3D particle motion
-        pin.position_coordinates = ['x', 'y', 'z'] # Determines particle storage dimension
+        # This could be derived from the coordinate system:
+
+# Moved this to Particle_C.init, based on coordinate system        
+#        pin.position_coordinates = ['x', 'y', 'z'] # Determines particle storage dimension
+
+        
         # Neutral particles: No forces.
         """
         pin.force_components = ['x', 'y',]
         """
         pin.force_precision = np_m.float64
 
-        # Give the properties of the particle species.  The charges
-        # and masses are normally those of the physical particles, and
-        # not the computational macroparticles.  Macroparticle weights
-        # are specified or computed in a separate file (see
-        # user_particles_module_name below) giving the distribution
-        # functions, and can vary from particle to particle.
-
-#         pin.particle_species = (('neutral_H',
-#                              {'initial_distribution_type' : 'listed',
-#                               'charge' : 0.0,
-#                               'mass' : 1.0*MyPlasmaUnits_C.AMU,
-#                               'dynamics' : 'explicit',
-# #                              'number_per_cell' : 12,
-#                               }
-#                              ),
-#                             )
+        # Give the properties of the particle species.  The charges and masses are
+        # normally those of the physical particles, and not the computational
+        # macroparticles.  Macroparticle weights are specified or computed in a
+        # separate file (see user_particles_module_name below) specifying the
+        # particle distribution functions, and can vary from particle to particle.
 
         speciesName = 'neutral_H'
         charge = 1.0
@@ -75,13 +76,13 @@ class TestPybind11(unittest.TestCase):
 
         # Add these species to particle input
         pin.particle_species = (neutralH_S,
-                                 )
+                               )
         # Make the particle object from pin
         self.particle_P = Particle_C(pin, print_flag=False)
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary-condition callbacks, source regions, etc.)
-        # Particles have a 3D/3D phase-space even though mesh is just 2D
+        # Particles have a 3D/3D phase-space even though mesh is just 1D
         userParticlesModuleName = "UserParticles_3D"
 #        print "setUp: UserParticle module is", userParticlesModuleName
 
@@ -122,12 +123,12 @@ class TestPybind11(unittest.TestCase):
 
         self.particle_P.initial_particles_dict = initialParticlesDict
 
-        # Create the initial particles
+        # Create two initial particles from the above specs.
         for ip in initialParticlesDict:
             ipList = initialParticlesDict[ip]
-            ipParams = ipList[0]
-            s = ipParams['species_name']
-            initialDistributionType = ipParams['initial_distribution_type']
+            ipParams = ipList[0] # The first list item is a dictionary of "particle parameters".
+            s = ipParams['species_name'] # Look up the name of the species.
+            initialDistributionType = ipParams['initial_distribution_type'] # Look up how the particle distribution will be specified.
             if initialDistributionType == 'listed':
                 # Put user-listed particles into the storage array
                 self.particle_P.create_from_list(s, False)
@@ -142,7 +143,7 @@ class TestPybind11(unittest.TestCase):
         # else:
         #     plotFlag=True
 
-        # Create 1D, 2D and 3D meshes that the particles can be tested against
+        # Create a 1D mesh that the particles can move through
 
         # 1d mesh input
         umi1D = UserMeshInput_C()
@@ -161,50 +162,42 @@ class TestPybind11(unittest.TestCase):
 
         # Create a 1D particle mesh
         self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
+
+# Individual geometry dictionaries:
 #        self.pmesh1D.compute_cell_vertex_dict()
 #        self.pmesh1D.compute_cell_dict()
 
         return
 #    def setUp(self):ENDDEF
 
-    def test_1_pass_DnTcontrol(self):
-        """Test that we can pass and access attributes of a DnTcontrol Python object.
+    def test_1_cpp_particle_advance(self):
+        """Test that we can call a C++ function to push particles.
 
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName)
 
-        # List all the possible spatial coordinates
-#        spatial_coordinates = ('x','y','z')
-
         ctrl = DTcontrol_C()
 
         # Run identifier
-        ctrl.title = "test_pybind.py:test_1_pass_DnTcontrol"
+        ctrl.title = "pybind11 ParticleAdvance"
         # Run author
         ctrl.author = "tph"
 
         ctrl.time = 0.0
         ctrl.dt = 0.5
         ctrl.n_timesteps = 19
+        ctrl.MAX_FACET_CROSS_COUNT = 100
 
-        # 
-        test_pyb.function_with_DTcontrol_arg(ctrl)
-
-        # Temporary return:
-        return
-
-    
-        # Run for 1D mesh
+        # Run on a 1D mesh
 
         self.particle_P.pmesh_M = self.pmesh1D
 
         # Get the initial cell index of each particle.
         self.particle_P.compute_mesh_cell_indices()
 
-
-        ### Put the expected ending results into the p_expected tuple ###
+        ### Put the expected ending results for the two particles into the p_expected tuple ###
 
         # First particle
 
@@ -234,10 +227,17 @@ class TestPybind11(unittest.TestCase):
 
         p_expected = (psp0, psp1)
 
+        #
+        # Move the particles and check the final positions
+        #
+        
+        speciesName = 'neutral_H'
+        psa = self.particle_P.pseg_arr[speciesName] # segmented array for this species
+        
         # Integrate for n_timesteps
         print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
         for istep in range(ctrl.n_timesteps):
-            self.particle_P.move_neutral_particles(ctrl)
+            self.particle_P.move_neutral_particles_CPP(ctrl)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -253,10 +253,10 @@ class TestPybind11(unittest.TestCase):
                 self.assertEqual(p_expected[ip][cell_index_position], getparticle[cell_index_position], msg="Particle is not in correct cell")
 
         return
-#    def test_1_pass_DnTcontrol:ENDDEF
+    # ENDDEF: def test_1_cpp_particle_advance(self)
 
 
-#class TestPybind11:ENDCLASS
+#class TestPybParticleAdvance:ENDCLASS
 
 if __name__ == '__main__':
     unittest.main()

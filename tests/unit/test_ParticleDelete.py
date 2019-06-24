@@ -55,6 +55,8 @@ class TestParticleDeletion(unittest.TestCase):
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
 
+        pin.coordinate_system = 'cartesian_x_y_z'
+# TODO: Set these based on the coordinate_system:
         pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
 
         pin.force_components = ['x', 'y', 'z']
@@ -126,7 +128,7 @@ class TestParticleDeletion(unittest.TestCase):
         # self.particle_P.user_particles_module_name = userParticlesModuleName
         self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
-        ### one_electron is present at t=0
+        ### The one_electron species is present at t=0. The other two species are not.
 
         # Name the initialized species (it should be in species_names above)
         speciesName = 'one_electron'
@@ -235,7 +237,15 @@ class TestParticleDeletion(unittest.TestCase):
         dx = 0.2
         for sp in p_P.species_names:
             if p_P.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
-            getparticle = p_P.pseg_arr[sp].get(0) # why get(0) instead of [0]?
+# If we use get_item(), we get a dict, which doesn't have the right type for the following.
+#            getparticle = p_P.pseg_arr[sp].get_item(0)
+
+            getparticle = p_P.pseg_arr[sp].get_as_list(0)
+            
+#            (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(0)
+#            getparticle = pseg[offset]
+            
+            print ("getparticle = ", getparticle)
             putparticle = getparticle
             x = putparticle[0]
             print("Add %d more particles to %s species" % (num_particles, sp))
@@ -251,15 +261,21 @@ class TestParticleDeletion(unittest.TestCase):
                     putparticle[10] = 0b00 # initialize all bits to 0
 
                 # Store the particle
-                p, pindex = p_P.pseg_arr[sp].push_back(putparticle)
+#                p, pindex = p_P.pseg_arr[sp].push_back(putparticle)
+                seg_index, full_index = p_P.pseg_arr[sp].push_back(putparticle)
+#                p = p_P.pseg_arr[sp][full_index] # Retrieve the particle from the SAP.
 
+                # Retrieve the particle structure using the returned Numpy array it's in.
+                (parray, offset) = p_P.pseg_arr[sp].get_segment_and_offset(full_index)
+                p = parray[offset] # Retrieve the particle from the SAP.
+                
                 ## Add the new particles to the trajectory object.
                 if p['bitflags'] & p_P.TRAJECTORY_FLAG != 0:
                     if traj_T is not None:
-                        print('pindex for trajectory = ', pindex)
-                        traj_T.particle_index_list[sp].append(pindex)
+                        print('full_index for trajectory = ', full_index)
+                        traj_T.particle_index_list[sp].append(full_index)
                         dynamicsType = 'explicit'
-                        traj_T.create_trajectory(sp, pindex, dynamicsType)
+                        traj_T.create_trajectory(sp, full_index, dynamicsType)
                     else:
     # Instead of printing this message, a traj_T object could be created here.
                         print(fncName, "*** DT Warning: A trajectory flag is on, but no trajectory object has been created yet. ***")
@@ -282,22 +298,27 @@ class TestParticleDeletion(unittest.TestCase):
 #26aug18: In Python3, the numbers are upgraded to float before dividing
 #            delparts = (0, np-1, np/51, np/31, np/11, np/5, np/3) # This is (0, 0, ...)
                                                                    # for np=1
-#            print("delparts a =", delparts)
+#            print("delparts at a =", delparts)
             delparts = (0, np-1, int(np/51), int(np/31), int(np/11), int(np/5), int(np/3))
-#            print("delparts b =", delparts)
+#            print("delparts at b =", delparts)
             
             # Delete 6 particles, which fit into 3 segments
 #            delparts = (0, np-1, np/51, np/31, np/11, np/5)
             # Delete 5 particles, which needs a 4th segment
 #            delparts = (0, np-1, np/51, np/31, np/11)
             for ip in delparts:
-                getparticle = p_P.pseg_arr[sp].get(ip) # why get(0) instead of [0]? more explicit?
-#                print "getparticle['bitflags']", getparticle['bitflags']
+                # We need to change the stored data, so use get_segment_and_offset()
+                (parray, offset) = p_P.pseg_arr[sp].get_segment_and_offset(full_index)
+                getparticle = parray[offset]
+# This systax only works for the Python SAP:                
+#                getparticle = p_P.pseg_arr[sp].get_item(ip)
+
+#                print ("getparticle['bitflags']", getparticle['bitflags'])
                 # Set the delete flag for these particles.
                 # Since getparticle returns a REFERENCE, this modifies the
                 # stored particle.
                 getparticle['bitflags'] = getparticle['bitflags'] | Particle_C.DELETE_FLAG
-#                print "getparticle['bitflags']", getparticle['bitflags']
+#                print ("getparticle['bitflags']", getparticle['bitflags'])
 
         # Move the particles one timestep. This serves to copy the particles from 'in' to
         # the 'out' array.  The deleted particles will get dropped from the 'out' array.

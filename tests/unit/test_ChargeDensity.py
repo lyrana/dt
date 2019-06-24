@@ -519,7 +519,7 @@ class TestChargeDensity(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.push_back(particle_list[i])
+            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
         # Ions
         species_name = 'H_plus'
@@ -530,7 +530,7 @@ class TestChargeDensity(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.push_back(particle_list[i])
+            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
 
         ########## Source for the electric field ##########
@@ -728,7 +728,7 @@ class TestChargeDensity(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.push_back(particle_list[i])
+            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
         ########## Source for the electric field ##########
 
@@ -935,9 +935,10 @@ class TestChargeDensity(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.push_back(particle_list[i])
+            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
         # Check that we set the right cell index above
+        p = pseg_arr[fullIndex]
         computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)
         if cell_index0 != computed_cell_index:
             errorMsg = "%s Particle cell index should be %d, not %d" % (fncName, computed_cell_index, cell_index0)
@@ -1143,9 +1144,11 @@ class TestChargeDensity(unittest.TestCase):
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.push_back(particle_list[i])
+#            p, pindex = pseg_arr.push_back(particle_list[i])
+            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
         # Check that we set the right cell index above
+        p = pseg_arr[fullIndex]
         computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)
         if cell_index0 != computed_cell_index:
             errorMsg = "%s Particle cell index should be %d, not %d" % (fncName, computed_cell_index, cell_index0)

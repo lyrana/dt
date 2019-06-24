@@ -94,7 +94,7 @@ class SegmentedArrayPair_C(object):
 
 #class SegmentedArrayPair_C(object):
     def push_back(self, item_input):
-        """Adds an item to the 'out' SegmentedArray, without specifying an
+        """Adds an item to the "out" SegmentedArray, without specifying an
            index.  The item is a tuple containing a complete structure.
            Creates a new Segment, if needed.  This assumes that all
            the segments, except maybe the last one, are full.
@@ -102,7 +102,8 @@ class SegmentedArrayPair_C(object):
            :param item_input: A tuple containing a complete item structure
            :type input_item: tuple(float,...)
            :var int full_index: The full index into the SA.
-           :return: (item structure, full SA index)
+           :return: (offset into a segment, full SA index of item)
+           old: return (item structure, full SA index)
         """
 
         # Abbreviations
@@ -137,12 +138,32 @@ class SegmentedArrayPair_C(object):
         # Increment the next available slot for next time
         self.firstAvailableOffset[outSA] += 1
 
-        return vec[self.firstAvailableOffset[outSA]-1], full_index
+        return self.firstAvailableOffset[outSA]-1, full_index
+# old:       return vec[self.firstAvailableOffset[outSA]-1], full_index
 #    def push_back(self, item_input):ENDDEF
 
 #class SegmentedArrayPair_C(object):
-    def get(self, i):
-        """Returns a REFERENCE to the i'th item from the 'out'
+    def get_segment_and_offset(self, i):
+        """Given the full SegmentedArray index of a stored item, return the Numpy array
+           (segment) and the offset of the item in the array.  This is used, e.g., to
+           provide access to the item in Python.
+
+           Using this instead of get_item() gives the Python caller a Numpy
+           structured item instead of a dict.
+
+           :param int i: The full index of an item to be retrieved.
+           :return: The tuple (Numpy array, item offset)
+
+        """
+
+        (seg, offset) = divmod(i, self.segmentLength)
+        
+        return self.segListPair[outSA][seg], offset
+#    def get_segment_and_offset(self, i):ENDDEF
+
+#class SegmentedArrayPair_C(object):
+    def get_item(self, i):
+        """Returns a REFERENCE to the i'th item from the "out"
            SegmentedArray, since that's the up-to-date array.  The
            index is zero-based.
 
@@ -152,11 +173,11 @@ class SegmentedArrayPair_C(object):
         # Abbreviations
         outSA = self.outSegmentedArray
 
-#        print 'get: i =', i, 'outSA = ', self.outSegmentedArray
+#        print 'get_item: i =', i, 'outSA = ', self.outSegmentedArray
 
         (seg, offset) = divmod(i, self.segmentLength)
         return self.segListPair[outSA][seg][offset]
-#    def get(self, i):ENDDEF
+#    def get_item(self, i):ENDDEF
 
 #class SegmentedArrayPair_C(object):
     def __getitem__(self, i):
@@ -169,13 +190,13 @@ class SegmentedArrayPair_C(object):
            useful way to use indexing.
 
            Example:
-             getparticle = self.seg_array_obj[i]
+             getparticle = self.seg_array_pair_obj[i]
            So now you can write:
              print getparticle['x']
              print getparticle['weight']
         """
         # Abbreviations
-        # By default, __getitem__() uses the 'out' array since it contains the most up-to-date values
+        # By default, __getitem__() uses the "out" array since it contains the most up-to-date values
         outSA = self.outSegmentedArray
 
         (seg, offset) = divmod(i, self.segmentLength)
@@ -192,7 +213,7 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        # By definition, __setitem__() uses the 'out' array
+        # By definition, __setitem__() uses the "out" array
         outSA = self.outSegmentedArray
 
         (seg, offset) = divmod(i, self.segmentLength)
@@ -216,20 +237,20 @@ class SegmentedArrayPair_C(object):
     
 #class SegmentedArrayPair_C(object):
     def init_out_loop(self):
-        """Initialize a loop over the segments of the 'out' array.
+        """Initialize a loop over the segments of the "out" array.
 
            This is used to start a loop that doesn't change the
-           positions of the items, so using the 'in' array isn't
+           positions of the items, so using the "in" array isn't
            needed.
         """
 
         # Abbreviations
         outSA = self.outSegmentedArray
 
-        # These are used to count through the segments
+        # This is used to count through the segments
         self.currentSegment[outSA] = 0
 
-        # Return the first segment of the 'out' array
+        # Return the first segment of the "out" array
 
 #        print 'init_out_loop: self.firstNotFullSegment[outSA]=', self.firstNotFullSegment[outSA]
 
@@ -253,12 +274,12 @@ class SegmentedArrayPair_C(object):
 #class SegmentedArrayPair_C(object):
     def init_inout_loop(self):
         """Initialize a loop over the segments.  The loop should call
-           get_next_segment('in') and get_next_out_segment() in the
+           get_next_segment("in") and get_next_out_segment() in the
            iteration loop.
 
-           :return: (number of items in the first segment of 'in' SA,
-                     ref to first segment of 'in' SA,
-                     ref to first segment of 'out' SA)
+           :return: (number of items in the first segment of "in" SA,
+                     ref to first segment of "in" SA,
+                     ref to first segment of "out" SA)
         """
 
         # Abbreviations
@@ -268,10 +289,10 @@ class SegmentedArrayPair_C(object):
 #        print 'init_segment_loop A: inSA =', inSA
 
         # Swap the two particle storage arrays, so that the current
-        # 'out' array becomes the 'in' array.
-        # The 'in' array appears on the RHS of expressions, i.e., is
+        # "out" array becomes the "in" array.
+        # The "in" array appears on the RHS of expressions, i.e., is
         # input to an expression.
-        # The 'out' array appears on the LHS of expressions, i.e., is
+        # The "out" array appears on the LHS of expressions, i.e., is
         # the result of an expression. It's like a scratch array: it's
         # initial values don't matter, just it's length.
 
@@ -285,7 +306,7 @@ class SegmentedArrayPair_C(object):
         self.currentSegment[0] = 0
         self.currentSegment[1] = 0
 
-        # Return the first segment of the 'in' array
+        # Return the first segment of the "in" array
 
 #        print 'init_segment_loop: self.firstNotFullSegment[inSA]=', self.firstNotFullSegment[inSA]
 
@@ -313,13 +334,13 @@ class SegmentedArrayPair_C(object):
 
 #class SegmentedArrayPair_C(object):
     def get_next_segment(self, InOut):
-        """Returns a reference to the next segment of either the 'in'
-           or 'out' array, and the number of active items.
+        """Returns a reference to the next segment of either the "in"
+           or "out" array, and the number of active items.
         """
 
-        if InOut == 'in':
+        if InOut == "in":
             theSA = self.inSegmentedArray
-        elif InOut == 'out':
+        elif InOut == "out":
             theSA = self.outSegmentedArray
 
         self.currentSegment[theSA] += 1
@@ -346,15 +367,15 @@ class SegmentedArrayPair_C(object):
 
 #class SegmentedArrayPair_C(object):
     def get_next_out_segment(self):
-        """Returns a reference to the next segment of the 'out' array.
+        """Returns a reference to the next segment of the "out" array.
            This method looks similar to the push_back() method above, since the
-           'out' array is effectively scratch space.
+           "out" array is effectively scratch space.
 
            If this function is called, it assumes that you need space
            to write on, so it will allocate a new segment if we're out
-           of 'out' segments.
+           of "out" segments.
 
-           :return: reference to next segment of the 'out' array.
+           :return: reference to next segment of the "out" array.
 
         """
 
@@ -379,8 +400,8 @@ class SegmentedArrayPair_C(object):
 
 #class SegmentedArrayPair_C(object):
     def get_number_of_segments(self):
-        """Returns the current number of segments in the 'in' and
-           'out' arrays.
+        """Returns the current number of segments in the "in" and
+           "out" arrays.
         """
 
         # Abbreviations
@@ -392,9 +413,9 @@ class SegmentedArrayPair_C(object):
 #class SegmentedArrayPair_C(object):
     def get_number_of_items(self):
         """Returns the total number of items currently stored in the
-           'out' array.
+           "out" array.
 
-           :return: Number of items in the 'out' SA.
+           :return: Number of items in the "out" SA.
         """
 
         # Abbreviations
@@ -406,15 +427,15 @@ class SegmentedArrayPair_C(object):
     def set_number_of_items(self, InOut, n_items):
         """Sets the number of active items currently stored.
 
-           :param str InOut: Either 'in' or 'out' depending on whether
+           :param str InOut: Either "in" or "out" depending on whether
                              we're dealing with the in or out SA.
 
            :return: Nothing is returned.
         """
 
-        if InOut == 'in':
+        if InOut == "in":
             theSA = self.inSegmentedArray
-        elif InOut == 'out':
+        elif InOut == "out":
             theSA = self.outSegmentedArray
 
         # Compute the segment and offset of the last item. The
@@ -443,7 +464,7 @@ class SegmentedArrayPair_C(object):
 
            Uses the Numpy attribute nbytes.
 
-           :return: A 2-tuple with the number of megabytes in the 'in' and 'out'
+           :return: A 2-tuple with the number of megabytes in the "in" and "out"
                     SegmentedArrays.
 
         """
@@ -479,12 +500,12 @@ class SegmentedArrayPair_C(object):
     def get_full_indices(self, i_in, i_out):
         """
            This computes the full indices of a particular item in the
-           'in' and 'out' SAs.
+           "in" and "out" SAs.
 
-           :param int i_in: offset of an item into the 'in' SA
-           :param int i_out: offset of an item into the 'out' SA
+           :param int i_in: offset of an item into the "in" SA
+           :param int i_out: offset of an item into the "out" SA
 
-           :return: (full index in 'in' array, full index in 'out' array)
+           :return: (full index in "in" array, full index in "out" array)
         """
 
         # Abbreviations
@@ -500,18 +521,18 @@ class SegmentedArrayPair_C(object):
 #class SegmentedArrayPair_C(object):
     def get_full_index(self, indx, InOut):
         """
-           This computes the full index of a particular item in either the 'in' or 'out'
+           This computes the full index of a particular item in either the "in" or "out"
            SAs.
 
            :param int indx: offset of an item into the SA
-           :param str InOut: 'in' or 'out', depending of which SA is intended
+           :param str InOut: "in" or "out", depending of which SA is intended
 
-           :return: full index in 'in' or 'out' array
+           :return: full index in "in" or "out" array
         """
 
-        if InOut == 'in':
+        if InOut == "in":
             theSA = self.inSegmentedArray
-        elif InOut == 'out':
+        elif InOut == "out":
             theSA = self.outSegmentedArray
 
         full_index = self.currentSegment[theSA]*self.segmentLength + indx
