@@ -168,6 +168,12 @@ class Particle_C(object):
             self.position_coordinates = ['x', 'y',]
         elif self.coordinate_system == 'cartesian_x_y_z':
             self.position_coordinates = ['x', 'y', 'z']
+        elif self.coordinate_system == None:
+            errorMsg = "Specify a coordinate system for the particles!"
+            sys.exit(errorMsg)
+        else:
+            errorMsg = "Unknown particle coordinate system " + self.coordinate_system
+            sys.exit(errorMsg)            
 
         self.particle_dimension = len(self.position_coordinates)
 
@@ -296,6 +302,7 @@ class Particle_C(object):
                 self.neutral_species.append(speciesName)                
             else:
                 errorMsg = "Unknown type of dynamics " + sp.dynamics + ' for species ' + sp_name
+                sys.exit(errorMsg)                
 
             # Process user input giving the particle-variable names and types
             # for each plasma species.  Allocate initial storage
@@ -484,9 +491,10 @@ class Particle_C(object):
         """Generates particles for a species from a list provided by the user.
         """
 
+        printParticles = True
         printWarningNoTrajectory = True
 
-        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
         userParticlesClass = self.user_particles_class
 
@@ -517,8 +525,10 @@ class Particle_C(object):
 #        print self.particle_dtype['names']
 #        print 'index = ', self.particle_dtype['names'].index('bitflags')
 
+        if printParticles or printWarningNoTrajectory:
+            print(fncName)
         for i in range(number_of_macroparticles):
-            print('species_name, particle_list[i] = ', species_name, particle_list[i])
+            if printParticles: print("\tspecies_name, particle_list[i] = ", species_name, particle_list[i])
             segIndex, fullIndex = psegArrSp.push_back(particle_list[i])
             # Check if this particle has the trajectory flag turned on
             p = psegArrSp.get_item(fullIndex)
@@ -530,7 +540,7 @@ class Particle_C(object):
                     self.traj_T.create_trajectory(species_name, fullIndex, dynamicsType, unique_id_int=p['unique_ID'])
                 else:
 # Instead of printing this message, a traj_T object could be created here.
-                    if printWarningNoTrajectory: print(fncName, "\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet.")
+                    if printWarningNoTrajectory: print("\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet.")
 
 #        if (print_flag): print fncName, "weight for ", species_name, " is ", weight
 #        if (print_flag): print fncName, "bitflags for ", species_name, " is ", bitflags
@@ -727,7 +737,7 @@ class Particle_C(object):
     #                for ip in xrange(pseg.size):
                     for ip in range(npSeg):
                         pseg[ip]['cell_index'] = self.pmesh_M.compute_cell_index(pseg[ip])
-                        print('ip, index =', ip, pseg[ip]['cell_index'])
+#                        print('ip, index =', ip, pseg[ip]['cell_index'])
 # Check that is_inside() confirms the cell index:
                         if not self.pmesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']):
 #                        if not self.pmesh_M.is_inside_CPP(pseg[ip], pseg[ip]['cell_index']):
@@ -900,7 +910,8 @@ class Particle_C(object):
         dt = ctrl.dt
         step = ctrl.timeloop_count # The number of timesteps done so far.
         time = ctrl.time # The time being integrated to.
-
+        MAX_FACET_CROSS_COUNT = ctrl.MAX_FACET_CROSS_COUNT
+        
         pmesh_M = self.pmesh_M
         pDim = self.particle_dimension
 
@@ -1070,8 +1081,8 @@ class Particle_C(object):
 
                         facetCrossCount += 1
                         # Check for an abnormal number of facet crossings:
-                        if facetCrossCount > ctrl.MAX_FACET_CROSS_COUNT:
-                            errorMsg = "%s\tExiting because MAX_FACET_CROSS_COUNT = %d was exceeded!" % (fncName, ctrl.MAX_FACET_CROSS_COUNT)
+                        if facetCrossCount > MAX_FACET_CROSS_COUNT:
+                            errorMsg = "%s\tExiting because MAX_FACET_CROSS_COUNT = %d was exceeded!" % (fncName, MAX_FACET_CROSS_COUNT)
                             sys.exit(errorMsg)
 
                         # Compute dx[], the move vector that starts in
@@ -1268,6 +1279,7 @@ class Particle_C(object):
         dt = ctrl.dt
         step = ctrl.timeloop_count
         time = ctrl.time
+        MAX_FACET_CROSS_COUNT = ctrl.MAX_FACET_CROSS_COUNT
 
         pmesh_M = self.pmesh_M
         pDim = self.particle_dimension
@@ -1368,16 +1380,17 @@ class Particle_C(object):
                     facetCrossCount = 0
                     tStart = time - dt
                     dtRemaining = dt
-#                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
-                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
+                    
+                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
+#                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
                         # there's a boundary-condition on that facet.
-#                        print fncName, "particle has migrated"
+#                        print (fncName, "particle has migrated")
 
                         facetCrossCount += 1
                         # Check for an abnormal number of facet crossings:
-                        if facetCrossCount > self.MAX_FACET_CROSS_COUNT:
+                        if facetCrossCount > MAX_FACET_CROSS_COUNT:
                             errorMsg = "%s !!! MAX_FACET_CROSS_COUNT exceeded!!!" % (fncName)
                             sys.exit(errorMsg)
 
@@ -1460,6 +1473,7 @@ class Particle_C(object):
 
                     # Record the number of facet-crossings
                     psegOut[ipOut]['crossings'] = facetCrossCount
+#                    print("crossings =", facetCrossCount)
                     
                     # Check that this particle has not been deleted before
                     # incrementing the "out" particle counter.
@@ -1545,6 +1559,7 @@ class Particle_C(object):
         dt = ctrl.dt
         step = ctrl.timeloop_count
         time = ctrl.time
+        MAX_FACET_CROSS_COUNT = ctrl.MAX_FACET_CROSS_COUNT
 
         pmesh_M = self.pmesh_M
         pDim = self.particle_dimension
@@ -1664,7 +1679,7 @@ class Particle_C(object):
 
                         facetCrossCount += 1
                         # Check for an abnormal number of facet crossings:
-                        if facetCrossCount > self.MAX_FACET_CROSS_COUNT:
+                        if facetCrossCount > MAX_FACET_CROSS_COUNT:
                             errorMsg = "%s !!! MAX_FACET_CROSS_COUNT exceeded!!!" % (fncName)
                             sys.exit(errorMsg)
 

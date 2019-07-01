@@ -171,7 +171,14 @@ class TestPybParticleAdvance(unittest.TestCase):
 #    def setUp(self):ENDDEF
 
     def test_1_cpp_particle_advance(self):
-        """Test that we can call a C++ function to push particles.
+        """Test that we can call a C++ function to push neutral particles.
+
+
+           Initial particle positions are in UserParticles_3D.py.
+
+           The first particle moves in -x only, from 9.5 to -9.5.
+           The second particle moves in -x, -y, -z.
+           
 
         """
 
@@ -243,9 +250,12 @@ class TestPybParticleAdvance(unittest.TestCase):
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
-                getparticle = self.particle_P.pseg_arr[sp].get(ip)
-#                print 'expected = ', p_expected[ip]
-#                print 'calculated = ', getparticle
+                # getparticle = self.particle_P.pseg_arr[sp].get(ip)
+                # Instead of .get(), retrieve the particle structure using the returned Numpy array it's in.
+                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset] # Retrieve the particle from the SAP.
+                print('expected = ', p_expected[ip])
+                print('calculated = ', getparticle)
                 for ic in range(ncoords):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
                 cell_index_position = -3

@@ -41,7 +41,8 @@ class TestParticleMigration(unittest.TestCase):
         pin.precision = np_m.float64
         pin.particle_integration_loop = 'loop-on-particles'
         # Use the 3 position coordinates, since we're doing 1, 2, and 3D particle motion
-        pin.position_coordinates = ['x', 'y', 'z'] # Determines particle storage dimension
+#        pin.position_coordinates = ['x', 'y', 'z'] # Determines particle storage dimension
+        pin.coordinate_system = 'cartesian_x_y_z' # Determines particle storage dimension
         # Neutral particles: No forces.
         """
         pin.force_components = ['x', 'y',]
@@ -66,7 +67,7 @@ class TestParticleMigration(unittest.TestCase):
 #                             )
 
         speciesName = 'neutral_H'
-        charge = 1.0
+        charge = 0.0
         mass = 1.0*MyPlasmaUnits_C.AMU
         dynamics = 'neutral'
         neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
@@ -246,6 +247,7 @@ class TestParticleMigration(unittest.TestCase):
         ctrl.time = 0.0
         ctrl.dt = 0.5
         ctrl.n_timesteps = 19
+        ctrl.MAX_FACET_CROSS_COUNT = 100
 
         # Run for 1D mesh
 
@@ -294,7 +296,10 @@ class TestParticleMigration(unittest.TestCase):
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
-                getparticle = self.particle_P.pseg_arr[sp].get(ip)
+#                getparticle = self.particle_P.pseg_arr[sp].get(ip)
+                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset] # Retrieve the particle from the SAP.
+                
 #                print 'expected = ', p_expected[ip]
 #                print 'calculated = ', getparticle
                 for ic in range(ncoords):
@@ -324,6 +329,7 @@ class TestParticleMigration(unittest.TestCase):
         ctrl.time = 0.0
         ctrl.dt = 0.5
         ctrl.n_timesteps = 19
+        ctrl.MAX_FACET_CROSS_COUNT = 100
 
         # Run for 2D mesh
 
@@ -336,7 +342,11 @@ class TestParticleMigration(unittest.TestCase):
         p_ic = []
         sp = self.particle_P.neutral_species[0]
         for ip in [0, 1]:
-            p = self.particle_P.pseg_arr[sp].get(ip).copy() # Have to make a copy! Otherwise you overwrite the only copy of the particle
+#            p = self.particle_P.pseg_arr[sp].get(ip).copy() # Have to make a copy! Otherwise you overwrite the only copy of the particle
+
+            (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+            p = pseg[offset].copy()  # Have to make a copy! Otherwise you overwrite the only copy of the particle
+            
 #            p_ic.append(self.particle_P.pseg_arr[sp].get(ip)) # Don't do this: it's a reference.
             p_ic.append(p)
 #            print 'ip =', ip, 'p_ic =', p_ic[ip]
@@ -385,7 +395,12 @@ class TestParticleMigration(unittest.TestCase):
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
-                getparticle = self.particle_P.pseg_arr[sp].get(ip)
+#                getparticle = self.particle_P.pseg_arr[sp].get(ip)
+
+                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset] # Retrieve the particle from the SAP.
+
+                
 #                mplot_m.plot(data_arr['x'], data_arr['y'])
                 mplot_m.plot([p_ic[ip][0], getparticle[0]], [p_ic[ip][1], getparticle[1]])
 #                print 'sp =', sp, 'expected =', p_expected[ip]
@@ -418,6 +433,7 @@ class TestParticleMigration(unittest.TestCase):
         ctrl.time = 0.0
         ctrl.dt = 0.5
         ctrl.n_timesteps = 19
+        ctrl.MAX_FACET_CROSS_COUNT = 100        
 
         # Run for 3D mesh
 
@@ -430,7 +446,9 @@ class TestParticleMigration(unittest.TestCase):
         p_ic = []
         sp = self.particle_P.neutral_species[0]
         for ip in [0, 1]:
-            p = self.particle_P.pseg_arr[sp].get(ip).copy() # Have to make a copy!
+#            p = self.particle_P.pseg_arr[sp].get(ip).copy() # Have to make a copy!
+            (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+            p = pseg[offset].copy()  # Have to make a copy! Otherwise you overwrite the only copy of the particle
             p_ic.append(p)
 
         # The expected final position and cell
@@ -477,7 +495,9 @@ class TestParticleMigration(unittest.TestCase):
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
-                getparticle = self.particle_P.pseg_arr[sp].get(ip)
+#                getparticle = self.particle_P.pseg_arr[sp].get(ip)
+                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset] # Retrieve the particle from the SAP.
                 mplot_m.plot([p_ic[ip][0], getparticle[0]], [p_ic[ip][1], getparticle[1]], [p_ic[ip][2], getparticle[2]])
 #                print 'expected = ', p_expected[ip]
 #                print 'calculated = ', getparticle
