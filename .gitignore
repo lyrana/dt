@@ -1,6 +1,7 @@
 *.bak
 *.h5
 *.h5part
+*.o
 *.png
 *.pvd
 *.pvsm
