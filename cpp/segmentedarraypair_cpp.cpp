@@ -142,8 +142,8 @@ namespace dnt {
     PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x>, x_, "x", x0_, "x0", ux_, "ux", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
 
 // Register DnT_pstruct2D and DnT_pstruct3D
-    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x_y>, x_, "x", y_, "y", x0_, "x0", y0_, "y0", ux_, "ux", uy_, "uy", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
-    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x_y_z>, x_, "x", y_, "y", z_, "z", x0_, "x0", y0_, "y0", z0_, "z0", ux_, "ux", uy_, "uy", uz_, "uz", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
+    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_xy>, x_, "x", y_, "y", x0_, "x0", y0_, "y0", ux_, "ux", uy_, "uy", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
+    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_xyz>, x_, "x", y_, "y", z_, "z", x0_, "x0", y0_, "y0", z0_, "z0", ux_, "ux", uy_, "uy", uz_, "uz", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
 
 //  py::class_() creates Python bindings for a C++ class or struct-style data structure
 //  py::class_<DnT_prec1D>(m, "DnT_prec1D");
@@ -156,10 +156,10 @@ namespace dnt {
   
     // Interface to the C++ class SegmentedArrayPair
 
-    // Create the classes "SegmentedArrayPair_cartesian_x/_x_y/_x_y_z"
+    // Create the classes "SegmentedArrayPair_cartesian_x/_xy/_xyz"
     makeSegmentedArrayPair<Ptype::cartesian_x>(m, "cartesian_x");
-    makeSegmentedArrayPair<Ptype::cartesian_x_y>(m, "cartesian_x_y");
-    makeSegmentedArrayPair<Ptype::cartesian_x_y_z>(m, "cartesian_x_y_z");
+    makeSegmentedArrayPair<Ptype::cartesian_xy>(m, "cartesian_xy");
+    makeSegmentedArrayPair<Ptype::cartesian_xyz>(m, "cartesian_xyz");
       
   } // ENDDEF: PYBIND11_MODULE(segmentedarraypair, m)
 

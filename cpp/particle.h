@@ -4,20 +4,51 @@
 
   \namespace dnt
 
+  template <Ptype PT>
+    void move_neutral_particle_species(py::object species_name, py::object ctrl, py::object particle_P)
+
+
   \sa SegmentedArrayPair
 */
+
+#ifndef PARTICLE_H
+#define PARTICLE_H
+
+#include <dolfin/common/Array.h>
+#include <dolfin/common/Hierarchical.h>
+#include <dolfin/function/assign.h>
+#include <dolfin/function/Constant.h>
+#include <dolfin/function/Expression.h>
+#include <dolfin/function/Function.h>
+#include <dolfin/function/FunctionAssigner.h>
+#include <dolfin/function/FunctionAXPY.h>
+#include <dolfin/function/FunctionSpace.h>
+#include <dolfin/function/MultiMeshFunction.h>
+#include <dolfin/function/MultiMeshFunctionSpace.h>
+#include <dolfin/function/MultiMeshSubSpace.h>
+#include <dolfin/function/LagrangeInterpolator.h>
+#include <dolfin/function/SpecialFunctions.h>
+#include <dolfin/fem/FiniteElement.h>
+#include <dolfin/fem/GenericDofMap.h>
+#include <dolfin/fem/MultiMeshDofMap.h>
+#include <dolfin/geometry/Point.h>
+#include <dolfin/la/GenericVector.h>
+#include <dolfin/la/GenericMatrix.h>
+#include <dolfin/mesh/Mesh.h>
 
 #include <iostream>
 #include <tuple>
 //#include "pstruct.h"
 #include "SegmentedArrayPair.h"
 
-//#include "dolfin.h"
+#include "dolfin.h"
 
 //using namespace std; 
 
 //template<typename PS>
 //using SegList = std::vector<py::array_t<PS,0>>;
+
+namespace py = pybind11;
 
 namespace dnt
 {
@@ -51,12 +82,19 @@ namespace dnt
 
     // Get parameters needed from ctrl arg
     auto dt = ctrl.attr("dt").cast<double>(); // This does a COPY.
+    auto step = ctrl.attr("timeloop_count").cast<int>();
+    auto t = ctrl.attr("time").cast<double>();
     auto MAX_FACET_CROSS_COUNT = ctrl.attr("MAX_FACET_CROSS_COUNT").cast<int>();
 
     // Get attributes needed from Particle_C arg
     auto pmesh_M = particle_P.attr("pmesh_M");
+    auto mesh = pmesh_M.attr("mesh").cast<dolfin::Mesh>();
+    auto NO_FACET = pmesh_M.attr("NO_FACET").cast<int>();
+    auto cell_vertex_dict = pmesh_M.attr("cell_vertex_dict").cast<py::dict>();
+        
     auto pDim = particle_P.attr("particle_dimension").cast<int>();
     auto pseg_arr = particle_P.attr("pseg_arr").cast<py::dict>();
+
     
     // Get the data for the species to be advanced
     //    auto pseg_arr_map = particle_P.attr("pseg_arr").cast<std::map<std::string, SegmentedArrayPair<PT *>>();
@@ -68,13 +106,10 @@ namespace dnt
     const py::ssize_t segmentLength = psa->get_segment_length();
     //    auto mesh_coordinates = mesh.coordinates();
     
-    // Start a loop over the psa segments
+    // Start a loop over the psa segments. segTuple contains (npSeg, psegIn, psegOut)
     py::tuple segTuple = psa->init_inout_loop(true); // 'true' returns the data pointers for
-                                                 // the first segment pair, instead of the
-                                                 // Numpy arrays.
-    //new1    
-    //    py::tuple segTuple = psa->init_inout_loop();
-
+                                                     // the first segment pair, instead of the
+                                                     // Numpy arrays.
     auto npSeg = segTuple[0].cast<py::ssize_t>();
 
     // Get the particle array pointers from the returned py::capsule's
@@ -88,8 +123,9 @@ namespace dnt
     // std::cout << "The name of the capsule is " << psegOutCap.name() << std::endl;
     Pstruct<PT>* psegOut = psegOutCap; // Declares the type of psegOut
 
-    // An alternative way to do this is to use the returned Numpy structured array objects:
-    // call init_inout_loop() without the "true" argument above.
+    // An alternative way to do this is to use the returned Numpy structured array
+    // objects: call init_inout_loop() without the "true" argument above. Then use the
+    // Python buffer protocol to get at the data.
     /*
     // psegIn:
     auto psegInNumpyArray = segTuple[1].cast<py::array_t<Pstruct<PT>,0>>();
@@ -149,6 +185,52 @@ namespace dnt
             psegOut[ipOut] = psegIn[ipIn]; // Copy all of this particle's data from the
                                            // input slot to the output slot
 
+            // Move the neutral particle
+            // 1. Save the initial position
+            psegOut[ipOut].x0_ = psegOut[ipOut].x_;
+            psegOut[ipOut].y0_ = psegOut[ipOut].y_;
+            psegOut[ipOut].z0_ = psegOut[ipOut].z_;
+            // 2. Move the particle. NON-RELATIVISTIC: v and u are the same
+            psegOut[ipOut].x_ += psegOut[ipOut].ux_*dt;
+            psegOut[ipOut].y_ += psegOut[ipOut].uy_*dt;
+            psegOut[ipOut].z_ += psegOut[ipOut].uz_*dt;
+
+            auto pCellIndex = psegOut[ipOut].cell_index_;
+
+            // Loop until the particle is in the current cell
+            auto mLastFacet = NO_FACET;
+            size_t facetCrossCount = 0;
+            auto tStart = t - dt;
+            auto dtRemaining = dt;
+
+            //HERE            
+            // while (!pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex))
+
+  //  Have:
+
+            //        vertices = self.cell_vertex_dict[cell_index]
+        
+            //        if self.tdim == 3:
+            //            YesOrNo = dnt_cpp.cell_contains_point(self.mesh,
+            //                                                  vertices, # a numpy array
+            //                                                  point['x'], point['y'], point['z'])
+            
+            //            bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct1D point);
+            std::string sIndex = std::to_string(pCellIndex);
+            char const* pchar = sIndex.c_str();
+            //            auto vertices = cell_vertex_dict[pchar].cast<Eigen::Matrix>();
+            auto vertices = cell_vertex_dict[pchar].cast<py::array_t<int>>();
+  
+            // NEW version
+            //            double point;
+            //            pstruct_to_point<Ptype::cartesian_xyz>(psegOut[ipOut], point);
+            double point[3] = {psegOut[ipOut].x_, psegOut[ipOut].y_, psegOut[ipOut].z_};
+            //            while (! cell_contains_point(mesh, vertices,  psegOut[ipOut]))
+            while (! cell_contains_point(mesh, vertices, point))
+              {
+                std::cout << "Hello from call to cell_contains_point" << std::endl;
+              }
+            
             /*
               Check if we've reached the end of this segment.  If so, we need to start
               writing on a new segment.  If there are no more segments, allocate a new one.
@@ -191,8 +273,7 @@ namespace dnt
       }
     psa->set_number_of_items("out", particleCount);
   }
-  // ENDDEF: void move_neutral_particles(SegmentedArrayPair<PT>& psa)
-
+  // ENDDEF: void move_neutral_particle_species(py::object species_name, py::object ctrl, py::object particle_P)
   
   //! Advance a neutral particle species by one time increment on a mesh.
   /*!          
@@ -212,9 +293,11 @@ namespace dnt
                                  current cell.
 
   */
-  void move_neutral_particle_species(SegmentedArrayPair<Ptype::cartesian_x_y_z>& psa)
+  void move_neutral_particle_species(SegmentedArrayPair<Ptype::cartesian_xyz>& psa)
   {
     
   }
   
 } // namespace dnt
+
+#endif

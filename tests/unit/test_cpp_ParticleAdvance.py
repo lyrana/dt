@@ -21,7 +21,7 @@ from Particle_Module import *
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
 # The C++ functions are bound to Python names in a .so
-#import p_pyb_cartesian_x
+import p_cpp_cartesian_xyz
 
 #STARTCLASS
 class TestPybParticleAdvance(unittest.TestCase):
@@ -47,7 +47,7 @@ class TestPybParticleAdvance(unittest.TestCase):
         pin.particle_integration_loop = 'loop-on-particles'
 
         # The particle coordinate system is 3D Cartesian
-        pin.coordinate_system = 'cartesian_x_y_z'
+        pin.coordinate_system = 'cartesian_xyz'
 
         # Use the 3 position coordinates, since we're doing 1, 2, and 3D particle motion
         # This could be derived from the coordinate system:
@@ -173,12 +173,18 @@ class TestPybParticleAdvance(unittest.TestCase):
     def test_1_cpp_particle_advance(self):
         """Test that we can call a C++ function to push neutral particles.
 
-
            Initial particle positions are in UserParticles_3D.py.
 
            The first particle moves in -x only, from 9.5 to -9.5.
-           The second particle moves in -x, -y, -z.
-           
+           The first particle starts at:
+               (x0, y0, z0) = (9.5, -9.5, 0.0), with velocity:
+               (ux0, uy0, uz0) = (-2.0, 0.0, 0.0)
+           It moves in -x only, to -9.5
+
+           The second particle starts at
+               (x1, y1, z1) = (9.5, 9.5, 9.5)
+               (ux1, uy1, uz1) = (-2.0, -2.0, -2.0)
+           It moves in -x, -y, -z to the opposite corner.
 
         """
 
@@ -188,7 +194,7 @@ class TestPybParticleAdvance(unittest.TestCase):
         ctrl = DTcontrol_C()
 
         # Run identifier
-        ctrl.title = "pybind11 ParticleAdvance"
+        ctrl.title = "ParticleAdvance using C++"
         # Run author
         ctrl.author = "tph"
 

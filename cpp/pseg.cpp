@@ -103,7 +103,7 @@ void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) 
     // Copy spatial coordinates of p[ip] to a double[] for passing to evaluate_basis()
 
     //TODO: Could p[] be used directly, avoiding the copy?
-    pstruct_to_double<PS>(p[ip], point);
+    pstruct_to_point<PS>(p[ip], point);
     
     auto cellIndex = p[ip].cell_index_;
     // std::cout << ip << " cellIndex=" << cellIndex << std::endl;
@@ -189,7 +189,7 @@ template <typename PS>
     // Copy spatial coordinates of p[ip] to a double[] for passing to evaluate_basis()
 
     //TODO: Could p[] be used directly, avoiding the copy?
-    pstruct_to_double<PS>(p[ip], point);
+    pstruct_to_point<PS>(p[ip], point);
     
     auto cellIndex = p[ip].cell_index_;
     // std::cout << ip << " cellIndex=" << cellIndex << std::endl;

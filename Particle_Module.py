@@ -22,7 +22,7 @@ from Dolfin_Module import Mesh_C
 #import dnt_cpp
 # Use the C++ functions in the segmentedarraypair.so library
 import segmentedarraypair_cpp
-import p_cpp_cartesian_x_y_z as p_cpp
+import p_cpp_cartesian_xyz as p_cpp
 
 
 #STARTCLASS
@@ -164,9 +164,9 @@ class Particle_C(object):
 #        self.position_coordinates = particle_input.position_coordinates
         if self.coordinate_system == 'cartesian_x':
             self.position_coordinates = ['x',]
-        elif self.coordinate_system == 'cartesian_x_y':
+        elif self.coordinate_system == 'cartesian_xy':
             self.position_coordinates = ['x', 'y',]
-        elif self.coordinate_system == 'cartesian_x_y_z':
+        elif self.coordinate_system == 'cartesian_xyz':
             self.position_coordinates = ['x', 'y', 'z']
         elif self.coordinate_system == None:
             errorMsg = "Specify a coordinate system for the particles!"
@@ -317,10 +317,10 @@ class Particle_C(object):
                 # storage.
                 if self.coordinate_system == 'cartesian_x':
                     self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
-                elif self.coordinate_system == 'cartesian_x_y':
-                    self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y(self.SEGMENT_LENGTH)
-                elif self.coordinate_system == 'cartesian_x_y_z':
-                    self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y_z(self.SEGMENT_LENGTH)
+                elif self.coordinate_system == 'cartesian_xy':
+                    self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
+                elif self.coordinate_system == 'cartesian_xyz':
+                    self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
             else:
                 # Use the Python SegmentedArray class for particle storage
                 self.pseg_arr[speciesName] = SA_M.SegmentedArrayPair_C(self.SEGMENT_LENGTH, self.particle_dtype)

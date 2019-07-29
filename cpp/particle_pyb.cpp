@@ -183,8 +183,8 @@ PYBIND11_MODULE(particle_cpp, m) {
   m.def("cell_contains_point", (bool (*) (dolfin::Mesh&, py::array_t<int>, double&, double&, double&)) &cell_contains_point);
   
   makeParticleAdvanceFunction<Ptype::cartesian_x>(m, "cartesian_x");
-  makeParticleAdvanceFunction<Ptype::cartesian_x_y>(m, "cartesian_x_y");
-  makeParticleAdvanceFunction<Ptype::cartesian_x_y_z>(m, "cartesian_x_y_z");
+  makeParticleAdvanceFunction<Ptype::cartesian_xy>(m, "cartesian_xy");
+  makeParticleAdvanceFunction<Ptype::cartesian_xyz>(m, "cartesian_xyz");
   
 } // ENDDEF: PYBIND11_MODULE(particle_cpp, m)
 

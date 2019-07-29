@@ -11,6 +11,9 @@ __all__ = ['Field_C',
            'WholeMesh_C']
 
 """Dolfin_Module contains classes that use the DOLFIN finite-element library.
+
+    The local source files are at ~/workspace/dolfin/python/src
+
 """
 
 import sys
@@ -372,7 +375,7 @@ class Mesh_C(object):
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
         # For each cell, get a list of the vertices in it
-        # (cell.entities(d) returns a list of indices).
+        # (cell.entities(d) returns a List of indices).
         # A vertex has dimension 0.
 
         # cell.normal(fi) returns a Point representing the unit normal to the fi-th facet of the cell
@@ -499,7 +502,7 @@ class Mesh_C(object):
 
 #class Mesh_C(object):
     def is_inside(self, point, cell_index):
-        """Check if a point lies within a give cell
+        """Check if a point lies within a given cell
 
            Use the topological dimension "tdim" since the number of parameters used to
            do the test is tdim. Being "inside a cell" is a topological property.
@@ -533,7 +536,7 @@ class Mesh_C(object):
 
 #class Mesh_C(object):
     def is_inside_cpp_bak(self, point, cell_index):
-        """Check if a point lies within a give cell
+        """Check if a point lies within a given cell
 
         :param point: a record array of coordinates (x), (x,y), or (x, y, z)
                       with field names 'x', 'y', 'z'
@@ -562,7 +565,7 @@ class Mesh_C(object):
 
 #class Mesh_C(object):
     def is_inside_CPP(self, point, cell_index):
-        """Check if a point lies within a give cell.
+        """Check if a point lies within a given cell.
 
            Use the topological dimension "tdim" since the number of parameters used to
            do the test is tdim. Being "inside a cell " is a topological property.

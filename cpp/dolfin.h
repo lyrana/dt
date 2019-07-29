@@ -23,34 +23,24 @@
 
 #include <Eigen/Dense>
 
-#include "Pstruct.h"
-#include "Fstruct.h"
+//#include "Pstruct.h"
+//#include "Fstruct.h"
+
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#include <pybind11/stl.h>
+// #include <pybind11/eigen.h>
+#include <pybind11/operators.h>
+//#include <pybind11/cast.h>
+
+namespace py = pybind11;
+
 
 // Put these in namespace dnt:
 
-void divide_by_cell_volumes(dolfin::Function& dF, const std::map<int, double> &cell_volume_dict);
-template <typename PS>
-void interpolate_field_to_points(dolfin::Function& field,
-                                 py::array_t<PS, 0> points,
-                                 py::array_t<double> field_at_points);
+namespace dnt
+{
+  
+  bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double* point);
 
-/*
-template <typename S>
-void interpolate_field_to_points_v1(dolfin::Function& field,
-                                    py::array_t<S, 0> points,
-                                    py::array_t<double> field_at_points);
-*/
-
-//template <typename PS>
-//bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, PS point);
-
-// Distinguish functions by their arguments
-// These are NOT used!
-bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct1D point);
-bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct2D point);
-bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct3D point);
-
-// These ARE used!
-bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x);
-bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x, double& y);
-bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x, double& y, double& z);
+} // namespace dnt

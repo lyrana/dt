@@ -18,7 +18,7 @@ Contents:
 
   Copy spatial coordinates from a particle struct to a double array:
     template <typename PS>
-    void pstruct_to_double(PS& ps, double* point)
+    void pstruct_to_point(PS& ps, double* point)
 
   There are currently no PYBIND11 interfaces for the above.
 
@@ -47,8 +47,8 @@ namespace dnt
   enum class Ptype
   {
     cartesian_x,
-    cartesian_x_y,
-    cartesian_x_y_z
+    cartesian_xy,
+    cartesian_xyz
   };
   
 /*! \struct Pstruct
@@ -82,8 +82,8 @@ namespace dnt
       switch(ptype)
       {
       case Ptype::cartesian_x     : os << "cartesian_x"; break;
-      case Ptype::cartesian_x_y   : os << "cartesian_x_y"; break;
-      case Ptype::cartesian_x_y_z : os << "cartesian_x_y_z"; break;
+      case Ptype::cartesian_xy   : os << "cartesian_xy"; break;
+      case Ptype::cartesian_xyz : os << "cartesian_xyz"; break;
       default              : os.setstate(std::ios_base::failbit);
       }
       return os;
@@ -140,7 +140,7 @@ namespace dnt
         unique_ID_ = p[6].cast<int>();
         crossings_ = p[7].cast<int>();
       }
-      // void set_from_tuple(py::tuple p) ENDDEF
+      // ENDDEF: void set_from_tuple(py::tuple p)
 
       //! Set the member values from a py::list
       //      void set_from_list(py::list p)
@@ -155,7 +155,7 @@ namespace dnt
         unique_ID_ = p[6].cast<int>();
         crossings_ = p[7].cast<int>();
       }
-      // void set_from_list(py::list p) ENDDEF
+      // ENDDEF: void set_from_list(py::list p)
 
       //! Put the member values into a tuple
       py::tuple as_tuple()
@@ -163,7 +163,7 @@ namespace dnt
           // Create a tuple containing the member values
           return py::make_tuple(x_, x0_, ux_, weight_, bitflags_, cell_index_, unique_ID_, crossings_);
         }
-      // py::tuple as_tuple() ENDDEF
+      // ENDDEF: py::tuple as_tuple()
 
       //! Put the member values into a py::list
       py::list as_list()
@@ -181,7 +181,7 @@ namespace dnt
           
           return l;
         }
-      // py::list as_list() ENDDEF
+      // ENDDEF: py::list as_list()
       
       //! Put the member values into a py::dict
       py::dict as_dict()
@@ -190,14 +190,15 @@ namespace dnt
           // Create a dictionary containing the member values
           return py::dict("x"_a=x_, "x0"_a=x0_, "ux"_a=ux_, "weight"_a=weight_, "bitflags"_a=bitflags_, "cell_index"_a=cell_index_, "unique_ID"_a=unique_ID_, "crossings"_a=crossings_);
         }
-      // py::tuple as_dict() ENDDEF
-      
+      // ENDDEF: py::tuple as_dict()
+
       // Declare the << operator for the pstruct1D data type. This is used in print_pstructarray()
       friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x>& p)
       {
         os << "cartesian_x. fixme";
         return os;
       }
+      // ENDDEF: operator<<()
     };
   // ENDCLASS: class Pstruct<Ptype::cartesian_x>
 
@@ -213,7 +214,7 @@ namespace dnt
   \brief struct for (x, y) particle coordinates
 */
   template<>
-    class Pstruct<Ptype::cartesian_x_y>
+    class Pstruct<Ptype::cartesian_xy>
     {
       // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
     public:
@@ -304,28 +305,28 @@ namespace dnt
       // py::tuple as_dict() ENDDEF
 
       // Declare the << operator for the pstruct1D data type. This is used in print_pstructarray()
-      friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x_y>& p)
+      friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_xy>& p)
       {
-        os << "cartesian_x_y. fixme";
+        os << "cartesian_xy. fixme";
         return os;
       }
       
     };
-  // class Pstruct<Ptype::cartesian_x_y> ENDCLASS
+  // class Pstruct<Ptype::cartesian_xy> ENDCLASS
 
   // Initialize static class members
   
   // Set the bit patterns for flags. These are static class members, so they're set
   // outside the ctor.
-    int Pstruct<Ptype::cartesian_x_y>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-    int Pstruct<Ptype::cartesian_x_y>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
+    int Pstruct<Ptype::cartesian_xy>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+    int Pstruct<Ptype::cartesian_xy>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
 
 
 /*! \struct pstruct3D
   \brief struct for (x, y, z) particle coordinates
 */
   template<>
-    class Pstruct<Ptype::cartesian_x_y_z>
+    class Pstruct<Ptype::cartesian_xyz>
   {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   public:
@@ -428,21 +429,21 @@ namespace dnt
       // py::tuple as_dict() ENDDEF
 
       // Declare the << operator for the pstruct1D data type. This is used in print_pstructarray()
-      friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x_y_z>& p)
+      friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_xyz>& p)
       {
-        os << "cartesian_x_y_z. fixme";
+        os << "cartesian_xyz. fixme";
         return os;
       }
     
   };
-  // class Pstruct<Ptype::cartesian_x_y_z> ENDCLASS
+  // class Pstruct<Ptype::cartesian_xyz> ENDCLASS
 
   // Initialize static class members
   
   // Set the bit patterns for flags. These are static class members, so they're set
   // outside the ctor.
-    int Pstruct<Ptype::cartesian_x_y_z>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-    int Pstruct<Ptype::cartesian_x_y_z>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
+    int Pstruct<Ptype::cartesian_xyz>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+    int Pstruct<Ptype::cartesian_xyz>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
 
   
 
@@ -462,7 +463,7 @@ namespace dnt
 // It uses template specialization to handle particle structs with different dimensions.
   
   /* template <typename PS> */
-  /*   void pstruct_to_double(PS& ps, double* point); */
+  /*   void pstruct_to_point(PS& ps, double* point); */
 
 } // namespace dnt
 

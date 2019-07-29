@@ -157,7 +157,7 @@ namespace dnt
                                  current cell.
 
   */
-  void move_neutral_particle_species(SegmentedArrayPair<Ptype::cartesian_x_y_z>& psa)
+  void move_neutral_particle_species(SegmentedArrayPair<Ptype::cartesian_xyz>& psa)
   {
     
   }

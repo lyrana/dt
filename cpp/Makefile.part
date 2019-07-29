@@ -4,8 +4,9 @@ PARTICLE_MODULE_PREFIX = p_cpp_
 
 # Set the particle type here
 #PARTICLE_TYPE = cartesian_x
-#PARTICLE_TYPE = cartesian_x
-PARTICLE_TYPE = cartesian_x_y_z
+#PARTICLE_TYPE = cartesian_xy
+
+PARTICLE_TYPE = cartesian_xyz
 
 PARTICLE_MODULE_NAME = $(PARTICLE_MODULE_PREFIX)$(PARTICLE_TYPE)
 

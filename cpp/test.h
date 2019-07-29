@@ -20,7 +20,7 @@ Contents:
 
   Copy spatial coordinates from a particle struct to a double array:
     template <typename PS>
-    void pstruct_to_double(PS& ps, double* point)
+    void pstruct_to_point(PS& ps, double* point)
 
 */
 
@@ -113,10 +113,10 @@ std::cout << "key=" << std::string(py::str(item.first)) << ", "
         std::cout << msg << std::endl;
       }
 
-    //    std::map<std::string, SegmentedArrayPair<Ptype::cartesian_x_y_z>> pseg_arr_map = particle_P.attr("pseg_arr").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_x_y_z>>>();
+    //    std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz>> pseg_arr_map = particle_P.attr("pseg_arr").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz>>>();
     // pseg.arr is cast to a std::map from species names (strings) to an SAP of the right type.
     // Note pointer: .cast<MyClass *>, not .cast<Myclass> !
-    auto pseg_arr_map = particle_P.attr("pseg_arr").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_x_y_z> *>>();
+    auto pseg_arr_map = particle_P.attr("pseg_arr").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz> *>>();
 
     // compiler seems to turn this into a call to the SAP ctor.
     // Maybe that's what .cast<>() does: copies?
@@ -151,7 +151,7 @@ std::cout << "key=" << std::string(py::str(item.first)) << ", "
       }
 
     // Access the SAP from py::ojbect pseg_arr using a cast
-    auto psa = pseg_arr[neutralSpecies[0]].cast<SegmentedArrayPair<Ptype::cartesian_x_y_z> *>();
+    auto psa = pseg_arr[neutralSpecies[0]].cast<SegmentedArrayPair<Ptype::cartesian_xyz> *>();
     // Call an SAP function
     msg = "Length of segments in psa = " + std::to_string(psa->get_segment_length());
     std::cout << msg << std::endl;

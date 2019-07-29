@@ -1,5 +1,5 @@
 
-#include "pstruct.h"
+#include "Pstruct.h"
 
 namespace py = pybind11;
 
@@ -28,7 +28,7 @@ namespace dnt
 
 // Define the << operator for the DnT_pstruct2D data type. This is used in print_pstructarray()
 // below to print each element in the array.
-  std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x_y>& p) {
+  std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_xy>& p) {
     return os <<   "x=" << p.x_
               << ", y=" << p.y_
               << ", x0=" << p.x0_
@@ -44,7 +44,7 @@ namespace dnt
 
 // Define the << operator for the DnT_pstruct3D data type. This is used in print_pstructarray()
 // below to print each element in the array.
-  std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_x_y_z>& p) {
+  std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_xyz>& p) {
     return os <<   "x=" << p.x_
               << ", y=" << p.y_
               << ", z=" << p.z_
@@ -96,25 +96,25 @@ namespace dnt
 // This function copies the spatial coordinates from a particle structure to a double array.
 // It uses template specialization to handle particle structures with different dimensions.
   template <Ptype PT>
-  void pstruct_to_double(Pstruct<PT>& p, double* point)
+  void pstruct_to_point(Pstruct<PT>& p, double* point)
   {
     // There is no generic version
   }
   template <>
-  void pstruct_to_double<Pstruct<Ptype::cartesian_x>(Pstruct<Ptype::cartesian_x& p, double* point)
+  void pstruct_to_point<Pstruct<Ptype::cartesian_x>(Pstruct<Ptype::cartesian_x& p, double* point)
   {
     point[0] = p.x_;
     // how about point = &(p.x_);
    
   }
   template <>
-  void pstruct_to_double<Pstruct<Ptype::cartesian_x_y>(Pstruct<Ptype::cartesian_x_y& p, double* point)
+  void pstruct_to_point<Pstruct<Ptype::cartesian_xy>(Pstruct<Ptype::cartesian_xy& p, double* point)
   {
     point[0] = p.x_;
     point[1] = p.y_;
   }
   template <>
-  void pstruct_to_double<Pstruct<Ptype::cartesian_x_y_z>(Pstruct<Ptype::cartesian_x_y_z& p, double* point)
+  void pstruct_to_point<Pstruct<Ptype::cartesian_xyz>(Pstruct<Ptype::cartesian_xyz& p, double* point)
   {
     point[0] = p.x_;
     point[1] = p.y_;
