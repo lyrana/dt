@@ -19,29 +19,16 @@
 #include <dolfin/la/GenericVector.h>
 #include <dolfin/la/GenericMatrix.h>
 #include <dolfin/mesh/Mesh.h>
-#include <pybind11/pybind11.h>
 
-//#include <Eigen/Dense>
+#include "pstruct.h"
 
-//#include "Pstruct.h"
-//#include "Fstruct.h"
+template <typename PS>
+void add_weights_to_cells(py::array_t<PS, 0> pseg, dolfin::Function& dF);
 
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-#include <pybind11/stl.h>
-// #include <pybind11/eigen.h>
-#include <pybind11/operators.h>
-//#include <pybind11/cast.h>
+template <typename PS>
+void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF);
 
-namespace py = pybind11;
+//template <>
+//void add_weights_to_cells<DnT_pstruct1D>(py::array_t<DnT_pstruct1D, 0> pseg, dolfin::Function& dF);
 
-
-// Put these in namespace dnt:
-
-namespace dnt
-{
-  
-  //v1:  bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double* point);
-  bool cell_contains_point(dolfin::Mesh& mesh, const unsigned int* vertices, double* point);
-
-} // namespace dnt
+//void interpolate_weights_to_dofs(py::array_t<DnT_pstruct1D, 0> pseg, dolfin::Function& dF);

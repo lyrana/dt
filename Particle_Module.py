@@ -22,6 +22,7 @@ from Dolfin_Module import Mesh_C
 #import dnt_cpp
 # Use the C++ functions in the segmentedarraypair.so library
 import segmentedarraypair_cpp
+#import dolfin_cpp
 import p_cpp_cartesian_xyz as p_cpp
 
 

@@ -32,27 +32,37 @@ namespace dnt
     Overload on the number of particle coordinates: 1D, 2D, 3D 
   */
 
-  // NEW VERSION
-  // The call is
-  //            cell_contains_point(mesh, vertices,  psegOut[ipOut]);
+  // v1:           cell_contains_point(mesh, vertices,  psegOut[ipOut]);
 
+
+  bool cell_contains_point(void)
+  {
+    return true;
+  }
+  
   bool cell_contains_point(dolfin::Mesh& mesh,
-                           py::array_t<int> vertices,
+                           const unsigned int* vertices,
                            double* point)
   {
     // The algorithm used depends on the mesh dimension
     const std::size_t tdim = mesh.topology().dim();
     const std::size_t gdim = mesh.geometry().dim();
 
-    auto v = vertices.unchecked<1>(); // <1> is the number of array indices. See pybind11 docs.
+    //v1:    auto v = vertices.unchecked<1>(); // <1> is the number of array indices. See pybind11 docs.
 
     // 1D cell
     if (tdim == 1 && gdim == 1)
       {
-        auto v0 = v(0);
-        auto v1 = v(1);
+        //v1:        auto v0 = v(0);
+        //v1:        auto v1 = v(1);
+        auto v0 = vertices[0];
+        auto v1 = vertices[1];
         double p0 = mesh.coordinates()[v0];
         double p1 = mesh.coordinates()[v1];
+
+        std::cout << "point[0] = " << point[0] << " p0 = " << p0 << ", p1 = " << p1 << std::endl;
+    
+        
         if (p0 > p1)
           std::swap(p0, p1);
         return p0 <= point[0] and point[0] <= p1;
@@ -61,9 +71,14 @@ namespace dnt
     // 2D cell
     else if (tdim == 2 && gdim == 2)
       {
+        /*v1:
         auto v0 = v(0);
         auto v1 = v(1);
         auto v2 = v(2);
+        */
+        auto v0 = vertices[0];
+        auto v1 = vertices[1];
+        auto v2 = vertices[2];
 
         // mesh.coordinates() returns a 1D array of doubles: x0, y0, x1, y1,... in
         // this case.  So the value of x for vertex n is at offset n*2. Set pointers
@@ -105,10 +120,10 @@ namespace dnt
     // 3D cell
     else if (tdim == 3 && gdim == 3)
       {
-        auto v0 = v(0);
-        auto v1 = v(1);
-        auto v2 = v(2);
-        auto v3 = v(3);
+        auto v0 = vertices[0];
+        auto v1 = vertices[1];
+        auto v2 = vertices[2];
+        auto v3 = vertices[3];
 
         //  std::cout << "v0: " << v0 << " v1: " << v1 << " v2: " << v2 << " v3: " << v3 << std::endl;
         //  std::cout << "x: " << x << " y: " << y << " z: " << z << std::endl;

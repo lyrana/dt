@@ -74,7 +74,8 @@ namespace dnt {
     //  void dolfin_DnT_pstruct_instances()
     dolfin::Mesh mesh;
     dolfin::Mesh& meshRef = mesh;
-    py::array_t<int> vertices;
+    //v1: py::array_t<int> vertices;
+    const unsigned int* vertices(nullptr);
     double* point(nullptr);
 
     // Do these calls need to be inside the MODULE?

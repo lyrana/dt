@@ -96,6 +96,7 @@ class Mesh_C(object):
             # documentation.
             self.cell_dict = {}
 
+            self.cell_vertex_dict = {}
             self.entity_dimension = {'vertex': 0, 'edge': 1, 'facet': self.tdim-1}
             self.cell_entity_index_dict = {}
             self.vertex_cell_dict = {}

@@ -103,14 +103,14 @@ namespace dnt
     
     //    py::print("vertices2: ", py::str(vertices2[2])); // Need to use the buffer protocol to get at the data.
     
-    //v1: auto cell_vertex_dict = pmesh_M.attr("cell_vertex_dict").cast<std::map<unsigned int, py::array_t<int>>>(); // Does this do a copy op?
+    auto cell_vertex_dict = pmesh_M.attr("cell_vertex_dict").cast<std::map<unsigned int, py::array_t<int>>>(); // Does this do a copy op?
 
     // This isn't a correct way to get at the py::dict!
     //    auto cellVertexDictCap = pmesh_M.attr("cell_vertex_dict").cast<py::capsule>();    
     //    Eigen::Map<const Eigen::Matrix<unsigned int, Eigen::Dynamic, 1>>* cell_vertex_dict = cellVertexDictCap;
       
     //std::cout << "vertices " << cell_vertex_dict[2];
-    //v1: py::print("cell_vertex_dict[2] ", py::str(cell_vertex_dict[2]));
+    py::print("cell_vertex_dict[2] ", py::str(cell_vertex_dict[2]));
 
     //    std::cout << "cell_vertex_dict " << cell_vertex_dict << std::endl;
     
@@ -253,23 +253,24 @@ namespace dnt
               }
             */
 
-            //v1: auto vertices = cell_vertex_dict[pCellIndex]; // this returns a py::array_t<int>
             // Newer version that calls directly to C++
-            // Create a view to this cell in the dolfin::Mesh object
-            dolfin::Cell pcell(mesh, pCellIndex);
-            auto vertices = pcell.entities(0);
-
-            // std::cout << "vertices " << vertices[0] << ", " << vertices[1] << std::endl;
             
+            // dolfin::Cell pcell(mesh, pCellIndex);
+            //HERE
+            
+            auto vertices = cell_vertex_dict[pCellIndex];
+ 
+            // NEW version
+            //            double point;
+            //            pstruct_to_point<Ptype::cartesian_xyz>(psegOut[ipOut], point);
             double point[3] = {psegOut[ipOut].x_, psegOut[ipOut].y_, psegOut[ipOut].z_};
+            //            while (! cell_contains_point(mesh, vertices,  psegOut[ipOut]))
             
             std::cout << "Calling cell_contains_point" << std::endl;
             
             while (! cell_contains_point(mesh, vertices, point))
               {
                 std::cout << "Hello from call to cell_contains_point" << std::endl;
-                // Copy code here from particle-v1.cpp
-                
               }
             
             /*
