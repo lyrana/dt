@@ -59,6 +59,7 @@ class TestParticleGeneration(unittest.TestCase):
 
         pin = self.pin
 
+        pin.coordinate_system = 'cartesian_x'
         pin.position_coordinates = ['x',] # determines the particle-storage dimensions
         pin.force_components = ['x',]
 

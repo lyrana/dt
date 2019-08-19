@@ -130,21 +130,21 @@ class TestSegmentedArrayPair(unittest.TestCase):
         return
 #    def test_1_CPP_cartesian_x(self):ENDDEF
 
-    def test_2_CPP_cartesian_x_y(self):
-        """Create a SegmentedArray for the "cartesian_x_y" particle type.
+    def test_2_CPP_cartesian_xy(self):
+        """Create a SegmentedArray for the "cartesian_xy" particle type.
 
            Make a 3D particle tuple and put it into a SegmentedArrayPair object
-           of type "cartesian_x_y".
+           of type "cartesian_xy".
 
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName, '('+__file__+')')
 
-        # Create C++ version of a SegmentedArray object for cartesian_x_y particles
-        seg_array_obj_CPP_cartesian_x_y = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y(self.segment_length)        
+        # Create C++ version of a SegmentedArray object for cartesian_xy particles
+        seg_array_obj_CPP_cartesian_xy = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xy(self.segment_length)        
         
-        # Create a cartesian_x_y particle and put it into the SegmentedArray
+        # Create a cartesian_xy particle and put it into the SegmentedArray
         x=0.0; x0=x; y=1.0; y0=y; ux=3.0; uy=4; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
         bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
@@ -159,7 +159,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
 
         # Put this particle into the SegmentedArray store
         
-        seg_arr = seg_array_obj_CPP_cartesian_x_y
+        seg_arr = seg_array_obj_CPP_cartesian_xy
         (seg_index, full_index) = seg_arr.push_back(putparticle)
 
         # Retrieve the particle using the returned Numpy array it's in.
@@ -174,24 +174,24 @@ class TestSegmentedArrayPair(unittest.TestCase):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
         
         return
-#    def test_2_CPP_cartesian_x_y(self):ENDDEF
+#    def test_2_CPP_cartesian_xy(self):ENDDEF
 
 
-    def test_3_CPP_cartesian_x_y_z(self):
-        """Create a SegmentedArray for the "cartesian_x_y_z" particle type.
+    def test_3_CPP_cartesian_xyz(self):
+        """Create a SegmentedArray for the "cartesian_xyz" particle type.
 
            Make a 3D particle tuple and put it into a SegmentedArrayPair object
-           of type "cartesian_x_y_z".
+           of type "cartesian_xyz".
 
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName, '('+__file__+')')
 
-        # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
-        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
+        # Create C++ version of a SegmentedArray object for cartesian_xyz particles
+        seg_array_obj_CPP_cartesian_xyz = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xyz(self.segment_length)        
         
-        # Create a cartesian_x_y_z particle and put it into the SegmentedArray
+        # Create a cartesian_xyz particle and put it into the SegmentedArray
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
         bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
@@ -206,7 +206,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
 
         # Put this particle into the SegmentedArray store
         
-        seg_arr = seg_array_obj_CPP_cartesian_x_y_z
+        seg_arr = seg_array_obj_CPP_cartesian_xyz
         (seg_index, full_index) = seg_arr.push_back(putparticle)
 
         # Retrieve the particle using the returned Numpy array it's in.
@@ -221,7 +221,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
         
         return
-#    def test_3_CPP_cartesian_x_y_z(self):ENDDEF
+#    def test_3_CPP_cartesian_xyz(self):ENDDEF
 
     def test_4_several_segments(self):
         """ Test the creation of several new segments.
@@ -230,8 +230,8 @@ class TestSegmentedArrayPair(unittest.TestCase):
         fncname = sys._getframe().f_code.co_name
         print('\ntest: ', fncname, '('+__file__+')')
 
-        # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
-        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
+        # Create C++ version of a SegmentedArray object for cartesian_xyz particles
+        seg_array_obj_CPP_cartesian_xyz = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xyz(self.segment_length)        
 
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
@@ -244,7 +244,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
 
         dx = 0.2
 
-        seg_arr = seg_array_obj_CPP_cartesian_x_y_z
+        seg_arr = seg_array_obj_CPP_cartesian_xyz
         
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):
@@ -299,8 +299,8 @@ class TestSegmentedArrayPair(unittest.TestCase):
         fncname = sys._getframe().f_code.co_name
         print('\ntest: ', fncname, '('+__file__+')')
 
-        # Create C++ version of a SegmentedArray object for cartesian_x_y_z particles
-        seg_array_obj_CPP_cartesian_x_y_z = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x_y_z(self.segment_length)        
+        # Create C++ version of a SegmentedArray object for cartesian_xyz particles
+        seg_array_obj_CPP_cartesian_xyz = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xyz(self.segment_length)        
 
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
@@ -313,7 +313,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
 
         dx = 0.2
 
-        seg_arr = seg_array_obj_CPP_cartesian_x_y_z
+        seg_arr = seg_array_obj_CPP_cartesian_xyz
         
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):

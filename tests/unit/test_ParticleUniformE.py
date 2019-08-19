@@ -46,6 +46,7 @@ class TestParticleUniformE(unittest.TestCase):
         # Initialize particles
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = 'cartesian_xyz'        
         pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
@@ -102,7 +103,7 @@ class TestParticleUniformE(unittest.TestCase):
 
         # Add these species to particle input
         pin.particle_species = (plasmaElectrons_S, HPlus_S, He_S,
-                                 )
+                                )
         # Make the particle object from pin
         self.particle_P = Particle_C(pin, print_flag=False)
 
@@ -234,7 +235,10 @@ class TestParticleUniformE(unittest.TestCase):
             self.particle_P.move_particles_in_uniform_fields(sp, ctrl)
             # Check that the first particles in the array reach the right speed
 #            getparticle = self.particle_P.pseg_arr[sp][0]
-            getparticle = self.particle_P.pseg_arr[sp].get(0)
+#            getparticle = self.particle_P.pseg_arr[sp].get(0)
+            (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(0)
+            getparticle = pseg[offset]
+            
 #            print 'calculated = ', getparticle
 #            print 'expected = ', p_expected[isp]
             for ic in range(ncoords):
@@ -310,7 +314,9 @@ class TestParticleUniformE(unittest.TestCase):
         for sp in self.particle_P.species_names:
             if self.particle_P.get_species_particle_count(sp) == 0: continue
             # Check that the first particles in the array reach the right speed
-            getparticle = self.particle_P.pseg_arr[sp].get(0)
+#            getparticle = self.particle_P.pseg_arr[sp].get(0)
+            (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(0)
+            getparticle = pseg[offset]
 #            print 'calculated = ', getparticle, 'for species', sp
 #            print 'expected = ', p_expected[isp], 'for species', sp
             for ic in range(ncoords):

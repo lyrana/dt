@@ -20,11 +20,17 @@ import h5py
 from Dolfin_Module import Mesh_C
 
 #import dnt_cpp
-# Use the C++ functions in the segmentedarraypair.so library
-import segmentedarraypair_cpp
+#import dolfin_cpp
 import p_cpp_cartesian_xyz as p_cpp
 
-
+useCplusplus = False
+if useCplusplus is True:
+    # Create the SAPs in C++ (segmentedarraypair_cpp.so)
+    import segmentedarraypair_cpp
+else:
+    # Create the SAPs in Python 
+    import SegmentedArrayPair_Module as SA_M
+    
 #STARTCLASS
 class ParticleInput_C(object):
     """Particle input class.
@@ -109,8 +115,6 @@ class ParticleSpecies_C(object):
 #class ParticleSpecies_C(object):ENDCLASS
 
 #STARTCLASS
-#import SegmentedArrayPair_Module as SA_M
-
 class Particle_C(object):
     """Particle_C contains the attributes of a plasma that is represented kinetically (particle positions and velocities):
           Number of kinetic species in the plasma
@@ -148,8 +152,8 @@ class Particle_C(object):
 
 
 #class Particle_C(object):
-    def __init__(self, particle_input, print_flag = False):
-        """Take a list of kinetic species provided by the user and create the initial plasma
+    def __init__(self, particle_input, use_cpp=False, print_flag=False):
+        """Take particle data provided by the user and create the initial plasma.
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
@@ -162,7 +166,7 @@ class Particle_C(object):
 
         # The spatial coordinates of a particle
 #        self.position_coordinates = particle_input.position_coordinates
-        if self.coordinate_system == 'cartesian_x':
+        if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
             self.position_coordinates = ['x',]
         elif self.coordinate_system == 'cartesian_xy':
             self.position_coordinates = ['x', 'y',]
@@ -308,21 +312,28 @@ class Particle_C(object):
             # for each plasma species.  Allocate initial storage
             # for particles using segmented vectors indexed by the
             # species name.
-
-            useCplusplus = True
-            
-            if useCplusplus is True:
+            if use_cpp is True:
+                # Create the SAPs in C++ (segmentedarraypair_cpp.so)
+                import segmentedarraypair_cpp
+                  
+#            if useCplusplus is True:
+                print(fncName, "\tDnT: Using C++ SAPs for particles")
+                
                 # Use the C++ SegmentedArrayPair class for particle storage.  This
                 # avoids having to call back to Python from C++ to manage the
                 # storage.
-                if self.coordinate_system == 'cartesian_x':
+                if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
                     self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xy':
                     self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xyz':
                     self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
             else:
+                # Create the SAPs in Python 
+                import SegmentedArrayPair_Module as SA_M
+
                 # Use the Python SegmentedArray class for particle storage
+                print(fncName, "\tUsing Python SAPs for particles")                
                 self.pseg_arr[speciesName] = SA_M.SegmentedArrayPair_C(self.SEGMENT_LENGTH, self.particle_dtype)
 
             # Initialize particle count for each species
@@ -531,7 +542,10 @@ class Particle_C(object):
             if printParticles: print("\tspecies_name, particle_list[i] = ", species_name, particle_list[i])
             segIndex, fullIndex = psegArrSp.push_back(particle_list[i])
             # Check if this particle has the trajectory flag turned on
-            p = psegArrSp.get_item(fullIndex)
+            # p = psegArrSp.get_item(fullIndex)
+            # For compatibility with the C++ version of SegmentedArrays:
+            (pseg, offset) = psegArrSp.get_segment_and_offset(fullIndex)
+            p = pseg[offset]
             if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
 # or: p['bitflags'] should work?
                 if self.traj_T is not None:
@@ -735,7 +749,8 @@ class Particle_C(object):
 
                 while isinstance(pseg, np_m.ndarray):
     #                for ip in xrange(pseg.size):
-                    for ip in range(npSeg):
+                    for ip in range(npSeg): # Could use for p in pseg[0:npSeg] instead
+                        
                         pseg[ip]['cell_index'] = self.pmesh_M.compute_cell_index(pseg[ip])
 #                        print('ip, index =', ip, pseg[ip]['cell_index'])
 # Check that is_inside() confirms the cell index:
@@ -781,7 +796,8 @@ class Particle_C(object):
         (npSeg, pseg) = psa.init_out_loop()
 
         while isinstance(pseg, np_m.ndarray):
-            for p in pseg:
+#            for p in pseg:
+            for p in pseg[0:npSeg]: # Need to avoid overrunning the initialized part of the array.
                 # Project the density function for this particle onto the DoF shape functions
                 # to get the DoF 'density'
 #                self.dof_number_density_dict[species_name].interpolate_delta_function_to_dofs(p)
@@ -830,6 +846,9 @@ class Particle_C(object):
             if dof_number_density_F is not None:
             # Project the density function for the particles onto the DoF shape functions
             # to get the DoF 'density'
+
+#  Pass pseg[0:npSeg] instead to limit the range to real particles?
+
                 if self.particle_dimension == 3:
                     dnt_cpp.interpolate_weights_to_dofs3D(pseg, dof_number_density_F.function._cpp_object)
                 elif self.particle_dimension == 2:
@@ -946,20 +965,20 @@ class Particle_C(object):
                                 # use SA indices to identify particles chosen for
                                 # trajectory plots.
             while isinstance(psegIn, np_m.ndarray):
-#            print pseg['z']
-#                print 'particles_mod: particles module: pseg = ', pseg
+#            print psegIn['z']
+#                print 'particles_mod: particles module: psegIn = ', psegIn
                 # Compute electric field for each particle
 
-#                print "Before:"
-#                print "position:", pseg['x'] #, pseg['y'] #, pseg['z']
-#                print "velocity:", pseg['ux'] #, pseg['uy'] #, pseg['uz']
+                print("Before:")
+                print("position:", psegIn['x'][0:npSeg], psegIn['y'][0:npSeg]) #, psegIn['z']
+                print("velocity:", psegIn['ux'][0:npSeg], psegIn['uy'][0:npSeg]) #, psegIn['uz']
 
                 Eseg = None # This is for the case where no fields are to be applied to the particles,
                 if neg_E_field is not None:
                     if ctrl.apply_solved_electric_field is None or ctrl.apply_solved_electric_field[sn] is True:
                         # Interpolate the solved electric field to the particle positions
                         # NB: This is the negative electric field
-                        neg_E_field.interpolate_field_to_points(psegIn, self.negE)
+                        neg_E_field.interpolate_field_to_points(psegIn[0:npSeg], self.negE)
                         # Truncate negE to the number of particles to get the
                         # += operations below to work: These operations need
                         # the vectors to be the same length.
@@ -1011,7 +1030,7 @@ class Particle_C(object):
 
                 # Loop on the particles in this "in" segment.
                 # ipIn counts through the "in" segment
-                for ipIn in range(npSeg):
+                for ipIn in range(npSeg): # Use for p in pseg[0:npSeg] instead?
 #                for ip in xrange(pseg.size):
 
                     # pseg[i] has the 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values
@@ -1072,8 +1091,8 @@ class Particle_C(object):
                     tStart = time - dt
                     dtRemaining = dt
 # TODO: fix the CPP version to allow DnT_pstruct args of any dimension.
-#                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
-                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
+                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
+#                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
                         # there's a boundary-condition on that facet.
@@ -1314,7 +1333,7 @@ class Particle_C(object):
             while isinstance(psegIn, np_m.ndarray): # Keep looping until we run
                                                     # out of "in" segments
                 for ipIn in range(npSeg): # Loop on the particles in this "in"
-                                           # segment
+                                          # segment. Could use for p in pseg[0:npSeg] instead
                     # psegIn[ipIn] has the 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values of ith item
                     # So psegIn[ipIn][0:3] is 'x', 'y', 'z'.
                     # Can't use slice syntax here, because the array data are not of homogeneous type.
@@ -1604,7 +1623,7 @@ class Particle_C(object):
 
                     
                 for ipIn in range(npSeg): # Loop on the particles in this "in"
-                                           # segment
+                                           # segment. Could use for p in pseg[0:npSeg] instead.
                     # psegIn[ipIn] has the 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values of ith item
                     # So psegIn[ipIn][0:3] is 'x', 'y', 'z'.
                     # Can't use slice syntax here, because the array data are not of homogeneous type.
@@ -1914,7 +1933,7 @@ class Particle_C(object):
 
             # Loop on the particles in this "in" segment.
             # ipIn counts through the "in" segment
-            for ipIn in range(npSeg):
+            for ipIn in range(npSeg): # Could use for p in pseg[0:npSeg] instead.
 
                 # Get the next "out" segment if the current "out" segment is full.
                 # If there are no more "out" segments, allocate a new one.
@@ -1923,7 +1942,7 @@ class Particle_C(object):
                     ipOut = 0 # Reset the counter for the new segment
 
                     # COPY everything from "in" to "out", to ensure weights, flags, etc. get copied.
-                    psegOut[ipOut] = psegIn[ipIn]
+                psegOut[ipOut] = psegIn[ipIn]
 
                 # Accelerate the particle
                 psegOut[ipOut]['ux'] = psegIn[ipIn]['ux'] + qmdt*E0.x
@@ -2290,7 +2309,7 @@ class Particle_C(object):
 
         # Record a trajectory data-point for particles with explicit dynamics
         for sp in traj_T.explicit_species:
-            pseg_arr = self.pseg_arr[sp] # The SA for this species
+            psegArrSp = self.pseg_arr[sp] # The SA for this species
             for i in range(len(traj_T.particle_index_list[sp])): # i loops over the list of
                                                              # trajectory-particles for
                                                              # this species
@@ -2301,8 +2320,11 @@ class Particle_C(object):
                 if ip == traj_T.NO_PINDEX: continue
 
                 # Retrieve the particle using its full index
-                p_arr[0] = pseg_arr.get_item(ip) # pulls value from the "out" array.
-
+                # p_arr[0] = psegArrSp.get_item(ip) # pulls value from the "out" array.
+                # For compatibility with the C++ version of SegmentedArrays:
+                (pseg, offset) = psegArrSp.get_segment_and_offset(ip)
+                p_arr[0] = pseg[offset]
+                
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
                 # Compute the force on this single particle
@@ -2364,8 +2386,10 @@ class Particle_C(object):
                 if ip == traj_T.NO_PINDEX: continue
 
                 # Retrieve particle using its full index
-                p_arr[0] = psegArrSp.get_item(ip) # pulls value from the "out" array.
-
+                # p_arr[0] = psegArrSp.get_item(ip) # pulls value from the "out" array.
+                # For compatibility with the C++ version of SegmentedArrays:
+                (pseg, offset) = psegArrSp.get_segment_and_offset(ip)
+                p_arr[0] = pseg[offset]
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
                 # Compute the force on this single particle
@@ -2414,7 +2438,11 @@ class Particle_C(object):
                 if ip == traj_T.NO_PINDEX: continue
 
                 # Retrieve particle using its full index
-                p_arr[0] = psegArrSp.get_item(ip) # pulls value from the "out" array.
+                # p_arr[0] = psegArrSp.get_item(ip) # pulls value from the "out" array.
+                # For compatibility with the C++ version of SegmentedArrays:
+                (pseg, offset) = psegArrSp.get_segment_and_offset(ip)
+                p_arr[0] = pseg[offset]
+                
 
 #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
 
@@ -2564,7 +2592,7 @@ class Particle_C(object):
         pDim = self.particle_dimension
 
         # References to scratch space
-        particle = self.one_particle_arr[0]
+        particle = self.one_particle_arr[0] # Checked that this really is a ref.
         pCoord = self.pcoord # x, y, z (or subset)
         pVel = self.pvel # ux, uy, uz (or subset)
         random_vals = self.random_vals
@@ -2641,12 +2669,19 @@ class Particle_C(object):
                     
                 # Store the particle
 #                p, pindex = psegArrSp.push_back(particle)
-                segIndex, fullIndex = psegArrSp.push_back(particle)
+
+#                print("push back particle", self.one_particle_arr[0])
+
+#                segIndex, fullIndex = psegArrSp.push_back(particle)
+                segIndex, fullIndex = psegArrSp.push_back(self.one_particle_arr)
 
                 # If the particle is tagged as a trajectory particle, initialize its
                 # trajectory information. Note: if this is being called by
                 # initialize_particles(), the E-field has not been computed yet.
-                p = psegArrSp[fullIndex]
+#                p = psegArrSp[fullIndex]
+                (pseg, offset) = psegArrSp.get_segment_and_offset(fullIndex)
+                p = pseg[offset]
+
                 if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
                     if self.traj_T is not None:
                         print("A trajectory will be recorded for particle", fullIndex, "of species:", speciesName)

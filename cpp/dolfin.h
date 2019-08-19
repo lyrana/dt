@@ -21,7 +21,7 @@
 #include <dolfin/mesh/Mesh.h>
 #include <pybind11/pybind11.h>
 
-#include <Eigen/Dense>
+//#include <Eigen/Dense>
 
 //#include "Pstruct.h"
 //#include "Fstruct.h"
@@ -41,6 +41,7 @@ namespace py = pybind11;
 namespace dnt
 {
   
-  bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double* point);
+  //v1:  bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double* point);
+  bool cell_contains_point(dolfin::Mesh& mesh, const unsigned int* vertices, double* point);
 
 } // namespace dnt

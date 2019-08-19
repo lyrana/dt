@@ -2,6 +2,9 @@
 
   \brief This file has the source code for a C++ implementation of SegmentedArray storage.
 
+  SA is an abbreviation for SegmentedArray
+  SAP is an abbreviation for SegmentedArrayPair
+
   \namespace dnt
   \sa segmentedarraypair_cpp.cpp
 
@@ -23,6 +26,7 @@
 
 namespace dnt
 {
+  // WhichArray is NOT USED anywhere.
   /*! \class WhichArray
 
       \brief WhichArray is an enum class to tag the 'I' and 'O' arrays of a
@@ -65,6 +69,7 @@ namespace dnt
 
   private:
 //    int segmentLength;
+    // The number of items in one contiguous segment.
     const py::ssize_t segmentLength;
 
     // Make a pair of empty list of segments
@@ -101,13 +106,13 @@ namespace dnt
       \return pointer to the new Numpy array
 
     */
-    py::array_t<Pstruct<PT>, 0> allocate_a_segment(const py::ssize_t segmentLength) 
+    py::array_t<Pstruct<PT>, 0> allocate_a_segment(const py::ssize_t segmentLength)
 //    py::array_t<PS> allocate_a_segment(const int segmentLength) 
     {
       // No pointer is passed, so Numpy will allocate the buffer
       return py::array_t<Pstruct<PT>, 0>(segmentLength);
     }
-
+    // ENDDEF: py::array_t<Pstruct<PT>, 0> allocate_a_segment(const py::ssize_t segmentLength)
 
     //! Add another segment to the specified SegmentedArray in order to store more items.
     /*!
@@ -125,6 +130,7 @@ namespace dnt
       firstNotFullSegment[theSA] += 1;
       firstAvailableOffset[theSA] = 0;
     }
+    // ENDDEF: void add_segment(unsigned theSA)
     
   public:
 
@@ -168,6 +174,8 @@ namespace dnt
             nPmax[iSA] = nSeg[iSA]*segmentLength;
           }
       }
+      // ENDDEF: SegmentedArrayPair(py::ssize_t segment_length)
+
 
     // The dtor (See pybind 8.5 Non-public destructors)
     ~SegmentedArrayPair()
@@ -192,7 +200,7 @@ namespace dnt
       {
         return segmentLength;
       }
-    
+    // ENDDEF: py::ssize_t get_segment_length()
 
     //! Return a py::tuple with the current number of segments in the "in" and "out" arrays.
     py::tuple get_number_of_segments()
@@ -203,6 +211,7 @@ namespace dnt
         
         return py::make_tuple(nSeg[inSA], nSeg[outSA]);
       }
+    // ENDDEF: py::tuple get_number_of_segments()
 
 
     //! Return the number of items stored in the "out" array
@@ -213,6 +222,8 @@ namespace dnt
 
         return firstNotFullSegment[outSA]*segmentLength + firstAvailableOffset[outSA];
       }
+      // ENDDEF: py::ssize_t get_number_of_items()
+
 
       //! Sets the number of active items currently stored.
       /*! 
@@ -243,6 +254,7 @@ namespace dnt
 
         return;
       }
+      // ENDDEF: void set_number_of_items(std::string in_out, py::ssize_t n_items)      
 
     //! Return the total number of items that can currently be stored.
     py::tuple get_capacity()
@@ -253,7 +265,9 @@ namespace dnt
 
         return py::make_tuple(nSeg[inSA]*segmentLength, nSeg[outSA]*segmentLength);
       }
+    // ENDDEF: py::tuple get_capacity()
 
+    
     //! Return the number of megabytes allocated for the item arrays
     py::tuple get_number_of_mbytes()
       {
@@ -269,13 +283,101 @@ namespace dnt
         
         return py::make_tuple(nSeg[inSA]*nbytes/(1.0e6), nSeg[outSA]*nbytes/(1.0e6));
       }
-    
+    // ENDDEF: py::tuple get_number_of_mbytes()    
 
-    //! Add an item to the "out" SegmentedArray.
+
+    //! Add data from a 1-element py::array_t the "out" SegmentedArray.
     /*!
 
-      \param item_input is a tuple containing a complete item structure
-      \return the tuple: (array member with the new item, full index)
+      \param item_input is a 1-element py::array_t<Pstruct<PT>, 0> containing a complete item.
+      \return the tuple: (array idex with the new item, full SA index)
+
+    */
+
+    //dnt::Pstruct<(dnt::Ptype)0> and
+
+    //Given LHS:                                 dnt::Pstruct<(dnt::Ptype)0>
+    //Available LHS dnt::Pstruct<(dnt::Ptype)0>& dnt::Pstruct<(dnt::Ptype)0>
+
+    //Given RHS: ‘pybind11::detail::item_accessor {aka pybind11::detail::accessor<pybind11::detail::accessor_policies::generic_item>}
+    // Available RHS:  (const dnt::Pstruct<(dnt::Ptype)0>&)
+    
+    py::tuple push_back(py::array_t<Pstruct<PT>, 0> item_input)
+      {
+        // Abbreviations
+        auto outSA = outSegmentedArray;
+
+        // Locate the slot to the item.
+        
+        /*        
+                  If we've reached the end of the current segment, we need to
+                  switch to the next segment, if there is one, or else add a
+                  new segment.
+        */
+        if (firstAvailableOffset[outSA] == segmentLength)
+          {
+            // If another segment is already available, use
+            // it. Otherwise, allocate a new segment.
+            currentSegment[outSA] += 1;
+            if (currentSegment[outSA] < nSeg[outSA])
+              {
+                firstNotFullSegment[outSA] += 1;
+                firstAvailableOffset[outSA] = 0;
+              }                  
+            else
+              {
+                // The following call increments firstNotFullSegment[] and
+                // nSeg[], and sets firstAvailableOffset[] = 0
+                add_segment(outSA);
+              };
+        
+          };
+
+        auto ip = firstAvailableOffset[outSA];
+        
+        // Use the buffer protocol to get to the contiguous data in the Numpy arrays
+        // "out" SA
+        py::buffer_info pseg_info = segListPair[outSA][firstNotFullSegment[outSA]].request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+        const auto pseg = static_cast<Pstruct<PT>*>(pseg_info.ptr); // Pointer to the contiguous data.
+        // input_item
+        py::buffer_info itemInputInfo = item_input.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+        const auto inputArray = static_cast<Pstruct<PT>*>(itemInputInfo.ptr); // Pointer to the contiguous data.
+        
+        // Add the item to the end of the SA
+        
+        pseg[ip] = inputArray[0];
+        
+        // Loop on the tuple to add the new item data
+        //      for(item_input::size_type i = 0; i != item_input.size(); i++)
+        //      for(py::ssize_t i = 0; i != item_input.size(); i++)
+        /*      
+                for(unsigned i = 0; i != item_input.size(); i++)
+                {
+                pseg[ip][i] = item_input[i];
+                }
+        */
+        
+        // pseg[ip].set_from_tuple(item_input); // OR use an overloaded .set() function.
+        //        pseg[ip].set_from_list_or_tuple(item_input); // OR use an overloaded .set() function.
+
+        // Compute the full zero-based index of the particle for return
+        auto full_index = firstNotFullSegment[outSA]*segmentLength + firstAvailableOffset[outSA];
+        //Increment the next available slot for next time
+        firstAvailableOffset[outSA] += 1;
+
+        //      int vec = 1;
+        //      return py::make_tuple(vec[firstAvailableOffset[outSA]-1], full_index);
+        //      return py::make_tuple(pseg[firstAvailableOffset[outSA]-1], full_index);
+        // Return the index in this segment, and the full index
+        return py::make_tuple(ip, full_index);
+      }
+    // ENDDEF: py::tuple push_back(py::array_t<Pstruct<PT>, 0> item_input)
+  
+    //! Add data from a py::tuple to the "out" SegmentedArray.
+    /*!
+
+      \param item_input is a tuple containing a complete item.
+      \return the tuple: (array idex with the new item, full SA index)
 
     */
     py::tuple push_back(py::tuple item_input)
@@ -340,11 +442,18 @@ namespace dnt
         // Return the index in this segment, and the full index
         return py::make_tuple(ip, full_index);
       }
-    // py::tuple push_back(py::tuple item_input) ENDDEF
+    // ENDDEF: py::tuple push_back(py::tuple item_input)
 
-    // #undef LIST
+// #undef LIST
 #define LIST
 #ifdef LIST
+    //! Add data from a py::list to the "out" SegmentedArray.
+    /*!
+
+      \param item_input is a py::list containing a complete item.
+      \return the tuple: (array index with the new item, full SA index)
+
+    */
     py::tuple push_back(py::list item_input)
       {
         // Abbreviations
@@ -389,8 +498,7 @@ namespace dnt
         // Return the index in this segment, and the full index
         return py::make_tuple(ip, full_index);
       }
-    //py::tuple push_back(py::list item_input) ENDDEF
-
+    // ENDDEF: py::tuple push_back(py::list item_input)
 #endif
 
     
@@ -421,6 +529,7 @@ namespace dnt
         
         return py::make_tuple(segListPair[outSA][seg], offset);
       }
+    // ENDDEF: py::tuple get_segment_and_offset(py::ssize_t full_index)
 
     /*    
     //! Return the item a full SA index
@@ -450,6 +559,7 @@ namespace dnt
           // Make a dictionary from this
         return parray[offset].as_dict();  
       }
+    // ENDDEF: py::dict get_item(py::ssize_t full_index)
     
     
     //! Get a copy of an item's values, as a py::tuple, given the full SA index of the item.
@@ -471,18 +581,18 @@ namespace dnt
         const auto parray = static_cast<Pstruct<PT>*>(seg_info.ptr); // Pointer to a structured Numpy array
         return parray[offset].as_tuple();
       }
-    // py::tuple get_as_tuple(py::ssize_t full_index) ENDDEF
+    // ENDDEF: py::tuple get_as_tuple(py::ssize_t full_index)
 
 
     //! Get a copy of an item's values, as a py::list, given the full SA index of the item.
     /*!  The returned py::list can be modified, but this does not modify the stored item.
 
-         If the stored item needs to be modified, use get_segment_and_offset() to get
-         access to it.
+      If the stored item needs to be modified, use get_segment_and_offset() to get
+      access to it.
 
-         \sa get_segment_and_offset, get_as_tuple
+      \sa get_segment_and_offset, get_as_tuple
 
-     */
+    */
     py::list get_as_list(py::ssize_t full_index)
       {
         auto seg = (py::ssize_t) full_index / segmentLength;
@@ -493,7 +603,7 @@ namespace dnt
         const auto parray = static_cast<Pstruct<PT>*>(seg_info.ptr); // Pointer to a structured Numpy array
         return parray[offset].as_list();
       }
-    // py::list get_as_list(py::ssize_t full_index) ENDDEF
+    // ENDDEF: py::list get_as_list(py::ssize_t full_index)
 
 
     //! Initialize a loop over the segments of the "out" array.
@@ -504,7 +614,7 @@ namespace dnt
 
       \param returnDataPtr: if true, return pointers to the data instead of Numpy arrays
       \return The tuple: (number of items in the first segment of "out" SA,
-                          ref to first segment of "out" SA)
+      ref to first segment of "out" SA)
     */
     py::tuple init_out_loop(bool returnDataPtr = false)
       //    py::tuple init_out_loop()
@@ -550,7 +660,7 @@ namespace dnt
             return py::make_tuple(lastItem, outSeg);
           }
       }
-    // py::tuple init_out_loop(bool returnDataPtr = false) ENDDEF
+    // ENDDEF: py::tuple init_out_loop(bool returnDataPtr = false)
 
 
     bool swapPair = true;
@@ -562,8 +672,8 @@ namespace dnt
 
       \param returnDataPtrs: if true, return pointers to the data instead of Numpy arrays
       \return The tuple: (number of items in the first segment of "in" SA,
-                          ref to first segment of "in" SA,
-                          ref to first segment of "out" SA)
+      ref to first segment of "in" SA,
+      ref to first segment of "out" SA)
     */
     py::tuple init_inout_loop(bool returnDataPtrs = false)
       //    py::tuple init_inout_loop()
@@ -624,7 +734,7 @@ namespace dnt
         // bool returnDataPtrs = false;
         if (returnDataPtrs == true)
           {
-// The following code doesn't work: make_tuple can't seem to convert the data pointer. May be able to use a 'capsule'
+            // The following code doesn't work: make_tuple can't seem to convert the data pointer. May be able to use a 'capsule'
             // Pointers to the data:
             // in:
             py::buffer_info inSeg_info = inSeg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
@@ -778,7 +888,30 @@ namespace dnt
           }
         // orig: return segListPair[outSA][segIndex];
       }
-    // py::tuple get_next_out_segment(bool returnDataPtr = false) ENDDEF
+    // ENDDEF: py::tuple get_next_out_segment(bool returnDataPtr = false)
+
+                      
+    //! Get the full index of an item in either the "in" or "out" SA.
+    /*!  
+      \param indx[in] offset of an item into the SA.
+      \param in_out[in] "in" or "out", depending of which SA is intended.
+      \return the full index of the item.
+    */
+    py::ssize_t get_full_index(py::ssize_t indx, std::string in_out)
+      {
+        unsigned theSA(2); // Initialized to avoid a "may be uninitialized" warning
+        if (in_out.compare("in") == 0)
+          theSA = inSegmentedArray;
+        else
+          if (in_out.compare("out") == 0)
+            theSA = outSegmentedArray;
+
+        assert(theSA == 0 || theSA == 1);
+
+        py::ssize_t full_index = currentSegment[theSA]*segmentLength + indx;
+        return full_index;
+      }
+    // ENDDEF: py::ssize_t get_full_index(py::ssize_t indx, std::string in_out)
     
   };
   // class SegmentedArrayPair ENDCLASS

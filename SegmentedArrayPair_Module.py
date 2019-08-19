@@ -94,16 +94,19 @@ class SegmentedArrayPair_C(object):
 
 #class SegmentedArrayPair_C(object):
     def push_back(self, item_input):
-        """Adds an item to the "out" SegmentedArray, without specifying an
-           index.  The item is a tuple containing a complete structure.
-           Creates a new Segment, if needed.  This assumes that all
-           the segments, except maybe the last one, are full.
+        """Adds an item to the end of the "out" SegmentedArray.
 
-           :param item_input: A tuple containing a complete item structure
-           :type input_item: tuple(float,...)
+           The item is either a tuple containing a complete structure, or a 1-element
+           Numpy array. If the last segment is full, create a new segment.  This
+           assumes that all the segments, except maybe the last one, are full.
+
+           :param item_input: A tuple containing a complete item structure, or a
+                              1-element Numpy array containing an item.
+           :type input_item: tuple(float,...) or ndarray with 1 element.
            :var int full_index: The full index into the SA.
            :return: (offset into a segment, full SA index of item)
            old: return (item structure, full SA index)
+
         """
 
         # Abbreviations
@@ -125,12 +128,14 @@ class SegmentedArrayPair_C(object):
                 # firstAvailableOffset[] = 0
                 self.add_segment(outSA)
 
-
-# i += 1; self.firstAvailableOffset += 1;  # Are both needed?
-#        print 'outSA=', outSA, 'self.firstNotFullSegment[outSA]=', self.firstNotFullSegment[outSA]
-
+# Untested:
+        if type(item_input) is np_m.ndarray:
+            item = item_input[0]
+        else:
+            item = item_input
+    
         vec = self.segListPair[outSA][self.firstNotFullSegment[outSA]]
-        vec[self.firstAvailableOffset[outSA]] = item_input
+        vec[self.firstAvailableOffset[outSA]] = item
 
         # Compute the full zero-based index of the particle for return
         full_index = self.firstNotFullSegment[outSA]*self.segmentLength + self.firstAvailableOffset[outSA]
@@ -148,7 +153,7 @@ class SegmentedArrayPair_C(object):
            (segment) and the offset of the item in the array.  This is used, e.g., to
            provide access to the item in Python.
 
-           Using this instead of get_item() gives the Python caller a Numpy
+           Using this instead of get_item() (see below) gives the Python caller a Numpy
            structured item instead of a dict.
 
            :param int i: The full index of an item to be retrieved.
@@ -157,8 +162,8 @@ class SegmentedArrayPair_C(object):
         """
 
         (seg, offset) = divmod(i, self.segmentLength)
-        
-        return self.segListPair[outSA][seg], offset
+        outSA = self.outSegmentedArray
+        return (self.segListPair[outSA][seg], offset)
 #    def get_segment_and_offset(self, i):ENDDEF
 
 #class SegmentedArrayPair_C(object):

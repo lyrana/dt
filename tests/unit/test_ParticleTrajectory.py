@@ -41,7 +41,8 @@ class TestParticleTrajectory(unittest.TestCase):
         self.ctrl = DTcontrol_C()
 
         self.ctrl.dt = 1.0e-6
-
+        self.ctrl.MAX_FACET_CROSS_COUNT = 100
+        
         # Initialize time counters
         self.ctrl.timeloop_count = 0
         self.ctrl.time = 0.0
@@ -56,6 +57,7 @@ class TestParticleTrajectory(unittest.TestCase):
         # Initialize particles
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = 'cartesian_xy'
         pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
@@ -418,7 +420,10 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                getparticle = p_P.pseg_arr[sp].get(ip)
+#                getparticle = p_P.pseg_arr[sp].get(ip)
+                (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset]
+                
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
                 for ic in range(ncoords):
@@ -544,7 +549,9 @@ class TestParticleTrajectory(unittest.TestCase):
                 continue
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                getparticle = p_P.pseg_arr[sp].get(ip)
+#                getparticle = p_P.pseg_arr[sp].get(ip)
+                (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset]
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
                 for ic in range(ncoords):
@@ -665,7 +672,9 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                getparticle = p_P.pseg_arr[sp].get(ip)
+#                getparticle = p_P.pseg_arr[sp].get(ip)
+                (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset]
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
 #                for ic in range(ncoords):

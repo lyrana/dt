@@ -62,12 +62,14 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ctrl.dt = 0.5
         ctrl.n_timesteps = 100
+        ctrl.MAX_FACET_CROSS_COUNT = 100
 
         # Create an instance of the DTparticleInput class
         pin = ParticleInput_C()
         # Settings common to all species
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = 'cartesian_xyz'
         pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_precision = numpy.float64
 
@@ -299,6 +301,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Initialize particles
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = 'cartesian_xy'        
         pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
@@ -479,6 +482,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # These are fast electrons, so the timestep is small
         ctrl.dt = 1.0e-6
         ctrl.n_timesteps = 14
+        ctrl.MAX_FACET_CROSS_COUNT = 100
         
         # The trajectory object can now be created and added to particle_P
         p_P = particle_P
@@ -499,6 +503,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         for istep in range(ctrl.n_timesteps):
 
+            print("istep", istep)
+            
             if p_P.traj_T is not None:
 #                print 'p_P.traj_T.skip:', p_P.traj_T.skip
                 if istep % p_P.traj_T.skip == 0:

@@ -69,11 +69,14 @@ void add_weights_to_cells(py::array_t<PS, 0> pseg, dolfin::Function& dF) {
 template <typename PS>
 void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) { // The 0 means a continguous array with C ordering
 
+  // NEED to pass in npSeg to limit the range of the particle loop !!!!!!
+  // OR, pass pseg[0:npSeg] instead?
+
   const auto pseg_info = pseg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
   const auto p = static_cast<PS*>(pseg_info.ptr); // Pointer to a particle struct in pseg
-  
+
   std::shared_ptr< const dolfin::FunctionSpace > dFS = dF.function_space();
-  
+
   // Variables for cell information
   const dolfin::Mesh& mesh = *dFS->mesh();
   std::vector<double> dof_coordinates;

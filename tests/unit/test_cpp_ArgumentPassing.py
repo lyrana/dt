@@ -45,7 +45,7 @@ class TestPybind11(unittest.TestCase):
         pin.particle_integration_loop = 'loop-on-particles'
 
         # The particle coordinate system is 3D Cartesian
-        pin.coordinate_system = 'cartesian_x_y_z'
+        pin.coordinate_system = 'cartesian_xyz'
 
         # Use the 3 position coordinates, since we're doing 1, 2, and 3D particle motion
         # This could be derived from the coordinate system:
@@ -76,7 +76,7 @@ class TestPybind11(unittest.TestCase):
         pin.particle_species = (neutralH_S,
                                )
         # Make the particle object from pin
-        self.particle_P = Particle_C(pin, print_flag=False)
+        self.particle_P = Particle_C(pin, use_cpp=True, print_flag=False)
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary-condition callbacks, source regions, etc.)

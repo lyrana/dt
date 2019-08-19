@@ -32,14 +32,15 @@ class TestParticleInitialization(unittest.TestCase):
         # Initializations performed before each test go here...
 
         # Create an instance of the DTparticleInput class
-        pin_PI = self.pin_PI = ParticleInput_C()
+        pin = self.pin = ParticleInput_C()
         # Set up particle variables
-        pin_PI.precision = np_m.float64
+        pin.precision = np_m.float64
 
-        pin_PI.particle_integration_loop = 'loop-on-particles'
-        pin_PI.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
-        pin_PI.force_components = ['x', 'y', 'z']
-        pin_PI.force_precision = np_m.float64
+        pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = 'cartesian_xyz'
+        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.force_components = ['x', 'y', 'z']
+        pin.force_precision = np_m.float64
 
 
         ### Particle species input
@@ -70,10 +71,10 @@ class TestParticleInitialization(unittest.TestCase):
         He_PS = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add these 3 species to particle input
-        pin_PI.particle_species = (plasmaElectrons_PS, Hplus_PS, He_PS,
+        pin.particle_species = (plasmaElectrons_PS, Hplus_PS, He_PS,
                                  )
-        # Make the particle object from pin_PI
-        p_P = self.particle_P = Particle_C(pin_PI, print_flag=False)
+        # Make the particle object from pin
+        p_P = self.particle_P = Particle_C(pin, print_flag=False)
 
         # Give the name of the .py file containing special particle data (lists
         # of particles, boundary conditions, particle-initialization regions,
@@ -160,7 +161,7 @@ class TestParticleInitialization(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest:', fncName, '('+__file__+')')
 
-        particle_species = self.pin_PI.particle_species
+        particle_species = self.pin.particle_species
         # Check the names of the species
         for i in range(len(particle_species)):
             expected_name = particle_species[i].name
@@ -205,8 +206,10 @@ class TestParticleInitialization(unittest.TestCase):
                 for i in range(ninput):
                     putparticle = particles[i]
                     # Get the stored particle data
-#                    getparticle = self.particles.pseg_arr[sp][ip]
-                    getparticle = self.particle_P.pseg_arr[s].get(i)
+#                    getparticle = self.particle_P.pseg_arr[s].get(i)
+                    (pseg, offset) = self.particle_P.pseg_arr[s].get_segment_and_offset(i)
+                    getparticle = pseg[offset] # Retrieve the particle from the SAP.
+                    
 #                    print 'putparticle = ', putparticle
 #                    print 'getparticle = ', getparticle
                     for ix in range(len(getparticle)):

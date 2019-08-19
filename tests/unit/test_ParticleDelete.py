@@ -55,7 +55,7 @@ class TestParticleDeletion(unittest.TestCase):
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
 
-        pin.coordinate_system = 'cartesian_x_y_z'
+        pin.coordinate_system = 'cartesian_xyz'
 # TODO: Set these based on the coordinate_system:
         pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
 
@@ -240,10 +240,10 @@ class TestParticleDeletion(unittest.TestCase):
 # If we use get_item(), we get a dict, which doesn't have the right type for the following.
 #            getparticle = p_P.pseg_arr[sp].get_item(0)
 
-            getparticle = p_P.pseg_arr[sp].get_as_list(0)
-            
-#            (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(0)
-#            getparticle = pseg[offset]
+            (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(0)
+            getparticle = pseg[offset]
+
+            #getparticle = p_P.pseg_arr[sp].get_as_list(0)
             
             print ("getparticle = ", getparticle)
             putparticle = getparticle

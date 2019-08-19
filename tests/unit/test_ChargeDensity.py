@@ -432,6 +432,7 @@ class TestChargeDensity(unittest.TestCase):
         pin.precision = np_m.float64
 
         pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = 'cartesian_xyz'
         pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
@@ -674,6 +675,7 @@ class TestChargeDensity(unittest.TestCase):
         pin.precision = np_m.float64
 
         pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = 'cartesian_xyz'
         pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
@@ -919,7 +921,7 @@ class TestChargeDensity(unittest.TestCase):
         crossings = 0
 
         # The particle tuple has to match the one in Particle_C:
-        # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
+        # ['x','x0', 'ux', 'weight', 'bitflags', 'cell_index', 'unique_ID']
         p0 = (x0, x0, ux0, weight0, bitflags0, cell_index0, unique_ID, crossings)
 
         particle_list = (p0, )
@@ -938,7 +940,10 @@ class TestChargeDensity(unittest.TestCase):
             segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
         # Check that we set the right cell index above
-        p = pseg_arr[fullIndex]
+        # p = pseg_arr[fullIndex]
+        (pseg, offset) = pseg_arr.get_segment_and_offset(fullIndex)
+        p = pseg[offset]
+        
         computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)
         if cell_index0 != computed_cell_index:
             errorMsg = "%s Particle cell index should be %d, not %d" % (fncName, computed_cell_index, cell_index0)
@@ -1148,7 +1153,10 @@ class TestChargeDensity(unittest.TestCase):
             segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
         # Check that we set the right cell index above
-        p = pseg_arr[fullIndex]
+        # p = pseg_arr[fullIndex]
+        (pseg, offset) = pseg_arr.get_segment_and_offset(fullIndex)
+        p = pseg[offset]
+        
         computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)
         if cell_index0 != computed_cell_index:
             errorMsg = "%s Particle cell index should be %d, not %d" % (fncName, computed_cell_index, cell_index0)

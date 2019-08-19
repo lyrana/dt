@@ -58,11 +58,12 @@ namespace dnt {
         .def(py::init<py::ssize_t>())
 
         // The following creates the bindings to SegmentedArrayPair member
-        // functions for particle type PT. The source for these is in
+        // functions for particle type PT. The source code for these is in
         // SegmentedArrayPair.h.
         .def("get_as_list", &SAP::get_as_list)
         .def("get_as_tuple", &SAP::get_as_tuple)
         .def("get_capacity", &SAP::get_capacity)
+        .def("get_full_index", &SAP::get_full_index)
         .def("get_item", &SAP::get_item)
         .def("get_next_out_segment", &SAP::get_next_out_segment, py::arg("returnDataPtr") = false)
         .def("get_next_segment", &SAP::get_next_segment, py::arg(), py::arg("returnDataPtr") = false)
@@ -72,6 +73,7 @@ namespace dnt {
         .def("get_segment_and_offset", &SAP::get_segment_and_offset)
         .def("init_inout_loop", &SAP::init_inout_loop, py::arg("returnDataPtrs") = false)
         .def("init_out_loop", &SAP::init_out_loop, py::arg("returnDataPtr") = false)
+        .def("push_back", (py::tuple (SAP::*) (py::array_t<Pstruct<PT>, 0>)) &SAP::push_back)
         .def("push_back", (py::tuple (SAP::*) (py::tuple)) &SAP::push_back)
         .def("push_back", (py::tuple (SAP::*) (py::list)) &SAP::push_back)
         .def("set_number_of_items", &SAP::set_number_of_items);

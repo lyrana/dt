@@ -22,7 +22,7 @@ import dolfin as df_m
 import matplotlib.pyplot as mplot_m
 import numpy as np_m
 
-#import dnt_cpp
+import dolfin_cpp
 
 #STARTCLASS
 class Mesh_C(object):
@@ -96,6 +96,7 @@ class Mesh_C(object):
             # documentation.
             self.cell_dict = {}
 
+            self.cell_vertex_dict = {}
             self.entity_dimension = {'vertex': 0, 'edge': 1, 'facet': self.tdim-1}
             self.cell_entity_index_dict = {}
             self.vertex_cell_dict = {}
@@ -557,7 +558,7 @@ class Mesh_C(object):
         p0 = self.mesh.coordinates()[vertices[0]]
         p1 = self.mesh.coordinates()[vertices[1]]
 
-        YesOrNo = dnt_cpp.cell_contains_point_1d(p0, p1, point['x'])
+        YesOrNo = dolfin_cpp.cell_contains_point_1d(p0, p1, point['x'])
         
         return YesOrNo
 #    def is_inside_cpp_bak(self, point, cell_index):ENDDEF
@@ -582,20 +583,21 @@ class Mesh_C(object):
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
         
         vertices = self.cell_vertex_dict[cell_index]
-        
+
+## These versions don't work; the point is now a double*. Do we need them?
         if self.tdim == 3:
-            YesOrNo = dnt_cpp.cell_contains_point(self.mesh,
-                                                  vertices, # a numpy array
-                                                  point['x'], point['y'], point['z'])
+            YesOrNo = dolfin_cpp.cell_contains_point(self.mesh,
+                                                     vertices, # a numpy array
+                                                     point['x'], point['y'], point['z'])
 
         elif self.tdim == 2:
-            YesOrNo = dnt_cpp.cell_contains_point(self.mesh,
-                                                  vertices, # a numpy array
-                                                  point['x'], point['y'])
+            YesOrNo = dolfin_cpp.cell_contains_point(self.mesh,
+                                                     vertices, # a numpy array
+                                                     point['x'], point['y'])
         elif self.tdim == 1:
-            YesOrNo = dnt_cpp.cell_contains_point(self.mesh,
-                                                  vertices, # a numpy array
-                                                  point['x'])
+            YesOrNo = dolfin_cpp.cell_contains_point(self.mesh,
+                                                     vertices, # a numpy array
+                                                     point['x'])
         
         return YesOrNo
 #    def is_inside_CPP(self, point, cell_index):ENDDEF
@@ -1112,6 +1114,7 @@ class Field_C(object):
             p = [points[ip][d] for d in range(self.mesh_gdim)]
 
             # Evaluate the finite-element function at the point p
+            print(fncName, "\np=", p)
             self.function(p, values=fieldValue)
 #            field_at_points[ip] = fieldValue
 # 25aug18: Had to change to this to:

@@ -42,7 +42,7 @@ class TestParticleMigration(unittest.TestCase):
         pin.particle_integration_loop = 'loop-on-particles'
         # Use the 3 position coordinates, since we're doing 1, 2, and 3D particle motion
 #        pin.position_coordinates = ['x', 'y', 'z'] # Determines particle storage dimension
-        pin.coordinate_system = 'cartesian_x_y_z' # Determines particle storage dimension
+        pin.coordinate_system = 'cartesian_xyz' # Determines particle storage dimension
         # Neutral particles: No forces.
         """
         pin.force_components = ['x', 'y',]

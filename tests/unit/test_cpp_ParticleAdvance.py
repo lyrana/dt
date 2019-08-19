@@ -21,7 +21,8 @@ from Particle_Module import *
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
 # The C++ functions are bound to Python names in a .so
-import p_cpp_cartesian_xyz
+#import dolfin_cpp
+#import p_cpp_cartesian_xyz
 
 #STARTCLASS
 class TestPybParticleAdvance(unittest.TestCase):
@@ -78,7 +79,7 @@ class TestPybParticleAdvance(unittest.TestCase):
         pin.particle_species = (neutralH_S,
                                )
         # Make the particle object from pin
-        self.particle_P = Particle_C(pin, print_flag=False)
+        self.particle_P = Particle_C(pin, use_cpp=True, print_flag=False)
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary-condition callbacks, source regions, etc.)
@@ -199,6 +200,8 @@ class TestPybParticleAdvance(unittest.TestCase):
         ctrl.author = "tph"
 
         ctrl.time = 0.0
+        ctrl.timeloop_count = 0
+
         ctrl.dt = 0.5
         ctrl.n_timesteps = 19
         ctrl.MAX_FACET_CROSS_COUNT = 100
@@ -246,7 +249,10 @@ class TestPybParticleAdvance(unittest.TestCase):
         
         speciesName = 'neutral_H'
         psa = self.particle_P.pseg_arr[speciesName] # segmented array for this species
-        
+
+        # Print the cell indices
+        print("cell_vertex_dict = ", self.particle_P.pmesh_M.cell_vertex_dict)
+
         # Integrate for n_timesteps
         print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
         for istep in range(ctrl.n_timesteps):

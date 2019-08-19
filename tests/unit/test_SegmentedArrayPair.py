@@ -69,7 +69,7 @@ class TestSegmentedArray(unittest.TestCase):
 
 #        names = self.seg_array_obj.SegList[0].dtype.names
         for iSA in (0, 1):
-            names = self.seg_array_obj.SegListPair[iSA][0].dtype.names
+            names = self.seg_array_obj.segListPair[iSA][0].dtype.names
             for i in range(len(names)):
                 self.assertEqual(names[i], self.pvars[i], msg="Field names are not correct")
 
