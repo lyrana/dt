@@ -168,8 +168,8 @@ class UserMesh_C(Mesh_C):
         self.create_mesh(mesh_input, plot_flag=plot_flag, plot_title=plot_title)
 
         # Call the parent constructor to complete setting class variables.
-        super(UserMesh_C, self).__init__(mesh_file=None, coordinate_system=coordinateSystem, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag, plot_title=plot_title)
-
+        super(UserMesh_C, self).__init__(mesh_file=None, coordinate_system=coordinateSystem, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree)
+        
         self.field_boundary_dict = mesh_input.field_boundary_dict
         self.particle_boundary_dict = mesh_input.particle_boundary_dict
 

@@ -1,3 +1,12 @@
+/*! \file dolfin_functions.h
+
+  \brief This is the header file for dolfin_functions.cpp
+
+  \namespace dnt
+  \sa dolfin_functions.cpp
+
+*/
+
 #include <dolfin/common/Array.h>
 #include <dolfin/common/Hierarchical.h>
 #include <dolfin/function/assign.h>
@@ -41,7 +50,7 @@ namespace py = pybind11;
 namespace dnt
 {
   
-  //v1:  bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double* point);
   bool cell_contains_point(dolfin::Mesh& mesh, const unsigned int* vertices, double* point);
-
+  py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index);
+  
 } // namespace dnt

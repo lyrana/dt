@@ -208,7 +208,7 @@ namespace dnt
                         self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal);
                       }
                     // Look up the cell index of the new cell.
-                    pCellIndexNew = pmesh_M.cell_neighbor_dict[pCellIndex][cFacet];
+                    pCellIndexNew = pmesh_M.cell_neighbors_dict[pCellIndex][cFacet];
 
                     /* If the particle has left the mesh, and has been deleted, end
                        the search.  If it hasn't been deleted (e.g., reflected),

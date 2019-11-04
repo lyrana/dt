@@ -20,17 +20,9 @@ import h5py
 from Dolfin_Module import Mesh_C
 
 #import dnt_cpp
-#import dolfin_cpp
-import p_cpp_cartesian_xyz as p_cpp
+#import dolfin_functions_cpp
+#import p_cpp_cartesian_xyz as p_cpp
 
-useCplusplus = False
-if useCplusplus is True:
-    # Create the SAPs in C++ (segmentedarraypair_cpp.so)
-    import segmentedarraypair_cpp
-else:
-    # Create the SAPs in Python 
-    import SegmentedArrayPair_Module as SA_M
-    
 #STARTCLASS
 class ParticleInput_C(object):
     """Particle input class.
@@ -57,6 +49,10 @@ class ParticleInput_C(object):
         # Example: numpy.float64
         self.force_precision = None
 
+        # The flag to use either Python (default) or C++ to store and move particles
+        self.use_cpp_movers = None
+        self.cpp_module = None
+        
         # Values: 'loop-on-particles', 'loop-on-cells'
         self.particle_integration_loop = None
 
@@ -152,7 +148,7 @@ class Particle_C(object):
 
 
 #class Particle_C(object):
-    def __init__(self, particle_input, use_cpp=False, print_flag=False):
+    def __init__(self, particle_input, print_flag=False):
         """Take particle data provided by the user and create the initial plasma.
         """
 
@@ -163,7 +159,8 @@ class Particle_C(object):
         self.precision = precision
         self.coordinate_system = particle_input.coordinate_system
         particleSpecies = particle_input.particle_species
-
+        self.use_cpp_movers = particle_input.use_cpp_movers
+        
         # The spatial coordinates of a particle
 #        self.position_coordinates = particle_input.position_coordinates
         if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
@@ -312,28 +309,34 @@ class Particle_C(object):
             # for each plasma species.  Allocate initial storage
             # for particles using segmented vectors indexed by the
             # species name.
-            if use_cpp is True:
+            # If using C++ SAPs:
+            if self.use_cpp_movers is True:
                 # Create the SAPs in C++ (segmentedarraypair_cpp.so)
                 import segmentedarraypair_cpp
+#                global p_cpp
                   
 #            if useCplusplus is True:
-                print(fncName, "\tDnT: Using C++ SAPs for particles")
+#                print(fncName, "\tDnT: Using C++ SAPs for particles")
                 
                 # Use the C++ SegmentedArrayPair class for particle storage.  This
                 # avoids having to call back to Python from C++ to manage the
                 # storage.
                 if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
+                    import p_cpp_cartesian_x as cppModule
                     self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xy':
+                    import p_cpp_cartesian_xy as cppModule
                     self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xyz':
+                    import p_cpp_cartesian_xyz as cppModule
+                    self.cpp_module = cppModule
                     self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
             else:
-                # Create the SAPs in Python 
+            # If using Python-created SAPs:
                 import SegmentedArrayPair_Module as SA_M
 
                 # Use the Python SegmentedArray class for particle storage
-                print(fncName, "\tUsing Python SAPs for particles")                
+#                print(fncName, "\tUsing Python SAPs for particles")                
                 self.pseg_arr[speciesName] = SA_M.SegmentedArrayPair_C(self.SEGMENT_LENGTH, self.particle_dtype)
 
             # Initialize particle count for each species
@@ -502,8 +505,8 @@ class Particle_C(object):
         """Generates particles for a species from a list provided by the user.
         """
 
-        printParticles = True
-        printWarningNoTrajectory = True
+        printParticles = False
+        printWarningNoTrajectory = False
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
@@ -767,6 +770,46 @@ class Particle_C(object):
 
         return
 #    def compute_mesh_cell_indices(self):ENDDEF
+
+#class Particle_C(object):
+    def initialize_particle_mesh(self, mesh_M):
+        """Compute mesh data needed to move particles.
+
+           :param mesh_M: A Mesh_C object used by the particle movers.
+
+           :returns: None
+
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+        
+        if mesh_M is not None:
+            self.pmesh_M = mesh_M
+            if self.use_cpp_movers is True:
+                # Create a MeshEntityArrays object, which has non-standard mesh entity
+                # lists needed by particle movers.
+                import mesh_entity_arrays_cpp
+
+                pmesh_df = self.pmesh_M.mesh
+                # Create the name of the specialized MeshEntityArrays class with the right
+                # number of cell-facets
+                tDim = pmesh_df.topology().dim()
+                nFacets = tDim + 1
+                meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
+                meaCtor = getattr(mesh_entity_arrays_cpp, meaClass)
+                self.mesh_entity_arrays = meaCtor(pmesh_df, compute_particle_mesh_maps=True)
+            else:
+                self.pmesh_M.compute_cell_vertices_dict() # Tested, but not used anywhere!
+                self.compute_cell_entity_indices_dict('facet') # Get facet indices from a cell index                
+                self.pmesh_M.compute_cell_facet_normals_dict()
+                self.pmesh_M.compute_cell_neighbors_dict()
+                self.compute_cell_volume_dict() # Compute cell volumes indexed by cell index
+        else:
+            errorMsg = "%s\tDnT: No particle mesh has been provided. Cannot continue." % (fncName)
+            raise RuntimeError(errorMsg)
+#            sys.exit(errorMsg)
+        return
+#    def initialize_particle_mesh(self, mesh_M):ENDDEF
 
 #class Particle_C(object):
     def accumulate_number_density(self, species_name, dof_number_density_F=None, cell_number_density_F=None):
@@ -1157,7 +1200,7 @@ class Particle_C(object):
 #                            print "After truncation p =", psegOut[ipOut]
 
                             # Look up the mesh-level index of this facet...
-                            mFacet = pmesh_M.cell_entity_index_dict['facet'][pCellIndex][cFacet]
+                            mFacet = pmesh_M.cell_entity_indices_dict['facet'][pCellIndex][cFacet]
 # mFacet should never be the same as the last facet crossed: check this
                             if mFacet == mLastFacet: # If the particle has crossed the same facet twice in succession...
                                 errorMsg = "%s The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!" % (fncName, mFacet)
@@ -1189,7 +1232,7 @@ class Particle_C(object):
                                 self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
 
                             # Look up the cell index of the new cell.
-                            pCellIndexNew = pmesh_M.cell_neighbor_dict[pCellIndex][cFacet]
+                            pCellIndexNew = pmesh_M.cell_neighbors_dict[pCellIndex][cFacet]
                             
                             # If the particle has left the mesh, and has been deleted, end
                             # the search.  If it hasn't been deleted (e.g., reflected),
@@ -1272,7 +1315,29 @@ class Particle_C(object):
 
 #class Particle_C(object):
     def move_neutral_particles(self, ctrl):
-        """Advance neutral particles by one time increment on a mesh.
+        """Advance all neutral particles by one time increment on a mesh.
+
+           Either Python or C++ particle movers can be used.
+
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+
+        for sn in self.neutral_species:
+            if self.get_species_particle_count(sn) == 0: continue
+            # Move  the particles in this species
+            if self.use_cpp_movers is True:
+                self.cpp_module.move_neutral_species(self, sn, ctrl)
+            else:
+                self.move_neutral_species(sn, ctrl)
+
+        return
+#    def move_neutral_particles(self, ctrl):ENDDEF
+
+
+#class Particle_C(object):
+    def move_neutral_species(self, species_name, ctrl, print_flag = False):
+        """Move a neutral species for one timestep.
 
            Compute change in position in time dt. Use an explicit method to calculate the
            final position.  If a particle leaves its initial cell, the cell that the
@@ -1288,12 +1353,11 @@ class Particle_C(object):
            :cvar double tStart: The time at which a particle starts its move in the
                                  current cell.
 
+
         """
 
         printInfoBoundaryCrossing = False
-
-        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
-
+        
         # Set local names for the passed parameters
         dt = ctrl.dt
         step = ctrl.timeloop_count
@@ -1306,57 +1370,17 @@ class Particle_C(object):
         # Scratch space
         pCoord2 = self.pcoord2 # Can hold x,y,z, x0,y0,z0 (or a subset of these)
         dx = self.dx # dx is the distance moved in one step.
+        
+        # Invariant parameters
 
-        for sn in self.neutral_species:
-
-            # Invariant parameters
-#            print 'sn = ', sn
+        qmdt = self.qom[species_name]*dt
 
 #        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
-            psa = self.pseg_arr[sn] # segmented array for this species
 
-            if self.get_species_particle_count(sn) == 0: continue
+        # Accelerate the particles
+        psa = self.pseg_arr[species_name] # segmented array for this species
 
-#           Move all the particles in this species
-            (npSeg, psegIn, psegOut) = psa.init_inout_loop() # (number of particles in
-#            (npSeg, psegIn) = psa.init_inout_loop() # (number of particles in
-                                                      # this segment, ref to
-                                                      # segment)
-            particleCount = 0
-            # ipOut counts particles being written to the current
-            # "out" segment.
-            ipOut = 0
-            indexChange = False # Flag to indicate if particle SA indices have
-                                # changed.  This affects, e.g., trajectories, which
-                                # use SA indices to identify particles chosen for
-                                # trajectory plots.
-            while isinstance(psegIn, np_m.ndarray): # Keep looping until we run
-                                                    # out of "in" segments
-                for ipIn in range(npSeg): # Loop on the particles in this "in"
-                                          # segment. Could use for p in pseg[0:npSeg] instead
-                    # psegIn[ipIn] has the 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values of ith item
-                    # So psegIn[ipIn][0:3] is 'x', 'y', 'z'.
-                    # Can't use slice syntax here, because the array data are not of homogeneous type.
-
-                    # Skip deleted particles
-                    if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0:
-                        indexChange = True # Particle SA indices are stale past
-                                           # this point due to deletions.
-                        continue # skip to the next particle
-
-                    # If this "out" segment is full, get the next "out" segment,
-                    # since there are still some "in" particles to advance.  If
-                    # there are no more "out" segments, allocate a new one.
-                    if ipOut == self.SEGMENT_LENGTH:
-                        psegOut = psa.get_next_out_segment()
-                        ipOut = 0 # Reset the counter for the new segment
-#                    if ipOut == 0: psegOut = psa.get_next_out_segment()
-
-                    # The following COPIES data, rather than just setting a
-                    # reference to existing data.
-                    psegOut[ipOut] = psegIn[ipIn] # Copy this particle's data
-                                                  # from the input slot to the
-                                                  # output slot
+        # This loop moves particles, so swap the in/out particle arrays
 
 # Also, check if the following copies, or resets the reference. Ans: it COPIES.
 #                    p_out = psegOut[ipOut]
@@ -1366,189 +1390,225 @@ class Particle_C(object):
 # http://stackoverflow.com/questions/23654088/reference-of-a-single-numpy-array-element
 # See also HPL p. 137. b=a[1,:], but b is still an array.
 # What about getting a ref to one particle returned from a function? That's possible because it uses the stack?
+        
+#beg of neutral move
+        (npSeg, psegIn, psegOut) = psa.init_inout_loop() # (number of particles in
+                                                         # this segment, ref to
+                                                         # segment)
+        particleCount = 0
+        # ipOut counts particles being written to the current
+        # "out" segment.
+        ipOut = 0
+        indexChange = False # Flag to indicate if particle SA indices have
+                            # changed.  This affects, e.g., trajectories, which
+                            # use SA indices to identify particles chosen for
+                            # trajectory plots.
+        while isinstance(psegIn, np_m.ndarray): # Keep looping until we run
+                                                # out of "in" segments
+            for ipIn in range(npSeg): # Loop on the particles in this "in"
+                                      # segment. Could use for p in pseg[0:npSeg] instead
+                # psegIn[ipIn] has the 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values of ith item
+                # So psegIn[ipIn][0:3] is 'x', 'y', 'z'.
+                # Can't use slice syntax here, because the array data are not of homogeneous type.
 
-                    ## Move the particle
-                    # NON-RELATIVISTIC: v and u are the same
+                # Skip deleted particles
+                if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0:
+                    indexChange = True # Particle SA indices are stale past
+                                       # this point due to deletions.
+                    continue # skip to the next particle
+
+                # If this "out" segment is full, get the next "out" segment,
+                # since there are still some "in" particles to advance.  If
+                # there are no more "out" segments, allocate a new one.
+                if ipOut == self.SEGMENT_LENGTH:
+                    psegOut = psa.get_next_out_segment()
+                    ipOut = 0 # Reset the counter for the new segment
+
+                # The following COPIES data, rather than just setting a
+                # reference to existing data.
+                psegOut[ipOut] = psegIn[ipIn] # Copy this particle's data
+                                              # from the input slot to the
+                                              # output slot
+
+
+                ## First, move the particle a full step
+                # NON-RELATIVISTIC: v and u are the same
+                for coord in self.position_coordinates:
+                    coord0 = coord+'0'
+                    psegOut[ipOut][coord0] = psegOut[ipOut][coord] # Save the starting positions
+                    ucomp = 'u'+coord
+                    psegOut[ipOut][coord] += psegOut[ipOut][ucomp]*dt
+
+                #                    print "x0=", psegOut[ipOut]['x0'],"x=", psegOut[ipOut]['x']
+                #                    print "psegOut", psegOut[ipOut]
+
+                # Check if the particle has crossed into a
+                # different cell. If it has, then:
+                #   1. Find out which facet it crossed
+                #   2. Check for a boundary-condition on that facet.
+                #      a. If none (facet marker is 0), go to 3.
+                #      b. If there is one, call the BC handler. If
+                #      the BC allows this particle to continue,
+                #      goto 3. If it doesn't, the particle is
+                #      deleted.
+                #
+                #   3. Set the x0,y0,z0 coords to the crossing point.
+
+                #                    print 'ip, index =', ipOut, psegOut[ipOut]['cell_index']
+                pCellIndex = psegOut[ipOut]['cell_index']
+                #                    print fncName, ": ip, pindex", ipOut, pCellIndex, "cell index:", pmesh_M.compute_cell_index(psegOut[ipOut])
+
+                # Loop until the particle is in the current cell
+                mLastFacet = Mesh_C.NO_FACET
+                facetCrossCount = 0
+                tStart = time - dt
+                dtRemaining = dt
+
+                while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
+                    # The particle has left this cell.  We
+                    # need to track it across each facet in case
+                    # there's a boundary-condition on that facet.
+                    # print (fncName, "particle has migrated")
+
+                    facetCrossCount += 1
+                    # Check for an abnormal number of facet crossings:
+                    if facetCrossCount > MAX_FACET_CROSS_COUNT:
+                        errorMsg = "%s !!! MAX_FACET_CROSS_COUNT exceeded!!!" % (fncName)
+                        sys.exit(errorMsg)
+
+                    # Compute dx[], the move vector that starts in
+                    # the current cell
+                    i=0
                     for coord in self.position_coordinates:
+                        pCoord2[i] = psegOut[ipOut][coord] # Present position
                         coord0 = coord+'0'
-                        psegOut[ipOut][coord0] = psegOut[ipOut][coord] # Save the starting positions
-                        ucomp = 'u'+coord
-                        psegOut[ipOut][coord] += psegOut[ipOut][ucomp]*dt
+                        pCoord2[i+pDim] = psegOut[ipOut][coord0] # Start of path in this cell
+                        i+=1
+                    dx = pCoord2[0:pDim] - pCoord2[pDim:2*pDim] # Move vector
 
-#                    print "x0=", psegOut[ipOut]['x0'],"x=", psegOut[ipOut]['x']
-#                    print "psegOut", psegOut[ipOut]
+                    # could return the crossing-point in pCoord2[]
+                    (cFacet, dxFraction, facetNormal) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
+                    if cFacet != Mesh_C.NO_FACET:
+                    # print "facet crossed is", cFacet
+                        tStart = tStart + dxFraction*dtRemaining # The starting time in the new cell
+                        dtRemaining = (1.0 - dxFraction)*dtRemaining
 
-                    # Check if the particle has crossed into a
-                    # different cell. If it has, then:
-                    #   1. Find out which facet it crossed
-                    #   2. Check for a boundary-condition on that facet.
-                    #      a. If none (facet marker is 0), go to 3.
-                    #      b. If there is one, call the BC handler. If
-                    #      the BC allows this particle to continue,
-                    #      goto 3. If it doesn't, the particle is
-                    #      deleted.
-                    #
-                    #   3. Set the x0,y0,z0 coords to the crossing point.
-
-#                    print 'ip, index =', ipOut, psegOut[ipOut]['cell_index']
-                    pCellIndex = psegOut[ipOut]['cell_index']
-#                    print fncName, ": ip, pindex", ipOut, pCellIndex, "cell index:", pmesh_M.compute_cell_index(psegOut[ipOut])
-
-                    # Loop until the particle is in the current cell
-                    mLastFacet = Mesh_C.NO_FACET
-                    facetCrossCount = 0
-                    tStart = time - dt
-                    dtRemaining = dt
-                    
-                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
-#                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
-                        # The particle has left this cell.  We
-                        # need to track it across each facet in case
-                        # there's a boundary-condition on that facet.
-#                        print (fncName, "particle has migrated")
-
-                        facetCrossCount += 1
-                        # Check for an abnormal number of facet crossings:
-                        if facetCrossCount > MAX_FACET_CROSS_COUNT:
-                            errorMsg = "%s !!! MAX_FACET_CROSS_COUNT exceeded!!!" % (fncName)
-                            sys.exit(errorMsg)
-
-                        # Compute dx[], the move vector that starts in
-                        # the current cell
-                        i=0
+                        # Compute the crossing point
+                        # print fncName, "Before truncation p =", psegOut[ipOut]
+                        i=0 # i indexes the move-vector coordinates (dx[i])
                         for coord in self.position_coordinates:
-                            pCoord2[i] = psegOut[ipOut][coord] # Present position
                             coord0 = coord+'0'
-                            pCoord2[i+pDim] = psegOut[ipOut][coord0] # Start of path in this cell
+                            psegOut[ipOut][coord0] = psegOut[ipOut][coord0] + dxFraction*dx[i]
                             i+=1
-#                        pCoord2[:] = psegOut[ipOut] # Alias to the position coordinates
-                        dx = pCoord2[0:pDim] - pCoord2[pDim:2*pDim] # Move vector
+                        # print "After truncation p =", psegOut[ipOut]
 
-# could return the crossing-point in pCoord2[]
-                        (cFacet, dxFraction, facetNormal) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
-                        if cFacet != Mesh_C.NO_FACET:
-#                            print "facet crossed is", cFacet
-                            tStart = tStart + dxFraction*dtRemaining # The starting time in the new cell
-                            dtRemaining = (1.0 - dxFraction)*dtRemaining
-
-                            # Compute the crossing point
-#                           print fncName, "Before truncation p =", psegOut[ipOut]
-                            i=0 # i indexes the move-vector coordinates (dx[i])
-                            for coord in self.position_coordinates:
-                                coord0 = coord+'0'
-                                psegOut[ipOut][coord0] = psegOut[ipOut][coord0] + dxFraction*dx[i]
-                                i+=1
-#                            print "After truncation p =", psegOut[ipOut]
-
-                            # Look up the mesh-level index of this facet...
-                            mFacet = pmesh_M.cell_entity_index_dict['facet'][pCellIndex][cFacet]
-# mFacet should never be the same as the last facet crossed: check this
-                            if mFacet == mLastFacet: # If the particle has crossed the same facet twice in succession...
-                                errorMsg = "%s The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!" % (fncName, mFacet)
-                                sys.exit(errorMsg)
-                            else: # The particle has crossed a new facet.
-                                mLastFacet = mFacet
-                            # ...and get the value of the facet marker.
-# mFacet is a numpy.uint32 (size_t), but the FacetFunction wants an int argument.
-#                            print "type is:", type(mFacet)
-                            facValue = pmesh_M.particle_boundary_marker[mFacet]
-                            # Check if this facet has a non-zero marker, indicating that,
-                            # e.g., the facet is a boundary.
-                            if facValue != 0:
-                                # Call the function associated with this value.
-
-                                if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0: # If this is a trajectory particle.
-
-                                    if printInfoBoundaryCrossing is True: print("Recording boundary-crossing for particle", psegOut[ipOut]['unique_ID'])
-
-                                    # Get the storage index that currently identifies this
-                                    # particle in the trajectory list of particles.
-                                    fullIndex = psa.get_full_index(ipIn, "in")
-                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True)
-                                # A reference to dx[] is available in the BC function class.
-                                self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
-                            # Look up the cell index of the new cell.
-                            pCellIndexNew = pmesh_M.cell_neighbor_dict[pCellIndex][cFacet]
-
-                            # If the particle has left the mesh, and has been deleted, end
-                            # the search.  If it hasn't been deleted (e.g., reflected),
-                            # continue tracking it.
-                            if pCellIndexNew == Mesh_C.NO_CELL:
-                                if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 1:
-                                    psegOut[ipOut]['cell_index'] = Mesh_C.NO_CELL
-                                    break # Breaks out of the facet-crossing 'while' loop.
-                                # else: The boundary did not absorb the particle, so the
-                                # particle is now at the cell boundary and the cell index
-                                # is unchanged.
-                            else:
-                                psegOut[ipOut]['cell_index'] = pCellIndexNew
-                                pCellIndex = pCellIndexNew # Needed for the next iteration of the while loop.
-
-                        else: # The crossed faced is NO_FACET, which shouldn't happen.
-                            errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
+                        # Look up the mesh-level index of this facet...
+                        mFacet = pmesh_M.cell_entity_indices_dict['facet'][pCellIndex][cFacet]
+                        # mFacet should never be the same as the last facet crossed: check this
+                        if mFacet == mLastFacet: # If the particle has crossed the same facet twice in succession...
+                            errorMsg = "%s The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!" % (fncName, mFacet)
                             sys.exit(errorMsg)
-#                       END:if cFacet != Mesh_C.NO_FACET:
-#                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
+                        else: # The particle has crossed a new facet.
+                            mLastFacet = mFacet
+                        # ...and get the value of the facet marker.
+                        # mFacet is a numpy.uint32 (size_t), but the FacetFunction wants an int argument.
+                        # print "type is:", type(mFacet)
+                        facValue = pmesh_M.particle_boundary_marker[mFacet]
+                        # Check if this facet has a non-zero marker, indicating that,
+                        # e.g., the facet is a boundary.
+                        if facValue != 0:
+                            # Call the function associated with this value.
 
-                    # Record the number of facet-crossings
-                    psegOut[ipOut]['crossings'] = facetCrossCount
-#                    print("crossings =", facetCrossCount)
-                    
-                    # Check that this particle has not been deleted before
-                    # incrementing the "out" particle counter.
-                    if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 0: # If this particle has not been deleted...
-                        # If particle indices in the "out" SA have changed (i.e.,
-                        # indexChange is True) due to deletions, then update this
-                        # particle's index where needed.  E.g., if this is a
-                        # trajectory particle, update its SA index in the list of
-                        # trajectory particles.
-                        if self.traj_T is not None:
                             if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0: # If this is a trajectory particle.
-                                if indexChange is True:
-#                                    print "mover: indexChange is true: updating the trajectory particle ID for particle", psegIn[ipIn]['unique_ID'], "ipIn =", ipIn, "ipOut =", ipOut
-                                    self.update_trajectory_particleId(sn, ipIn, ipOut)
 
-                        # Advance the "out" array counter for the next particle
-                        ipOut += 1
-                    else: # This particle has been deleted
-                        indexChange = True # This indicates that particle SA indices
-                                           # are changed past this point due to
-                                           # deletions.
-                        # If this was a trajectory particle, remove it's index from
-                        # the trajectory-particle list.
-                        if self.traj_T is not None:
-                            if psegIn[ipIn]['bitflags'] & self.TRAJECTORY_FLAG != 0:
-#                                print "mover: Removing particle with ID", psegIn[ipIn]['unique_ID'], "ipIn", ipIn, "from trajectories", ", ipOut is", ipOut
-                                self.remove_trajectory_particleId(sn, ipIn, psegOut[ipOut], step, time, dt)
+                                if printInfoBoundaryCrossing is True: print("Recording boundary-crossing for particle", psegOut[ipOut]['unique_ID'])
 
-                    # Check if we've reached the end of this segment.  If so, we need
-                    # to start writing on a new segment.  If there are no more
-                    # segments, allocate a new one.
-                    if (ipOut == self.SEGMENT_LENGTH):
-                        particleCount += self.SEGMENT_LENGTH
-#                        ipOut = 0 # This will cause get_next_out_segment() to be called
-                                   # above, if there are more "in" particles to be processed.
+                                # Get the storage index that currently identifies this
+                                # particle in the trajectory list of particles.
+                                fullIndex = psa.get_full_index(ipIn, "in")
+                                self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True)
+                            # A reference to dx[] is available in the BC function class.
+                            self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
+                        # Look up the cell index of the new cell.
+                        pCellIndexNew = pmesh_M.cell_neighbors_dict[pCellIndex][cFacet]
 
-                # Done with this "in" segment.
-                # Get the next one, if it exists.
-                (npSeg, psegIn) = psa.get_next_segment("in")
-            # End of while isinstance(psegIn, np_m.ndarray)                                   
-                
+                        # If the particle has left the mesh, and has been deleted, end
+                        # the search.  If it hasn't been deleted (e.g., reflected),
+                        # continue tracking it.
+                        if pCellIndexNew == Mesh_C.NO_CELL:
+                            if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 1:
+                                psegOut[ipOut]['cell_index'] = Mesh_C.NO_CELL
+                                break # Breaks out of the facet-crossing 'while' loop.
+                            # else: The boundary did not absorb the particle, so the
+                            # particle is now at the cell boundary and the cell index
+                            # is unchanged.
+                        else:
+                            psegOut[ipOut]['cell_index'] = pCellIndexNew
+                            pCellIndex = pCellIndexNew # Needed for the next iteration of the while loop.
 
-            # Set values that will be used to keep track of the particle arrays
-            if (ipOut != self.SEGMENT_LENGTH): # This catches the case where we exit the loop
-                                               # when ipOut = SEGMENT_LENGTH and there are no
-                                               # more "in" segments.  Otherwise, we would add
-                                               # SEGMENT_LENGTH to particleCount twice.
-                particleCount += ipOut
-            psa.set_number_of_items("out", particleCount)
-            # Loop over segmented array ends
+                    else: # The crossed faced is NO_FACET, which shouldn't happen.
+                        errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
+                        sys.exit(errorMsg)
+                    # END:if cFacet != Mesh_C.NO_FACET:
+                # END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
 
-# Compute new density here?
+                # Record the number of facet-crossings
+                psegOut[ipOut]['crossings'] = facetCrossCount
+                # print("crossings =", facetCrossCount)
 
-        # Loop over Species ends
+                # Check that this particle has not been deleted before
+                # incrementing the "out" particle counter.
+                if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 0: # If this particle has not been deleted...
+                    # If particle indices in the "out" SA have changed (i.e.,
+                    # indexChange is True) due to deletions, then update this
+                    # particle's index where needed.  E.g., if this is a
+                    # trajectory particle, update its SA index in the list of
+                    # trajectory particles.
+                    if self.traj_T is not None:
+                        if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0: # If this is a trajectory particle.
+                            if indexChange is True:
+                                # print "mover: indexChange is true: updating the trajectory particle ID for particle", psegIn[ipIn]['unique_ID'], "ipIn =", ipIn, "ipOut =", ipOut
+                                self.update_trajectory_particleId(sn, ipIn, ipOut)
+
+                    # Advance the "out" array counter for the next particle
+                    ipOut += 1
+                else: # This particle has been deleted
+                    indexChange = True # This indicates that particle SA indices
+                                       # are changed past this point due to
+                                       # deletions.
+                    # If this was a trajectory particle, remove it's index from
+                    # the trajectory-particle list.
+                    if self.traj_T is not None:
+                        if psegIn[ipIn]['bitflags'] & self.TRAJECTORY_FLAG != 0:
+                            # print "mover: Removing particle with ID", psegIn[ipIn]['unique_ID'], "ipIn", ipIn, "from trajectories", ", ipOut is", ipOut
+                            self.remove_trajectory_particleId(sn, ipIn, psegOut[ipOut], step, time, dt)
+
+                # Check if we've reached the end of this segment.  If so, we need
+                # to start writing on a new segment.  If there are no more
+                # segments, allocate a new one.
+                if (ipOut == self.SEGMENT_LENGTH):
+                    particleCount += self.SEGMENT_LENGTH
+                    # ipOut = 0 # This will cause get_next_out_segment() to be called
+                               # above, if there are more "in" particles to be processed.
+
+            # Done with this "in" segment.
+            # Get the next one, if it exists.
+            (npSeg, psegIn) = psa.get_next_segment("in")
+        # End of while isinstance(psegIn, np_m.ndarray)                                   
+
+
+        # Set values that will be used to keep track of the particle arrays
+        if (ipOut != self.SEGMENT_LENGTH): # This catches the case where we exit the loop
+                                           # when ipOut = SEGMENT_LENGTH and there are no
+                                           # more "in" segments.  Otherwise, we would add
+                                           # SEGMENT_LENGTH to particleCount twice.
+            particleCount += ipOut
+        psa.set_number_of_items("out", particleCount)
+        # Loop over segmented array for this species ends
+
         return
-#    def move_neutral_particles(self, ctrl):ENDDEF
+#     def move_neutral_species(self, species_name, ctrl, print_flag = False): ENDDEF
+
 
 #class Particle_C(object):
     def move_neutral_particles_CPP(self, ctrl):
@@ -1574,19 +1634,6 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        # Set local names for the passed parameters
-        dt = ctrl.dt
-        step = ctrl.timeloop_count
-        time = ctrl.time
-        MAX_FACET_CROSS_COUNT = ctrl.MAX_FACET_CROSS_COUNT
-
-        pmesh_M = self.pmesh_M
-        pDim = self.particle_dimension
-
-        # Scratch space
-        pCoord2 = self.pcoord2 # Can hold x,y,z, x0,y0,z0 (or a subset of these)
-        dx = self.dx # dx is the distance moved in one step.
-
         for sn in self.neutral_species:
 
             # Invariant parameters
@@ -1598,236 +1645,11 @@ class Particle_C(object):
             psa = self.pseg_arr[sn] # segmented array for this species
 
 #HERE is the C++ code
-#            particle_cpp.move_neutral_particle_species(psa, pmesh_M.mesh, cell_vertex_dict)
-#            particle_cpp.move_neutral_particle_species(ctrl, psa, pmesh_M.mesh, cell_vertex_dict, self)
-#            particle_cpp.move_neutral_particle_species(sn, ctrl, self)
-            p_cpp.move_neutral_particle_species(sn, ctrl, self)
+#            particle_cpp.move_neutral_species(psa, pmesh_M.mesh, cell_vertices_dict)
+#            particle_cpp.move_neutral_species(ctrl, psa, pmesh_M.mesh, cell_vertices_dict, self)
+#            particle_cpp.move_neutral_species(sn, ctrl, self)
+            p_cpp.move_neutral_species(sn, ctrl, self)
 
-#           Move all the particles in this species
-            (npSeg, psegIn, psegOut) = psa.init_inout_loop() # (number of particles in
-#            (npSeg, psegIn) = psa.init_inout_loop() # (number of particles in
-                                                      # this segment, ref to
-                                                      # segment)
-            particleCount = 0
-            # ipOut counts particles being written to the current
-            # "out" segment.
-            ipOut = 0
-            indexChange = False # Flag to indicate if particle SA indices have
-                                # changed.  This affects, e.g., trajectories, which
-                                # use SA indices to identify particles chosen for
-                                # trajectory plots.
-            while isinstance(psegIn, np_m.ndarray): # Keep looping until we run
-                                                    # out of "in" segments
-
-
-
-                    
-                for ipIn in range(npSeg): # Loop on the particles in this "in"
-                                           # segment. Could use for p in pseg[0:npSeg] instead.
-                    # psegIn[ipIn] has the 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values of ith item
-                    # So psegIn[ipIn][0:3] is 'x', 'y', 'z'.
-                    # Can't use slice syntax here, because the array data are not of homogeneous type.
-
-                    # Skip deleted particles
-                    if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0:
-                        indexChange = True # Particle SA indices are stale past
-                                          # this point due to deletions.
-                        continue # skip to the next particle
-
-                    # If this 'out segment is full, get the next "out" segment,
-                    # provided there are still some "in" particles to advance.  If
-                    # there are no more "out" segments, allocate a new one.
-                    if ipOut == self.SEGMENT_LENGTH:
-                        psegOut = psa.get_next_out_segment()
-                        ipOut = 0 # Reset the counter for the new segment
-#                    if ipOut == 0: psegOut = psa.get_next_out_segment()
-
-                    # The following COPIES data, rather than just setting a
-                    # reference to existing data.
-                    psegOut[ipOut] = psegIn[ipIn] # Copy this particle's data
-                                                  # from the input slot to the
-                                                  # output slot
-
-# Also, check if the following copies, or resets the reference. Ans: it COPIES.
-#                    p_out = psegOut[ipOut]
-# To get a REFERENCE, need to use SLICING syntax:
-#                    p_out = psegIn[ipIn][:]
-# But you can't get a reference to a single element of psegIn[]. See:
-# http://stackoverflow.com/questions/23654088/reference-of-a-single-numpy-array-element
-# See also HPL p. 137. b=a[1,:], but b is still an array.
-# What about getting a ref to one particle returned from a function? That's possible because it uses the stack?
-
-                    ## Move the particle
-                    # NON-RELATIVISTIC: v and u are the same
-                    for coord in self.position_coordinates:
-                        coord0 = coord+'0'
-                        psegOut[ipOut][coord0] = psegOut[ipOut][coord] # Save the starting positions
-                        ucomp = 'u'+coord
-                        psegOut[ipOut][coord] += psegOut[ipOut][ucomp]*dt
-
-#                    print "x0=", psegOut[ipOut]['x0'],"x=", psegOut[ipOut]['x']
-#                    print "psegOut", psegOut[ipOut]
-
-                    # Check if the particle has crossed into a
-                    # different cell. If it has, then:
-                    #   1. Find out which facet it crossed
-                    #   2. Check for a boundary-condition on that facet.
-                    #      a. If none (facet marker is 0), go to 3.
-                    #      b. If there is one, call the BC handler. If
-                    #      the BC allows this particle to continue,
-                    #      goto 3. If it doesn't, the particle is
-                    #      deleted.
-                    #
-                    #   3. Set the x0,y0,z0 coords to the crossing point.
-
-#                    print 'ip, index =', ipOut, psegOut[ipOut]['cell_index']
-                    pCellIndex = psegOut[ipOut]['cell_index']
-#                    print fncName, ": ip, pindex", ipOut, pCellIndex, "cell index:", pmesh_M.compute_cell_index(psegOut[ipOut])
-
-                    # Loop until the particle is in the current cell
-                    mLastFacet = Mesh_C.NO_FACET
-                    facetCrossCount = 0
-                    tStart = time - dt
-                    dtRemaining = dt
-#                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
-                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
-                        # The particle has left this cell.  We
-                        # need to track it across each facet in case
-                        # there's a boundary-condition on that facet.
-#                        print fncName, "particle has migrated"
-
-                        facetCrossCount += 1
-                        # Check for an abnormal number of facet crossings:
-                        if facetCrossCount > MAX_FACET_CROSS_COUNT:
-                            errorMsg = "%s !!! MAX_FACET_CROSS_COUNT exceeded!!!" % (fncName)
-                            sys.exit(errorMsg)
-
-                        # Compute dx[], the move vector that starts in
-                        # the current cell
-                        i=0
-                        for coord in self.position_coordinates:
-                            pCoord2[i] = psegOut[ipOut][coord] # Present position
-                            coord0 = coord+'0'
-                            pCoord2[i+pDim] = psegOut[ipOut][coord0] # Start of path in this cell
-                            i+=1
-#                        pCoord2[:] = psegOut[ipOut] # Alias to the position coordinates
-                        dx = pCoord2[0:pDim] - pCoord2[pDim:2*pDim] # Move vector
-
-# could return the crossing-point in pCoord2[]
-                        (cFacet, dxFraction, facetNormal) = pmesh_M.find_facet(pCoord2[pDim:2*pDim], dx, pCellIndex)
-                        if cFacet != Mesh_C.NO_FACET:
-#                            print "facet crossed is", cFacet
-                            tStart = tStart + dxFraction*dtRemaining # The starting time in the new cell
-                            dtRemaining = (1.0 - dxFraction)*dtRemaining
-
-                            # Compute the crossing point
-#                           print fncName, "Before truncation p =", psegOut[ipOut]
-                            i=0 # i indexes the move-vector coordinates (dx[i])
-                            for coord in self.position_coordinates:
-                                coord0 = coord+'0'
-                                psegOut[ipOut][coord0] = psegOut[ipOut][coord0] + dxFraction*dx[i]
-                                i+=1
-#                            print "After truncation p =", psegOut[ipOut]
-
-                            # Look up the mesh-level index of this facet...
-                            mFacet = pmesh_M.cell_entity_index_dict['facet'][pCellIndex][cFacet]
-# mFacet should never be the same as the last facet crossed: check this
-                            if mFacet == mLastFacet: # If the particle has crossed the same facet twice in succession...
-                                errorMsg = "%s The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!" % (fncName, mFacet)
-                                sys.exit(errorMsg)
-                            else: # The particle has crossed a new facet.
-                                mLastFacet = mFacet
-                            # ...and get the value of the facet marker.
-# mFacet is a numpy.uint32 (size_t), but the FacetFunction wants an int argument.
-#                            print "type is:", type(mFacet)
-                            facValue = pmesh_M.particle_boundary_marker[mFacet]
-                            # Check if this facet has a non-zero marker, indicating that,
-                            # e.g., the facet is a boundary.
-                            if facValue != 0:
-                                # Call the function associated with this value.
-
-                                if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0: # If this is a trajectory particle.
-
-                                    if printInfoBoundaryCrossing is True: print("Recording boundary-crossing for particle", psegOut[ipOut]['unique_ID'])
-
-                                    # Get the storage index that currently identifies this
-                                    # particle in the trajectory list of particles.
-                                    fullIndex = psa.get_full_index(ipIn, "in")
-                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True)
-                                # A reference to dx[] is available in the BC function class.
-                                self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
-                            # Look up the cell index of the new cell.
-                            pCellIndexNew = pmesh_M.cell_neighbor_dict[pCellIndex][cFacet]
-
-                            # If the particle has left the mesh, and has been deleted, end
-                            # the search.  If it hasn't been deleted (e.g., reflected),
-                            # continue tracking it.
-                            if pCellIndexNew == Mesh_C.NO_CELL:
-                                if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 1:
-                                    psegOut[ipOut]['cell_index'] = Mesh_C.NO_CELL
-                                    break # Breaks out of the facet-crossing 'while' loop.
-                                # else: The boundary did not absorb the particle, so the
-                                # particle is now at the cell boundary and the cell index
-                                # is unchanged.
-                            else:
-                                psegOut[ipOut]['cell_index'] = pCellIndexNew
-                                pCellIndex = pCellIndexNew # Needed for the next iteration of the while loop.
-
-                        else: # The crossed faced is NO_FACET, which shouldn't happen.
-                            errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
-                            sys.exit(errorMsg)
-#                       END:if cFacet != Mesh_C.NO_FACET:
-#                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
-
-                    # Record the number of facet-crossings
-                    psegOut[ipOut]['crossings'] = facetCrossCount
-                    
-                    # Check that this particle has not been deleted before
-                    # incrementing the "out" particle counter.
-                    if psegOut[ipOut]['bitflags'] & self.DELETE_FLAG == 0: # If this particle has not been deleted...
-                        # If particle indices in the "out" SA have changed (i.e.,
-                        # indexChange is True) due to deletions, then update this
-                        # particle's index where needed.  E.g., if this is a
-                        # trajectory particle, update its SA index in the list of
-                        # trajectory particles.
-                        if self.traj_T is not None:
-                            if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0: # If this is a trajectory particle.
-                                if indexChange is True:
-#                                    print "mover: indexChange is true: updating the trajectory particle ID for particle", psegIn[ipIn]['unique_ID'], "ipIn =", ipIn, "ipOut =", ipOut
-                                    self.update_trajectory_particleId(sn, ipIn, ipOut)
-
-                        # Advance the "out" array counter for the next particle
-                        ipOut += 1
-                    else: # This particle has been deleted
-                        indexChange = True # This indicates that particle SA indices
-                                           # are changed past this point due to
-                                           # deletions.
-                        # If this was a trajectory particle, remove it's index from
-                        # the trajectory-particle list.
-                        if self.traj_T is not None:
-                            if psegIn[ipIn]['bitflags'] & self.TRAJECTORY_FLAG != 0:
-#                                print "mover: Removing particle with ID", psegIn[ipIn]['unique_ID'], "ipIn", ipIn, "from trajectories", ", ipOut is", ipOut
-                                self.remove_trajectory_particleId(sn, ipIn, psegOut[ipOut], step, time, dt)
-
-                    # Check if we've reached the end of this segment.  If
-                    # so, we need to start writing on a new segment.
-                    if (ipOut == self.SEGMENT_LENGTH):
-                        particleCount += self.SEGMENT_LENGTH
-#                        ipOut = 0 # This will cause get_next_out_segment() to be called
-                                   # above, if there are more "in" particles to be processed.
-
-                # Done with this segment.
-                # Get the next one, if it exists.
-                (npSeg, psegIn) = psa.get_next_segment("in")
-            # End of while isinstance(psegIn, np_m.ndarray)                                   
-                
-            # Set values that will be used to keep track of the particle arrays
-            if (ipOut != self.SEGMENT_LENGTH): # This catches the case where we exit the loop
-                                               # when ipOut = SEGMENT_LENGTH and there are no
-                                               # more "in" segments.  Otherwise, we would add
-                                               # SEGMENT_LENGTH to particleCount twice.
-                particleCount += ipOut
-            psa.set_number_of_items("out", particleCount)
             # Loop over segmented array ends
 
 # Compute new density here?
@@ -1889,12 +1711,12 @@ class Particle_C(object):
 
 
 #class Particle_C(object):
-    def move_particles_in_uniform_fields(self, species_name, ctrl, print_flag = False):
+    def move_charged_species_in_uniform_fields(self, species_name, ctrl, print_flag = False):
         """Apply the electric field ctrl.E0 to particles of the given species for a
            time interval ctrl.dt.  Compute the resulting change in particle
            velocities and positions.
 
-           There is no implementation of boundary-conditions in this function, so
+           NB: There is no implementation of boundary-conditions in this function, so
            particles do not get deleted.
 
         """
@@ -1917,7 +1739,7 @@ class Particle_C(object):
 #        (npSeg, psegIn) = psa.init_inout_loop()
         (npSeg, psegIn, psegOut) = psa.init_inout_loop()
 
-#        print "move_particles_in_uniform_fields: npSeg, psegIn, psegOut:", npSeg, psegIn, psegOut
+#        print "move_charged_species_in_uniform_fields: npSeg, psegIn, psegOut:", npSeg, psegIn, psegOut
         # Get the first segment of particles to move
 #        pseg = psa.get_next_segment()
 
@@ -1952,6 +1774,8 @@ class Particle_C(object):
                 # Move the particle
                 # NON-RELATIVISTIC: v and u are the same
                 psegOut[ipOut]['x'] = psegIn[ipIn]['x'] + psegOut[ipOut]['ux']*dt
+                # Could be written this way because of the COPY above:
+                # psegOut[ipOut]['x'] += psegOut[ipOut]['ux']*dt
                 psegOut[ipOut]['y'] = psegIn[ipIn]['y'] + psegOut[ipOut]['uy']*dt
                 psegOut[ipOut]['z'] = psegIn[ipIn]['z'] + psegOut[ipOut]['uz']*dt
 
@@ -1972,7 +1796,7 @@ class Particle_C(object):
         psa.set_number_of_items("out", particleCount)
 
         return
-#    def move_particles_in_uniform_fields(self, species_name, ctrl, print_flag = False):ENDDEF
+#    def move_charged_species_in_uniform_fields(self, species_name, ctrl, print_flag = False):ENDDEF
 
 # Just push one segment:
 
@@ -2530,7 +2354,8 @@ class Particle_C(object):
                 # Loop over the number-density arrays
                 charge_density_F.multiply_add(dof_number_density_dict_F[s], charge)
         else:
-            print(fncName, "\tDnT WARNING: The reference to pmesh_M is None")
+            errorMsg = "%s\tDnT: No particle mesh has been provided. Cannot continue." % (fncName)
+            raise RuntimeError(errorMsg)
 
         return
 #    def accumulate_charge_density_from_particles(self, dof_number_density_dict_F, charge_density_F):ENDDEF

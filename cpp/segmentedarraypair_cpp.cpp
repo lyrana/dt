@@ -54,7 +54,7 @@ namespace dnt {
 
         // The ctor
         // The C++ ctor args types are template parameters in py::init<>()
-//        .def(py::init<int>())
+        // Here, the parameter is the segment length.
         .def(py::init<py::ssize_t>())
 
         // The following creates the bindings to SegmentedArrayPair member
@@ -65,6 +65,7 @@ namespace dnt {
         .def("get_capacity", &SAP::get_capacity)
         .def("get_full_index", &SAP::get_full_index)
         .def("get_item", &SAP::get_item)
+        // Set a default value of a keyword argument:
         .def("get_next_out_segment", &SAP::get_next_out_segment, py::arg("returnDataPtr") = false)
         .def("get_next_segment", &SAP::get_next_segment, py::arg(), py::arg("returnDataPtr") = false)
         .def("get_number_of_items", &SAP::get_number_of_items)
@@ -73,6 +74,9 @@ namespace dnt {
         .def("get_segment_and_offset", &SAP::get_segment_and_offset)
         .def("init_inout_loop", &SAP::init_inout_loop, py::arg("returnDataPtrs") = false)
         .def("init_out_loop", &SAP::init_out_loop, py::arg("returnDataPtr") = false)
+        // Overloaded versions of push_back().
+        // Put a signature in parens in front of &SAP::push_back to disambiguate the versions.
+        // (&SAP::push_back() is a pointer-to-function taking 'arg' and returning a py::tuple)
         .def("push_back", (py::tuple (SAP::*) (py::array_t<Pstruct<PT>, 0>)) &SAP::push_back)
         .def("push_back", (py::tuple (SAP::*) (py::tuple)) &SAP::push_back)
         .def("push_back", (py::tuple (SAP::*) (py::list)) &SAP::push_back)
@@ -163,7 +167,7 @@ namespace dnt {
     makeSegmentedArrayPair<Ptype::cartesian_xy>(m, "cartesian_xy");
     makeSegmentedArrayPair<Ptype::cartesian_xyz>(m, "cartesian_xyz");
       
-  } // ENDDEF: PYBIND11_MODULE(segmentedarraypair, m)
+  } // ENDDEF: PYBIND11_MODULE(segmentedarraypair_cpp, m)
 
   
 } // namespace dnt

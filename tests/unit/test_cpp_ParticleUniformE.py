@@ -14,6 +14,8 @@ import DT_Module as DT_m
 from UserUnits_Module import MyPlasmaUnits_C
 from Particle_Module import *
 
+import p_cpp_cartesian_xyz as p_cpp
+
 #STARTCLASS
 class Vec_C(object):
     """ Creates a 1, 2, or 3D vector.
@@ -203,8 +205,8 @@ class TestParticleUniformE(unittest.TestCase):
 #        print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
         for sp in self.particle_P.species_names:
             if self.particle_P.get_species_particle_count(sp) == 0: continue
-            
-            self.particle_P.move_charged_species_in_uniform_fields(sp, ctrl)
+
+            p_cpp.move_charged_species_in_uniform_fields(sp, ctrl, self.particle_P)
             
             # Check that the first particles in the array reach the right speed
 #            getparticle = self.particle_P.pseg_arr[sp][0]
@@ -278,7 +280,7 @@ class TestParticleUniformE(unittest.TestCase):
 #                print 'test_2_electric_field_push_10steps: sp =', sp
                 if self.particle_P.get_species_particle_count(sp) == 0: continue
 
-                self.particle_P.move_charged_species_in_uniform_fields(sp, ctrl)
+                p_cpp.move_charged_species_in_uniform_fields(sp, ctrl, self.particle_P)
 
             ctrl.time_step += 1
             ctrl.time += ctrl.dt

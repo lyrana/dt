@@ -58,7 +58,7 @@ class TestParticleTrajectory(unittest.TestCase):
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xy'
-        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
+#        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
 

@@ -331,7 +331,11 @@ class TestSegmentedArrayPair(unittest.TestCase):
 
         # Start a loop over segments.
 
-        # 1. Retrieve pointers to the arrays in the Numpy array objects in the SAP
+        # 1. Retrieve pointers to the plain arrays in the Numpy array objects in the SAP
+
+        # The returned psegIn, psegOut values are NOT references to Numpy
+        # arrays. They have type Pstruct<PT>*.  To get particle data, use one of the
+        # SAP access functions in segmentedarraypair_cpp.cpp.
         (npSeg, psegIn, psegOut) = seg_arr.init_inout_loop(returnDataPtrs=True)
         segmentCount = 1
 
@@ -341,15 +345,20 @@ class TestSegmentedArrayPair(unittest.TestCase):
             segmentCount += 1
 
         # 2. Retrieve the Numpy array objects from the SAP
-        # Note: since the "in" segment was not copied to the "out" segment since the
-        # last call to init_inout_loop(), we need to uncomment the swapPair
-        # modification in SegmentedArrayPair.h:init_inout_loop(). Otherwise, we'll
-        # get the empty member of the SAP.
+        # The returned psegIn, psegOut values are references to Numpy arrays.
+        
+        # Note: since the "in" segment was not copied to the "out" segment since the last
+        # call to init_inout_loop(), we need to uncomment the swapPair = !swapPair
+        # statement in SegmentedArrayPair.h:init_inout_loop(). Otherwise, we'll get the
+        # empty member of the SAP.
         (npSeg, psegIn, psegOut) = seg_arr.init_inout_loop()
         segmentCount = 1
-        
+
+        if not isinstance(psegIn, np_m.ndarray):
+            print("!!!For this section to work, init_inout_loop() needs to be modified!!!")
         while isinstance(psegIn, np_m.ndarray):
             print("Number of particles in Numpy structured array object", segmentCount, "is", npSeg)
+            print("First particle is", psegIn[0])
             (npSeg, psegIn) = seg_arr.get_next_segment("in")
             segmentCount += 1
 

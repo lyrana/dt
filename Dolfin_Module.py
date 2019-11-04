@@ -55,7 +55,7 @@ class Mesh_C(object):
         
         # Get a ref to the mesh from the arglist,
         if Mesh is not None:
-            self.mesh = Mesh
+            self.mesh = Mesh # See docs above
         # or make a copy of the arglist mesh,
         elif mesh_to_copy is not None:
             self.mesh = df_m.Mesh(mesh_to_copy)
@@ -96,26 +96,34 @@ class Mesh_C(object):
             # documentation.
             self.cell_dict = {}
 
-            self.cell_vertex_dict = {}
+            self.cell_vertices_dict = {}
             self.entity_dimension = {'vertex': 0, 'edge': 1, 'facet': self.tdim-1}
-            self.cell_entity_index_dict = {}
-            self.vertex_cell_dict = {}
-            self.cell_facet_normals_dict = {}
-            self.cell_neighbor_dict = {}
+            self.cell_entity_indices_dict = {}
+            self.vertex_cells_dict = {}
+            # These can be py::capsule type is using C++ particle movers
+            # Set all of the above to None?
+            self.cell_facet_normals_dict = None
+            self.cell_neighbors_dict = None
 
             self.cell_volume_dict = {}
 
             # Compute lookup dictionaries
+
+#tph Removed these calls. The dicts seem to be used only when particles are used. So making them has been moved to Particle_Module.py.
             if compute_dictionaries is True:
-                self.compute_cell_dict()
-                self.compute_cell_vertex_dict() # Get vertex indices from a cell index
-#               self.compute_cell_entity_index_dict('vertex') # Get vertex indices from a cell index
-                self.compute_cell_entity_index_dict('facet') # Get facet indices from a cell index
-                self.compute_vertex_cell_dict() # Get cell indices from a vertex index
+#                self.compute_cell_dict() # Get the Cell object from a cell index
+                # only needed for particles:
+#                self.compute_cell_vertices_dict() # Get vertex indices from a cell index
+#               self.compute_cell_entity_indices_dict('vertex') # Get vertex indices from a cell index
+#                self.compute_cell_entity_indices_dict('facet') # Get facet indices from a cell index
+#                self.compute_vertex_cells_dict() # Get cell indices from a vertex index
 
-                self.compute_cell_facet_normals_dict() # Unit vectors normal to cell facets
-                self.compute_cell_neighbor_dict() # Get neighbor cell indices from a cell index
+                # Note that presently, this is only needed in the particle mesh.
+                #self.compute_cell_facet_normals_dict() # Unit vectors normal to cell facets
+                
+                #self.compute_cell_neighbors_dict() # Get neighbor cell indices from a cell index
 
+#tph Is this ever used on the field mesh?
                 self.compute_cell_volume_dict() # Compute cell volumes indexed by cell index
 
             # Read the field boundary marker from a file, if one is provided
@@ -187,7 +195,7 @@ class Mesh_C(object):
 #  Things indexed by cell number
 #
 
-    def compute_cell_entity_index_dict(self, entity_name):
+    def compute_cell_entity_indices_dict(self, entity_name):
         """
            Make a dictionary where the keys are cell indices and the values are
            lists of the cell entity indices.
@@ -215,7 +223,7 @@ class Mesh_C(object):
         # Type issue: Had to convert numpy.uint32 to long (using tolist()) and
         # then to int (using map()).
         # This is because a FacetFunction wants the facet index as an int.
-        self.cell_entity_index_dict[entity_name] = dict((cell.index(), list(map(int, cell.entities(d).tolist()))) for cell in df_m.cells(self.mesh))
+        self.cell_entity_indices_dict[entity_name] = dict((cell.index(), list(map(int, cell.entities(d).tolist()))) for cell in df_m.cells(self.mesh))
 
         # E.g., use the dictionary to print the vertex coordinates:
 
@@ -224,14 +232,14 @@ class Mesh_C(object):
         # coordinates = self.mesh.coordinates()
         # for c in range(self.mesh.num_cells()):
         #     print "Vertices of cell", c
-        #     for vertex in self.cell_vertex_dict[c]:
+        #     for vertex in self.cell_vertices_dict[c]:
         #         print "\t", vertex, coordinates[vertex]
 
         return
-#    def compute_cell_entity_index_dict(self, entity_name):ENDDEF
+#    def compute_cell_entity_indices_dict(self, entity_name):ENDDEF
 
 #class Mesh_C(object):
-    def compute_cell_vertex_dict(self):
+    def compute_cell_vertices_dict(self):
         """
            Make a dictionary giving a list of the cell vertex indices, indexed by
            the cell index.  The vertex indices can be used, e.g., to
@@ -242,21 +250,21 @@ class Mesh_C(object):
 
         # For each cell, get a list of the vertices in it
         # A vertex has topological dimension 0
-        self.cell_vertex_dict = dict((cell.index(), cell.entities(0)) for cell in df_m.cells(self.mesh))
+        self.cell_vertices_dict = dict((cell.index(), cell.entities(0)) for cell in df_m.cells(self.mesh))
 
-        # Use the dictionary to print the vertex coordinates:
+        # Example: Use the dictionary to print the vertex coordinates:
 
         # coordinates = self.mesh.coordinates()
         # for c in range(self.mesh.num_cells()):
         #     print "Vertices of cell", c
-        #     for vertex in self.cell_vertex_dict[c]:
+        #     for vertex in self.cell_vertices_dict[c]:
         #         print "\t", vertex, coordinates[vertex]
 
         return
-#    def compute_cell_vertex_dict(self):ENDDEF
+#    def compute_cell_vertices_dict(self):ENDDEF
 
 #class Mesh_C(object):
-    def compute_cell_neighbor_dict(self):
+    def compute_cell_neighbors_dict(self):
         """Make a dictionary that gives the indices of cells that
            share a common facet.
 
@@ -299,14 +307,15 @@ class Mesh_C(object):
         #  
 
 
-# Used "tdim" for quantities independent of geometry, like indices.
+# Use "tdim" for quantities independent of geometry, like indices, number of cell
+# facets, etc.
 
 # The following commented-out line creates a correct dictionary, but if a
 # cell is at a boundary it skips that facet.  That doesn't work for
 # our purpose because we need to use the local facet number as an
 # index for the list of neighbor cells.
 
-#        self.cell_neighbor_dict = {cell.index(): sum((filter(lambda ci: ci != cell.index(), facet.entities(tdim)) for facet in df_m.facets(cell)), []) for cell in df_m.cells(self.mesh)}
+#        self.cell_neighbors_dict = {cell.index(): sum((filter(lambda ci: ci != cell.index(), facet.entities(tdim)) for facet in df_m.facets(cell)), []) for cell in df_m.cells(self.mesh)}
 
         n_facets = tdim + 1
 #        n_normal_coords = self.gdim
@@ -332,41 +341,44 @@ class Mesh_C(object):
                     neighbor_cells[fi] = Mesh_C.NO_CELL
                 fi += 1
 
-            self.cell_neighbor_dict[cell.index()] = neighbor_cells
+            self.cell_neighbors_dict[cell.index()] = neighbor_cells
 
-#        print cell_neighbor_dict
+#        print cell_neighbors_dict
 
         return
-#    def compute_cell_neighbor_dict(self):ENDDEF
+#    def compute_cell_neighbors_dict(self):ENDDEF
 
 #
 #  Things indexed by vertex number
 #
 
 #class Mesh_C(object):
-    def compute_vertex_cell_dict(self):
+    def compute_vertex_cells_dict(self):
         """
            Make a dictionary giving a list of the indices of cells
            that have a given vertex index.
+
+           This doesn't seem to be used in any algorithm.
+
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
         
         # For each vertex, get a list of the cells that contain this vertex
-        self.vertex_cell_dict = dict((v.index(), [c.index() for c in df_m.cells(v)]) for v in df_m.vertices(self.mesh))
+        self.vertex_cells_dict = dict((v.index(), [c.index() for c in df_m.cells(v)]) for v in df_m.vertices(self.mesh))
 
         return
 
 #class Mesh_C(object):
-    def compute_cell_facet_normals_dict(self):
+    def compute_cell_facet_normals_dict(self, use_cpp=False):
         """
            Make a dictionary giving a list of cell facet-normal
            vectors, indexed by the cell index.
 
-           NO:The normals are unit vectors represented by Points.  
+           NB: The normals are unit vectors represented by Points.  
 
-           The normals are unit vectors with the number of coordinates
-           equal to the number of coordinates of the mesh.
+           The normals stored in the dictionary are unit vectors with the number
+           of coordinates equal to the number of coordinates of the mesh.
 
            The dictionary looks like: {cell_index: [n0, n1, ...]}
            where n0, n1, ... are the unit normal vectors on each facet.
@@ -375,26 +387,28 @@ class Mesh_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
-        # For each cell, get a list of the vertices in it
-        # (cell.entities(d) returns a List of indices).
-        # A vertex has dimension 0.
-
+        if (use_cpp is True):
+            # This produces a py::capsule containing a pointer to the std::map.
+    #        self.cell_facet_normals_dict = dolfin_cpp.compute_cell_facet_normals_dict(self.mesh)
+            ret = dolfin_cpp.compute_cell_facet_normals_dict(self.mesh, self.cell_facet_normals_dict)
+        else:
         # cell.normal(fi) returns a Point representing the unit normal to the fi-th facet of the cell
+            self.cell_facet_normals_dict = {}            
 
-        n_facets = self.gdim+1
-        n_normal_coords = self.gdim
+            n_facets = self.gdim+1
+            n_normal_coords = self.gdim
 
-        facet_normal_3d = self.facet_normal_3d
+            facet_normal_3d = self.facet_normal_3d # Use scratch array
         
-        for cell in df_m.cells(self.mesh):
-            normals = np_m.empty(shape=(n_facets, n_normal_coords), dtype = np_m.float64)
-            for fi in range(n_facets):
-                facet_normal_3d[0] = cell.normal(fi).x()
-                facet_normal_3d[1] = cell.normal(fi).y()
-                facet_normal_3d[2] = cell.normal(fi).z()
-#                normals[fi][:] = facet_normal_3d
-                normals[fi] = facet_normal_3d[0:n_normal_coords]
-            self.cell_facet_normals_dict[cell.index()] = normals
+            for cell in df_m.cells(self.mesh):
+                # normals hold the facet-normal vectors for one cell
+                normals = np_m.empty(shape=(n_facets, n_normal_coords), dtype = np_m.float64)
+                for fi in range(n_facets):
+                    facet_normal_3d[0] = cell.normal(fi).x()
+                    facet_normal_3d[1] = cell.normal(fi).y()
+                    facet_normal_3d[2] = cell.normal(fi).z()
+                    normals[fi] = facet_normal_3d[0:n_normal_coords]
+                self.cell_facet_normals_dict[cell.index()] = normals
 
 #        self.cell_facet_normals = dict((cell.index(), [cell.normal(fi) for fi in range(self.tdim+1)]) for cell in df_m.cells(self.mesh))
 
@@ -527,7 +541,7 @@ class Mesh_C(object):
 #            print("is_inside: p is:", p.x(), p.y())
             vertex_coords = np_m.array(cell.get_vertex_coordinates()).reshape((-1, self.gdim))
 #            print("is_inside: cell index is:", cell_index)
-#            print("is_inside: vertices are:", self.cell_vertex_dict[cell_index])
+#            print("is_inside: vertices are:", self.cell_vertices_dict[cell_index])
 #            print("is_inside: cell vertex coordinates are:", vertex_coords)
         else:
             p = df_m.Point(point['x'])
@@ -552,7 +566,7 @@ class Mesh_C(object):
 #        cell = self.cell_dict[cell_index]
 
         # Get the cell vertices
-        vertices = self.cell_vertex_dict[cell_index]
+        vertices = self.cell_vertices_dict[cell_index]
         
         # Get the coordinates of the cell vertices
         p0 = self.mesh.coordinates()[vertices[0]]
@@ -582,7 +596,7 @@ class Mesh_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
         
-        vertices = self.cell_vertex_dict[cell_index]
+        vertices = self.cell_vertices_dict[cell_index]
 
 ## These versions don't work; the point is now a double*. Do we need them?
         if self.tdim == 3:
@@ -649,7 +663,6 @@ class Mesh_C(object):
         dx[:] = dr[0:gDim] # Convert displacement vector to a vector with
                           # dimension equal to the number of mesh dimensions.
         x0[:] = r0[0:gDim]
-#        x0[:] = r0[gDim:2*gDim]
 
         facet = Mesh_C.NO_FACET
 
@@ -662,7 +675,7 @@ class Mesh_C(object):
         cell = self.cell_dict[cell_index]
 
         # The coordinates of all the vertices in this cell, in (x, y,
-        # z) tuple form
+        # z) tuple form. There are four of these in sequence for a tetrahedron.
         vertex_coords = np_m.array(cell.get_vertex_coordinates()).reshape((-1, gDim))
 
 #        print "find_facet(): vertex_coords=", vertex_coords
@@ -739,7 +752,8 @@ class Mesh_C(object):
                 if distanceToFacet < dxFraction*n3_dot_dx:
                     facet = 3
                     dxFraction = distanceToFacet/n3_dot_dx
-
+                    
+            # Change range of dxFraction:
             if dxFraction > 1.0 or dxFraction < 0.0:
                 print(fncName, "!!! Bad value for dxFraction:", dxFraction)
                 sys.exit()

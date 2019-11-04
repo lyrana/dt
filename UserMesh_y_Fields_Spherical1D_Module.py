@@ -176,7 +176,8 @@ class UserMesh1DS_C(Mesh_C):
         meshFile = mesh_input.mesh_file
         coordinateSystem = '1D-spherical-radial' # Mesh coordinates are spherical
                                                  # radial coordinates.
-        super(self.__class__, self).__init__(mesh_file=meshFile, coordinate_system=coordinateSystem, compute_dictionaries=computeDictionaries, compute_tree=computeTree, plot_flag=plotFlag, plot_title=plotTitle)
+#        super(self.__class__, self).__init__(mesh_file=meshFile, coordinate_system=coordinateSystem, compute_dictionaries=computeDictionaries, compute_tree=computeTree, plot_flag=plotFlag, plot_title=plotTitle)
+        super(self.__class__, self).__init__(mesh_file=meshFile, coordinate_system=coordinateSystem, compute_dictionaries=computeDictionaries, compute_tree=computeTree)
 
 
         self.field_boundary_dict = mesh_input.field_boundary_dict

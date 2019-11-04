@@ -27,7 +27,7 @@ from UserUnits_Module import MyPlasmaUnits_C
 #STARTCLASS
 class TestParticleNonuniformE(unittest.TestCase):
     """Test classes in Particle_Module that push particles in a
-       uniform E field
+       non-uniform E field
     """
     
     def setUp(self):
@@ -44,7 +44,7 @@ class TestParticleNonuniformE(unittest.TestCase):
 #        pin.copy_field_mesh = False
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xy'
-        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
+#        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
 

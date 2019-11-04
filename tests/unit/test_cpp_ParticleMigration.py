@@ -25,7 +25,7 @@ from UserMesh_y_Fields_FE_XYZ_Module import *
 #import p_cpp_cartesian_xyz
 
 #STARTCLASS
-class TestPybParticleAdvance(unittest.TestCase):
+class TestCppParticleMigration(unittest.TestCase):
     """Test use of pybind11 to interface with C++
 
        Use a C++ function to advance particles, passing needed parameters from
@@ -62,6 +62,7 @@ class TestPybParticleAdvance(unittest.TestCase):
         pin.force_components = ['x', 'y',]
         """
         pin.force_precision = np_m.float64
+        pin.use_cpp_movers = True        
 
         # Give the properties of the particle species.  The charges and masses are
         # normally those of the physical particles, and not the computational
@@ -70,7 +71,7 @@ class TestPybParticleAdvance(unittest.TestCase):
         # particle distribution functions, and can vary from particle to particle.
 
         speciesName = 'neutral_H'
-        charge = 1.0
+        charge = 0.0
         mass = 1.0*MyPlasmaUnits_C.AMU
         dynamics = 'neutral'
         neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
@@ -79,7 +80,7 @@ class TestPybParticleAdvance(unittest.TestCase):
         pin.particle_species = (neutralH_S,
                                )
         # Make the particle object from pin
-        self.particle_P = Particle_C(pin, use_cpp=True, print_flag=False)
+        self.particle_P = Particle_C(pin, print_flag=False)
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary-condition callbacks, source regions, etc.)
@@ -93,7 +94,7 @@ class TestPybParticleAdvance(unittest.TestCase):
         # self.particle_P.user_particles_module_name = userParticlesModuleName
         self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
-        ### neutral H atoms are present at t=0
+        ### Neutral H atoms are present at t=0
         speciesName = 'neutral_H'
         # Check that this species has been defined above
         if speciesName not in self.particle_P.species_names:
@@ -165,13 +166,14 @@ class TestPybParticleAdvance(unittest.TestCase):
         self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
 
 # Individual geometry dictionaries:
-#        self.pmesh1D.compute_cell_vertex_dict()
+#        self.pmesh1D.compute_cell_vertices_dict()
 #        self.pmesh1D.compute_cell_dict()
+
 
         return
 #    def setUp(self):ENDDEF
 
-    def test_1_cpp_particle_advance(self):
+    def test_1D_particle_migration(self):
         """Test that we can call a C++ function to push neutral particles.
 
            Initial particle positions are in UserParticles_3D.py.
@@ -207,10 +209,17 @@ class TestPybParticleAdvance(unittest.TestCase):
         ctrl.MAX_FACET_CROSS_COUNT = 100
 
         # Run on a 1D mesh
-
-        self.particle_P.pmesh_M = self.pmesh1D
+        # Note: this would be a copy of the field mesh for parallel runs.
+        #self.particle_P.pmesh_M = self.pmesh1D
+        # Need to compute the mesh facet-normals for particle movers
+        
+        self.particle_P.initialize_particle_mesh(self.pmesh1D);
+        
+#        self.particle_P.pmesh_M.compute_cell_facet_normals_dict(use_cpp=True)
+#    def compute_cell_facet_normals_dict(self, use_cpp=False):
 
         # Get the initial cell index of each particle.
+        # Note: this could be moved down closer to the beginning of the particle-advance loop.
         self.particle_P.compute_mesh_cell_indices()
 
         ### Put the expected ending results for the two particles into the p_expected tuple ###
@@ -251,12 +260,14 @@ class TestPybParticleAdvance(unittest.TestCase):
         psa = self.particle_P.pseg_arr[speciesName] # segmented array for this species
 
         # Print the cell indices
-        print("cell_vertex_dict = ", self.particle_P.pmesh_M.cell_vertex_dict)
+#        print("cell_vertices_dict = ", self.particle_P.pmesh_M.cell_vertices_dict)
 
         # Integrate for n_timesteps
         print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
         for istep in range(ctrl.n_timesteps):
-            self.particle_P.move_neutral_particles_CPP(ctrl)
+#            self.particle_P.move_neutral_particles_CPP(ctrl)
+            print(fncName, "istep:", istep)
+            self.particle_P.move_neutral_particles(ctrl)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -275,10 +286,10 @@ class TestPybParticleAdvance(unittest.TestCase):
                 self.assertEqual(p_expected[ip][cell_index_position], getparticle[cell_index_position], msg="Particle is not in correct cell")
 
         return
-    # ENDDEF: def test_1_cpp_particle_advance(self)
+    # ENDDEF: def test_1D_particle_migration(self)
 
 
-#class TestPybParticleAdvance:ENDCLASS
+#class TestCppParticleMigration:ENDCLASS
 
 if __name__ == '__main__':
     unittest.main()

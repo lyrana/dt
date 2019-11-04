@@ -2,13 +2,13 @@
 
 # dnt_cpp: dnt_cpp.cpython-36m-x86_64-linux-gnu.so
 
-dnt_cpp.cpython-36m-x86_64-linux-gnu.so: dnt_cpp.cpp predicates.o fstruct.o pstruct.o dolfin.o pseg.o SegmentedArrayPair_Cpp.h
-	c++ -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` dnt_cpp.cpp -o dnt_cpp`python3-config --extension-suffix` predicates.o fstruct.o pstruct.o dolfin.o pseg.o SegmentedArrayPair_Cpp.h
+dnt_cpp.cpython-36m-x86_64-linux-gnu.so: dnt_cpp.cpp predicates.o fstruct.o pstruct.o dolfin_functions.o pseg.o SegmentedArrayPair_Cpp.h
+	c++ -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` dnt_cpp.cpp -o dnt_cpp`python3-config --extension-suffix` predicates.o fstruct.o pstruct.o dolfin_functions.o pseg.o SegmentedArrayPair_Cpp.h
 
 # Compile the source files
 
-dolfin.o: dolfin.cpp dolfin.h fstruct.h pstruct.h predicates.h
-	c++ -c -O3 -Wall -std=c++17 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` dolfin.cpp -o dolfin.o
+dolfin_functions.o: dolfin_functions.cpp dolfin_functions.h fstruct.h pstruct.h predicates.h
+	c++ -c -O3 -Wall -std=c++17 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` dolfin_functions.cpp -o dolfin_functions.o
 
 fstruct.o: fstruct.cpp fstruct.h
 	c++ -c -O3 -Wall -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` fstruct.cpp -o fstruct.o

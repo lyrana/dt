@@ -170,7 +170,8 @@ class UserMesh2DCirc_C(Mesh_C):
 
         # Call the parent constructor to complete setting class variables.
         mesh_file = mesh_input.mesh_file
-        super(self.__class__, self).__init__(mesh_file=mesh_file, coordinate_system=coordinateSystem, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
+#        super(self.__class__, self).__init__(mesh_file=mesh_file, coordinate_system=coordinateSystem, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
+        super(self.__class__, self).__init__(mesh_file=mesh_file, coordinate_system=coordinateSystem, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree)
         
         self.field_boundary_dict = mesh_input.field_boundary_dict
         self.particle_boundary_dict = mesh_input.particle_boundary_dict

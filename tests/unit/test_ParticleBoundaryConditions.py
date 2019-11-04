@@ -70,7 +70,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xyz'
-        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+#        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_precision = numpy.float64
 
         # Specify the particle species properties

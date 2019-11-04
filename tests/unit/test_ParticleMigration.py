@@ -48,6 +48,7 @@ class TestParticleMigration(unittest.TestCase):
         pin.force_components = ['x', 'y',]
         """
         pin.force_precision = np_m.float64
+        pin.use_cpp_movers = False        
 
         # Give the properties of the particle species.  The charges
         # and masses are normally those of the physical particles, and
@@ -55,16 +56,6 @@ class TestParticleMigration(unittest.TestCase):
         # are specified or computed in a separate file (see
         # user_particles_module_name below) giving the distribution
         # functions, and can vary from particle to particle.
-
-#         pin.particle_species = (('neutral_H',
-#                              {'initial_distribution_type' : 'listed',
-#                               'charge' : 0.0,
-#                               'mass' : 1.0*MyPlasmaUnits_C.AMU,
-#                               'dynamics' : 'explicit',
-# #                              'number_per_cell' : 12,
-#                               }
-#                              ),
-#                             )
 
         speciesName = 'neutral_H'
         charge = 0.0
@@ -90,7 +81,7 @@ class TestParticleMigration(unittest.TestCase):
         # self.particle_P.user_particles_module_name = userParticlesModuleName
         self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
-        ### neutral H atoms are present at t=0
+        ### Neutral H atoms are present at t=0
         speciesName = 'neutral_H'
         # Check that this species has been defined above
         if speciesName not in self.particle_P.species_names:
@@ -160,7 +151,7 @@ class TestParticleMigration(unittest.TestCase):
 
         # Create a 1D particle mesh
         self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
-#        self.pmesh1D.compute_cell_vertex_dict()
+#        self.pmesh1D.compute_cell_vertices_dict()
 #        self.pmesh1D.compute_cell_dict()
 
         # 2D mesh input
@@ -184,7 +175,7 @@ class TestParticleMigration(unittest.TestCase):
 
         # Create a 2D particle mesh
         self.pmesh2D = UserMesh_C(umi2D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
-#        self.pmesh2D.compute_cell_vertex_dict()
+#        self.pmesh2D.compute_cell_vertices_dict()
 #        self.pmesh2D.compute_cell_dict()
 
         # 3D mesh input
@@ -214,12 +205,12 @@ class TestParticleMigration(unittest.TestCase):
         # Create a 3D particle mesh
         self.pmesh3D_M = UserMesh_C(umi3D, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 3D")
         # Explicitly compute dictionaries needed
-#        self.pmesh3D_M.compute_cell_entity_index_dict('vertex')
-        self.pmesh3D_M.compute_cell_vertex_dict()
-        self.pmesh3D_M.compute_cell_entity_index_dict('facet')
+#        self.pmesh3D_M.compute_cell_entity_indices_dict('vertex')
+        self.pmesh3D_M.compute_cell_vertices_dict()
+        self.pmesh3D_M.compute_cell_entity_indices_dict('facet')
         self.pmesh3D_M.compute_cell_dict()
         self.pmesh3D_M.compute_cell_facet_normals_dict()
-        self.pmesh3D_M.compute_cell_neighbor_dict()
+        self.pmesh3D_M.compute_cell_neighbors_dict()
 
         # pmesh is the owner of the compute_index function?
 

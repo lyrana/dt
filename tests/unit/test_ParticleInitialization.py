@@ -38,7 +38,7 @@ class TestParticleInitialization(unittest.TestCase):
 
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xyz'
-        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+#        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
 

@@ -1,17 +1,17 @@
-/*! \file dolfin_cpp.cpp
+/*! \file dolfin_functions_cpp.cpp
 
   \brief This file creates a shared library with the Python bindings for
   the C++ dolfin-based functions.
 
   \namespace dnt
-  \sa dolfin.h, dolfin.cpp, segmentedarraypair_cpp.cpp
+  \sa dolfin_functions.h, dolfin_functions.cpp, segmentedarraypair_cpp.cpp
 
-  This file contains the Python-to-C++ bindings allows access to the C++ versions of functions
-  defined in dolfin.cpp.
+  This file contains the Python-to-C++ bindings allows access to the C++ versions of
+  functions defined in dolfin_functions.cpp.
 
 */
 
-#include "dolfin.h"
+#include "dolfin_functions.h"
 
 namespace py = pybind11;
 
@@ -65,11 +65,14 @@ namespace dnt {
   } // anonymous namespace
 
   // Create a variable 'm' of type py::module
-  PYBIND11_MODULE(dolfin_cpp, m) {
+  PYBIND11_MODULE(dolfin_functions_cpp, m) {
+
+    // C++ functions defined in dolfin_functions.cpp:    
 
     m.def("cell_contains_point", &cell_contains_point);
-
-    // Call the C++ functions defined in dolfin.cpp
+    m.def("find_facet", &find_facet);
+  
+    // Call the C++ functions defined in dolfin_functions.cpp
   
     //  void dolfin_DnT_pstruct_instances()
     dolfin::Mesh mesh;
@@ -78,7 +81,7 @@ namespace dnt {
     const unsigned int* vertices(nullptr);
     double* point(nullptr);
 
-    // Do these calls need to be inside the MODULE?
+    // Is this needed?
     cell_contains_point(meshRef, vertices, point);
   }
 

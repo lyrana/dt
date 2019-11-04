@@ -206,7 +206,7 @@ class TestChargeDensity(unittest.TestCase):
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
 
         pmesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
-#        pmesh2d_M.compute_cell_vertex_dict()
+#        pmesh2d_M.compute_cell_vertices_dict()
 #        pmesh2d_M.compute_cell_dict()
 
         # Put 3 particles inside the meshed region
@@ -433,7 +433,7 @@ class TestChargeDensity(unittest.TestCase):
 
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xyz'
-        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+#        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
 

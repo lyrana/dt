@@ -35,7 +35,7 @@ class TestParticleCellIndex(unittest.TestCase):
         pin.precision = np_m.float64
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xyz'
-        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+#        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = np_m.float64
 
@@ -174,7 +174,7 @@ class TestParticleCellIndex(unittest.TestCase):
         umi2D.cells_on_side = (4, 4)
         # Create mesh
         plotFlag = False; self.pmesh2D = UserMesh_C(umi2D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag); plotFlag = False
-#        self.mesh2D.compute_cell_vertex_dict()
+#        self.mesh2D.compute_cell_vertices_dict()
 #        self.mesh2D.compute_cell_dict()
 
         # 3D mesh input
@@ -184,8 +184,8 @@ class TestParticleCellIndex(unittest.TestCase):
         umi3D.cells_on_side = (4, 4, 4)
         # Create mesh
         self.pmesh3D = UserMesh_C(umi3D, compute_tree=True, plot_flag=plotFlag)
-#        self.pmesh3D.compute_cell_entity_index_dict('vertex')
-        self.pmesh3D.compute_cell_vertex_dict()
+#        self.pmesh3D.compute_cell_entity_indices_dict('vertex')
+        self.pmesh3D.compute_cell_vertices_dict()
         self.pmesh3D.compute_cell_dict()
 
         # pmesh is the owner of the compute_index function?
@@ -214,8 +214,8 @@ class TestParticleCellIndex(unittest.TestCase):
         # 1D mesh
 
         # Test vertex dictionary for vertex 3
-#        print 'vertex 3 is in cells', self.pmesh1D.vertex_cell_dict[3]
-        self.assertEqual([2, 3], self.pmesh1D.vertex_cell_dict[3], msg = "cell list for vertex 3 is not correct")
+#        print 'vertex 3 is in cells', self.pmesh1D.vertex_cells_dict[3]
+        self.assertEqual([2, 3], self.pmesh1D.vertex_cells_dict[3], msg = "cell list for vertex 3 is not correct")
 
         # Compute a cell index by locating the cell that contains
         # the cell midpoint using the BB tree.  Compare that to the
@@ -237,10 +237,10 @@ class TestParticleCellIndex(unittest.TestCase):
         # 2D mesh
 
         # Test vertex dictionary for vertex 8 and vertex 20
-#        print 'vertex 20 is in cells', self.pmesh2D.vertex_cell_dict[20]
-        self.assertEqual([25], self.pmesh2D.vertex_cell_dict[20], msg = "cell list for vertex 20 is not correct")
-#        print 'vertex 8 is in cells', self.pmesh2D.vertex_cell_dict[8]
-        self.assertEqual([4, 5, 7, 12, 14, 15], self.pmesh2D.vertex_cell_dict[8], msg = "cell list for vertex 8 is not correct")
+#        print 'vertex 20 is in cells', self.pmesh2D.vertex_cells_dict[20]
+        self.assertEqual([25], self.pmesh2D.vertex_cells_dict[20], msg = "cell list for vertex 20 is not correct")
+#        print 'vertex 8 is in cells', self.pmesh2D.vertex_cells_dict[8]
+        self.assertEqual([4, 5, 7, 12, 14, 15], self.pmesh2D.vertex_cells_dict[8], msg = "cell list for vertex 8 is not correct")
 
         # Compute a cell index by locating the cell that contains
         # the cell midpoint using the BB tree.  Compare that to the
@@ -332,7 +332,7 @@ class TestParticleCellIndex(unittest.TestCase):
                         pseg[ip]['cell_index'] = pmesh_M.compute_cell_index(pseg[ip])
 #                        print("Coordinates of", pseg[ip], "are in cell", pseg[ip]['cell_index'])
                         if pseg[ip]['cell_index'] != Mesh_C.NO_CELL:
-#                            cell_vertices = pmesh_M.cell_entity_index_dict['vertex'][pseg[ip]['cell_index']]
+#                            cell_vertices = pmesh_M.cell_entity_indices_dict['vertex'][pseg[ip]['cell_index']]
                             # Look up the cell index in the particle data list
                             c = pmesh_M.cell_dict[pseg[ip]['cell_index']]
                         else:

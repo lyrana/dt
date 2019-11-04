@@ -18,6 +18,9 @@ from RecordedData_Module import *
 #STARTCLASS
 class Vec_C(object):
     """ Creates a 1, 2, or 3D vector.
+
+        The Vec_C class has to 3 attributes, x, y, and z.
+
     """
 
     def __init__(self, dimension, values):
@@ -56,8 +59,8 @@ class TestParticleDeletion(unittest.TestCase):
         pin.particle_integration_loop = 'loop-on-particles'
 
         pin.coordinate_system = 'cartesian_xyz'
-# TODO: Set these based on the coordinate_system:
-        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+# These are set based on the coordinate_system:
+#        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
 
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = numpy.float64
