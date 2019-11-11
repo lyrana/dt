@@ -16,12 +16,16 @@ import matplotlib.pyplot as mplot_m
 
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
-# Use the C++ functions in the mesh_entity_arrays_cpp.so library
-import mesh_entity_arrays_cpp
+# Use the C++ functions in the mesh_entity_arrays_solib.so library
+import mesh_entity_arrays_solib
 
 
 class TestMeshFunctions(unittest.TestCase):
     """Test C++ algorithms that create lookup tables for meshes.
+
+       The lookup tables are members of the MeshEntityArrays class:
+         cell_neighbors_array (accessed using 
+          
     
      """
     
@@ -55,7 +59,7 @@ class TestMeshFunctions(unittest.TestCase):
         tDim = mesh_df.topology().dim()
         nFacets = tDim + 1
         meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
-        meaCtor = getattr(mesh_entity_arrays_cpp, meaClass)
+        meaCtor = getattr(mesh_entity_arrays_solib, meaClass)
         
         # Call the MEA constructor
         meaObj = meaCtor(mesh_df, compute_particle_mesh_maps=True)        
@@ -108,14 +112,14 @@ class TestMeshFunctions(unittest.TestCase):
         tDim = mesh_df.topology().dim()
         nFacets = tDim + 1
         meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
-        meaCtor = getattr(mesh_entity_arrays_cpp, meaClass)
+        meaCtor = getattr(mesh_entity_arrays_solib, meaClass)
 
         # Call the MEA constructor
-        print("Call the MEA constructor...")
+        # print("Calling the MEA constructor...")
         meaObj = meaCtor(mesh_df, compute_particle_mesh_maps=True)        
         
         # Obtain the list of facet-normals for cell 0:
-        print("Obtain the facet-normals for cell 0...")
+        # print("Obtain the facet-normals for cell 0...")
         cell_0_facet_normals_list = meaObj.get_cell_facet_normals(0) # Unit vectors normal to cell facets
 
         # Reshape the list to get nFacet vectors, with 3 components each:

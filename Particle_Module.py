@@ -312,9 +312,9 @@ class Particle_C(object):
             # If using C++ SAPs:
             if self.use_cpp_movers is True:
                 # Create the SAPs in C++ (segmentedarraypair_cpp.so)
-                import segmentedarraypair_cpp
+                import segmentedarraypair_solib
+                import mesh_entity_arrays_solib
 #                global p_cpp
-                  
 #            if useCplusplus is True:
 #                print(fncName, "\tDnT: Using C++ SAPs for particles")
                 
@@ -322,15 +322,15 @@ class Particle_C(object):
                 # avoids having to call back to Python from C++ to manage the
                 # storage.
                 if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
-                    import p_cpp_cartesian_x as cppModule
-                    self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
+                    import p_cartesian_x_solib as cppModule
+                    self.pseg_arr[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xy':
-                    import p_cpp_cartesian_xy as cppModule
-                    self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
+                    import p_cartesian_xy_solib as cppModule
+                    self.pseg_arr[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xyz':
-                    import p_cpp_cartesian_xyz as cppModule
+                    import p_cartesian_xyz_solib as cppModule
                     self.cpp_module = cppModule
-                    self.pseg_arr[speciesName] = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
+                    self.pseg_arr[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
             else:
             # If using Python-created SAPs:
                 import SegmentedArrayPair_Module as SA_M
@@ -747,6 +747,8 @@ class Particle_C(object):
         
         if self.pmesh_M is not None:
             for sn in self.species_names:
+# There could be a branch to a C++ particle loop here, if use_cpp_movers is True. Then we
+# wouldn't need to compute the Python version of cell_dict{} (needed by is_inside()).
                 psa = self.pseg_arr[sn] # segmented array for this species
                 (npSeg, pseg) = psa.init_out_loop()
 
@@ -755,7 +757,7 @@ class Particle_C(object):
                     for ip in range(npSeg): # Could use for p in pseg[0:npSeg] instead
                         
                         pseg[ip]['cell_index'] = self.pmesh_M.compute_cell_index(pseg[ip])
-#                        print('ip, index =', ip, pseg[ip]['cell_index'])
+                        print('ip, index =', ip, pseg[ip]['cell_index'])
 # Check that is_inside() confirms the cell index:
                         if not self.pmesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']):
 #                        if not self.pmesh_M.is_inside_CPP(pseg[ip], pseg[ip]['cell_index']):
@@ -788,7 +790,7 @@ class Particle_C(object):
             if self.use_cpp_movers is True:
                 # Create a MeshEntityArrays object, which has non-standard mesh entity
                 # lists needed by particle movers.
-                import mesh_entity_arrays_cpp
+                import mesh_entity_arrays_solib
 
                 pmesh_df = self.pmesh_M.mesh
                 # Create the name of the specialized MeshEntityArrays class with the right
@@ -796,14 +798,14 @@ class Particle_C(object):
                 tDim = pmesh_df.topology().dim()
                 nFacets = tDim + 1
                 meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
-                meaCtor = getattr(mesh_entity_arrays_cpp, meaClass)
-                self.mesh_entity_arrays = meaCtor(pmesh_df, compute_particle_mesh_maps=True)
+                meaCtor = getattr(mesh_entity_arrays_solib, meaClass)
+                self.pmesh_M.mesh_entity_arrays = meaCtor(pmesh_df, compute_particle_mesh_maps=True)
             else:
                 self.pmesh_M.compute_cell_vertices_dict() # Tested, but not used anywhere!
-                self.compute_cell_entity_indices_dict('facet') # Get facet indices from a cell index                
+                self.pmesh_M.compute_cell_entity_indices_dict('facet') # Get facet indices from a cell index                
                 self.pmesh_M.compute_cell_facet_normals_dict()
                 self.pmesh_M.compute_cell_neighbors_dict()
-                self.compute_cell_volume_dict() # Compute cell volumes indexed by cell index
+                self.pmesh_M.compute_cell_volume_dict() # Compute cell volumes indexed by cell index
         else:
             errorMsg = "%s\tDnT: No particle mesh has been provided. Cannot continue." % (fncName)
             raise RuntimeError(errorMsg)

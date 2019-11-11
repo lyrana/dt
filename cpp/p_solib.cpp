@@ -28,7 +28,8 @@ namespace dnt {
     // Interface to the C++ particle-advance functions
 
     m.def("move_charged_species_in_uniform_fields", &move_charged_species_in_uniform_fields<Ptype::PARTICLE_TYPE>);
-    m.def("move_neutral_species", &move_neutral_species<Ptype::PARTICLE_TYPE>);
+    //    m.def("move_neutral_species", &move_neutral_species<Ptype::PARTICLE_TYPE>);
+    m.def("move_neutral_species", &move_neutral_species<Ptype::PARTICLE_TYPE, CELL_FACET_NUMBER>);
     
   
   } // ENDDEF: PYBIND11_MODULE()

@@ -62,7 +62,7 @@ class TestCppParticleMigration(unittest.TestCase):
         pin.force_components = ['x', 'y',]
         """
         pin.force_precision = np_m.float64
-        pin.use_cpp_movers = True        
+        pin.use_cpp_movers = True
 
         # Give the properties of the particle species.  The charges and masses are
         # normally those of the physical particles, and not the computational
@@ -213,7 +213,10 @@ class TestCppParticleMigration(unittest.TestCase):
         #self.particle_P.pmesh_M = self.pmesh1D
         # Need to compute the mesh facet-normals for particle movers
         
-        self.particle_P.initialize_particle_mesh(self.pmesh1D);
+        self.particle_P.initialize_particle_mesh(self.pmesh1D); # This assigns pmesh_M
+
+        # cell_dict{} is needed by the Python version of is_inside()
+        self.particle_P.pmesh_M.compute_cell_dict();
         
 #        self.particle_P.pmesh_M.compute_cell_facet_normals_dict(use_cpp=True)
 #    def compute_cell_facet_normals_dict(self, use_cpp=False):
@@ -265,7 +268,6 @@ class TestCppParticleMigration(unittest.TestCase):
         # Integrate for n_timesteps
         print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
         for istep in range(ctrl.n_timesteps):
-#            self.particle_P.move_neutral_particles_CPP(ctrl)
             print(fncName, "istep:", istep)
             self.particle_P.move_neutral_particles(ctrl)
 

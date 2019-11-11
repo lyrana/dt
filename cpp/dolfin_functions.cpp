@@ -14,8 +14,13 @@
 
 */
 
+#include "MeshEntityArrays.h"
 #include "dolfin_functions.h"
 #include "predicates.h"
+
+// uncomment to disable assert()
+// #define NDEBUG
+#include <cassert>
 
 namespace py = pybind11;
 
@@ -203,12 +208,20 @@ namespace dnt
   {
     // Get attributes needed from Mesh_C arg
     auto mesh = mesh_M.attr("mesh").cast<dolfin::Mesh>();
+    /*
     auto cellFacetNormalsDictCap = mesh_M.attr("cell_facet_normals_dict").cast<py::capsule>();
     std::cout << "find_facet(): The name of the capsule is " << cellFacetNormalsDictCap.name() << std::endl;        
     std::map<int, double*>* cellFacetNormalsDict = cellFacetNormalsDictCap;
-
-    auto NO_FACET = mesh_M.attr("NO_FACET").cast<int>(); // NO_FACET is defined in Dolfin_Module.py
-
+    */
+    // The facet-normals are in mesh_M.attr("mesh_entity_arrays"). The array
+    // containing them is templated on the number of facets in the cell, so they are
+    // accessed below, depending on the cell type. The vectors are laid out as n0,
+    // n1, ... to the number of facets, where the n's are the normals. The normals
+    // are 3-vectors, regardless of the geometric dimension.
+    size_t cellFNVdim = 3; // Number of doubles per facet-normal vector (FNV).
+    
+    auto NO_FACET = mesh_M.attr("NO_FACET").cast<int>(); // NO_FACET is a static class constant
+                                                         // of Mesh_C defined in Dolfin_Module.py
     const std::size_t gDim = mesh.geometry().dim(); // The geometric dimension of the mesh
 
     int facet(NO_FACET);
@@ -245,13 +258,15 @@ namespace dnt
     // The coordinates are laid out as (x0,y0,z0), (x1,y1,z1), ... for the vertices
     cell.get_vertex_coordinates(vertex_coords);
     
-    // The facet-normals are laid out as n0, n1, ... to the number of facets, where
-    // the n's are the normals. The normals are 3-vectors.
-    auto facetNormalVectors = (*cellFacetNormalsDict)[cell_index];
-
     if (gDim == 3)
       {
         // 3D mesh: There are 4 facets indexed 0,1,2,3.
+
+        // The facet-normals are laid out as n0, n1, n2, n3, where
+        // the n's are the normals. The normals are 3-vectors.
+        // The type here is std::array<double, N_CELL_FACETS*3>. The 3 is for 3-vector.
+        auto meshEntityArrays = mesh_M.attr("mesh_entity_arrays").cast<MeshEntityArrays<4> *>();
+        auto facetNormalVectors = meshEntityArrays->get_cell_facet_normals(cell_index);
 
         // Test if the plane of facet 0 is crossed:
         auto n0 = &facetNormalVectors[0];
@@ -284,7 +299,7 @@ namespace dnt
           }
 
         // Next, test if the plane of facet 1 is crossed:
-        auto n1 = &facetNormalVectors[1*gDim];
+        auto n1 = &facetNormalVectors[1*cellFNVdim];
         auto n1DotDx = n1[0]*dx[0] + n1[1]*dx[1] + n1[2]*dx[2];
         if (n1DotDx > 0)
           {
@@ -310,7 +325,7 @@ namespace dnt
           }
 
         // Next, test if the plane of facet 2 is crossed:
-        auto n2 = &facetNormalVectors[2*gDim];
+        auto n2 = &facetNormalVectors[2*cellFNVdim];
         auto n2DotDx = n2[0]*dx[0] + n2[1]*dx[1] + n2[2]*dx[2];
         if (n2DotDx > 0)
           {
@@ -336,7 +351,7 @@ namespace dnt
           }
         
         // Next, test if the plane of facet 3 is crossed:
-        auto n3 = &facetNormalVectors[3*gDim];
+        auto n3 = &facetNormalVectors[3*cellFNVdim];
         auto n3DotDx = n3[0]*dx[0] + n3[1]*dx[1] + n3[2]*dx[2];
         if (n3DotDx > 0)
           {
@@ -360,26 +375,187 @@ namespace dnt
                 dxFraction = distanceToFacet/n3DotDx;
               }
           }
-        // Change range of dxFraction:
+        // Check range of dxFraction:
         if (dxFraction > 1.0 || dxFraction < 0.0)
           {
             std::cout << "dolfin_functions.cpp::find_facet: !!! Bad value for dxFraction: " << dxFraction << std::endl;
             exit(EXIT_FAILURE);
           }
         
-        return py::make_tuple(facet, dxFraction, facetNormalVectors[facet]);
+        return py::make_tuple(facet, dxFraction, facetNormalVectors[facet*cellFNVdim]);
                                      
-      }
+      } // if (gDim == 3)
     else if (gDim == 2)
       {
-        //        dxDotdx = dx[0]*dx[0] + dx[1]*dx[1];
-      }
+        // 2D mesh: There are 3 facets indexed 0,1,2.
+
+        // The facet-normals are laid out as n0, n1, n2, where
+        // the n's are the normals. The normals are always 3-vectors.
+        // The type here is std::array<double, N_CELL_FACETS*3>
+        auto meshEntityArrays = mesh_M.attr("mesh_entity_arrays").cast<MeshEntityArrays<3> *>();
+        auto facetNormalVectors = meshEntityArrays->get_cell_facet_normals(cell_index);
+        
+        // Test if the plane of facet 0 is crossed:
+        auto n0 = &facetNormalVectors[0];
+        auto n0DotDx = n0[0]*dx[0] + n0[1]*dx[1];
+        
+        if (n0DotDx > 0)
+          {
+            // The vector from the starting point to a vertex in the facet plane. facet 0 is opposite vertex 0, so use vertex 1 here:
+            // vecToFacet = np_m.subtract(vertex_coords[1], x0)
+            auto vertex1 = &vertex_coords[1*gDim]; // Coordinates for vertex 1
+            vecToFacet[0] = vertex1[0] - x0[0];
+            vecToFacet[1] = vertex1[1] - x0[1];
+              
+            // The normal distance to the facet plane
+            // distanceToFacet = np_m.dot(facetNormalVectors[0], vecToFacet)
+            auto distanceToFacet = n0[0]*vecToFacet[0] + n0[1]*vecToFacet[1];
+//                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
+            if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
+              {
+                std::cout << "dolfin_functions.cpp::find_facet 0: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+              distanceToFacet = -distanceToFacet;
+              }
+            if (distanceToFacet < dxFraction*n0DotDx)
+              {
+                facet = 0; // The plane of facet 0 was crossed
+                dxFraction = distanceToFacet/n0DotDx;
+              }
+          }
+
+        // Next, test if the plane of facet 1 is crossed:
+        auto n1 = &facetNormalVectors[1*cellFNVdim];
+        auto n1DotDx = n1[0]*dx[0] + n1[1]*dx[1];
+        if (n1DotDx > 0)
+          {
+            auto vertex2 = &vertex_coords[2*gDim]; // Coordinates for vertex 2
+            vecToFacet[0] = vertex2[0] - x0[0];
+            vecToFacet[1] = vertex2[1] - x0[1];
+              
+            // The normal distance to the facet plane
+            // distanceToFacet = np_m.dot(facetNormalVectors[0], vecToFacet)
+            auto distanceToFacet = n1[0]*vecToFacet[0] + n1[1]*vecToFacet[1];
+//                print "f1 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
+            if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
+              {
+                std::cout << "dolfin_functions.cpp::find_facet 1: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+              distanceToFacet = -distanceToFacet;
+              }
+            if (distanceToFacet < dxFraction*n1DotDx)
+              {
+                facet = 1; // The plane of facet 1 was crossed
+                dxFraction = distanceToFacet/n1DotDx;
+              }
+          }
+
+        // Next, test if the plane of facet 2 is crossed:
+        auto n2 = &facetNormalVectors[2*cellFNVdim];
+        auto n2DotDx = n2[0]*dx[0] + n2[1]*dx[1];
+        if (n2DotDx > 0)
+          {
+            auto vertex3 = &vertex_coords[3*gDim]; // Coordinates for vertex 3
+            vecToFacet[0] = vertex3[0] - x0[0];
+            vecToFacet[1] = vertex3[1] - x0[1];
+              
+            // The normal distance to the facet plane
+            // distanceToFacet = np_m.dot(facetNormalVectors[0], vecToFacet)
+            auto distanceToFacet = n2[0]*vecToFacet[0] + n2[1]*vecToFacet[1];
+//                print "f2 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
+            if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
+              {
+                std::cout << "dolfin_functions.cpp::find_facet 2: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+              distanceToFacet = -distanceToFacet;
+              }
+            if (distanceToFacet < dxFraction*n2DotDx)
+              {
+                facet = 2; // The plane of facet 2 was crossed
+                dxFraction = distanceToFacet/n2DotDx;
+              }
+          }
+        
+        // Check range of dxFraction:
+        if (dxFraction > 1.0 || dxFraction < 0.0)
+          {
+            std::cout << "dolfin_functions.cpp::find_facet: !!! Bad value for dxFraction: " << dxFraction << std::endl;
+            exit(EXIT_FAILURE);
+          }
+        
+        return py::make_tuple(facet, dxFraction, facetNormalVectors[facet*cellFNVdim]);
+                                     
+      } // else if (gDim == 2)
     else if (gDim == 1)
       {
-        //        dxDotdx = dx[0]*dx[0];
-      }
+        // 2D mesh: There are 3 facets indexed 0,1,2.
+
+        // The facet-normals are laid out as n0, n1 where
+        // the n's are the normals. The normals are always 3-vectors.
+        // The type here is std::array<double, N_CELL_FACETS*3>
+        auto meshEntityArrays = mesh_M.attr("mesh_entity_arrays").cast<MeshEntityArrays<2> *>();
+        auto facetNormalVectors = meshEntityArrays->get_cell_facet_normals(cell_index);
+
+        // Test if the plane of facet 0 is crossed:
+        auto n0 = &facetNormalVectors[0];
+        auto n0DotDx = n0[0]*dx[0];
+        
+        if (n0DotDx > 0)
+          {
+            // The vector from the starting point to a vertex in the facet plane. facet 0 is opposite vertex 0, so use vertex 1 here:
+            auto vertex1 = &vertex_coords[1*gDim]; // Coordinates for vertex 1
+            vecToFacet[0] = vertex1[0] - x0[0];
+               
+            // The normal distance to the facet plane
+            // distanceToFacet = np_m.dot(facetNormalVectors[0], vecToFacet)
+            auto distanceToFacet = n0[0]*vecToFacet[0];
+//                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
+            if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
+              {
+                std::cout << "dolfin_functions.cpp::find_facet 0: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+              distanceToFacet = -distanceToFacet;
+              }
+            if (distanceToFacet < dxFraction*n0DotDx)
+              {
+                facet = 0; // The plane of facet 0 was crossed
+                dxFraction = distanceToFacet/n0DotDx;
+                assert(dxFraction >= 0 && dxFraction <= 1.0);
+                return py::make_tuple(facet, dxFraction, facetNormalVectors[facet*cellFNVdim]);
+              }
+          }
+
+        // Next, test if the plane of facet 1 is crossed:
+        auto n1 = &facetNormalVectors[1*cellFNVdim];
+        auto n1DotDx = n1[0]*dx[0];
+        if (n1DotDx > 0)
+          {
+            auto vertex2 = &vertex_coords[2*gDim]; // Coordinates for vertex 2
+            vecToFacet[0] = vertex2[0] - x0[0];
+              
+            // The normal distance to the facet plane
+            auto distanceToFacet = n1[0]*vecToFacet[0];
+//                print "f1 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
+            if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
+              {
+                std::cout << "dolfin_functions.cpp::find_facet 1: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+              distanceToFacet = -distanceToFacet;
+              }
+            if (distanceToFacet < dxFraction*n1DotDx)
+              {
+                facet = 1; // The plane of facet 1 was crossed
+                dxFraction = distanceToFacet/n1DotDx;
+                assert(dxFraction >= 0 && dxFraction <= 1.0);                
+                return py::make_tuple(facet, dxFraction, facetNormalVectors[facet*cellFNVdim]);
+              }
+          }
+
+        std::cout << "dolfin_functions.cpp::find_facet() for gDim = 1: Should never get here!!!" << std::endl;
+        exit(EXIT_FAILURE);
+        // return py::make_tuple(facet, dxFraction, facetNormalVectors[facet*cellFNVdim]);
+                                     
+      } // else if (gDim == 1)
+
+    std::cout << "End of dolfin_functions.cpp::find_facet(). Should never get here!!!" << std::endl;
+    exit(EXIT_FAILURE);
     
-    return py::make_tuple(facet, dxFraction, facetNormalVectors[facet]);
+    return py::make_tuple(NO_FACET, 0.0, nullptr); // Shouldn't reach this. This stops a compiler warning.
     
   } // ENDDEF: py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index)
   

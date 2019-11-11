@@ -1,4 +1,4 @@
-/*! \file segmentedarraypair_cpp.cpp
+/*! \file segmentedarraypair_solib.cpp
 
   \brief This file creates a shared library with the Python bindings for
   SegmentedArray storage that's created in C++.
@@ -116,7 +116,7 @@ namespace dnt {
   // Interface to the C++ class SegmentedArrayPair
 
   // Create a variable 'm' of type py::module
-  PYBIND11_MODULE(segmentedarraypair_cpp, m)
+  PYBIND11_MODULE(segmentedarraypair_solib, m)
   {
 
 //    m.def("divide_by_cell_volumes", &divide_by_cell_volumes);
@@ -167,7 +167,7 @@ namespace dnt {
     makeSegmentedArrayPair<Ptype::cartesian_xy>(m, "cartesian_xy");
     makeSegmentedArrayPair<Ptype::cartesian_xyz>(m, "cartesian_xyz");
       
-  } // ENDDEF: PYBIND11_MODULE(segmentedarraypair_cpp, m)
+  } // ENDDEF: PYBIND11_MODULE(segmentedarraypair_solib, m)
 
   
 } // namespace dnt

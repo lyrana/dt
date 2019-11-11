@@ -65,7 +65,7 @@ namespace dnt {
   } // anonymous namespace
 
   // Create a variable 'm' of type py::module
-  PYBIND11_MODULE(dolfin_functions_cpp, m) {
+  PYBIND11_MODULE(dolfin_functions_solib, m) {
 
     // C++ functions defined in dolfin_functions.cpp:    
 

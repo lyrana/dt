@@ -42,8 +42,9 @@
 #include <tuple>
 //#include "pstruct.h"
 #include "SegmentedArrayPair.h"
+#include "MeshEntityArrays.h"
 
-#include "dolfin.h"
+#include "dolfin_functions.h"
 
 //using namespace std; 
 
@@ -87,17 +88,19 @@ namespace dnt
                                  current cell.
 
   */
-  template <Ptype PT>
+  //  template <Ptype PT>
+  template <Ptype PT, size_t N_CELL_FACETS>
     void move_neutral_species(py::object particle_P, py::object species_name, py::object ctrl)
   {
 
-    //    std::cout << "Hello from move_neutral_species@0" << std::endl;
+    std::cout << "Hello from move_neutral_species@0" << std::endl;
+    std::cout << "This is species " << std::string(py::str(species_name)) << std::endl;
 
     // Get attributes needed from Particle_C arg
     auto pmesh_M = particle_P.attr("pmesh_M");
     auto mesh = pmesh_M.attr("mesh").cast<dolfin::Mesh>();
     auto tDim = mesh.topology().dim();
-    auto meshEntityArrays = pmesh_M.attr("mesh_entity_arrays").cast<MeshEntityArrays*>();
+    auto meshEntityArrays = pmesh_M.attr("mesh_entity_arrays").cast<MeshEntityArrays<N_CELL_FACETS> *>();
     auto NO_CELL = pmesh_M.attr("NO_CELL").cast<int>();
     auto NO_FACET = pmesh_M.attr("NO_FACET").cast<int>();
 
@@ -105,7 +108,7 @@ namespace dnt
     auto dt = ctrl.attr("dt").cast<double>(); // This does a COPY.
     auto step = ctrl.attr("timeloop_count").cast<int>();
     auto t = ctrl.attr("time").cast<double>();
-    auto MAX_FACET_CROSS_COUNT = ctrl.attr("MAX_FACET_CROSS_COUNT").cast<int>();
+    auto MAX_FACET_CROSS_COUNT = ctrl.attr("MAX_FACET_CROSS_COUNT").cast<size_t>();
     
     //    std::cout << "NO_FACET " << NO_FACET << std::endl;
     
@@ -273,7 +276,8 @@ namespace dnt
             // dolfin::Cell pcell(mesh, pCellIndex);
             // dolfin::Cell* pcellPtr = new dolfin::Cell(mesh, pCellIndex);
             pcellPtr = new dolfin::Cell(mesh, pCellIndex);
-            auto vertices = (*pcellPtr).entities(0);
+            //            auto vertices = (*pcellPtr).entities(0);
+            auto vertices = pcellPtr->entities(0);
 
             // std::cout << "vertices " << vertices[0] << ", " << vertices[1] << std::endl;
             
@@ -320,7 +324,7 @@ namespace dnt
 
                 auto cFacet = facetTupl[0].cast<int>();
                 auto dxFraction = facetTupl[1].cast<double>();
-                auto facetNormalVectors = facetTupl[2].cast<double*>();
+                //                auto facetNormalVectors = facetTupl[2].cast<double*>();
                 
                 if (cFacet != NO_FACET)
                   {
@@ -337,8 +341,9 @@ namespace dnt
                     // Newer version that calls directly to C++ entities().
                     // Create a view to this cell in the dolfin::Mesh object
                     // dolfin::Cell pcell(mesh, pCellIndex);
-                    auto mFacetArray = (*pcellPtr).entities(tDim-1); // The mesh-level indices of the facets of this cell.
-                    size_t mFacet = mFacetArray[cFacet]; // The mesh-level index of the facet just crossed.
+                    //                    auto mFacetArray = (*pcellPtr).entities(tDim-1); // The mesh-level indices of the facets of this cell.
+                    auto mFacetArray = pcellPtr->entities(tDim-1); // The mesh-level indices of the facets of this cell.
+                    int mFacet = mFacetArray[cFacet]; // The mesh-level index of the facet just crossed.
 
                     // mFacet should never be the same as the last facet crossed: check this
                     if (mFacet == mLastFacet) // If the particle has crossed the same facet twice in succession, there's an error:
@@ -371,7 +376,8 @@ namespace dnt
                     /*   } */
 
                     // Look up the cell index of the new cell.
-                    pCellIndexNew = meshEntityArrays->cell_neighbors_dict[pCellIndex][cFacet];
+                    //                    auto pCellIndexNew = meshEntityArrays->cell_neighbors_array[pCellIndex][cFacet];
+                    auto pCellIndexNew = meshEntityArrays->get_cell_neighbors(pCellIndex)[cFacet];
 
                     /* If the particle has left the mesh, and has been deleted, end
                        the search.  If it hasn't been deleted (e.g., reflected),
@@ -379,9 +385,9 @@ namespace dnt
                     */
                     if (pCellIndexNew == NO_CELL)
                       {
-                        if (psegOut[ipOut].bitflags_ & Pstruct<PT>.DELETE_FLAG == 1)
+                        if ((psegOut[ipOut].bitflags_ & Pstruct<PT>::DELETE_FLAG) == 0b1)
                           {
-                            psegOut[ipOut].cell_index_ = NO_CELL
+                            psegOut[ipOut].cell_index_ = NO_CELL;
                               break; // Breaks out of the facet-crossing 'while' loop.
                           }
                         // else: The boundary did not absorb the particle, so the
@@ -399,18 +405,21 @@ namespace dnt
                     std::string errorMsg = "In move_neutral_particle_species(): The cell index of the facet crossed is NO_FACET (" + std::to_string(cFacet) + "). This should not happen since the particle has left its initial cell!";
                     exit(EXIT_FAILURE);
                   } // END: if (cFacet != NO_FACET)
-                
+
+                // The following is needed in C++ because of cell_contains_point() usage.
                 // Prepare for the next 'while' iteration: need the new cell index and the cell vertices:
                 delete pcellPtr; // To avoid a leak
                 pcellPtr = new dolfin::Cell(mesh, pCellIndex);
-                vertices = (*pcellPtr).entities(0);
+                //                vertices = (*pcellPtr).entities(0);
+                vertices = pcellPtr->entities(0);
                 
                 particlePosition[0] = psegOut[ipOut].x_;
                 particlePosition[1] = psegOut[ipOut].y_;
                 particlePosition[2] = psegOut[ipOut].z_;
               } // END: while (! cell_contains_point(mesh, vertices, particlePosition))
             delete pcellPtr; // Not needed past this point.
-//end
+//HERE
+// Add missing code back here.
         
             /*
               Check if we've reached the end of this segment.  If so, we need to start
@@ -666,11 +675,11 @@ namespace dnt
     :cvar double tStart: The time at which a particle starts its move in the
                                  current cell.
 
-  */
   void move_neutral_species(SegmentedArrayPair<Ptype::cartesian_xyz>& psa)
   {
     
   }
+  */
   
 } // namespace dnt
 

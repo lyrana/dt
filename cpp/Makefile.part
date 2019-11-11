@@ -1,21 +1,22 @@
-# Make the Python module called p_cpp_cartesian_x
+# Make the Python module called p_cartesian_xyz_solib
 
-PARTICLE_MODULE_PREFIX = p_cpp_
+PARTICLE_MODULE_PREFIX = p_
 
 # Set the particle type here
 #PARTICLE_TYPE = cartesian_x
 #PARTICLE_TYPE = cartesian_xy
 
 PARTICLE_TYPE = cartesian_xyz
+CELL_FACET_NUMBER = 2
 
-PARTICLE_MODULE_NAME = $(PARTICLE_MODULE_PREFIX)$(PARTICLE_TYPE)
+PARTICLE_MODULE_NAME = $(PARTICLE_MODULE_PREFIX)$(PARTICLE_TYPE)_solib
 
-DFLAGS = -DPARTICLE_TYPE=$(PARTICLE_TYPE) -DPARTICLE_MODULE_NAME=$(PARTICLE_MODULE_NAME)
+DFLAGS = -DPARTICLE_TYPE=$(PARTICLE_TYPE) -DCELL_FACET_NUMBER=$(CELL_FACET_NUMBER) -DPARTICLE_MODULE_NAME=$(PARTICLE_MODULE_NAME)
 
-$(PARTICLE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: Pstruct.h SegmentedArrayPair.h particle.h p_cpp.cpp dolfin_functions.o predicates.o
-	c++ $(DFLAGS) -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` /home/tph/workspace/dt/dolfin_functions_cpp.so p_cpp.cpp dolfin_functions.o predicates.o -o $(PARTICLE_MODULE_NAME)`python3-config --extension-suffix`
+$(PARTICLE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: p_solib.cpp Pstruct.h SegmentedArrayPair.h MeshEntityArrays.o dolfin_functions.o predicates.o
+	c++ $(DFLAGS) -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` p_solib.cpp MeshEntityArrays.o dolfin_functions.o predicates.o -o $(PARTICLE_MODULE_NAME)`python3-config --extension-suffix`
 
-# Particle_Module.py imports the segmentedarraypair_cpp.so library, as well as p_cpp.so
+# Particle_Module.py imports the segmentedarraypair_cpp.so library, as well as p_xxx_solib.so
 SegmentedArrayPair.h:
 	@echo "*Run Makefile.sap first*"
 	@/bin/false
@@ -28,6 +29,9 @@ predicates.o: predicates.cpp predicates.h
 	@echo "*Run Makefile.df first*"
 	@/bin/false
 
+MeshEntityArrays.o: MeshEntityArrays.h MeshEntityArrays.cpp
+	@echo "*Run Makefile.mea first*"
+	@/bin/false
 
 # p_pyb.cpython-36m-x86_64-linux-gnu.so: p_pyb.cpp particle.h
 # 	c++ -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` p_pyb.cpp -o p_pyb`python3-config --extension-suffix`
@@ -40,4 +44,4 @@ predicates.o: predicates.cpp predicates.h
 #	c++ -O0 -g -Wall -std=c++11 -fPIC -fvisibility=hidden `python3-config --cflags` test_segmented_arrays.cpp -o test_segmented_arrays `python3-config --ldflags`
 
 clean:
-	/bin/rm *.so *.o
+	/bin/rm $(PARTICLE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so

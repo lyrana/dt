@@ -24,6 +24,7 @@ from UserMesh_y_Fields_FE_XYZ_Module import *
 class TestParticleMigration(unittest.TestCase):
     """Test of tracking neutral particles that drift across the mesh.
 
+       The neutral particles are from UserParticles_3D.py.
        Meshes on 1D, 2D and 3D rectangles are used.
 
     """

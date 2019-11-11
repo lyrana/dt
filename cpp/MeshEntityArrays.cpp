@@ -257,7 +257,7 @@ namespace dnt
     for (dolfin::CellIterator cIter(_mesh); !cIter.end(); ++cIter)
       {
         auto thisCellIndex = cIter->index();
-        std::cout << "thisCellIndex " << thisCellIndex << std::endl;        
+        //        std::cout << "thisCellIndex " << thisCellIndex << std::endl;        
         std::array<double, N_CELL_FACETS*3> normals;
 
         //std::cout << "normals type is " << typeid(normals).name() << std::endl;
@@ -271,7 +271,7 @@ namespace dnt
         cell_facet_normals_array[thisCellIndex] = normals;
       }
 
-    std::cout << "cell_facet_normals_array[0] is " << cell_facet_normals_array[0][0] << " " << cell_facet_normals_array[0][1] << " " << cell_facet_normals_array[0][2] << std::endl;
+    //    std::cout << "cell_facet_normals_array[0] is " << cell_facet_normals_array[0][0] << " " << cell_facet_normals_array[0][1] << " " << cell_facet_normals_array[0][2] << std::endl;
     
     cell_facet_normals_array_initialized = true;
     
@@ -292,7 +292,7 @@ namespace dnt
     std::array<double, N_CELL_FACETS*3> MeshEntityArrays<N_CELL_FACETS>::get_cell_facet_normals(std::size_t cell_index)
     
   {
-    std::cout << "Entered get_cell_facet_normals()" << std::endl;
+    //    std::cout << "Entered get_cell_facet_normals()" << std::endl;
     
     //    std::array<double, N_CELL_FACETS*3> cellFacetNormals;
     //    std::array<std::array<double, 3>, N_CELL_FACETS> cellFacetNormals; // This messes up the storage order
@@ -302,7 +302,7 @@ namespace dnt
     
     if (cell_facet_normals_array_initialized)
       {
-        auto cellFacetNormals = cell_facet_normals_array[cell_index];
+        //        auto cellFacetNormals = cell_facet_normals_array[cell_index];
         //        auto computedNormals = cell_facet_normals_array[cell_index];
         /*
         for (size_t fi = 0; fi < N_CELL_FACETS; fi++)
@@ -325,3 +325,9 @@ namespace dnt
   // ENDDEF: get_cell_facet_normals
 
 } // namespace dnt
+
+template class dnt::MeshEntityArrays<2>;
+template class dnt::MeshEntityArrays<3>;
+template class dnt::MeshEntityArrays<4>;
+
+
