@@ -143,7 +143,7 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         umi.particle_boundary_dict = particleBoundaryDict
 
-        pmesh2D_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh2D_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         self.particle_P.pmesh_M = pmesh2D_M
 

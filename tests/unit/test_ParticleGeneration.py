@@ -98,7 +98,7 @@ class TestParticleGeneration(unittest.TestCase):
         umi1D.cells_on_side = (20,) # Need the comma to indicate a tuple
 
         ### Create the 1D particle mesh and add to the Particle_C object
-        pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
         particle_P.pmesh_M = pmesh1D
 
         ### Input for particle sources

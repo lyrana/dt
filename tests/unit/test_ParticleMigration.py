@@ -151,7 +151,7 @@ class TestParticleMigration(unittest.TestCase):
         umi1D.particle_boundary_dict = particleBoundaryDict
 
         # Create a 1D particle mesh
-        self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
+        self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
 #        self.pmesh1D.compute_cell_vertices_dict()
 #        self.pmesh1D.compute_cell_dict()
 
@@ -175,7 +175,7 @@ class TestParticleMigration(unittest.TestCase):
         umi2D.particle_boundary_dict = particleBoundaryDict
 
         # Create a 2D particle mesh
-        self.pmesh2D = UserMesh_C(umi2D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
+        self.pmesh2D = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 2D")
 #        self.pmesh2D.compute_cell_vertices_dict()
 #        self.pmesh2D.compute_cell_dict()
 
@@ -580,7 +580,7 @@ class TestParticleMigration(unittest.TestCase):
             for istep in xrange(ctrl.n_timesteps):
                 self.particle_P.move_particles_without_fields(ctrl.dt, mesh_M=mesh_M)
 
-                    #self.assertTrue(mesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")
+                    #self.assertTrue(mesh_M.is_inside_cell(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")
 
         return
 #    def test_1_particle_migration(self):ENDDEF

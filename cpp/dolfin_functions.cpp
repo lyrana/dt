@@ -5,9 +5,9 @@
   The following C++ functions are defined:
     divide_by_cell_volumes()
     interpolate_field_to_points()
-    cell_contains_point()
+    is_inside_vertices()
     find_facet()
-    XXparticle_stays_in_cell()
+    XXparticle_stays_in_cell()XX
 
   \namespace dnt
   \sa dolfin_functions.h, dolfin_functions_cpp.cpp
@@ -36,12 +36,12 @@ double vecToFacet[3];
 
 namespace dnt
 {
-  // BEGINDEF: bool cell_contains_point(dolfin::Mesh& mesh, const unsigned int* vertices, double* point)
+  // BEGINDEF: bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point)
   //! Test whether a point lies within the cell defined by the vertices.
   /*!
 
   */
-  bool cell_contains_point(dolfin::Mesh& mesh,
+  bool is_inside_vertices(dolfin::Mesh& mesh,
                            const unsigned int* vertices,
                            double* point)
   {
@@ -51,7 +51,7 @@ namespace dnt
 
     //v1:    auto v = vertices.unchecked<1>(); // <1> is the number of array indices. See pybind11 docs.
 
-    // 1D cell
+    // 1D mesh
     if (tDim == 1 && gDim == 1)
       {
         //v1:        auto v0 = v(0);
@@ -61,14 +61,14 @@ namespace dnt
         double p0 = mesh.coordinates()[v0];
         double p1 = mesh.coordinates()[v1];
 
-        std::cout << "dolfin_functions.cpp::cell_contains_point: point[0] = " << point[0] << " p0 = " << p0 << ", p1 = " << p1 << std::endl;
+        //        std::cout << "dolfin_functions.cpp::is_inside_vertices: point[0] = " << point[0] << " vertex p0 = " << p0 << ", p1 = " << p1 << std::endl;
 
         if (p0 > p1)
           std::swap(p0, p1);
         return p0 <= point[0] and point[0] <= p1;
       }
 
-    // 2D cell
+    // 2D mesh
     else if (tDim == 2 && gDim == 2)
       {
         /*v1:
@@ -117,7 +117,7 @@ namespace dnt
           }
       }
 
-    // 3D cell
+    // 3D mesh
     else if (tDim == 3 && gDim == 3)
       {
         auto v0 = vertices[0];
@@ -161,14 +161,14 @@ namespace dnt
           }
         else
           {
-            dolfin::dolfin_error("cell_contains_point (3D)",
+            dolfin::dolfin_error("is_inside_vertices (3D)",
                                  "compute tetrahedron point collision",
                                  "Not implemented for degenerate tetrahedron");
           }
       }
 
     return false;
-  } // ENDDEF: bool cell_contains_point(dolfin::Mesh& mesh, const unsigned int* vertices, double* point)
+  } // ENDDEF: bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point)
 
   
   // BEGINDEF: py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index)
@@ -213,7 +213,7 @@ namespace dnt
     std::cout << "find_facet(): The name of the capsule is " << cellFacetNormalsDictCap.name() << std::endl;        
     std::map<int, double*>* cellFacetNormalsDict = cellFacetNormalsDictCap;
     */
-    // The facet-normals are in mesh_M.attr("mesh_entity_arrays"). The array
+    // The facet-normals are in mesh_M.attr("mea_object"). The array
     // containing them is templated on the number of facets in the cell, so they are
     // accessed below, depending on the cell type. The vectors are laid out as n0,
     // n1, ... to the number of facets, where the n's are the normals. The normals
@@ -265,7 +265,7 @@ namespace dnt
         // The facet-normals are laid out as n0, n1, n2, n3, where
         // the n's are the normals. The normals are 3-vectors.
         // The type here is std::array<double, N_CELL_FACETS*3>. The 3 is for 3-vector.
-        auto meshEntityArrays = mesh_M.attr("mesh_entity_arrays").cast<MeshEntityArrays<4> *>();
+        auto meshEntityArrays = mesh_M.attr("mea_object").cast<MeshEntityArrays<4> *>();
         auto facetNormalVectors = meshEntityArrays->get_cell_facet_normals(cell_index);
 
         // Test if the plane of facet 0 is crossed:
@@ -355,7 +355,7 @@ namespace dnt
         auto n3DotDx = n3[0]*dx[0] + n3[1]*dx[1] + n3[2]*dx[2];
         if (n3DotDx > 0)
           {
-            auto vertex0 = &vertex_coords[0]; // Coordinates for vertex 0
+            auto vertex0 = &vertex_coords[0]; // Coordinates for vertex 0 (opposite facet 3)
             vecToFacet[0] = vertex0[0] - x0[0];
             vecToFacet[1] = vertex0[1] - x0[1];
             vecToFacet[2] = vertex0[2] - x0[2];
@@ -392,7 +392,7 @@ namespace dnt
         // The facet-normals are laid out as n0, n1, n2, where
         // the n's are the normals. The normals are always 3-vectors.
         // The type here is std::array<double, N_CELL_FACETS*3>
-        auto meshEntityArrays = mesh_M.attr("mesh_entity_arrays").cast<MeshEntityArrays<3> *>();
+        auto meshEntityArrays = mesh_M.attr("mea_object").cast<MeshEntityArrays<3> *>();
         auto facetNormalVectors = meshEntityArrays->get_cell_facet_normals(cell_index);
         
         // Test if the plane of facet 0 is crossed:
@@ -453,9 +453,9 @@ namespace dnt
         auto n2DotDx = n2[0]*dx[0] + n2[1]*dx[1];
         if (n2DotDx > 0)
           {
-            auto vertex3 = &vertex_coords[3*gDim]; // Coordinates for vertex 3
-            vecToFacet[0] = vertex3[0] - x0[0];
-            vecToFacet[1] = vertex3[1] - x0[1];
+            auto vertex0 = &vertex_coords[0]; // Coordinates for vertex 0 (opposite facet 2)
+            vecToFacet[0] = vertex0[0] - x0[0];
+            vecToFacet[1] = vertex0[1] - x0[1];
               
             // The normal distance to the facet plane
             // distanceToFacet = np_m.dot(facetNormalVectors[0], vecToFacet)
@@ -485,23 +485,26 @@ namespace dnt
       } // else if (gDim == 2)
     else if (gDim == 1)
       {
-        // 2D mesh: There are 3 facets indexed 0,1,2.
+        // 1D mesh: There are 2 facets, indexed 0,1.
+        // In 1D, facet 0 and node 0 have the same index, 0.
 
         // The facet-normals are laid out as n0, n1 where
         // the n's are the normals. The normals are always 3-vectors.
         // The type here is std::array<double, N_CELL_FACETS*3>
-        auto meshEntityArrays = mesh_M.attr("mesh_entity_arrays").cast<MeshEntityArrays<2> *>();
+        auto meshEntityArrays = mesh_M.attr("mea_object").cast<MeshEntityArrays<2> *>();
         auto facetNormalVectors = meshEntityArrays->get_cell_facet_normals(cell_index);
 
         // Test if the plane of facet 0 is crossed:
         auto n0 = &facetNormalVectors[0];
         auto n0DotDx = n0[0]*dx[0];
+
+        //        std::cout << "find_facet: x0[0] " << x0[0] << " dx[0] " << dx[0] << " n0DotDx " << n0DotDx << std::endl;
         
         if (n0DotDx > 0)
           {
-            // The vector from the starting point to a vertex in the facet plane. facet 0 is opposite vertex 0, so use vertex 1 here:
-            auto vertex1 = &vertex_coords[1*gDim]; // Coordinates for vertex 1
-            vecToFacet[0] = vertex1[0] - x0[0];
+            // The vector from the starting point to a vertex in the facet plane.
+            auto vertex0 = &vertex_coords[0]; // Coordinates for vertex 0.
+            vecToFacet[0] = vertex0[0] - x0[0];
                
             // The normal distance to the facet plane
             // distanceToFacet = np_m.dot(facetNormalVectors[0], vecToFacet)
@@ -526,12 +529,12 @@ namespace dnt
         auto n1DotDx = n1[0]*dx[0];
         if (n1DotDx > 0)
           {
-            auto vertex2 = &vertex_coords[2*gDim]; // Coordinates for vertex 2
-            vecToFacet[0] = vertex2[0] - x0[0];
+            auto vertex1 = &vertex_coords[1*gDim]; // Coordinates for vertex 1
+            vecToFacet[0] = vertex1[0] - x0[0];
               
             // The normal distance to the facet plane
             auto distanceToFacet = n1[0]*vecToFacet[0];
-//                print "f1 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
+            //            std::cout << "f1 find_facet(): vecToFacet= " << vecToFacet[0] << " distanceToFacet= " << distanceToFacet << std::endl;
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
                 std::cout << "dolfin_functions.cpp::find_facet 1: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
@@ -576,9 +579,9 @@ namespace dnt
     // templated function in dolfin_functions.o.
 
     // NEEDED?  
-    cell_contains_point(meshRef, vertices, ps1D);
-    cell_contains_point(meshRef, vertices, ps2D);
-    cell_contains_point(meshRef, vertices, ps3D);
+    is_inside_vertices(meshRef, vertices, ps1D);
+    is_inside_vertices(meshRef, vertices, ps2D);
+    is_inside_vertices(meshRef, vertices, ps3D);
     }
   */
 
@@ -591,7 +594,7 @@ namespace dnt
   /// Versions using DnT_struct
 
   // 1D version using a DnT_pstruct
-  //bool cell_contains_point(dolfin::Mesh& mesh,
+  //bool is_inside_vertices(dolfin::Mesh& mesh,
   //                         py::array_t<int> vertices,
   //                         Pstruct<Ptype::cartesian_x> ps1D)
 

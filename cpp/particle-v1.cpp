@@ -231,7 +231,7 @@ namespace dnt
                         pCellIndex = pCellIndexNew; // Needed for the next iteration of the while loop.
                       }
                   }
-                else // The crossed faced is NO_FACET, which shouldn't happen.
+                else // The crossed facet is NO_FACET, which shouldn't happen.
                   {
                     std::string errorMsg = "In move_neutral_particle_species(): The cell index of the facet crossed is" + std::to_string(cFacet) + ". This should not happen since the particle has left its initial cell cell!";
                     dnt_error(errorMsg);

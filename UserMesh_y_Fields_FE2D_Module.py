@@ -150,7 +150,7 @@ class UserMesh2DCirc_C(Mesh_C):
     # Select the unit system to be used for input parameters.
 #    Convert = U_M.MyPlasmaUnits_C
 
-    def __init__(self, mesh_input, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
+    def __init__(self, mesh_input, compute_dictionaries=False, compute_cpp_arrays=False, compute_tree=False, plot_flag=False, plot_title=None):
         """
             The class UserMesh2DCirc contains these attributes:
                 1. A mesh.
@@ -170,8 +170,7 @@ class UserMesh2DCirc_C(Mesh_C):
 
         # Call the parent constructor to complete setting class variables.
         mesh_file = mesh_input.mesh_file
-#        super(self.__class__, self).__init__(mesh_file=mesh_file, coordinate_system=coordinateSystem, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree, plot_flag=plot_flag)
-        super(self.__class__, self).__init__(mesh_file=mesh_file, coordinate_system=coordinateSystem, compute_dictionaries=compute_dictionaries, compute_tree=compute_tree)
+        super(self.__class__, self).__init__(mesh_file=mesh_file, coordinate_system=coordinateSystem, compute_dictionaries=compute_dictionaries, compute_cpp_arrays=compute_cpp_arrays, compute_tree=compute_tree)
         
         self.field_boundary_dict = mesh_input.field_boundary_dict
         self.particle_boundary_dict = mesh_input.particle_boundary_dict
@@ -188,7 +187,7 @@ class UserMesh2DCirc_C(Mesh_C):
             self.particle_boundary_marker = particleBoundaryMarker
 
         return  
-#    def __init__(self, mesh_input=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
+#    def __init__(self, mesh_input, compute_dictionaries=False, compute_cpp_arrays=False, compute_tree=False, plot_flag=False, plot_title=None):ENDDEF
 
 # Inherited from Mesh_C:
 #    def copy(self):

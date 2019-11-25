@@ -56,7 +56,7 @@ class TestChargeDensity(unittest.TestCase):
         mesh = df_m.IntervalMesh(2, -0.5, 0.5)
         coordinateSystem = 'Cartesian'
 
-        mesh1d_M = Mesh_C(Mesh=mesh, coordinate_system=coordinateSystem, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = Mesh_C(Mesh=mesh, coordinate_system=coordinateSystem, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         # Put 3 DT particles in the meshed region.
 
@@ -205,7 +205,7 @@ class TestChargeDensity(unittest.TestCase):
         plotFlag = False
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
 
-        pmesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
+        pmesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
 #        pmesh2d_M.compute_cell_vertices_dict()
 #        pmesh2d_M.compute_cell_dict()
 
@@ -422,7 +422,7 @@ class TestChargeDensity(unittest.TestCase):
         plotFlag = False
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
         # Make the mesh
-        mesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
+        mesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
 
         ########## Kinetic particles ##########
 
@@ -665,7 +665,7 @@ class TestChargeDensity(unittest.TestCase):
         # UserMesh_FE_XYZ_Module can make the mesh from the above input.
         plotFlag = False
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        mesh1d_M = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
+        mesh1d_M = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
 
         ########## Kinetic particles ##########
 
@@ -868,7 +868,7 @@ class TestChargeDensity(unittest.TestCase):
         ### Read the mesh and boundary-condition markers ###
 
         # Create a mesh object and read in the mesh.
-        mesh1d_M = UserMesh1DS_C(umi1DS_I, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = UserMesh1DS_C(umi1DS_I, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         ########## Kinetic particles ##########
 
@@ -1080,7 +1080,7 @@ class TestChargeDensity(unittest.TestCase):
         ### Read the mesh and boundary-condition markers ###
 
         # Create a mesh object and read in the mesh.
-        mesh1d_M = UserMesh1DS_C(umi1DS_I, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = UserMesh1DS_C(umi1DS_I, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         ########## Kinetic particles ##########
 

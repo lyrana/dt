@@ -22,7 +22,7 @@ class TestFieldInterpolation(unittest.TestCase):
 
         # Create mesh from a file
         coordinateSystem = 'Cartesian'
-        mesh2D_M = Mesh_C(mesh_file="mesh_quarter_circle_crossed.xml", coordinate_system=coordinateSystem, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh2D_M = Mesh_C(mesh_file="mesh_quarter_circle_crossed.xml", coordinate_system=coordinateSystem, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
 #        df_m.plot(self.mesh, title='cylindrical mesh', axes=True)
 #        df_m.interactive()

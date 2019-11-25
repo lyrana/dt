@@ -100,7 +100,7 @@ namespace dnt
     auto pmesh_M = particle_P.attr("pmesh_M");
     auto mesh = pmesh_M.attr("mesh").cast<dolfin::Mesh>();
     auto tDim = mesh.topology().dim();
-    auto meshEntityArrays = pmesh_M.attr("mesh_entity_arrays").cast<MeshEntityArrays<N_CELL_FACETS> *>();
+    auto meshEntityArrays = pmesh_M.attr("mea_object").cast<MeshEntityArrays<N_CELL_FACETS> *>();
     auto NO_CELL = pmesh_M.attr("NO_CELL").cast<int>();
     auto NO_FACET = pmesh_M.attr("NO_FACET").cast<int>();
 
@@ -284,13 +284,11 @@ namespace dnt
             particlePosition[0] = psegOut[ipOut].x_;
             particlePosition[1] = psegOut[ipOut].y_;
             particlePosition[2] = psegOut[ipOut].z_;
-            //            std::cout << "Calling cell_contains_point" << std::endl;
+            //            std::cout << "Calling is_inside_vertices" << std::endl;
             
-            while (! cell_contains_point(mesh, vertices, particlePosition))
+            while (! is_inside_vertices(mesh, vertices, particlePosition))
               {
-                std::cout << "Hello from call to cell_contains_point" << std::endl;
-                // Copy code here from particle-v1.cpp
-//beg
+                std::cout << "Hello from call to is_inside_vertices" << std::endl;
                 /*
                   The particle has left this cell.  We need to track it across each
                   facet in case there's a boundary-condition on that facet.
@@ -302,7 +300,7 @@ namespace dnt
                     std::cout << "DnT:particle.h:move_neutral_species: !!! MAX_FACET_CROSS_COUNT exceeded!!!" << std::endl;
                     exit(EXIT_FAILURE);
                   }
-//end1
+                
                 // Compute dx[], the move vector that starts in the current cell
                 // Current particle position
                 pCoord2[0] = psegOut[ipOut].x_;
@@ -317,14 +315,12 @@ namespace dnt
                 dx[1] = pCoord2[1] - pCoord2[4];
                 dx[2] = pCoord2[2] - pCoord2[5];
                 
-                //                py::tuple facetTupl = pmesh_M.find_facet(&pCoord2[pDim], dx, pCellIndex);
-                
                 py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex);
-                // return py::make_tuple(facet, dxFraction, facet_normal_vectors[facet]);
-
+                // This returns the tuple (facet, dxFraction, facet_normal_vectors[facet])
+                // Extract the values from the tuple:
                 auto cFacet = facetTupl[0].cast<int>();
                 auto dxFraction = facetTupl[1].cast<double>();
-                //                auto facetNormalVectors = facetTupl[2].cast<double*>();
+                // auto facetNormalVectors = facetTupl[2].cast<double*>();
                 
                 if (cFacet != NO_FACET)
                   {
@@ -337,11 +333,6 @@ namespace dnt
                     psegOut[ipOut].z0_ = psegOut[ipOut].z0_ + dxFraction*dx[2];
                     
                     // Look up the mesh-level index of this facet...
-
-                    // Newer version that calls directly to C++ entities().
-                    // Create a view to this cell in the dolfin::Mesh object
-                    // dolfin::Cell pcell(mesh, pCellIndex);
-                    //                    auto mFacetArray = (*pcellPtr).entities(tDim-1); // The mesh-level indices of the facets of this cell.
                     auto mFacetArray = pcellPtr->entities(tDim-1); // The mesh-level indices of the facets of this cell.
                     int mFacet = mFacetArray[cFacet]; // The mesh-level index of the facet just crossed.
 
@@ -356,7 +347,8 @@ namespace dnt
                         mLastFacet = mFacet;
                       }
                     // ...and get the value of the facet marker.
-                    
+
+//HERE1: uncomment this:
                     /* int facValue = pmesh_M.particle_boundary_marker[mFacet]; */
                     /* // Check if this facet has a non-zero marker, indicating that, */
                     /* // e.g., the facet is a boundary. */
@@ -376,7 +368,6 @@ namespace dnt
                     /*   } */
 
                     // Look up the cell index of the new cell.
-                    //                    auto pCellIndexNew = meshEntityArrays->cell_neighbors_array[pCellIndex][cFacet];
                     auto pCellIndexNew = meshEntityArrays->get_cell_neighbors(pCellIndex)[cFacet];
 
                     /* If the particle has left the mesh, and has been deleted, end
@@ -400,13 +391,13 @@ namespace dnt
                         pCellIndex = pCellIndexNew; // Needed for the next iteration of the while loop.
                       }
                   }
-                else // The crossed faced is NO_FACET, which shouldn't happen.
+                else // The crossed facet is NO_FACET, which shouldn't happen.
                   {
                     std::string errorMsg = "In move_neutral_particle_species(): The cell index of the facet crossed is NO_FACET (" + std::to_string(cFacet) + "). This should not happen since the particle has left its initial cell!";
                     exit(EXIT_FAILURE);
                   } // END: if (cFacet != NO_FACET)
 
-                // The following is needed in C++ because of cell_contains_point() usage.
+                // The following is needed in C++ because of is_inside_vertices() usage.
                 // Prepare for the next 'while' iteration: need the new cell index and the cell vertices:
                 delete pcellPtr; // To avoid a leak
                 pcellPtr = new dolfin::Cell(mesh, pCellIndex);
@@ -416,10 +407,12 @@ namespace dnt
                 particlePosition[0] = psegOut[ipOut].x_;
                 particlePosition[1] = psegOut[ipOut].y_;
                 particlePosition[2] = psegOut[ipOut].z_;
-              } // END: while (! cell_contains_point(mesh, vertices, particlePosition))
+              } // END: while (! is_inside_vertices(mesh, vertices, particlePosition))
             delete pcellPtr; // Not needed past this point.
-//HERE
-// Add missing code back here.
+//HERE2
+// Add back missing code: // Record the number of facet-crossings
+                          // Check for deletion
+                          // Treat trajectory particles
         
             /*
               Check if we've reached the end of this segment.  If so, we need to start

@@ -62,7 +62,7 @@ class TestCppParticleMigration(unittest.TestCase):
         pin.force_components = ['x', 'y',]
         """
         pin.force_precision = np_m.float64
-        pin.use_cpp_movers = True
+        pin.use_cpp_movers = True # Use C++ version of particle movers.
 
         # Give the properties of the particle species.  The charges and masses are
         # normally those of the physical particles, and not the computational
@@ -163,7 +163,7 @@ class TestCppParticleMigration(unittest.TestCase):
         umi1D.particle_boundary_dict = particleBoundaryDict
 
         # Create a 1D particle mesh
-        self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
+        self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
 
 # Individual geometry dictionaries:
 #        self.pmesh1D.compute_cell_vertices_dict()
@@ -215,7 +215,7 @@ class TestCppParticleMigration(unittest.TestCase):
         
         self.particle_P.initialize_particle_mesh(self.pmesh1D); # This assigns pmesh_M
 
-        # cell_dict{} is needed by the Python version of is_inside()
+        # cell_dict{} is needed by the Python version of is_inside_cell()
         self.particle_P.pmesh_M.compute_cell_dict();
         
 #        self.particle_P.pmesh_M.compute_cell_facet_normals_dict(use_cpp=True)

@@ -382,7 +382,7 @@ class TestFieldSolve(unittest.TestCase):
 
         # Create the mesh object and read in the mesh and boundary markers
         coordinateSystem = 'Cartesian'
-        mesh1d_M = Mesh_C(mesh_file='mesh_2cell_1D.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_2cell_1D_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = Mesh_C(mesh_file='mesh_2cell_1D.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_2cell_1D_Fbcs.xml', compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         ### Create the charge-density vector ###
 
@@ -517,7 +517,7 @@ class TestFieldSolve(unittest.TestCase):
 
         # Create a mesh object and read in the mesh.
         coordinateSystem = '1D-spherical-radial'
-        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_1D_radial_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_1D_radial_Fbcs.xml', compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         ### Create the charge-density vector ###
 
@@ -685,7 +685,7 @@ class TestFieldSolve(unittest.TestCase):
 
         # Create a mesh object and read in the mesh.
         coordinateSystem = '1D-spherical-radial'
-        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial_r0.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_1D_radial_r0_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial_r0.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_1D_radial_r0_Fbcs.xml', compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         ### Create the charge-density vector ###
 

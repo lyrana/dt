@@ -20,7 +20,7 @@ from UserMesh_y_Fields_FE_XYZ_Module import *
 import mesh_entity_arrays_solib
 
 
-class TestMeshFunctions(unittest.TestCase):
+class TestCppMeshFunctions(unittest.TestCase):
     """Test C++ algorithms that create lookup tables for meshes.
 
        The lookup tables are members of the MeshEntityArrays class:

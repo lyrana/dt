@@ -186,7 +186,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         from UserMesh_y_Fields_FE_XYZ_Module import UserMesh_C
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        pmesh_M = UserMesh_C(umi2D, compute_dictionaries=True, compute_tree=True, plot_flag=False, plot_title=plotTitle)
+        pmesh_M = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False, plot_title=plotTitle)
         # Add this to the particle object:
         particle_P.pmesh_M = pmesh_M
 
@@ -392,7 +392,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ## Create the particle mesh
         from UserMesh_y_Fields_FE2D_Module import UserMesh2DCirc_C
-        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         # Add this to the particle object:
         particle_P.pmesh_M = pmesh_M

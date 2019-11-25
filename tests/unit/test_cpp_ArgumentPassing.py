@@ -159,7 +159,7 @@ class TestPybind11(unittest.TestCase):
         umi1D.particle_boundary_dict = particleBoundaryDict
 
         # Create a 1D particle mesh
-        self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
+        self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle + ": 1D")
 #        self.pmesh1D.compute_cell_vertices_dict()
 #        self.pmesh1D.compute_cell_dict()
 

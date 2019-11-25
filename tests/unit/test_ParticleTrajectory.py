@@ -194,7 +194,7 @@ class TestParticleTrajectory(unittest.TestCase):
 #        pin.pmesh_M = UserMesh_C(meshFile='quarter_circle_mesh_crossed.xml', particleBoundaryFile='Pbcs_quarter_circle_mesh_crossed.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
 
 # Can this be attached to Particle_C after Particle_C construction? YES
-        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         self.particle_P.pmesh_M = pmesh_M
 

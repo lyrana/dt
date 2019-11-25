@@ -748,7 +748,7 @@ class Particle_C(object):
         if self.pmesh_M is not None:
             for sn in self.species_names:
 # There could be a branch to a C++ particle loop here, if use_cpp_movers is True. Then we
-# wouldn't need to compute the Python version of cell_dict{} (needed by is_inside()).
+# wouldn't need to compute the Python version of cell_dict{} (needed by is_inside_cell()).
                 psa = self.pseg_arr[sn] # segmented array for this species
                 (npSeg, pseg) = psa.init_out_loop()
 
@@ -758,13 +758,13 @@ class Particle_C(object):
                         
                         pseg[ip]['cell_index'] = self.pmesh_M.compute_cell_index(pseg[ip])
                         print('ip, index =', ip, pseg[ip]['cell_index'])
-# Check that is_inside() confirms the cell index:
-                        if not self.pmesh_M.is_inside(pseg[ip], pseg[ip]['cell_index']):
+# Check that is_inside_cell() confirms the cell index:
+                        if not self.pmesh_M.is_inside_cell(pseg[ip], pseg[ip]['cell_index']):
 #                        if not self.pmesh_M.is_inside_CPP(pseg[ip], pseg[ip]['cell_index']):
-                            errorMsg = "%s\tDnT ERROR: is_inside() check failed for particle %d" % (fncName, ip)
+                            errorMsg = "%s\tDnT ERROR: is_inside_cell() check failed for particle %d" % (fncName, ip)
                             sys.exit(errorMsg)
 #                        else:
-#                            print fncName, "*** is_inside check passes for particle", pseg[ip], "***"
+#                            print fncName, "*** is_inside_cell check passes for particle", pseg[ip], "***"
 #                    (npSeg, pseg) = psa.get_next_segment('O')
                     (npSeg, pseg) = psa.get_next_segment("out")
         else:
@@ -799,7 +799,7 @@ class Particle_C(object):
                 nFacets = tDim + 1
                 meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
                 meaCtor = getattr(mesh_entity_arrays_solib, meaClass)
-                self.pmesh_M.mesh_entity_arrays = meaCtor(pmesh_df, compute_particle_mesh_maps=True)
+                self.pmesh_M.mea_object = meaCtor(pmesh_df, compute_particle_mesh_maps=True)
             else:
                 self.pmesh_M.compute_cell_vertices_dict() # Tested, but not used anywhere!
                 self.pmesh_M.compute_cell_entity_indices_dict('facet') # Get facet indices from a cell index                
@@ -1136,7 +1136,7 @@ class Particle_C(object):
                     tStart = time - dt
                     dtRemaining = dt
 # TODO: fix the CPP version to allow DnT_pstruct args of any dimension.
-                    while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
+                    while not pmesh_M.is_inside_cell(psegOut[ipOut], pCellIndex):
 #                    while not pmesh_M.is_inside_CPP(psegOut[ipOut], pCellIndex):
                         # The particle has left this cell.  We
                         # need to track it across each facet in case
@@ -1253,7 +1253,7 @@ class Particle_C(object):
                             errorMsg = "%s The cell index of the facet crossed is NO_FACET (%d). This should not happen since the particle has left its initial cell!" % (fncName, cFacet)
                             sys.exit(errorMsg)
 #                       END:if cFacet != Mesh_C.NO_FACET:
-#                   END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
+#                   END:while not pmesh_M.is_inside_cell(psegOut[ipOut], pCellIndex)
 
                     # Record the number of facet-crossings
                     psegOut[ipOut]['crossings'] = facetCrossCount
@@ -1466,7 +1466,7 @@ class Particle_C(object):
                 tStart = time - dt
                 dtRemaining = dt
 
-                while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex):
+                while not pmesh_M.is_inside_cell(psegOut[ipOut], pCellIndex):
                     # The particle has left this cell.  We
                     # need to track it across each facet in case
                     # there's a boundary-condition on that facet.
@@ -1552,7 +1552,7 @@ class Particle_C(object):
                         errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
                         sys.exit(errorMsg)
                     # END:if cFacet != Mesh_C.NO_FACET:
-                # END:while not pmesh_M.is_inside(psegOut[ipOut], pCellIndex)
+                # END:while not pmesh_M.is_inside_cell(psegOut[ipOut], pCellIndex)
 
                 # Record the number of facet-crossings
                 psegOut[ipOut]['crossings'] = facetCrossCount

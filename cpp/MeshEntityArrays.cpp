@@ -56,7 +56,7 @@ namespace dnt
   MeshEntityArrays<N_CELL_FACETS>::MeshEntityArrays(dolfin::Mesh& mesh, bool compute_field_mesh_maps, bool compute_particle_mesh_maps):
     _mesh(mesh)
   {
-    std::cout << "Hello from the MeshEntityArrays constructor" << std::endl;
+    //    std::cout << "Hello from the MeshEntityArrays constructor" << std::endl;
 
     if (compute_field_mesh_maps == true)
       {
@@ -65,9 +65,9 @@ namespace dnt
     
     if (compute_particle_mesh_maps == true)
       {
-        std::cout << "Computing cell_facet_normals_array" << std::endl;
+        //        std::cout << "Computing cell_facet_normals_array" << std::endl;
         compute_cell_facet_normals_array();
-        std::cout << "Computing cell_neighbors_array" << std::endl;
+        //        std::cout << "Computing cell_neighbors_array" << std::endl;
         compute_cell_neighbors_array();
       }
   }
@@ -115,7 +115,7 @@ namespace dnt
     
     //    auto nFacets = tDim + 1;
 
-    std::cout << "Resizing the cell_neighbors_array for " << _mesh.num_cells() << " cells" << std::endl;
+    //    std::cout << "Resizing the cell_neighbors_array for " << _mesh.num_cells() << " cells" << std::endl;
 
     cell_neighbors_array.resize(boost::extents[_mesh.num_cells()][N_CELL_FACETS]);
     
@@ -280,7 +280,7 @@ namespace dnt
   // ENDDEF: void compute_cell_facet_normals_array
 
 
-    // BEGINDEF: get_cell_facet_normals
+  // BEGINDEF: get_cell_facet_normals
   //! Return the list of cell indices of cells that share a facet with the current cell.
   /*!  
 

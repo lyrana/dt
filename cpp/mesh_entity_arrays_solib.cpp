@@ -61,7 +61,7 @@ namespace dnt {
       // "MeshEntityArrays"
       std::string pyclass_name = std::string("MeshEntityArrays_") + strFacets;
 
-      std::cout << "{mesh_entity_arrays_solib.cpp}makeMeshEntityArrays: pyclass_name " << pyclass_name << std::endl;
+      //      std::cout << "{mesh_entity_arrays_solib.cpp}makeMeshEntityArrays: pyclass_name " << pyclass_name << std::endl;
                                                       
       // Create the Python binding for 
       py::class_<MEA>(m, pyclass_name.c_str())
@@ -95,7 +95,8 @@ namespace dnt {
   PYBIND11_MODULE(mesh_entity_arrays_solib, m)
   {
     
-    // Create the classes "MeshEntityArrays_2/3/4_facets"
+    // Create the classes "MeshEntityArrays_2/3/4_facets" and the Python bindings for
+    // them.
     makeMeshEntityArrays<2>(m, "2_facets");
     makeMeshEntityArrays<3>(m, "3_facets");
     makeMeshEntityArrays<4>(m, "4_facets");

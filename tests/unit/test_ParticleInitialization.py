@@ -253,7 +253,7 @@ class TestParticleInitialization(unittest.TestCase):
         # UserMesh_y_Fields_FE_XYZ_Module can make the mesh from the above input.
         plotFlag = False
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": mesh"
-        pmesh2d_UM = UserMesh_C(mi2d_UMI, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
+        pmesh2d_UM = UserMesh_C(mi2d_UMI, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
 
         p_P = self.particle_P
 

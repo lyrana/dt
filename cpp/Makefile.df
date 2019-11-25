@@ -3,11 +3,11 @@
 # dolfin_functions_cpp: dolfin_functions_cpp.cpython-36m-x86_64-linux-gnu.so
 
 dolfin_functions_solib.cpython-36m-x86_64-linux-gnu.so: dolfin_functions_solib.cpp predicates.o dolfin_functions.o
-	c++ -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` dolfin_functions_solib.cpp -o dolfin_functions_solib`python3-config --extension-suffix` predicates.o dolfin_functions.o
+	c++ -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` dolfin_functions_solib.cpp -o dolfin_functions_solib`python3-config --extension-suffix` predicates.o MeshEntityArrays.o dolfin_functions.o
 
 # Compile the source files
 
-dolfin_functions.o: dolfin_functions.cpp dolfin_functions.h predicates.h
+dolfin_functions.o: dolfin_functions.cpp MeshEntityArrays.h dolfin_functions.h predicates.h
 	c++ -c -O3 -Wall -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` dolfin_functions.cpp -o dolfin_functions.o
 
 predicates.o: predicates.cpp predicates.h

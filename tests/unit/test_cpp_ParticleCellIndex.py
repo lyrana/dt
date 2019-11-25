@@ -18,8 +18,11 @@ from Particle_Module import *
 
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
+# Use C++ functions in the dolfin_functions_solib.so library
+import dolfin_functions_solib
+
 #STARTCLASS
-class TestParticleCellIndex(unittest.TestCase):
+class TestCppParticleCellIndex(unittest.TestCase):
     """Test mesh-cell functions for particles"""
     
     def setUp(self):
@@ -33,8 +36,12 @@ class TestParticleCellIndex(unittest.TestCase):
 
         # Set up particle variables
         pin.precision = np_m.float64
+        
+#        pin.use_cpp_movers = True # Use C++ version of particle movers.
+        pin.use_cpp_movers = False # For this test, use Python SAPs
+        
         pin.particle_integration_loop = 'loop-on-particles'
-        pin.coordinate_system = 'cartesian_xyz'
+        pin.coordinate_system = 'cartesian_xyz' # Particle have 3 coordinates.
 #        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = np_m.float64
@@ -66,7 +73,7 @@ class TestParticleCellIndex(unittest.TestCase):
 
         # Add these species to particle input
         pin.particle_species = (plasmaElectrons_S, HPlus_S, He_S,
-                                 )
+                               )
         # Make the particle object from pin
         self.particle_P = Particle_C(pin, print_flag=False)
 
@@ -104,9 +111,8 @@ class TestParticleCellIndex(unittest.TestCase):
         # Collect the parameters into a dictionary
         # The 'listed' type will expect a function with the same name as the species.
         plasmaElectronParams = {'species_name': speciesName,
-                              'initial_distribution_type': initialDistributionType,
-                              }
-
+                                'initial_distribution_type': initialDistributionType,
+                               }
 
         ### H+ ions are present at t=0
         speciesName = 'H_plus'
@@ -194,83 +200,16 @@ class TestParticleCellIndex(unittest.TestCase):
 #    def setUp(self):END
 
 
-    def test_1_cell_index(self):
+    def no_test_1_cell_index(self):
         """Test (1) a 1, 2, and 3D mesh's vertex-to-cell dict and (2) the bounding-box-tree
            search for a point.
 
-           For (1), check the mesh's cell-index list for some test vertex indices in
-           1D, 2D and 3D.  The vertex-cell dictionary of a mesh gives the list of
-           cells that share a given vertex.
-
-           For (2) check that a search for the index of a cell, using the mesh's
-           bounding-box tree and the coordinates of the cell's midpoint, returns the
-           correct cell index. Tests 1D, 2D and 3D meshes.
+           There's no C++ version of these dictionaries.
 
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest:', fncName, '('+__file__+')')
-
-        # 1D mesh
-
-        # Test vertex dictionary for vertex 3: Should get cells 2, 3.
-#        print 'vertex 3 is in cells', self.pmesh1D.vertex_cells_dict[3]
-        self.assertEqual([2, 3], self.pmesh1D.vertex_cells_dict[3], msg = "cell list for vertex 3 is not correct")
-
-        # Compute a cell index by locating the cell that contains
-        # the cell midpoint using the BB tree.  Compare that to the
-        # index value stored in the cell object.
-        # Make a particle-like point from the midpoint
-#        print("1D test")
-        for cell in df_m.cells(self.pmesh1D.mesh):
-            midpt = cell.midpoint()
-            # Have to convert the Point to a 1-element pseg-type array
-            # in order to call compute_cell_index()
-            p1_dtype = {'names' : ['x'], 'formats': [np_m.float64]}
-            p1 = np_m.array([(midpt.x(),)], dtype=p1_dtype)
-
-            cell_index = self.pmesh1D.compute_cell_index(p1[0])
-#            print "cell midpoint:", midpt.x()
-#            print "cell index:", cell.index(), "computed index:", cell_index
-            self.assertEqual(cell_index, cell.index(), msg = "1D cell index is not correct")
-
-        # 2D mesh
-
-        # Test vertex dictionary for vertex 8 and vertex 20
-#        print 'vertex 20 is in cells', self.pmesh2D.vertex_cells_dict[20]
-        self.assertEqual([25], self.pmesh2D.vertex_cells_dict[20], msg = "cell list for vertex 20 is not correct")
-#        print 'vertex 8 is in cells', self.pmesh2D.vertex_cells_dict[8]
-        self.assertEqual([4, 5, 7, 12, 14, 15], self.pmesh2D.vertex_cells_dict[8], msg = "cell list for vertex 8 is not correct")
-
-        # Compute a cell index by locating the cell that contains
-        # the cell midpoint using the BB tree.  Compare that to the
-        # index value stored in the cell object.
-        # Make a particle-like point from the midpoint
-#        print("2D test")
-        for cell in df_m.cells(self.pmesh2D.mesh):
-            midpt = cell.midpoint()
-            # Have to convert the Point to a 1-element pseg-type array
-            # in order to call compute_cell_index()
-            p2_dtype = {'names' : ['x', 'y'], 'formats': [np_m.float64]*2}
-            p2 = np_m.array([(midpt.x(), midpt.y())], dtype=p2_dtype)
-
-            cell_index = self.pmesh2D.compute_cell_index(p2[0])
-#            print "cell midpoint:", midpt.x(), midpt.y()
-#            print "cell index:", cell.index(), "computed index:", cell_index
-            self.assertEqual(cell_index, cell.index(), msg = "2D cell index is not correct")
-
-        # 3D mesh
-#        print("3D test")
-        # Make a particle-like point from the midpoint
-        for cell in df_m.cells(self.pmesh3D.mesh):
-            midpt = cell.midpoint()
-            p3_dtype = {'names' : ['x', 'y', 'z'], 'formats': [np_m.float64]*3}
-            p3 = np_m.array([(midpt.x(), midpt.y(), midpt.z())], dtype=p3_dtype)
-
-            cell_index = self.pmesh3D.compute_cell_index(p3[0])
-#            print "cell midpoint:", midpt.x(), midpt.y(), midpt.z()
-#            print "cell index:", cell.index(), "computed index:", cell_index
-            self.assertEqual(cell_index, cell.index(), msg = "3D cell index is not correct")
 
         return
 #    def test_1_cell_index(self):END
@@ -281,7 +220,7 @@ class TestParticleCellIndex(unittest.TestCase):
 
            Check that the particles stored in a Particle_C object are in fact inside
            the cell computed by the function compute_cell_index(). Uses the function
-           is_inside_cell() to do the test.
+           is_inside_vertices() to do the test.
 
         """
 
@@ -293,6 +232,7 @@ class TestParticleCellIndex(unittest.TestCase):
 
 #        print("1D, 2D, 3D tests")
         # Loop on the species
+
         isp = 0
         for sp in self.particle_P.species_names:
             if self.particle_P.get_species_particle_count(sp) == 0: continue
@@ -313,16 +253,16 @@ class TestParticleCellIndex(unittest.TestCase):
                     # Can't use slice syntax here, because the dtype is inhomogeneous.
 
                     # Compute and store the cell index
-                    for dim in range(1,4):
-                        if dim == 1:
+                    for meshDim in range(1,4):
+                        if meshDim == 1:
 #                            print("1D test")
                             pmesh_M = self.pmesh1D
-#                        spatial_components = spatial_coordinates[0:dim]
+#                        spatial_components = spatial_coordinates[0:meshDim]
 #                        p = np_m.array([pseg[ip][comp] for comp in spatial_components])
-                        if dim == 2:
+                        if meshDim == 2:
 #                            print("2D test")
                             pmesh_M = self.pmesh2D
-                        elif dim == 3:
+                        elif meshDim == 3:
 #                            print("3D test")
                             pmesh_M = self.pmesh3D
 # Put a particle outside the mesh to see what cell index is returned:
@@ -333,8 +273,6 @@ class TestParticleCellIndex(unittest.TestCase):
 #                        print("Coordinates of", pseg[ip], "are in cell", pseg[ip]['cell_index'])
                         if pseg[ip]['cell_index'] != Mesh_C.NO_CELL:
 #                            cell_vertices = pmesh_M.cell_entity_indices_dict['vertex'][pseg[ip]['cell_index']]
-                            cell_vertices = pmesh_M.cell_vertices_dict[pseg[ip]['cell_index']]
-#                            print("cell_vertices: ", cell_vertices)
                             # Look up the cell index in the particle data list
                             c = pmesh_M.cell_dict[pseg[ip]['cell_index']]
                         else:
@@ -343,7 +281,14 @@ class TestParticleCellIndex(unittest.TestCase):
                         if c is not None:
 #                            self.assertTrue(c.contains(df_m.Point(p)), msg = "The computed cell does not contain the particle")
                             # Verify that this cell does actually contain the particle.
-                            self.assertTrue(pmesh_M.is_inside_cell(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")
+                            
+  #                          self.assertTrue(pmesh_M.is_inside_vertices(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")
+                            vertices = pmesh_M.cell_vertices_dict[pseg[ip]['cell_index']]
+                            particlePosition = [pseg[ip][coord] for coord in [0, 1, 2]]
+                            self.assertTrue(dolfin_functions_solib.is_inside_vertices(pmesh_M.mesh, vertices, particlePosition), msg = "The computed cell does not contain the particle")
+
+# is_inside_vertices(mesh, vertices, particlePosition)
+
 # The function is_inside_vertices() has different args now. The following doesn't work:
 #                            self.assertTrue(pmesh_M.is_inside_CPP(pseg[ip], pseg[ip]['cell_index']), msg = "C++ version: The computed cell does not contain the particle")
                         else:
@@ -358,7 +303,7 @@ class TestParticleCellIndex(unittest.TestCase):
         return
 #    def test_2_cell_index(self):END
 
-#class TestParticleCellIndex(unittest.TestCase):ENDCLASS
+#class TestCppParticleCellIndex(unittest.TestCase):ENDCLASS
 
 if __name__ == '__main__':
     unittest.main()
