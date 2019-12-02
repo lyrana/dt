@@ -104,8 +104,8 @@ class SegmentedArrayPair_C(object):
                               1-element Numpy array containing an item.
            :type input_item: tuple(float,...) or ndarray with 1 element.
            :var int full_index: The full index into the SA.
-           :return: (offset into a segment, full SA index of item)
-           old: return (item structure, full SA index)
+           :return: (offset into the "out" segment, full SA index of item)
+           old: return (item structure, full SA index in the "out" array)
 
         """
 
@@ -149,9 +149,9 @@ class SegmentedArrayPair_C(object):
 
 #class SegmentedArrayPair_C(object):
     def get_segment_and_offset(self, i):
-        """Given the full SegmentedArray index of a stored item, return the Numpy array
-           (segment) and the offset of the item in the array.  This is used, e.g., to
-           provide access to the item in Python.
+        """Given the full "out" SegmentedArray index of a stored item, return the Numpy array
+           (segment) and the offset of the item in the "out" array.  This is used,
+           e.g., to provide access to the item in Python.
 
            Using this instead of get_item() (see below) gives the Python caller a Numpy
            structured item instead of a dict.
@@ -168,11 +168,11 @@ class SegmentedArrayPair_C(object):
 
 #class SegmentedArrayPair_C(object):
     def get_item(self, i):
-        """Returns a REFERENCE to the i'th item from the "out"
-           SegmentedArray, since that's the up-to-date array.  The
-           index is zero-based.
+        """Returns a REFERENCE to the i'th item from the "out" SegmentedArray, since that's
+           the up-to-date array.  The index is zero-based.
 
            :param int i: The full index of an item to be retrieved.
+
         """
 
         # Abbreviations
@@ -247,6 +247,9 @@ class SegmentedArrayPair_C(object):
            This is used to start a loop that doesn't change the
            positions of the items, so using the "in" array isn't
            needed.
+
+           :return: (number of items in the first segment of "out" SA,
+                     ref to first segment of "out" SA)
         """
 
         # Abbreviations
@@ -404,6 +407,21 @@ class SegmentedArrayPair_C(object):
 #    def get_next_out_segment(self): ENDDEF
 
 #class SegmentedArrayPair_C(object):
+    def get_current_out_segment(self):
+        """Returns a reference to the current segment of the "out" array.
+
+           :return: reference to current segment of the "out" array.
+
+        """
+
+        # Abbreviations
+        outSA = self.outSegmentedArray
+        segIndex = self.currentSegment[outSA]
+
+        return self.segListPair[outSA][segIndex]
+#    def get_current_out_segment(self): ENDDEF
+
+#class SegmentedArrayPair_C(object):
     def get_number_of_segments(self):
         """Returns the current number of segments in the "in" and
            "out" arrays.
@@ -502,28 +520,6 @@ class SegmentedArrayPair_C(object):
 
 
 #class SegmentedArrayPair_C(object):
-    def get_full_indices(self, i_in, i_out):
-        """
-           This computes the full indices of a particular item in the
-           "in" and "out" SAs.
-
-           :param int i_in: offset of an item into the "in" SA
-           :param int i_out: offset of an item into the "out" SA
-
-           :return: (full index in "in" array, full index in "out" array)
-        """
-
-        # Abbreviations
-        inSA = self.inSegmentedArray
-        outSA = self.outSegmentedArray
-
-        full_index_in = self.currentSegment[inSA]*self.segmentLength + i_in
-        full_index_out = self.currentSegment[outSA]*self.segmentLength + i_out
-
-        return (full_index_in, full_index_out)
-#    def get_full_indices(self, i_in, i_out):ENDDEF
-
-#class SegmentedArrayPair_C(object):
     def get_full_index(self, indx, InOut):
         """
            This computes the full index of a particular item in either the "in" or "out"
@@ -545,6 +541,28 @@ class SegmentedArrayPair_C(object):
         return full_index
 #    def get_full_index(self, indx, inout):ENDDEF
         
+#class SegmentedArrayPair_C(object):
+    def get_full_indices(self, i_in, i_out):
+        """
+           This computes the full indices of a particular item in the
+           "in" and "out" SAs.
+
+           :param int i_in: offset of an item into the "in" SA
+           :param int i_out: offset of an item into the "out" SA
+
+           :return: (full index in "in" array, full index in "out" array)
+        """
+
+        # Abbreviations
+        inSA = self.inSegmentedArray
+        outSA = self.outSegmentedArray
+
+        full_index_in = self.currentSegment[inSA]*self.segmentLength + i_in
+        full_index_out = self.currentSegment[outSA]*self.segmentLength + i_out
+
+        return (full_index_in, full_index_out)
+#    def get_full_indices(self, i_in, i_out):ENDDEF
+
 #class SegmentedArrayPair_C(object):
     def delete_item(self, full_index):
         """Deletes an item given its full index.

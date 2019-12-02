@@ -196,7 +196,7 @@ class TestCppFacetCrossing(unittest.TestCase):
 #            print("Calling find_facet:", "r0 =", r0, "dr =", dr, "ci =", cell.index())
 #            (facet_crossed, path_fraction, facetNormal) = self.mesh1D.find_facet(r0, dr, cell.index())
             (facet_crossed, path_fraction, facetNormal) = dolfin_functions_solib.find_facet(self.mesh1D, r0, dr, cell.index())
-#            print("Returned values: =", facet_crossed, "path_fraction =", path_fraction)
+            print("Returned values =", facet_crossed, "path_fraction =", path_fraction, "facetNormal =", facetNormal)
             # Check facet
             self.assertEqual(facet_crossed, facet_expected, msg = "1D: facet crossed is not correct")
             # Look up the cell crossed into
@@ -227,7 +227,7 @@ class TestCppFacetCrossing(unittest.TestCase):
 
 #            print "Calling find_facet:", "r0 =", r0, "dr =", dr, "ci =", cell.index()
             (facet_crossed, path_fraction, facetNormal) = self.mesh1D.find_facet(r0, dr, cell.index())
-#            print "Returned values: =", facet_crossed, "path_fraction =", path_fraction
+            print("Returned values =", facet_crossed, "path_fraction =", path_fraction, "facetNormal =", facetNormal)
             self.assertEqual(facet_crossed, facet_expected, msg = "1D facet crossed is not correct")
             # Look up the cell crossed into
             cell2_index = neighborCellIndices[facet_crossed]

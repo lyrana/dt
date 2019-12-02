@@ -247,18 +247,12 @@ class TestCppParticleCellIndex(unittest.TestCase):
                 # Check if the particle is still on the meshed region
 #                for ip in xrange(pseg.size):
                 for ip in range(np_seg):
-
-                    # pseg[i] is 'x', 'y', 'z', 'vx', 'vy',... values of ith item
-                    # So pseg[i][0:3] is 'x', 'y', 'z'.
-                    # Can't use slice syntax here, because the dtype is inhomogeneous.
-
                     # Compute and store the cell index
                     for meshDim in range(1,4):
+                        # Use a 1, 2, or 3D mesh
                         if meshDim == 1:
 #                            print("1D test")
                             pmesh_M = self.pmesh1D
-#                        spatial_components = spatial_coordinates[0:meshDim]
-#                        p = np_m.array([pseg[ip][comp] for comp in spatial_components])
                         if meshDim == 2:
 #                            print("2D test")
                             pmesh_M = self.pmesh2D
@@ -272,25 +266,17 @@ class TestCppParticleCellIndex(unittest.TestCase):
                         pseg[ip]['cell_index'] = pmesh_M.compute_cell_index(pseg[ip])
 #                        print("Coordinates of", pseg[ip], "are in cell", pseg[ip]['cell_index'])
                         if pseg[ip]['cell_index'] != Mesh_C.NO_CELL:
-#                            cell_vertices = pmesh_M.cell_entity_indices_dict['vertex'][pseg[ip]['cell_index']]
                             # Look up the cell index in the particle data list
                             c = pmesh_M.cell_dict[pseg[ip]['cell_index']]
                         else:
                             c = None
 
                         if c is not None:
-#                            self.assertTrue(c.contains(df_m.Point(p)), msg = "The computed cell does not contain the particle")
                             # Verify that this cell does actually contain the particle.
-                            
-  #                          self.assertTrue(pmesh_M.is_inside_vertices(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")
                             vertices = pmesh_M.cell_vertices_dict[pseg[ip]['cell_index']]
+                            # Copy the spatial coordinates to a list and pass the list to is_inside_vertices().
                             particlePosition = [pseg[ip][coord] for coord in [0, 1, 2]]
                             self.assertTrue(dolfin_functions_solib.is_inside_vertices(pmesh_M.mesh, vertices, particlePosition), msg = "The computed cell does not contain the particle")
-
-# is_inside_vertices(mesh, vertices, particlePosition)
-
-# The function is_inside_vertices() has different args now. The following doesn't work:
-#                            self.assertTrue(pmesh_M.is_inside_CPP(pseg[ip], pseg[ip]['cell_index']), msg = "C++ version: The computed cell does not contain the particle")
                         else:
                             self.assertTrue(False, msg = "A particle is outside the mesh")
 

@@ -570,14 +570,14 @@ namespace dnt
         const auto parray = static_cast<Pstruct<PT>*>(seg_info.ptr); // Pointer to a structured Numpy array
         // parray[offset]; // contains the particle data
           // Make a dictionary from this
-        return parray[offset].as_dict();  
+        return parray[offset].as_dict();  // as_dict() is defined in Pstruct.h
       }
     // ENDDEF: py::dict get_item(py::ssize_t full_index)
     
     
     // BEGINDEF: py::tuple get_as_tuple(py::ssize_t full_index)
     //! Get a copy of an item's values, as a py::tuple, given the full SA index of the item.
-    /*!  Note that the returned py::tuple cannot be modified. It the returned copy of
+    /*!  Note that the returned py::tuple cannot be modified. If the returned copy of
          the item values is to be modified, use get_as_list() instead.
 
          If the stored item needs to be modified, use get_segment_and_offset() to get
@@ -850,8 +850,8 @@ namespace dnt
         //        return py::make_tuple(lastItem, segListPair[theSA][segIndex]);
       }
     // ENDDEF py::tuple get_next_segment(std::string in_out, bool returnDataPtr = false)
-    
 
+    
     // BEGINDEF: py::tuple get_next_out_segment(bool returnDataPtr = false)
     //! Return a tuple containing a reference to the next segment of the "out" array.
     /*!
@@ -910,6 +910,23 @@ namespace dnt
       }
     // ENDDEF: py::tuple get_next_out_segment(bool returnDataPtr = false)
 
+    
+    // BEGINDEF: py::array_t<Pstruct<PT>,0> get_current_out_segment(void)
+    //! Return a reference to the current segment of the "out" array.
+    /*!
+
+      \return: A reference to current segment of the "out" array.
+
+    */
+    py::array_t<Pstruct<PT>,0> get_current_out_segment(void)
+      {
+        // Abbreviations
+        auto outSA = outSegmentedArray;
+        py::ssize_t segIndex = currentSegment[outSA];
+
+        return segListPair[outSA][segIndex];
+      }
+    // ENDDEF: py::tuple get_current_out_segment(bool returnDataPtr = false)
                       
     // BEGINDEF: py::ssize_t get_full_index(py::ssize_t indx, std::string in_out)
     //! Get the full index of an item in either the "in" or "out" SA.
@@ -934,9 +951,30 @@ namespace dnt
       }
     // ENDDEF: py::ssize_t get_full_index(py::ssize_t indx, std::string in_out)
     
+                      
+    // BEGINDEF: py::tuple get_full_indices(py::ssize_t i_in, py::ssize_t i_out)
+    //! Get the full indices of an item in the "in" and "out" SA.
+    /*!  
+      \param i_in: offset of an item into the "in" SA.
+      \param i_out: offset of an item into the "out" SA.
+
+      \return the tuple (full index in the "in" array, full index in the "out" array)
+    */
+    py::tuple get_full_indices(py::ssize_t i_in, py::ssize_t i_out)
+      {
+        // Abbreviations
+        auto inSA = inSegmentedArray;
+        auto outSA = outSegmentedArray;
+
+        py::ssize_t full_index_in = currentSegment[inSA]*segmentLength + i_in;
+        py::ssize_t full_index_out = currentSegment[outSA]*segmentLength + i_out;
+
+        return py::make_tuple(full_index_in, full_index_out);
+      }
+    // ENDDEF: py::tuple get_full_indices(py::ssize_t i_in, py::ssize_t i_out)
+
   };
   // class SegmentedArrayPair ENDCLASS
-
 
 /*
   void pseg_DnT_pstruct_instances()

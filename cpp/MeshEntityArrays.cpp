@@ -238,8 +238,12 @@ namespace dnt
     :math:`\mathbb{R}^3`, supporting standard operations like the
     norm, distances, scalar and vector products etc.
 
-    cell_facet_normals_array[i] contains the array [n0, n1, ...], where n0, n1, ... are the
-    unit normal 3-vectors on each facet of cell i.
+    cell_facet_normals has type: std::vector<std::array<double, N_CELL_FACETS*3>>
+    i.e., it's a std:vector with length equal to to number of cells in the mesh. Each
+    item in the array is an std::array of doubles. For example:
+        cell_facet_normals_array[i] contains the array [n0, n1, ...], where n0, n1,
+        ... are the unit normal 3-vectors on each facet of cell i.
+    The normal vector always has 3 components, regardless of the dimension of the mesh.
 
     \return void
 
@@ -316,11 +320,11 @@ namespace dnt
     else
       {
         std::cout << "{MeshEntityArrays.cpp}get_cell_facet_normals(): cell_facet_normals_array has not been initialized" << std::endl;
-        std::exit(EXIT_FAILURE);        
+        std::exit(EXIT_FAILURE);
       }
 
     //    return cellFacetNormals;
-    return cell_facet_normals_array[cell_index];    
+    return cell_facet_normals_array[cell_index];
   }
   // ENDDEF: get_cell_facet_normals
 

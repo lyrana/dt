@@ -230,6 +230,7 @@ class TestCppParticleMigration(unittest.TestCase):
         # First particle
 
         xsp0 = -9.5; ysp0 =  -9.5; zsp0 = 0.0
+        xsp00 = -8.5; ysp00 =  -9.5; zsp00 = 0.0
         vxsp0 = -2.0; vysp0 = 0.0; vzsp0 = 0.0
 
         weight0 = 2.0
@@ -238,11 +239,12 @@ class TestCppParticleMigration(unittest.TestCase):
         unique_ID0 = 0
         crossings = 0
 
-        psp0 = (xsp0,ysp0,zsp0, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0, crossings)
+        psp0 = (xsp0,ysp0,zsp0, xsp00, ysp00, zsp00, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0, crossings)
 
         # Second particle
 
         xsp1 = -9.5; ysp1 =  -9.5; zsp1 = -9.5
+        xsp10 = -8.5; ysp10 =  -8.5; zsp10 = -8.5
         vxsp1 = -2.0; vysp1 = -2.0; vzsp1 = -2.0
 
         weight1 = 3.0
@@ -251,7 +253,7 @@ class TestCppParticleMigration(unittest.TestCase):
         unique_ID1 = 1
         crossings = 0
 
-        psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1, crossings)
+        psp1 = (xsp1,ysp1,zsp1, xsp10, ysp10, zsp10, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1, crossings)
 
         p_expected = (psp0, psp1)
 
@@ -281,7 +283,7 @@ class TestCppParticleMigration(unittest.TestCase):
                 getparticle = pseg[offset] # Retrieve the particle from the SAP.
                 print('expected = ', p_expected[ip])
                 print('calculated = ', getparticle)
-                for ic in range(ncoords):
+                for ic in range(2*ncoords):
                     self.assertAlmostEqual(p_expected[ip][ic], getparticle[ic], places=6, msg="Particle is not in correct position")
                 cell_index_position = -3
 #                print fncName, "expected cell =", p_expected[ip][cell_index_position], "computed cell =", getparticle[cell_index_position]

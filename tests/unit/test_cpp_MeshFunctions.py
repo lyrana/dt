@@ -120,7 +120,7 @@ class TestCppMeshFunctions(unittest.TestCase):
         
         # Obtain the list of facet-normals for cell 0:
         # print("Obtain the facet-normals for cell 0...")
-        cell_0_facet_normals_list = meaObj.get_cell_facet_normals(0) # Unit vectors normal to cell facets
+        cell_0_facet_normals_list = meaObj.get_cell_facet_normals(0) # Unit vectors normal to facets of cell 0
 
         # Reshape the list to get nFacet vectors, with 3 components each:
         cell_0_facet_normals = np_m.reshape(cell_0_facet_normals_list, (nFacets, 3))

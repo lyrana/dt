@@ -68,9 +68,10 @@ namespace dnt
       indicate a boundary.
 
       cell_facet_normals_array: This is an std::vector containing the facet-normal
-      vectors of each cell. 
+      vectors for each cell in the mesh, in an std::array<double, N_CELL_FACETS*3>.
       cell_facet_normals_array[i] contains the array [n0, n1, ...], where n0, n1,
       ... are the unit normal 3-vectors on each facet of cell i.
+      The normal vector always has 3 components, regardless of the dimension of the mesh.
 
 */
   template<size_t N_CELL_FACETS>
@@ -82,7 +83,7 @@ namespace dnt
       boost::multi_array<int, 2> cell_neighbors_array; // See docs above. This gets
                                                        // resized when needed.
       bool cell_neighbors_array_initialized{false};
-      std::vector<std::array<double, N_CELL_FACETS*3>> cell_facet_normals_array;
+      std::vector<std::array<double, N_CELL_FACETS*3>> cell_facet_normals_array; // See docs above.
       bool cell_facet_normals_array_initialized{false};
       
       static int NO_CELL; // Initialized in MeshEntityArrays.cpp

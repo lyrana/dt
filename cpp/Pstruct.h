@@ -127,8 +127,9 @@ namespace dnt
       int crossings_;             // 8 i4   48
 
     public:
+      // Overload 2 versions of set_from_list_or_tuple()
+      
       //! Set the member values from a py::tuple
-      //      void set_from_tuple(py::tuple p)
       void set_from_list_or_tuple(py::tuple p)
       {
         x_ = p[0].cast<double>();
@@ -143,7 +144,6 @@ namespace dnt
       // ENDDEF: void set_from_tuple(py::tuple p)
 
       //! Set the member values from a py::list
-      //      void set_from_list(py::list p)
       void set_from_list_or_tuple(py::list p)
       {
         x_ = p[0].cast<double>();
@@ -157,7 +157,7 @@ namespace dnt
       }
       // ENDDEF: void set_from_list(py::list p)
 
-      //! Put the member values into a tuple
+      //! Return a particle's data as a tuple
       py::tuple as_tuple()
         {
           // Create a tuple containing the member values
@@ -165,7 +165,7 @@ namespace dnt
         }
       // ENDDEF: py::tuple as_tuple()
 
-      //! Put the member values into a py::list
+      //! Return a particle's data as a list
       py::list as_list()
         {
           // Create a list containing the member values
@@ -183,10 +183,10 @@ namespace dnt
         }
       // ENDDEF: py::list as_list()
       
-      //! Put the member values into a py::dict
+      //! Return a particle's data as a dictionary
       py::dict as_dict()
         {
-          using namespace pybind11::literals;          
+          using namespace pybind11::literals;
           // Create a dictionary containing the member values
           return py::dict("x"_a=x_, "x0"_a=x0_, "ux"_a=ux_, "weight"_a=weight_, "bitflags"_a=bitflags_, "cell_index"_a=cell_index_, "unique_ID"_a=unique_ID_, "crossings"_a=crossings_);
         }

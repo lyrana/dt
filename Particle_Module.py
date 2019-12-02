@@ -1230,7 +1230,8 @@ class Particle_C(object):
 # Why is the None here for E? Because a particle may have gone out-of-bounds?  In that case, could compute E at initial coords instead of final coords.
 
 # Can I just send the interpolated E-field value?
-                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, neg_E_field=None, external_E_field=None, facet_crossing=True)
+#                                    self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, neg_E_field=None, external_E_field=None, facet_crossing=True)
+                                    self.record_trajectory_datum(sn, ipOut, fullIndex, step, tStart, neg_E_field=None, external_E_field=None, facet_crossing=True)
                                 self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
 
                             # Look up the cell index of the new cell.
@@ -1527,10 +1528,12 @@ class Particle_C(object):
 
                                 # Get the storage index that currently identifies this
                                 # particle in the trajectory list of particles.
-                                fullIndex = psa.get_full_index(ipIn, "in")
-                                self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True)
+# Move this call inside record_trajectory_datum:                                
+#                                fullIndex = psa.get_full_index(ipIn, "in")
+#                                self.record_trajectory_datum(species_name, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True)
+                                self.record_trajectory_datum(species_name, ipOut, fullIndex, step, tStart, facet_crossing=True)
                             # A reference to dx[] is available in the BC function class.
-                            self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
+                            self.pmesh_bcs.bc_function_dict[facValue][species_name](psegOut[ipOut], species_name, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
                         # Look up the cell index of the new cell.
                         pCellIndexNew = pmesh_M.cell_neighbors_dict[pCellIndex][cFacet]
 
@@ -1570,7 +1573,7 @@ class Particle_C(object):
                         if psegOut[ipOut]['bitflags'] & self.TRAJECTORY_FLAG != 0: # If this is a trajectory particle.
                             if indexChange is True:
                                 # print "mover: indexChange is true: updating the trajectory particle ID for particle", psegIn[ipIn]['unique_ID'], "ipIn =", ipIn, "ipOut =", ipOut
-                                self.update_trajectory_particleId(sn, ipIn, ipOut)
+                                self.update_trajectory_particleId(species_name, ipIn, ipOut)
 
                     # Advance the "out" array counter for the next particle
                     ipOut += 1
@@ -1583,7 +1586,7 @@ class Particle_C(object):
                     if self.traj_T is not None:
                         if psegIn[ipIn]['bitflags'] & self.TRAJECTORY_FLAG != 0:
                             # print "mover: Removing particle with ID", psegIn[ipIn]['unique_ID'], "ipIn", ipIn, "from trajectories", ", ipOut is", ipOut
-                            self.remove_trajectory_particleId(sn, ipIn, psegOut[ipOut], step, time, dt)
+                            self.remove_trajectory_particleId(species_name, ipIn, psegOut[ipOut], step, time, dt)
 
                 # Check if we've reached the end of this segment.  If so, we need
                 # to start writing on a new segment.  If there are no more
@@ -1835,11 +1838,15 @@ class Particle_C(object):
            :param int i_out: The particle's index in the current "out" segment.
         """
 
-        psa = self.pseg_arr[sn] # The segmented array for this species
+        sap = self.pseg_arr[sn] # The segmented array for this species
 
         # Obtain the full indices of this particle in the "in" and "out" arrays.
-        (full_index_in, full_index_out) = psa.get_full_indices(i_in, i_out)
+        (full_index_in, full_index_out) = sap.get_full_indices(i_in, i_out)
 
+#tph
+        print("update_trajectory_particleId: species_name", sn, "i_in", i_in, "i_out", i_out)
+        return
+    
         # Find the position of full_index_in in the trajectory storage list.  This is
         # the full index that previously identified the particle.
         p_index = self.traj_T.particle_index_list[sn].index(full_index_in)
@@ -1852,7 +1859,10 @@ class Particle_C(object):
 #    def update_trajectory_particleId(self, sn, i_in, i_out):ENDDEF
 
 #class Particle_C(object):
-    def remove_trajectory_particleId(self, sn, i_in, p, step, time, dt):
+#    def remove_trajectory_particleId(self, sn, i_in, p, step, time, dt):
+#    def remove_trajectory_particleId(self, sn, i_in, i_out, psegOut, step, time, dt):
+# Change interface: instead of passing psegOut, get it using get_current_out_segment()
+    def remove_trajectory_particleId(self, sn, i_in, i_out, step, time, dt):
         """Record the last data for a particle and remove it from the trajectory
            list.
 
@@ -1867,8 +1877,8 @@ class Particle_C(object):
 
            :param str sn: The name of the current species being advanced
            :param int i_in: The particle's index in the current "in" segment
-           :param p: The current attributes of the particle being deleted. These are
-                     recorded as the last point on the trajectory.
+           XX:param p: The current attributes of the particle being deleted. These are
+                     recorded as the last point on the trajectory.XX
            :param int step: The current simulation step
            :param float time: The current simulation time
            :param float dt: The simulation timestep
@@ -1881,6 +1891,14 @@ class Particle_C(object):
         printInfoOutOfBounds = True
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+#tph
+        sap = self.pseg_arr[sn] # The segmented array for this species
+        psegOut = sap.get_current_out_segment()
+        p = psegOut[i_out]
+        
+        print("remove_trajectory_particleId: species name =", sn)
+        print("remove_trajectory_particleId: p['x'] =", p['x'])
+        return
         
         finalStep = step
         finalTime = time
@@ -1894,17 +1912,17 @@ class Particle_C(object):
             finalStep += 1
             finalTime += dt
             
-        psa = self.pseg_arr[sn] # The segmented array for this species
+#        sap = self.pseg_arr[sn] # The segmented array for this species
         p_arr = self.one_particle_arr
 
-        # Obtain the full index of this particle
-        full_index_in = psa.get_full_index(i_in, "in")
+        # Obtain the full index of this particle. SAP keeps track of the current segment.
+        full_index_in = sap.get_full_index(i_in, "in")
 #tph
 #        print "remove_traj: The full index of particle", i_in, "is", full_index_in, ". The unique_ID is", p['unique_ID']
 
         # Record the last position
         # Retrieve particle using its full index
-#        p_arr[0] = psa.get(full_index_in)
+#        p_arr[0] = sap.get(full_index_in)
         p_arr[0] = p
 
         # Copy the particle values into the trajectory
@@ -1976,7 +1994,8 @@ class Particle_C(object):
 #    def remove_trajectory_particleId(self, sn, i_in):ENDDEF
 
 #class Particle_C(object):
-    def record_trajectory_datum(self, species_name, p, full_index, step, time, neg_E_field=None, external_E_field=None, facet_crossing=False):
+#    def record_trajectory_datum(self, species_name, p, full_index, step, time, neg_E_field=None, external_E_field=None, facet_crossing=False):
+    def record_trajectory_datum(self, species_name, i_out, full_index, step, time, neg_E_field=None, external_E_field=None, facet_crossing=False):
         """Save a single data-record of a particle trajectory.
 
            NB: It is assumed that TRAJECTORY_FLAG has been checked before this
@@ -1984,10 +2003,12 @@ class Particle_C(object):
 
            :param species_name: Name of the species that the marked particle belongs
                                 to.
-           :param p: One particle record, as defined by particle_dtype in
-                     Particle_C.__init__
+           XX:param i_in: Index of the particle in the current "in" segment.XX
+           :param i_out: Index of the particle in the current "out" segment.
+           XX :param p: One particle record, as defined by particle_dtype in
+                     Particle_C.__init__ XX
 
-           :param int full_index: The full storage index of the particle.
+           :param int full_index: The full storage index of the particle, which is used to identify the particle in the trajectory storage.
 
            :param neg_E_field: A Field_C object containing the solved field -E.
 
@@ -2004,10 +2025,19 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
+        # Access the particle's record in the current "out" segment. This has the
+        # most up-to-date data for this particle.
+        sap = self.pseg_arr[species_name] # The segmented array for this species
+        psegOut = sap.get_current_out_segment()
+        p = psegOut[i_out]
+        # Get the storage index that currently identifies this particle in the
+        # trajectory list of particles.
+#        fullIndex = sap.get_full_index(i_in, "in")
+        
         traj_T = self.traj_T
-        p_arr = self.one_particle_arr
 
         # Copy the particle into an array, since an array must be passed below.
+        p_arr = self.one_particle_arr
         p_arr[0] = p
 
         # print "record_trajectory_datum: p_arr[0] = ", p_arr[0]
@@ -2494,7 +2524,7 @@ class Particle_C(object):
 
                 particle[3*pDim+4] = crossings
                     
-                # Store the particle
+                # Store the particle in the "out" segment.
 #                p, pindex = psegArrSp.push_back(particle)
 
 #                print("push back particle", self.one_particle_arr[0])
@@ -2506,17 +2536,20 @@ class Particle_C(object):
                 # trajectory information. Note: if this is being called by
                 # initialize_particles(), the E-field has not been computed yet.
 #                p = psegArrSp[fullIndex]
-                (pseg, offset) = psegArrSp.get_segment_and_offset(fullIndex)
-                p = pseg[offset]
+#                (pseg, offset) = psegArrSp.get_segment_and_offset(fullIndex)
+#                p = pseg[offset]
 
-                if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
+#                if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
+                if bitflags & self.TRAJECTORY_FLAG != 0:
                     if self.traj_T is not None:
                         print("A trajectory will be recorded for particle", fullIndex, "of species:", speciesName)
                         dynamicsType = self.dynamics[speciesName]
                         self.traj_T.create_trajectory(speciesName, fullIndex, dynamicsType)
                         # Record the initial datum for this new trajectory
 
-                        self.record_trajectory_datum(speciesName, p, fullIndex, step, time, neg_E_field=None, external_E_field=None)
+#                        self.record_trajectory_datum(speciesName, p, fullIndex, step, time, neg_E_field=None, external_E_field=None)
+# does this p have an ipIn, ipOut?
+                        self.record_trajectory_datum(speciesName, segIndex, fullIndex, step, time, neg_E_field=None, external_E_field=None)
                     else:
 # Instead of printing this message, a traj_T object could be created here?
                         if printWarningNoTrajectory is True: print(fncName, "\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet.")

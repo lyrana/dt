@@ -249,7 +249,9 @@ namespace dnt
     // cell = self.cell_dict[cell_index];
     dolfin::Cell cell(mesh, cell_index);
     
-    // The coordinates of all the vertices in this cell.
+    // Get the coordinates of all the vertices in this cell.
+    // get_vertex_coordinates COPIES the vertex coordinates to the static array
+    // vertex_coords[].
 
     //Cell.h:339: void get_vertex_coordinates(std::vector<double>& coordinates) const
       // for (std::size_t i = 0; i < num_vertices; i++)

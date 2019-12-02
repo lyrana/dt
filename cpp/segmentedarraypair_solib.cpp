@@ -64,10 +64,12 @@ namespace dnt {
         .def("get_as_tuple", &SAP::get_as_tuple)
         .def("get_capacity", &SAP::get_capacity)
         .def("get_full_index", &SAP::get_full_index)
+        .def("get_full_indices", &SAP::get_full_indices)
         .def("get_item", &SAP::get_item)
         // Set a default value of a keyword argument:
         .def("get_next_out_segment", &SAP::get_next_out_segment, py::arg("returnDataPtr") = false)
         .def("get_next_segment", &SAP::get_next_segment, py::arg(), py::arg("returnDataPtr") = false)
+        .def("get_current_out_segment", &SAP::get_current_out_segment)
         .def("get_number_of_items", &SAP::get_number_of_items)
         .def("get_number_of_mbytes", &SAP::get_number_of_mbytes)
         .def("get_number_of_segments", &SAP::get_number_of_segments)

@@ -77,7 +77,7 @@ namespace dnt
     containing the final position is found.
 
     \param ctrl is a DTcontrol_C object.
-    \param psa is a SegmentedArrayPair containing the particle data for one neutral species.
+    \param sap is a SegmentedArrayPair containing the particle data for one neutral species.
     \param mesh is a dolfin Mesh that the particles move through.
     \cell_vertex_dict is a dictionary that returns the vertex ids, given a cell id.
 
@@ -93,6 +93,8 @@ namespace dnt
     void move_neutral_species(py::object particle_P, py::object species_name, py::object ctrl)
   {
 
+    using namespace pybind11::literals;
+        
     std::cout << "Hello from move_neutral_species@0" << std::endl;
     std::cout << "This is species " << std::string(py::str(species_name)) << std::endl;
 
@@ -101,13 +103,20 @@ namespace dnt
     auto mesh = pmesh_M.attr("mesh").cast<dolfin::Mesh>();
     auto tDim = mesh.topology().dim();
     auto meshEntityArrays = pmesh_M.attr("mea_object").cast<MeshEntityArrays<N_CELL_FACETS> *>();
+    
+    auto particleBoundaryMarker = pmesh_M.attr("particle_boundary_marker").cast<dolfin::MeshFunction<size_t>>();
+    
     auto NO_CELL = pmesh_M.attr("NO_CELL").cast<int>();
     auto NO_FACET = pmesh_M.attr("NO_FACET").cast<int>();
-
+    
+    // auto traj_T = particle_P.attr("traj_T").cast<py::capsule>();
+    // auto traj_T = particle_P.attr("traj_T").cast<nullptr_t>();
+    // There's no cast<>() here as we only need to check if traj_T is None.
+    auto traj_T = particle_P.attr("traj_T");
     // Get parameters needed from ctrl arg
     auto dt = ctrl.attr("dt").cast<double>(); // This does a COPY.
     auto step = ctrl.attr("timeloop_count").cast<int>();
-    auto t = ctrl.attr("time").cast<double>();
+    auto time = ctrl.attr("time").cast<double>();
     auto MAX_FACET_CROSS_COUNT = ctrl.attr("MAX_FACET_CROSS_COUNT").cast<size_t>();
     
     //    std::cout << "NO_FACET " << NO_FACET << std::endl;
@@ -141,16 +150,16 @@ namespace dnt
     
     // Get the data for the species to be advanced
     auto pseg_arr_map = particle_P.attr("pseg_arr").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
-    auto psa = pseg_arr_map[std::string(py::str(species_name))];
+    auto sap = pseg_arr_map[std::string(py::str(species_name))];
 
-    // Access the SAP without constructing a std::map. Note that psa is a pointer.
-    //1 auto psa = pseg_arr[species_name].cast<SegmentedArrayPair<PT> *>();
+    // Access the SAP without constructing a std::map. Note that sap is a pointer.
+    //1 auto sap = pseg_arr[species_name].cast<SegmentedArrayPair<PT> *>();
 
-    const py::ssize_t segmentLength = psa->get_segment_length();
+    const py::ssize_t segmentLength = sap->get_segment_length();
     //    auto mesh_coordinates = mesh.coordinates();
     
-    // Start a loop over the psa segments. segTuple contains (npSeg, psegIn, psegOut)
-    py::tuple segTuple = psa->init_inout_loop(true); // 'true' returns the data pointers for
+    // Start a loop over the sap segments. segTuple contains (npSeg, psegIn, psegOut)
+    py::tuple segTuple = sap->init_inout_loop(true); // 'true' returns the data pointers for
                                                      // the first segment pair, instead of the
                                                      // Numpy arrays.
     auto npSeg = segTuple[0].cast<py::ssize_t>();
@@ -177,7 +186,7 @@ namespace dnt
     // psegOut:
     auto psegOutNumpyArray = segTuple[2].cast<py::array_t<Pstruct<PT>,0>>();
     const auto psegOutNumpyArray_info = psegOutNumpyArray.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
-    auto psegOut = static_cast<Pstruct<PT>*>(psegOutNumpyArray_info.ptr); // Pointer to a particle struct in psegOut
+    auto psegOut = static_cast<Pstruct<PT>*>(psegOutNumpyArray_info.ptr); // Pointer to the array of particle structs.
     */
     
     py::ssize_t particleCount = 0; // Counts the number of still-active particles for this
@@ -211,14 +220,14 @@ namespace dnt
             if (ipOut == segmentLength)
               {
                 // Using pointers to the plain arrays:
-                py::tuple segTuple = psa->get_next_out_segment(true);                
+                py::tuple segTuple = sap->get_next_out_segment(true);                
                 // auto psegOutCap = segTuple[0].cast<py::capsule>();
                 // Pstruct<PT>* psegOut = psegInCap;
                 psegOut = segTuple[0].cast<py::capsule>(); // This compresses the above 2 lines into 1
                 
                 // Using Numpy structured arrays instead:
                 /*
-                py::tuple segTuple = psa->get_next_out_segment();
+                py::tuple segTuple = sap->get_next_out_segment();
                 auto psegOutNumpyArray = segTuple[0].cast<py::array_t<Pstruct<PT>,0>>();
                 const auto psegOutNumpyArray_info = psegOutNumpyArray.request();
                 const auto psegOut = static_cast<Pstruct<PT>*>(psegOutNumpyArray_info.ptr);
@@ -246,12 +255,12 @@ namespace dnt
 
             auto pCellIndex = psegOut[ipOut].cell_index_;
 
-            std::cout << "step: " << step << " ipOut: " << ipOut << " x_: " << psegOut[ipOut].x_ << std::endl;
+            std::cout << "move_neutral_species. step: " << step << " ipOut: " << ipOut << " x_: " << psegOut[ipOut].x_ << std::endl;
             
             // Loop until the particle is in the current cell
             auto mLastFacet = NO_FACET;
             size_t facetCrossCount = 0;
-            auto tStart = t - dt;
+            auto tStart = time - dt;
             auto dtRemaining = dt;
 
             /*            
@@ -320,8 +329,11 @@ namespace dnt
                 // Extract the values from the tuple:
                 auto cFacet = facetTupl[0].cast<int>();
                 auto dxFraction = facetTupl[1].cast<double>();
-                // auto facetNormalVectors = facetTupl[2].cast<double*>();
-                
+                // HERE: need to convert this to the type that can be sent to Python.
+                auto facetNormalVector = facetTupl[2].cast<double*>(); // a 3-vector
+                size_t cellFNVdim = 3; // Number of doubles per facet-normal vector (FNV).
+                auto pyFacetNormalVector = py::array_t<double>(cellFNVdim, facetNormalVector);
+ 
                 if (cFacet != NO_FACET)
                   {
                     tStart = tStart + dxFraction*dtRemaining; // The starting time in the new cell
@@ -334,10 +346,11 @@ namespace dnt
                     
                     // Look up the mesh-level index of this facet...
                     auto mFacetArray = pcellPtr->entities(tDim-1); // The mesh-level indices of the facets of this cell.
-                    int mFacet = mFacetArray[cFacet]; // The mesh-level index of the facet just crossed.
+                    //                    int mFacet = mFacetArray[cFacet]; // The mesh-level index of the facet just crossed.
+                    auto mFacet = mFacetArray[cFacet]; // The mesh-level index of the facet just crossed.
 
                     // mFacet should never be the same as the last facet crossed: check this
-                    if (mFacet == mLastFacet) // If the particle has crossed the same facet twice in succession, there's an error:
+                    if (mFacet == (size_t)mLastFacet) // If the particle has crossed the same facet twice in succession, there's an error:
                       {
                         std::string errorMsg = "In move_neutral_species(): The mesh index of the facet crossed is "  + std::to_string(mFacet) + ", the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!";
                         exit(EXIT_FAILURE);
@@ -347,25 +360,38 @@ namespace dnt
                         mLastFacet = mFacet;
                       }
                     // ...and get the value of the facet marker.
-
-//HERE1: uncomment this:
-                    /* int facValue = pmesh_M.particle_boundary_marker[mFacet]; */
-                    /* // Check if this facet has a non-zero marker, indicating that, */
-                    /* // e.g., the facet is a boundary. */
-                    /* if (facValue != 0) */
-                    /*   { */
-                    /*     // Call the function associated with this value. */
-
-                    /*     if (psegOut[ipOut].bitflags_ & Pstruct<PT>.TRAJECTORY_FLAG != 0b0) // If this is a trajectory particle. */
-                    /*       { */
-                    /*         // Get the storage index that currently identifies this */
-                    /*         // particle in the trajectory list of particles. */
-                    /*         fullIndex = psa->get_full_index(ipIn, "in"); */
-                    /*         self.record_trajectory_datum(sn, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True); */
-                    /*       } */
-                    /*     // A reference to dx[] is available in the BC function class. */
-                    /*     self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal); */
-                    /*   } */
+                    auto facValue = particleBoundaryMarker[mFacet];
+                    //                    int facValue = 0;
+                    // Check if this facet has a non-zero marker, indicating that,
+                    // e.g., the facet is a boundary.
+                    if (facValue != 0)
+                      {
+                        // Call the function associated with this value.
+                        if ((psegOut[ipOut].bitflags_ & Pstruct<PT>::TRAJECTORY_FLAG) != 0b0) // If this is a trajectory particle.
+                          {
+                            // Get the storage index that currently identifies this
+                            // particle in the trajectory list of particles.
+                            auto fullIndex = sap->get_full_index(ipIn, "in");
+                            //return py::dict("x"_a=x_, "x0"_a=x0_, "ux"_a=ux_, "weight"_a=weight_, "bitflags"_a=bitflags_, "cell_index"_a=cell_index_, "unique_ID"_a=unique_ID_, "crossings"_a=crossings_);
+                            //bool facet_crossing;
+                            particle_P.attr("record_trajectory_datum")(species_name, ipOut, fullIndex, step, tStart, "facet_crossing"_a=true); // Does this work?
+                    /*         self.record_trajectory_datum(species_name, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True); */
+                          }
+                        // A reference to dx[] is available in the BC function class.
+                    /*     self.pmesh_bcs.bc_function_dict[facValue][species_name](psegOut[ipOut], species_name, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal); */
+                        // double dx_fraction;
+                        //particle_P.attr("pmesh_bcs").attr("bc_function_dict")[facValue][species_name](psegOut[ipOut], species_name, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal);
+                        // HERE2 Need to cast this first.
+                        // ?? Test for is_none() first?
+                        auto bcFunctionDict = particle_P.attr("pmesh_bcs").attr("bc_function_dict").cast<py::dict>();
+                        //doesn't work: auto bcFunction = bcFunctionDict[std::to_string(facValue)].cast<py::dict>();
+                        // A py::dict needs a py::str key value. Convert facValue to a string first.
+                        auto bcFunction = bcFunctionDict[py::str(std::to_string(facValue))].cast<py::dict>();
+                        // A py::dict needs a py::str key value
+                        bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=pyFacetNormalVector);
+                        
+                        // particle_P.attr("pmesh_bcs").attr("bc_function_dict")[facValue][species_name](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);
+                      }
 
                     // Look up the cell index of the new cell.
                     auto pCellIndexNew = meshEntityArrays->get_cell_neighbors(pCellIndex)[cFacet];
@@ -413,7 +439,55 @@ namespace dnt
 // Add back missing code: // Record the number of facet-crossings
                           // Check for deletion
                           // Treat trajectory particles
-        
+
+            // Record the number of facet-crossings
+            psegOut[ipOut].crossings_ = facetCrossCount;
+
+            // For testing only:
+            particle_P.attr("update_trajectory_particleId")(species_name, ipIn, ipOut);
+            
+            // Check that this particle has not been deleted before incrementing the
+            // "out" particle counter.
+
+            // test-only
+            std::cout << "move_neutral_species2 step: " << step << " ipOut: " << ipOut << " x_: " << psegOut[ipOut].x_ << std::endl;            
+            particle_P.attr("remove_trajectory_particleId")(species_name, ipIn, ipOut, step, time, dt);
+
+            
+            if ((psegOut[ipOut].bitflags_ & Pstruct<PT>::DELETE_FLAG) == 0b0) // If this particle has not been deleted...
+              {
+                /*
+                  If particle indices in the "out" SA have changed (i.e., indexChange
+                  is 'true') due to deletions, then update this particle's index where
+                  needed.  E.g., if this is a trajectory particle, update its SA
+                  index in the list of trajectory particles.
+                */
+                if (!traj_T.is_none())
+                  {
+                    if ((psegOut[ipOut].bitflags_ & Pstruct<PT>::TRAJECTORY_FLAG) != 0b0) // If this is a trajectory particle.
+                      {
+                        if (indexChange == true)
+                          {
+                            particle_P.attr("update_trajectory_particleId")(species_name, ipIn, ipOut);
+                          }
+                      }
+                  }
+                // Advance the "out" array counter for the next particle
+                ipOut += 1;
+              }
+            else // This particle has been deleted
+              {
+                indexChange = true; // This indicates that particle SA indices are changed past this point due to deletions.
+                // If this was a trajectory particle, remove it's index from the trajectory-particle list.
+                if (!traj_T.is_none())
+                  {
+                    if ((psegIn[ipIn].bitflags_ & Pstruct<PT>::TRAJECTORY_FLAG) != 0b0)
+                      {
+                        // replace                       particle_P.attr("remove_trajectory_particleId")(species_name, ipIn, psegOut[ipOut], step, time, dt);
+                      }
+                  }
+              }
+
             /*
               Check if we've reached the end of this segment.  If so, we need to start
               writing on a new segment.  If there are no more segments, allocate a new one.
@@ -426,11 +500,11 @@ namespace dnt
           } // loop over particles in the "in" segment
         
         // Done with this "in" segment. Get the next one, if it exists.
-        py::tuple segTuple = psa->get_next_segment("in", true);
+        py::tuple segTuple = sap->get_next_segment("in", true);
         auto npSeg = segTuple[0].cast<py::ssize_t>();
         if (npSeg >  0)
           {
-            psegIn = segTuple[1].cast<py::capsule>(); // This is compressed: there's a cast performed to make psegIn, which has it's type from above.
+            psegIn = segTuple[1].cast<py::capsule>(); // This is a compressed expression: there's a cast performed to make psegIn, which has it's type from above (Pstruct<PT>* psegIn)
           }
         else
           {
@@ -441,7 +515,7 @@ namespace dnt
 
         // Using Numpy structured arrays:
         /*
-        py::tuple segTuple = psa->get_next_segment("in");
+        py::tuple segTuple = sap->get_next_segment("in");
         npSeg = segTuple[0].cast<py::ssize_t>();
         auto psegInNumpyArray = segTuple[1].cast<py::array_t<Pstruct<PT>,0>>();
         const auto psegInNumpyArray_info = psegInNumpyArray.request();
@@ -455,7 +529,7 @@ namespace dnt
         particleCount += ipOut;
       }
     std::cout << "particleCount: " << particleCount << std::endl;
-    psa->set_number_of_items("out", particleCount);
+    sap->set_number_of_items("out", particleCount);
   }
   // ENDDEF: void move_neutral_species(py::object species_name, py::object ctrl, py::object particle_P)
   
@@ -471,7 +545,7 @@ namespace dnt
 
     \param species_name is the string name of the charged-particle species.
     \param ctrl is a DTcontrol_C object.
-    \param psa is a SegmentedArrayPair containing the particle data for one neutral species.
+    \param sap is a SegmentedArrayPair containing the particle data for one neutral species.
 
   */
   template <Ptype PT>
@@ -499,19 +573,19 @@ namespace dnt
 
     // Get the data for the species to be advanced
     //    auto pseg_arr_map = particle_P.attr("pseg_arr").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
-    //    auto psa = pseg_arr_map[std::string(py::str(species_name))];
+    //    auto sap = pseg_arr_map[std::string(py::str(species_name))];
     // This is equivalent to the above two lines:
     // (pseg_arr[species_name] is a pointer to the SAP?)
-    auto psa = particle_P.attr("pseg_arr")[species_name].cast<SegmentedArrayPair<PT> *>();
+    auto sap = particle_P.attr("pseg_arr")[species_name].cast<SegmentedArrayPair<PT> *>();
     
-    // Access the SAP without constructing a std::map. Note that psa is a pointer.
-    //1 auto psa = pseg_arr[species_name].cast<SegmentedArrayPair<PT> *>();
+    // Access the SAP without constructing a std::map. Note that sap is a pointer.
+    //1 auto sap = pseg_arr[species_name].cast<SegmentedArrayPair<PT> *>();
 
-    const py::ssize_t segmentLength = psa->get_segment_length();
+    const py::ssize_t segmentLength = sap->get_segment_length();
     //    auto mesh_coordinates = mesh.coordinates();
     
-    // Start a loop over the psa segments. segTuple contains (npSeg, psegIn, psegOut)
-    py::tuple segTuple = psa->init_inout_loop(true); // 'true' returns the data pointers for
+    // Start a loop over the sap segments. segTuple contains (npSeg, psegIn, psegOut)
+    py::tuple segTuple = sap->init_inout_loop(true); // 'true' returns the data pointers for
                                                      // the first segment pair, instead of the
                                                      // Numpy arrays.
     auto npSeg = segTuple[0].cast<py::ssize_t>();
@@ -572,14 +646,14 @@ namespace dnt
             if (ipOut == segmentLength)
               {
                 // Using pointers to the plain arrays:
-                py::tuple segTuple = psa->get_next_out_segment(true);                
+                py::tuple segTuple = sap->get_next_out_segment(true);                
                 // auto psegOutCap = segTuple[0].cast<py::capsule>();
                 // Pstruct<PT>* psegOut = psegInCap;
                 psegOut = segTuple[0].cast<py::capsule>(); // This compresses the above 2 lines into 1
                 
                 // Using Numpy structured arrays instead:
                 /*
-                py::tuple segTuple = psa->get_next_out_segment();
+                py::tuple segTuple = sap->get_next_out_segment();
                 auto psegOutNumpyArray = segTuple[0].cast<py::array_t<Pstruct<PT>,0>>();
                 const auto psegOutNumpyArray_info = psegOutNumpyArray.request();
                 const auto psegOut = static_cast<Pstruct<PT>*>(psegOutNumpyArray_info.ptr);
@@ -619,7 +693,7 @@ namespace dnt
           } // loop over particles in the "in" segment
         
         // Done with this "in" segment. Get the next one, if it exists.
-        py::tuple segTuple = psa->get_next_segment("in", true);
+        py::tuple segTuple = sap->get_next_segment("in", true);
         auto npSeg = segTuple[0].cast<py::ssize_t>();
         if (npSeg >  0)
           {
@@ -634,7 +708,7 @@ namespace dnt
 
         // Using Numpy structured arrays:
         /*
-        py::tuple segTuple = psa->get_next_segment("in");
+        py::tuple segTuple = sap->get_next_segment("in");
         npSeg = segTuple[0].cast<py::ssize_t>();
         auto psegInNumpyArray = segTuple[1].cast<py::array_t<Pstruct<PT>,0>>();
         const auto psegInNumpyArray_info = psegInNumpyArray.request();
@@ -647,7 +721,7 @@ namespace dnt
       {
         particleCount += ipOut;
       }
-    psa->set_number_of_items("out", particleCount);
+    sap->set_number_of_items("out", particleCount);
   }
   // ENDDEF: void move_charged_species_in_uniform_fields(py::object species_name, py::object ctrl, py::object particle_P)
   
@@ -668,7 +742,7 @@ namespace dnt
     :cvar double tStart: The time at which a particle starts its move in the
                                  current cell.
 
-  void move_neutral_species(SegmentedArrayPair<Ptype::cartesian_xyz>& psa)
+  void move_neutral_species(SegmentedArrayPair<Ptype::cartesian_xyz>& sap)
   {
     
   }
