@@ -112,7 +112,8 @@ namespace dnt
       void compute_cell_facet_normals_array();
       // Obtain the facet-normals for one cell
       //      std::array<std::array<double, 3>, N_CELL_FACETS> get_cell_facet_normals(std::size_t cell_index);
-      std::array<double, N_CELL_FACETS*3> get_cell_facet_normals(std::size_t cell_index);
+      //      std::array<double, N_CELL_FACETS*3> get_cell_facet_normals(std::size_t cell_index);
+      std::array<double, N_CELL_FACETS*3>& get_cell_facet_normals(std::size_t cell_index);
       
       // Compute cell volumes
       // Probably not used on particle mesh?

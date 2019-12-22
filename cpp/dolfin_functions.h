@@ -51,6 +51,6 @@ namespace dnt
 {
   
   bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point);
-  py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index);
+  py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index, bool returnStdArray = false);
   
 } // namespace dnt

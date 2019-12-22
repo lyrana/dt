@@ -171,7 +171,7 @@ namespace dnt
   } // ENDDEF: bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point)
 
   
-  // BEGINDEF: py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index)
+  // BEGINDEF: py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index, bool returnStdArray)
   //! Find the cell facet crossed in traveling along a displacement vector dr from position r0.
   /*!
     The facet crossed is the one with the smallest value of the
@@ -200,12 +200,18 @@ namespace dnt
        \param cell_index: the (global?) index of the cell that the
                           particle started in.
 
+       \param returnStdArray: flag indicating whether the facet-normal is
+                             returned as a Numpy array or as a pointer-to-data.
+
        \returns: 3-tuple(index of the facet crossed or None,
                          fraction of the path that's in this cell,
                          the unit normal to the facet crossed)
   */
-  py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index)
+  py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index, bool returnStdArray)
   {
+
+    //    std::cout << "Entering dolfin_functions.cpp::find_facet()." << std::endl;
+    
     // Get attributes needed from Mesh_C arg
     auto mesh = mesh_M.attr("mesh").cast<dolfin::Mesh>();
     /*
@@ -259,6 +265,8 @@ namespace dnt
       //     coordinates[i*gDim + j] = _mesh->geometry().x(vertices[i])[j];
     // The coordinates are laid out as (x0,y0,z0), (x1,y1,z1), ... for the vertices
     cell.get_vertex_coordinates(vertex_coords);
+
+    //    std::cout << "dolfin_functions.cpp::find_facet(). gDim " << gDim << std::endl;
     
     if (gDim == 3)
       {
@@ -384,7 +392,16 @@ namespace dnt
             exit(EXIT_FAILURE);
           }
         
-        return py::make_tuple(facet, dxFraction, facetNormalVectors[facet*cellFNVdim]);
+        if (returnStdArray == true)
+          {
+            return py::make_tuple(facet, dxFraction, &facetNormalVectors[facet*cellFNVdim]);
+          }
+        else
+          {
+            // Create a Numpy array for the facet-normal and give it gDim values
+            auto pyFacetNormalVector = py::array_t<double>(gDim, &facetNormalVectors[facet*cellFNVdim]);
+            return py::make_tuple(facet, dxFraction, pyFacetNormalVector);
+          }
                                      
       } // if (gDim == 3)
     else if (gDim == 2)
@@ -481,8 +498,16 @@ namespace dnt
             std::cout << "dolfin_functions.cpp::find_facet: !!! Bad value for dxFraction: " << dxFraction << std::endl;
             exit(EXIT_FAILURE);
           }
-        
-        return py::make_tuple(facet, dxFraction, facetNormalVectors[facet*cellFNVdim]);
+        if (returnStdArray == true)
+          {
+            return py::make_tuple(facet, dxFraction, &facetNormalVectors[facet*cellFNVdim]);
+          }
+        else
+          {
+            // Create a Numpy array for the facet-normal and give it gDim values
+            auto pyFacetNormalVector = py::array_t<double>(gDim, &facetNormalVectors[facet*cellFNVdim]);
+            return py::make_tuple(facet, dxFraction, pyFacetNormalVector);
+          }
                                      
       } // else if (gDim == 2)
     else if (gDim == 1)
@@ -500,7 +525,7 @@ namespace dnt
         auto n0 = &facetNormalVectors[0];
         auto n0DotDx = n0[0]*dx[0];
 
-        //        std::cout << "find_facet: x0[0] " << x0[0] << " dx[0] " << dx[0] << " n0DotDx " << n0DotDx << std::endl;
+        //        std::cout << "find_facet (gDim = 1): x0[0] " << x0[0] << " dx[0] " << dx[0] << " n0DotDx " << n0DotDx << std::endl;
         
         if (n0DotDx > 0)
           {
@@ -511,7 +536,7 @@ namespace dnt
             // The normal distance to the facet plane
             // distanceToFacet = np_m.dot(facetNormalVectors[0], vecToFacet)
             auto distanceToFacet = n0[0]*vecToFacet[0];
-//                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
+            //            std::cout << "f0 find_facet(): vecToFacet= " << vecToFacet[0] <<  " distanceToFacet= " << distanceToFacet << std::endl;
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
                 std::cout << "dolfin_functions.cpp::find_facet 0: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
@@ -522,7 +547,18 @@ namespace dnt
                 facet = 0; // The plane of facet 0 was crossed
                 dxFraction = distanceToFacet/n0DotDx;
                 assert(dxFraction >= 0 && dxFraction <= 1.0);
-                return py::make_tuple(facet, dxFraction, facetNormalVectors[facet*cellFNVdim]);
+                //                std::cout << "dolfin_functions.cpp::find_facet0. facetNormalVectors[facet*cellFNVdim] is " << facetNormalVectors[facet*cellFNVdim] << std::endl;                
+
+                if (returnStdArray == true)
+                  {
+                    return py::make_tuple(facet, dxFraction, &facetNormalVectors[facet*cellFNVdim]);
+                  }
+                else
+                  {
+                    // Create a Numpy array for the facet-normal and give it gDim values                    
+                    auto pyFacetNormalVector = py::array_t<double>(gDim, &facetNormalVectors[facet*cellFNVdim]);
+                    return py::make_tuple(facet, dxFraction, pyFacetNormalVector);
+                  }
               }
           }
 
@@ -546,21 +582,29 @@ namespace dnt
               {
                 facet = 1; // The plane of facet 1 was crossed
                 dxFraction = distanceToFacet/n1DotDx;
-                assert(dxFraction >= 0 && dxFraction <= 1.0);                
-                return py::make_tuple(facet, dxFraction, facetNormalVectors[facet*cellFNVdim]);
+                assert(dxFraction >= 0 && dxFraction <= 1.0);
+                if (returnStdArray == true)
+                  {
+                    return py::make_tuple(facet, dxFraction, &facetNormalVectors[facet*cellFNVdim]);
+                  }
+                else
+                  {
+                    // Create a Numpy array for the facet-normal and give it gDim values
+                    auto pyFacetNormalVector = py::array_t<double>(gDim, &facetNormalVectors[facet*cellFNVdim]);
+                    return py::make_tuple(facet, dxFraction, pyFacetNormalVector);
+                  }
               }
           }
 
         std::cout << "dolfin_functions.cpp::find_facet() for gDim = 1: Should never get here!!!" << std::endl;
         exit(EXIT_FAILURE);
-        // return py::make_tuple(facet, dxFraction, facetNormalVectors[facet*cellFNVdim]);
                                      
       } // else if (gDim == 1)
 
     std::cout << "End of dolfin_functions.cpp::find_facet(). Should never get here!!!" << std::endl;
     exit(EXIT_FAILURE);
     
-    return py::make_tuple(NO_FACET, 0.0, nullptr); // Shouldn't reach this. This stops a compiler warning.
+    return py::make_tuple(NO_FACET, 0.0, nullptr); // Shouldn't reach this. This statement just stops a compiler warning.
     
   } // ENDDEF: py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index)
   

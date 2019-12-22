@@ -1862,7 +1862,7 @@ class Particle_C(object):
 #    def remove_trajectory_particleId(self, sn, i_in, p, step, time, dt):
 #    def remove_trajectory_particleId(self, sn, i_in, i_out, psegOut, step, time, dt):
 # Change interface: instead of passing psegOut, get it using get_current_out_segment()
-    def remove_trajectory_particleId(self, sn, i_in, i_out, step, time, dt):
+    def remove_trajectory_particleId(self, sn, ip_in, ip_out, step, time, dt):
         """Record the last data for a particle and remove it from the trajectory
            list.
 
@@ -1876,7 +1876,7 @@ class Particle_C(object):
            trying to interpolate it.
 
            :param str sn: The name of the current species being advanced
-           :param int i_in: The particle's index in the current "in" segment
+           :param int ip_in: The particle's index in the current "in" segment
            XX:param p: The current attributes of the particle being deleted. These are
                      recorded as the last point on the trajectory.XX
            :param int step: The current simulation step
@@ -1894,7 +1894,7 @@ class Particle_C(object):
 #tph
         sap = self.pseg_arr[sn] # The segmented array for this species
         psegOut = sap.get_current_out_segment()
-        p = psegOut[i_out]
+        p = psegOut[ip_out]
         
         print("remove_trajectory_particleId: species name =", sn)
         print("remove_trajectory_particleId: p['x'] =", p['x'])
@@ -1916,9 +1916,9 @@ class Particle_C(object):
         p_arr = self.one_particle_arr
 
         # Obtain the full index of this particle. SAP keeps track of the current segment.
-        full_index_in = sap.get_full_index(i_in, "in")
+        full_index_in = sap.get_full_index(ip_in, "in")
 #tph
-#        print "remove_traj: The full index of particle", i_in, "is", full_index_in, ". The unique_ID is", p['unique_ID']
+#        print "remove_traj: The full index of particle", ip_in, "is", full_index_in, ". The unique_ID is", p['unique_ID']
 
         # Record the last position
         # Retrieve particle using its full index

@@ -323,16 +323,19 @@ namespace dnt
                 dx[0] = pCoord2[0] - pCoord2[3];
                 dx[1] = pCoord2[1] - pCoord2[4];
                 dx[2] = pCoord2[2] - pCoord2[5];
-                
-                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex);
+
+                // bool returnDataPtr = true;
+                bool returnDataPtr = false;
+                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnDataPtr);
                 // This returns the tuple (facet, dxFraction, facet_normal_vectors[facet])
                 // Extract the values from the tuple:
                 auto cFacet = facetTupl[0].cast<int>();
                 auto dxFraction = facetTupl[1].cast<double>();
-                // HERE: need to convert this to the type that can be sent to Python.
-                auto facetNormalVector = facetTupl[2].cast<double*>(); // a 3-vector
-                size_t cellFNVdim = 3; // Number of doubles per facet-normal vector (FNV).
-                auto pyFacetNormalVector = py::array_t<double>(cellFNVdim, facetNormalVector);
+                // auto facetNormalVector = facetTupl[2].cast<std::array<double, 3>>(); // a 3-vector
+                auto facetNormalVector = facetTupl[2].cast<py::array_t<double>>();
+                
+                //                size_t cellFNVdim = 3; // Number of doubles per facet-normal vector (FNV).
+                //                auto pyFacetNormalVector = py::array_t<double>(cellFNVdim, facetNormalVector); // Create a Numpy array and give it values.
  
                 if (cFacet != NO_FACET)
                   {
@@ -378,7 +381,6 @@ namespace dnt
                     /*         self.record_trajectory_datum(species_name, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True); */
                           }
                         // A reference to dx[] is available in the BC function class.
-                    /*     self.pmesh_bcs.bc_function_dict[facValue][species_name](psegOut[ipOut], species_name, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal); */
                         // double dx_fraction;
                         //particle_P.attr("pmesh_bcs").attr("bc_function_dict")[facValue][species_name](psegOut[ipOut], species_name, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal);
                         // HERE2 Need to cast this first.
@@ -388,8 +390,9 @@ namespace dnt
                         // A py::dict needs a py::str key value. Convert facValue to a string first.
                         auto bcFunction = bcFunctionDict[py::str(std::to_string(facValue))].cast<py::dict>();
                         // A py::dict needs a py::str key value
-                        bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=pyFacetNormalVector);
-                        
+                        // bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=pyFacetNormalVector);
+                        bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);                        
+                    /*     self.pmesh_bcs.bc_function_dict[facValue][species_name](psegOut[ipOut], species_name, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal); */
                         // particle_P.attr("pmesh_bcs").attr("bc_function_dict")[facValue][species_name](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);
                       }
 
@@ -483,7 +486,7 @@ namespace dnt
                   {
                     if ((psegIn[ipIn].bitflags_ & Pstruct<PT>::TRAJECTORY_FLAG) != 0b0)
                       {
-                        // replace                       particle_P.attr("remove_trajectory_particleId")(species_name, ipIn, psegOut[ipOut], step, time, dt);
+                        particle_P.attr("remove_trajectory_particleId")(species_name, ipIn, ipOut, step, time, dt);
                       }
                   }
               }
@@ -513,7 +516,7 @@ namespace dnt
             assert(psegIn == nullptr);
           }
 
-        // Using Numpy structured arrays:
+        // If we use Numpy structured arrays:
         /*
         py::tuple segTuple = sap->get_next_segment("in");
         npSeg = segTuple[0].cast<py::ssize_t>();

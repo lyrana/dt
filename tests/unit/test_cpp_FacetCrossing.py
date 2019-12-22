@@ -19,14 +19,17 @@ from Particle_Module import *
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
 # Use the C++ functions in the mesh_entity_arrays_solib.so library
-import mesh_entity_arrays_solib
+#import mesh_entity_arrays_solib
 # Use the C++ functions in the dolfin_functions_solib.so library
 import dolfin_functions_solib
 
 
 class TestCppFacetCrossing(unittest.TestCase):
-    """Test the C++ algorithm to find the cell facet crossed and desination cell due to a
-       particle displacement."""
+    """Test the C++ algorithm to find the cell facet crossed and desination cell due
+       to a particle displacement.
+
+       Functions tested: find_facet()
+    """
     
     def setUp(self):
 
@@ -191,23 +194,23 @@ class TestCppFacetCrossing(unittest.TestCase):
 
             # Move in POSITIVE direction into the next cell (barely)
             dr = [0.50001*self.mesh1D_dx,]
-            facet_expected = 1
+            facetExpected = 1
 
 #            print("Calling find_facet:", "r0 =", r0, "dr =", dr, "ci =", cell.index())
-#            (facet_crossed, path_fraction, facetNormal) = self.mesh1D.find_facet(r0, dr, cell.index())
-            (facet_crossed, path_fraction, facetNormal) = dolfin_functions_solib.find_facet(self.mesh1D, r0, dr, cell.index())
-            print("Returned values =", facet_crossed, "path_fraction =", path_fraction, "facetNormal =", facetNormal)
+#            (facetCrossed, pathFraction, facetNormalVector) = self.mesh1D.find_facet(r0, dr, cell.index())
+            (facetCrossed, pathFraction, facetNormalVector) = dolfin_functions_solib.find_facet(self.mesh1D, r0, dr, cell.index(), returnStdArray=False)
+#            print("Returned values =", facetCrossed, "pathFraction =", pathFraction, "facetNormalVector =", facetNormalVector)
             # Check facet
-            self.assertEqual(facet_crossed, facet_expected, msg = "1D: facet crossed is not correct")
+            self.assertEqual(facetCrossed, facetExpected, msg = "1D: facet crossed is not correct")
             # Look up the cell crossed into
-            cell2_index = neighborCellIndices[facet_crossed]
-#            print "ci =", cell.index(), "cell2_index =", cell2_index
+            cell2Index = neighborCellIndices[facetCrossed]
+#            print "ci =", cell.index(), "cell2Index =", cell2Index
             # Skip movements outside the mesh upper boundary
-            if cell2_index != Mesh_C.NO_CELL:
-                self.assertEqual(cell.index()+1, cell2_index, msg = "1D: cell crossed into is not correct")
+            if cell2Index != Mesh_C.NO_CELL:
+                self.assertEqual(cell.index()+1, cell2Index, msg = "1D: cell crossed into is not correct")
                 # Look up the mesh-level facet index of the facet crossed
-                ifacet = self.mesh1D.cell_entity_indices_dict['facet'][cell.index()][facet_crossed]
-#                print 'Cell facet', facet_crossed, 'has mesh index', ifacet
+                ifacet = self.mesh1D.cell_entity_indices_dict['facet'][cell.index()][facetCrossed]
+#                print 'Cell facet', facetCrossed, 'has mesh index', ifacet
 
                 # Check this: look up the facet (dimension = 0) shared
                 # by the two cells,
@@ -217,27 +220,34 @@ class TestCppFacetCrossing(unittest.TestCase):
                 # and end cells.
 #                print 'facet is connected to cell', facet.entities(1)
 
-                self.assertTrue(cell.index() in facet.entities(1) and cell2_index in facet.entities(1), msg = "1D: facet given by find_facet is not correct")
-#            if cell2_index != Mesh_C.NO_CELL:ENDIF
+                self.assertTrue(cell.index() in facet.entities(1) and cell2Index in facet.entities(1), msg = "1D: facet given by find_facet is not correct")
+
+            # Check the returned facet-normal vector against the expected vector.
+
+            decimalPlaces = 6 # Accuracy of test
+            expectedFacetNormal = [1.,]
+            self.assertAlmostEqual(facetNormalVector[0], expectedFacetNormal[0], places=decimalPlaces, msg="Cell facet normal is not correct")
+#            if cell2Index != Mesh_C.NO_CELL:ENDIF
             numberOfFacetCrossings += 1
 
             # Move in NEGATIVE direction into the next cell (barely)
             dr = [-0.50001*self.mesh1D_dx,]
-            facet_expected = 0
+            facetExpected = 0
 
 #            print "Calling find_facet:", "r0 =", r0, "dr =", dr, "ci =", cell.index()
-            (facet_crossed, path_fraction, facetNormal) = self.mesh1D.find_facet(r0, dr, cell.index())
-            print("Returned values =", facet_crossed, "path_fraction =", path_fraction, "facetNormal =", facetNormal)
-            self.assertEqual(facet_crossed, facet_expected, msg = "1D facet crossed is not correct")
+
+            (facetCrossed, pathFraction, facetNormalVector) = dolfin_functions_solib.find_facet(self.mesh1D, r0, dr, cell.index(), returnStdArray=False)
+#            print("Returned values =", facetCrossed, "pathFraction =", pathFraction, "facetNormalVector =", facetNormalVector)
+            self.assertEqual(facetCrossed, facetExpected, msg = "1D facet crossed is not correct")
             # Look up the cell crossed into
-            cell2_index = neighborCellIndices[facet_crossed]
+            cell2Index = neighborCellIndices[facetCrossed]
             # Skip movements outside the mesh lower boundary
-            if cell2_index != Mesh_C.NO_CELL:
-                self.assertEqual(cell.index()-1, cell2_index, msg = "1D: cell crossed into is not correct")
+            if cell2Index != Mesh_C.NO_CELL:
+                self.assertEqual(cell.index()-1, cell2Index, msg = "1D: cell crossed into is not correct")
 
                 # Look up the mesh-level facet index of the facet crossed
-                ifacet = self.mesh1D.cell_entity_indices_dict['facet'][cell.index()][facet_crossed]
-#                print 'Cell facet', facet_crossed, 'has mesh index', ifacet
+                ifacet = self.mesh1D.cell_entity_indices_dict['facet'][cell.index()][facetCrossed]
+#                print 'Cell facet', facetCrossed, 'has mesh index', ifacet
 
                 # Check this: look up the facet (dimension = 0) shared
                 # by the two cells,
@@ -247,8 +257,14 @@ class TestCppFacetCrossing(unittest.TestCase):
                 # and end cells.
 #                print 'facet is connected to cell', facet.entities(1)
 
-                self.assertTrue(cell.index() in facet.entities(1) and cell2_index in facet.entities(1), msg = "1D: facet given by find_facet is not correct")
-#            if cell2_index != Mesh_C.NO_CELL:ENDDIF
+                self.assertTrue(cell.index() in facet.entities(1) and cell2Index in facet.entities(1), msg = "1D: facet given by find_facet is not correct")
+
+            # Check the returned facet-normal vector against the expected vector.
+
+            decimalPlaces = 6 # Accuracy of test
+            expectedFacetNormal = [-1.,]
+            self.assertAlmostEqual(facetNormalVector[0], expectedFacetNormal[0], places=decimalPlaces, msg="Cell facet normal is not correct")
+#            if cell2Index != Mesh_C.NO_CELL:ENDDIF
             numberOfFacetCrossings += 1
 #        for cell in df_m.cells(self.mesh1D.mesh): ENDFOR
 
@@ -266,31 +282,32 @@ class TestCppFacetCrossing(unittest.TestCase):
                                           # on a boundary, i.e., there is no
                                           # neighbor cell on that facet.
                     continue
-                cell_index_expected = nci
+                cellIndexExpected = nci
 
                 # Create initial point and move vector
                 p = cell.midpoint()
 #                print "cell midpoint:", p.x(), p.y()
                 r0 = [p.x(), p.y()]
 
-                cell2 = self.mesh2D.cell_dict[cell_index_expected]
+                cell2 = self.mesh2D.cell_dict[cellIndexExpected]
                 p2 = cell2.midpoint()
                 dr = [p2.x()-p.x(), p2.y()-p.y()]
 
 #                print "r0, dr=", r0, dr
-#                (facet_crossed, path_fraction, facetNormal) = self.mesh2D.find_facet(r0, dr, cell.index())
-                (facet_crossed, path_fraction, facetNormal) = dolfin_functions_solib.find_facet(self.mesh2D, r0, dr, cell.index())
+#                (facetCrossed, pathFraction, facetNormalVector) = self.mesh2D.find_facet(r0, dr, cell.index())
+                (facetCrossed, pathFraction, facetNormalVector) = dolfin_functions_solib.find_facet(self.mesh2D, r0, dr, cell.index())
+#                print("Returned values =", facetCrossed, "pathFraction =", pathFraction, "facetNormalVector =", facetNormalVector)
 
-#                print "start cell", cell.index(), "expected_cell", cell_index_expected, "facet crossed", facet_crossed
+#                print "start cell", cell.index(), "expected_cell", cellIndexExpected, "facet crossed", facetCrossed
                 # Lookup the cell crossed from the facet number
-                cell2_index = neighborCellIndices[facet_crossed]
-#                print "cell2_index=", cell2_index
+                cell2Index = neighborCellIndices[facetCrossed]
+#                print "cell2Index=", cell2Index
 
-                self.assertEqual(cell2_index, cell_index_expected, msg = "2D: final cell is not correct")
+                self.assertEqual(cell2Index, cellIndexExpected, msg = "2D: final cell is not correct")
 
                 # Look up the mesh-level facet index of the facet crossed
-                ifacet = self.mesh2D.cell_entity_indices_dict['facet'][cell.index()][facet_crossed]
-#                print 'Cell facet', facet_crossed, 'has mesh facet index', ifacet
+                ifacet = self.mesh2D.cell_entity_indices_dict['facet'][cell.index()][facetCrossed]
+#                print 'Cell facet', facetCrossed, 'has mesh facet index', ifacet
 
                 # Check this: look up the facet (dimension = 1) shared
                 # by the two cells,
@@ -298,8 +315,8 @@ class TestCppFacetCrossing(unittest.TestCase):
                 # and make sure the two cells with this facet (the
                 # cells are entities having dimension 2) are the start
                 # and end cells.
-#                print "Cells owning this facet:", facet.entities(2), "vs.", cell.index(), cell2_index
-                self.assertTrue(cell.index() in facet.entities(2) and cell2_index in facet.entities(2), msg = "2D: facet given by find_facet is not correct")
+#                print "Cells owning this facet:", facet.entities(2), "vs.", cell.index(), cell2Index
+                self.assertTrue(cell.index() in facet.entities(2) and cell2Index in facet.entities(2), msg = "2D: facet given by find_facet is not correct")
                 numberOfFacetCrossings += 1
                 
         print("\t2D mesh: tested", numberOfFacetCrossings, "facet crossings")
@@ -323,42 +340,42 @@ class TestCppFacetCrossing(unittest.TestCase):
                                           # on a boundary, i.e., there is no neighbor
                                           # cell on that facet.
                     continue
-                cell_index_expected = nci
+                cellIndexExpected = nci
 
                 # Create initial point and move vector
                 p = cell.midpoint()
 #                print "cell midpoint:", p.x(), p.y()
                 r0 = [p.x(), p.y(), p.z()]
 
-                cell2 = self.mesh3D.cell_dict[cell_index_expected]
+                cell2 = self.mesh3D.cell_dict[cellIndexExpected]
                 p2 = cell2.midpoint()
                 dr = [p2.x()-p.x(), p2.y()-p.y(), p2.z()-p.z()]
 
 #                print "r0, dr=", r0, dr
-#                (facet_crossed, path_fraction, facetNormal) = self.mesh3D.find_facet(r0, dr, cell.index())
-                (facet_crossed, path_fraction, facetNormal) = dolfin_functions_solib.find_facet(self.mesh3D, r0, dr, cell.index())
+#                (facetCrossed, pathFraction, facetNormalVector) = self.mesh3D.find_facet(r0, dr, cell.index())
+                (facetCrossed, pathFraction, facetNormalVector) = dolfin_functions_solib.find_facet(self.mesh3D, r0, dr, cell.index())
 
-#                print "start cell", cell.index(), "expected_cell", cell_index_expected, "facet crossed", facet_crossed
+#                print "start cell", cell.index(), "expected_cell", cellIndexExpected, "facet crossed", facetCrossed
 
                 # Lookup the cell crossed from the facet number
-                cell2_index = neighborCellIndices[facet_crossed]
-#                print "cell2_index=", cell2_index
+                cell2Index = neighborCellIndices[facetCrossed]
+#                print "cell2Index=", cell2Index
 
                 # Check that this is the expected cell
-                self.assertEqual(cell2_index, cell_index_expected, msg = "3D: final cell is not correct")
+                self.assertEqual(cell2Index, cellIndexExpected, msg = "3D: final cell is not correct")
 
                 # Look up the mesh-level facet index of the facet crossed
 #                print 'Facets of 3D mesh', self.mesh3D.cell_entity_indices_dict['facet']
 #                print 'Facets of cell', self.mesh3D.cell_entity_indices_dict['facet'][cell.index()]
-                ifacet = self.mesh3D.cell_entity_indices_dict['facet'][cell.index()][facet_crossed]
+                ifacet = self.mesh3D.cell_entity_indices_dict['facet'][cell.index()][facetCrossed]
                 # Check this: Used ifacet to look up the facet entity
                 # (dimension = 2) shared by the two cells,
                 facet = df_m.MeshEntity(self.mesh3D.mesh, 2, ifacet)
                 # and make sure the two cells with this facet (the
                 # cells are entities having dimension 3) are the start
                 # and end cells.
-#                print "Cells owning this facet:", facet.entities(3), "vs.", cell.index(), cell2_index
-                self.assertTrue(cell.index() in facet.entities(3) and cell2_index in facet.entities(3), msg = "3D: facet given by find_facet is not correct")
+#                print "Cells owning this facet:", facet.entities(3), "vs.", cell.index(), cell2Index
+                self.assertTrue(cell.index() in facet.entities(3) and cell2Index in facet.entities(3), msg = "3D: facet given by find_facet is not correct")
                 numberOfFacetCrossings += 1
                 
         print("\t3D mesh: tested", numberOfFacetCrossings, "facet crossings")

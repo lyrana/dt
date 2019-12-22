@@ -391,17 +391,18 @@ class Mesh_C(object):
 
 #class Mesh_C(object):
     def compute_cell_facet_normals_dict(self):
-        """
-           Make a dictionary giving a list of cell facet-normal
-           vectors, indexed by the cell index.
+        """Make a dictionary giving a list of cell facet-normal vectors, indexed by the
+           cell index.
 
-           NB: The normals are unit vectors represented by Points.  
-
-           The normals stored in the dictionary are unit vectors with the number
-           of coordinates equal to the number of coordinates of the mesh.
+           NB: The normals computed by Dolfin are unit vectors represented by Points,
+           which are always 3-vectors. Here, we don't use Points: The normals stored in
+           the dictionary are unit vectors whose number of coordinates is equal to the
+           number of coordinates of the mesh.
 
            The dictionary looks like: {cell_index: [n0, n1, ...]}
            where n0, n1, ... are the unit normal vectors on each facet.
+
+           Here, [n0, n1, ...] is a Numpy array.
 
         """
 

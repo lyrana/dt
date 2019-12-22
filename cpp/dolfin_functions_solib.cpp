@@ -55,18 +55,18 @@ namespace dnt {
           });
     
     //  C++ signature of find_facet() is:
-    //    py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index);
-    m.def("find_facet", [](py::object mesh_M, py::list x, py::list dx, std::size_t cell_index)
+    //    py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index, bool returnStdArray)
+    m.def("find_facet", [](py::object mesh_M, py::list x0, py::list dx, std::size_t cell_index, bool returnStdArray = false)
           {
-            // Create double* to hold x, dx
+            // Create double* to hold x0, dx
             double xTmp[3], dxTmp[3];
-            for (size_t i = 0; i < x.size(); i++)
+            for (size_t i = 0; i < x0.size(); i++)
               {
-                xTmp[i] = x[i].cast<double>();
+                xTmp[i] = x0[i].cast<double>();
                 dxTmp[i] = dx[i].cast<double>();
               }
-            return find_facet(mesh_M, xTmp, dxTmp, cell_index);
-          });
+            return find_facet(mesh_M, xTmp, dxTmp, cell_index, returnStdArray);
+          }, py::arg("mesh_M"), py::arg("x0"), py::arg("dx"), py::arg("cell_index"), py::arg("returnStdArray") = false);
           
     // Call the C++ functions defined in dolfin_functions.cpp
     // This is a check that the functions have been compiled, and have the right

@@ -55,9 +55,8 @@ class TestCppParticleMigration(unittest.TestCase):
 
 # Moved this to Particle_C.init, based on coordinate system        
 #        pin.position_coordinates = ['x', 'y', 'z'] # Determines particle storage dimension
-
         
-        # Neutral particles: No forces.
+        # Neutral particles: No electric forces.
         """
         pin.force_components = ['x', 'y',]
         """
@@ -182,7 +181,7 @@ class TestCppParticleMigration(unittest.TestCase):
            The first particle starts at:
                (x0, y0, z0) = (9.5, -9.5, 0.0), with velocity:
                (ux0, uy0, uz0) = (-2.0, 0.0, 0.0)
-           It moves in -x only, to -9.5
+           It moves to (-9.5, -9.5, 0.0)
 
            The second particle starts at
                (x1, y1, z1) = (9.5, 9.5, 9.5)
@@ -197,7 +196,7 @@ class TestCppParticleMigration(unittest.TestCase):
         ctrl = DTcontrol_C()
 
         # Run identifier
-        ctrl.title = "ParticleAdvance using C++"
+        ctrl.title = "Particle advance using C++"
         # Run author
         ctrl.author = "tph"
 
@@ -229,8 +228,8 @@ class TestCppParticleMigration(unittest.TestCase):
 
         # First particle
 
-        xsp0 = -9.5; ysp0 =  -9.5; zsp0 = 0.0
-        xsp00 = -8.5; ysp00 =  -9.5; zsp00 = 0.0
+        xsp0 = -9.5; ysp0 = -9.5; zsp0 = 0.0
+        xsp00 = -8.5; ysp00 = -9.5; zsp00 = 0.0
         vxsp0 = -2.0; vysp0 = 0.0; vzsp0 = 0.0
 
         weight0 = 2.0
@@ -239,12 +238,12 @@ class TestCppParticleMigration(unittest.TestCase):
         unique_ID0 = 0
         crossings = 0
 
-        psp0 = (xsp0,ysp0,zsp0, xsp00, ysp00, zsp00, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0, crossings)
+        psp0 = (xsp0,ysp0,zsp0, xsp00,ysp00,zsp00, vxsp0,vysp0,vzsp0, weight0, bitflag0, cell_index0, unique_ID0, crossings)
 
         # Second particle
 
-        xsp1 = -9.5; ysp1 =  -9.5; zsp1 = -9.5
-        xsp10 = -8.5; ysp10 =  -8.5; zsp10 = -8.5
+        xsp1 = -9.5; ysp1 = -9.5; zsp1 = -9.5
+        xsp10 = -8.5; ysp10 = -8.5; zsp10 = -8.5
         vxsp1 = -2.0; vysp1 = -2.0; vzsp1 = -2.0
 
         weight1 = 3.0
@@ -253,7 +252,7 @@ class TestCppParticleMigration(unittest.TestCase):
         unique_ID1 = 1
         crossings = 0
 
-        psp1 = (xsp1,ysp1,zsp1, xsp10, ysp10, zsp10, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1, crossings)
+        psp1 = (xsp1,ysp1,zsp1, xsp10,ysp10,zsp10, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1, crossings)
 
         p_expected = (psp0, psp1)
 

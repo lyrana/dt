@@ -106,8 +106,9 @@ class TestMeshFunctions(unittest.TestCase):
                                          [ 0., -1.] # opposite vertex 3
                                         ]
 
-        # Check the computed values:
+
         decimalPlaces = 6 # Accuracy of test
+        # Check the computed values of the normal vector for the 3 facets of cell 0:
         for facet_id in range(3):
             for comp in range(2):
                 self.assertAlmostEqual(mesh2d_M.cell_facet_normals_dict[0][facet_id][comp], cell_0_expected_facet_normals[facet_id][comp], places=decimalPlaces, msg="Cell facet normals for cell 0 are not correct")

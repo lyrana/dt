@@ -293,7 +293,8 @@ namespace dnt
   */
   template<size_t N_CELL_FACETS>
     //  std::array<std::array<double, 3>, N_CELL_FACETS> MeshEntityArrays<N_CELL_FACETS>::get_cell_facet_normals(std::size_t cell_index)
-    std::array<double, N_CELL_FACETS*3> MeshEntityArrays<N_CELL_FACETS>::get_cell_facet_normals(std::size_t cell_index)
+  //    std::array<double, N_CELL_FACETS*3> MeshEntityArrays<N_CELL_FACETS>::get_cell_facet_normals(std::size_t cell_index)
+    std::array<double, N_CELL_FACETS*3>& MeshEntityArrays<N_CELL_FACETS>::get_cell_facet_normals(std::size_t cell_index)
     
   {
     //    std::cout << "Entered get_cell_facet_normals()" << std::endl;
