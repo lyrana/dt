@@ -4,6 +4,9 @@ __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
 #__all__ = []
 
+# Test the movement of particles across mesh cells. The final position and
+# the cell index of the final position are tested.
+
 import sys
 import os
 import numpy as np_m
@@ -17,7 +20,7 @@ from DT_Module import DTcontrol_C
 from UserUnits_Module import MyPlasmaUnits_C
 from Particle_Module import *
 
-# Here's the mesh definition for this test
+# Here are the mesh definitions for the tests.
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
 #STARTCLASS
@@ -508,83 +511,6 @@ class TestParticleMigration(unittest.TestCase):
 
         return
 #    def test_3D_particle_migration(self):ENDDEF
-
-    '''
-    def test_1_particle_migration(self):
-        """
-           Test particle migration to neighboring cell on 1D, 2D, 3D
-           meshes.
-
-        """
-
-        return
-
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print '\ntest: ', fncName
-
-        # List all the possible spatial coordinates
-        spatial_coordinates = ('x','y','z')
-
-        ctrl = DTcontrol_C()
-
-        ctrl.dt = 0.5
-        ctrl.n_timesteps = 18
-
-        # Run for 1, 2, and 3D meshes
-
-        for dim in range(1,4):
-#        for dim in range(2,3):   # 2D only
-            spatial_components = spatial_coordinates[0:dim]
-            if dim == 1:
-                mesh_M = self.mesh1D
-            elif dim == 2:
-                mesh_M = self.mesh2D
-            elif dim == 3:
-                mesh_M = self.mesh3D
-
-            # Initialize or reinitialize the particles
-            for sp in self.particle_P.species_names:
-                if self.particle_P.initial_distribution_type[sp] == 'listed':
-                    # Put user-listed particles into the storage array
-                    self.particle_P.create_from_list(sp, print_flag=False, resetCounters=True)
-
-            # Get the initial cell index of each particle.
-            self.particle_P.compute_mesh_cell_indices(mesh_M)
-
-
-            # The expected results
-        		
-            # First species
-
-            xsp1 = 0.2032648918; ysp1 =  0.0165297836; zsp1 = -0.1702053246
-            vxsp1 = 1241.1798510396; vysp1 = -1517.6402979208; vzsp1 = -4276.4604468811
-
-            weight1=1.0
-            bitflag1 = 1
-
-            psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1)
-
-            # Second species
-
-            xsp2 = 8.26835865540104E-005; ysp2 = 0.0001353672; zsp2 = 0.0001880508
-            vxsp2 = 1.2578833919; vysp2 = 2.1157667838; vzsp2 = 2.9736501757
-
-            weight2 = 3.0
-            bitflag2 = 1
-
-            psp2 = (xsp2,ysp2,zsp2, vxsp2,vysp2,vzsp2, weight2, bitflag2)
-
-            p_expected = (psp1, psp2)
-
-            # Integrate for n_timesteps
-            for istep in xrange(ctrl.n_timesteps):
-                self.particle_P.move_particles_without_fields(ctrl.dt, mesh_M=mesh_M)
-
-                    #self.assertTrue(mesh_M.is_inside_cell(pseg[ip], pseg[ip]['cell_index']), msg = "The computed cell does not contain the particle")
-
-        return
-#    def test_1_particle_migration(self):ENDDEF
-    '''
 
 #class TestParticleMigration(unittest.TestCase):ENDCLASS
 

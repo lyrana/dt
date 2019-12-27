@@ -314,23 +314,19 @@ class Particle_C(object):
                 # Create the SAPs in C++ (segmentedarraypair_cpp.so)
                 import segmentedarraypair_solib
                 import mesh_entity_arrays_solib
-#                global p_cpp
-#            if useCplusplus is True:
-#                print(fncName, "\tDnT: Using C++ SAPs for particles")
-                
                 # Use the C++ SegmentedArrayPair class for particle storage.  This
                 # avoids having to call back to Python from C++ to manage the
                 # storage.
                 if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
-                    import p_cartesian_x_solib as cppModule
+                    import particle_cartesian_x_solib as cppModule
                     self.pseg_arr[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xy':
-                    import p_cartesian_xy_solib as cppModule
+                    import particle_cartesian_xy_solib as cppModule
                     self.pseg_arr[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xyz':
-                    import p_cartesian_xyz_solib as cppModule
-                    self.cpp_module = cppModule
+                    import particle_cartesian_xyz_solib as cppModule
                     self.pseg_arr[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
+                self.cpp_module = cppModule
             else:
             # If using Python-created SAPs:
                 import SegmentedArrayPair_Module as SA_M
@@ -755,10 +751,10 @@ class Particle_C(object):
                 while isinstance(pseg, np_m.ndarray):
     #                for ip in xrange(pseg.size):
                     for ip in range(npSeg): # Could use for p in pseg[0:npSeg] instead
-                        
                         pseg[ip]['cell_index'] = self.pmesh_M.compute_cell_index(pseg[ip])
-                        print('ip, index =', ip, pseg[ip]['cell_index'])
+#                        print('ip, index =', ip, pseg[ip]['cell_index'])
 # Check that is_inside_cell() confirms the cell index:
+#                        print('pseg[ip] =', pseg[ip])
                         if not self.pmesh_M.is_inside_cell(pseg[ip], pseg[ip]['cell_index']):
 #                        if not self.pmesh_M.is_inside_CPP(pseg[ip], pseg[ip]['cell_index']):
                             errorMsg = "%s\tDnT ERROR: is_inside_cell() check failed for particle %d" % (fncName, ip)
@@ -1330,7 +1326,13 @@ class Particle_C(object):
             if self.get_species_particle_count(sn) == 0: continue
             # Move  the particles in this species
             if self.use_cpp_movers is True:
-                self.cpp_module.move_neutral_species(self, sn, ctrl)
+                # Invoke the mover for the right number of cell-facets
+                tDim = self.pmesh_M.mesh.topology().dim()
+                nFacets = tDim + 1
+                particleMoverName = "move_neutral_species_" + str(nFacets) + "_facets"
+                particleMover = getattr(self.cpp_module, particleMoverName)
+#                print(fncName, "\tCalling", particleMoverName)
+                particleMover(self, sn, ctrl)
             else:
                 self.move_neutral_species(sn, ctrl)
 
@@ -1340,7 +1342,7 @@ class Particle_C(object):
 
 #class Particle_C(object):
     def move_neutral_species(self, species_name, ctrl, print_flag = False):
-        """Move a neutral species for one timestep.
+        """Move a neutral species for one timestep using Python.
 
            Compute change in position in time dt. Use an explicit method to calculate the
            final position.  If a particle leaves its initial cell, the cell that the
@@ -1891,14 +1893,10 @@ class Particle_C(object):
         printInfoOutOfBounds = True
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
-#tph
+
         sap = self.pseg_arr[sn] # The segmented array for this species
         psegOut = sap.get_current_out_segment()
         p = psegOut[ip_out]
-        
-        print("remove_trajectory_particleId: species name =", sn)
-        print("remove_trajectory_particleId: p['x'] =", p['x'])
-        return
         
         finalStep = step
         finalTime = time
@@ -1912,12 +1910,10 @@ class Particle_C(object):
             finalStep += 1
             finalTime += dt
             
-#        sap = self.pseg_arr[sn] # The segmented array for this species
         p_arr = self.one_particle_arr
 
         # Obtain the full index of this particle. SAP keeps track of the current segment.
         full_index_in = sap.get_full_index(ip_in, "in")
-#tph
 #        print "remove_traj: The full index of particle", ip_in, "is", full_index_in, ". The unique_ID is", p['unique_ID']
 
         # Record the last position

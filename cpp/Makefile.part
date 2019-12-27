@@ -1,6 +1,6 @@
-# Make the Python module called p_cartesian_xyz_solib
+# Make the Python module called particle_cartesian_xyz_solib
 
-PARTICLE_MODULE_PREFIX = p_
+PARTICLE_MODULE_PREFIX = particle_
 
 # Set the particle type here
 #PARTICLE_TYPE = cartesian_x
@@ -8,17 +8,15 @@ PARTICLE_MODULE_PREFIX = p_
 
 # This specifies the particle spatial coordinate system:
 PARTICLE_TYPE = cartesian_xyz
-# This specifies the number of facets of cells in the field mesh:
-CELL_FACET_NUMBER = 2
 
 PARTICLE_MODULE_NAME = $(PARTICLE_MODULE_PREFIX)$(PARTICLE_TYPE)_solib
 
-DFLAGS = -DPARTICLE_TYPE=$(PARTICLE_TYPE) -DCELL_FACET_NUMBER=$(CELL_FACET_NUMBER) -DPARTICLE_MODULE_NAME=$(PARTICLE_MODULE_NAME)
+DFLAGS = -DPARTICLE_TYPE=$(PARTICLE_TYPE) -DPARTICLE_MODULE_NAME=$(PARTICLE_MODULE_NAME)
 
-$(PARTICLE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: p_solib.cpp Pstruct.h SegmentedArrayPair.h particle.h MeshEntityArrays.o dolfin_functions.o predicates.o
-	c++ $(DFLAGS) -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` p_solib.cpp MeshEntityArrays.o dolfin_functions.o predicates.o -o $(PARTICLE_MODULE_NAME)`python3-config --extension-suffix`
+$(PARTICLE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: particle_solib.cpp Pstruct.h SegmentedArrayPair.h particle.h MeshEntityArrays.o dolfin_functions.o predicates.o
+	c++ $(DFLAGS) -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` particle_solib.cpp MeshEntityArrays.o dolfin_functions.o predicates.o -o $(PARTICLE_MODULE_NAME)`python3-config --extension-suffix`
 
-# Particle_Module.py imports the segmentedarraypair_solib.so library, as well as p_xxx_solib.so
+# Particle_Module.py imports the segmentedarraypair_solib.so library, as well as particle_xxx_solib.so
 SegmentedArrayPair.h:
 	@echo "*Run Makefile.sap first*"
 	@/bin/false

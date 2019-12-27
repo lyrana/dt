@@ -95,8 +95,8 @@ namespace dnt
 
     using namespace pybind11::literals;
         
-    std::cout << "Hello from move_neutral_species@0" << std::endl;
-    std::cout << "This is species " << std::string(py::str(species_name)) << std::endl;
+    //    std::cout << "Hello from move_neutral_species@0" << std::endl;
+    //    std::cout << "This is species " << std::string(py::str(species_name)) << std::endl;
 
     // Get attributes needed from Particle_C arg
     auto pmesh_M = particle_P.attr("pmesh_M");
@@ -167,9 +167,9 @@ namespace dnt
     // Get the particle array pointers from the returned py::capsule's
     // psegIn:
     auto psegInCap = segTuple[1].cast<py::capsule>();
-    std::cout << "The name of the capsule is " << psegInCap.name() << std::endl;
+    //    std::cout << "The name of the capsule is " << psegInCap.name() << std::endl;
     Pstruct<PT>* psegIn = psegInCap; // Declares the type of psegIn
-    std::cout << "psegIn[0].x_ = " << psegIn[0].x_ << std::endl;
+    //    std::cout << "psegIn[0].x_ = " << psegIn[0].x_ << std::endl;
     // psegOut:
     auto psegOutCap = segTuple[2].cast<py::capsule>();
     // std::cout << "The name of the capsule is " << psegOutCap.name() << std::endl;
@@ -199,7 +199,7 @@ namespace dnt
                               // indices to identify particles chosen for trajectory
                               // plots.
 
-    std::cout << "Hello from move_neutral_species@2" << std::endl;
+    //    std::cout << "Hello from move_neutral_species@2" << std::endl;
     
     while (psegIn != nullptr) // Keep looping until we run out of "in" segments.
       {
@@ -255,7 +255,7 @@ namespace dnt
 
             auto pCellIndex = psegOut[ipOut].cell_index_;
 
-            std::cout << "move_neutral_species. step: " << step << " ipOut: " << ipOut << " x_: " << psegOut[ipOut].x_ << std::endl;
+            //            std::cout << "move_neutral_species. step: " << step << " ipOut: " << ipOut << " x_: " << psegOut[ipOut].x_ << std::endl;
             
             // Loop until the particle is in the current cell
             auto mLastFacet = NO_FACET;
@@ -297,7 +297,7 @@ namespace dnt
             
             while (! is_inside_vertices(mesh, vertices, particlePosition))
               {
-                std::cout << "Hello from call to is_inside_vertices" << std::endl;
+                //                std::cout << "Hello from call to is_inside_vertices" << std::endl;
                 /*
                   The particle has left this cell.  We need to track it across each
                   facet in case there's a boundary-condition on that facet.
@@ -447,14 +447,14 @@ namespace dnt
             psegOut[ipOut].crossings_ = facetCrossCount;
 
             // For testing only:
-            particle_P.attr("update_trajectory_particleId")(species_name, ipIn, ipOut);
+            //            particle_P.attr("update_trajectory_particleId")(species_name, ipIn, ipOut);
             
             // Check that this particle has not been deleted before incrementing the
             // "out" particle counter.
 
             // test-only
-            std::cout << "move_neutral_species2 step: " << step << " ipOut: " << ipOut << " x_: " << psegOut[ipOut].x_ << std::endl;            
-            particle_P.attr("remove_trajectory_particleId")(species_name, ipIn, ipOut, step, time, dt);
+            //            std::cout << "move_neutral_species2 step: " << step << " ipOut: " << ipOut << " x_: " << psegOut[ipOut].x_ << std::endl;            
+            //            particle_P.attr("remove_trajectory_particleId")(species_name, ipIn, ipOut, step, time, dt);
 
             
             if ((psegOut[ipOut].bitflags_ & Pstruct<PT>::DELETE_FLAG) == 0b0) // If this particle has not been deleted...
@@ -531,7 +531,7 @@ namespace dnt
       {
         particleCount += ipOut;
       }
-    std::cout << "particleCount: " << particleCount << std::endl;
+    //    std::cout << "particleCount: " << particleCount << std::endl;
     sap->set_number_of_items("out", particleCount);
   }
   // ENDDEF: void move_neutral_species(py::object species_name, py::object ctrl, py::object particle_P)
