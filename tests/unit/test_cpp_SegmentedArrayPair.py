@@ -23,11 +23,11 @@ import unittest
 
 # from UserUnits_Module import MyPlasmaUnits_C
 
-# Use the C++ functions in the segmentedarraypair_cpp.so library
-import segmentedarraypair_cpp
+# Use the C++ functions in the segmentedarraypair_solib.so library
+import segmentedarraypair_solib
 
 class TestSegmentedArrayPair(unittest.TestCase):
-    """Test the C++ functions in segmentedarraypair_cpp.so
+    """Test the C++ functions in segmentedarraypair_solib.so
 
        Functions tested:
            py::tuple     get_as_tuple(py::ssize_t full_index)
@@ -68,7 +68,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray for cartesian_x particles
-        seg_array_obj_CPP_cartesian_x = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_x(self.segment_length)
+        seg_array_obj_CPP_cartesian_x = segmentedarraypair_solib.SegmentedArrayPair_cartesian_x(self.segment_length)
         
         particle_dimension = 1
         x=1.5; x0=1.0; ux=3.0; weight = 101.1
@@ -142,7 +142,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_xy particles
-        seg_array_obj_CPP_cartesian_xy = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xy(self.segment_length)        
+        seg_array_obj_CPP_cartesian_xy = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xy(self.segment_length)        
         
         # Create a cartesian_xy particle and put it into the SegmentedArray
         x=0.0; x0=x; y=1.0; y0=y; ux=3.0; uy=4; weight = 101.1
@@ -189,7 +189,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_xyz particles
-        seg_array_obj_CPP_cartesian_xyz = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xyz(self.segment_length)        
+        seg_array_obj_CPP_cartesian_xyz = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xyz(self.segment_length)        
         
         # Create a cartesian_xyz particle and put it into the SegmentedArray
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
@@ -231,7 +231,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
         print('\ntest: ', fncname, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_xyz particles
-        seg_array_obj_CPP_cartesian_xyz = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xyz(self.segment_length)        
+        seg_array_obj_CPP_cartesian_xyz = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xyz(self.segment_length)        
 
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
@@ -300,7 +300,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
         print('\ntest: ', fncname, '('+__file__+')')
 
         # Create C++ version of a SegmentedArray object for cartesian_xyz particles
-        seg_array_obj_CPP_cartesian_xyz = segmentedarraypair_cpp.SegmentedArrayPair_cartesian_xyz(self.segment_length)        
+        seg_array_obj_CPP_cartesian_xyz = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xyz(self.segment_length)        
 
         x=0.0; x0=x; y=1.0; y0=y; z=2.0; z0=z; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
@@ -335,7 +335,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
 
         # The returned psegIn, psegOut values are NOT references to Numpy
         # arrays. They have type Pstruct<PT>*.  To get particle data, use one of the
-        # SAP access functions in segmentedarraypair_cpp.cpp.
+        # SAP access functions in segmentedarraypair_solib.cpp.
         (npSeg, psegIn, psegOut) = seg_arr.init_inout_loop(returnDataPtrs=True)
         segmentCount = 1
 
@@ -355,7 +355,9 @@ class TestSegmentedArrayPair(unittest.TestCase):
         segmentCount = 1
 
         if not isinstance(psegIn, np_m.ndarray):
-            print("!!!For this section to work, init_inout_loop() needs to be modified!!!")
+            print("!!!For the following Numpy array test to work, init_inout_loop() needs to be modified!!!")
+        # This loop won't be entered unless the above modification is made to
+        # SegmentedArrayPair.h.
         while isinstance(psegIn, np_m.ndarray):
             print("Number of particles in Numpy structured array object", segmentCount, "is", npSeg)
             print("First particle is", psegIn[0])

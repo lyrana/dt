@@ -1,6 +1,6 @@
-# Make the Python module called test_cpp
+# Make the Python module called test_solib
 
-TEST_MODULE_NAME = test_cpp
+TEST_MODULE_NAME = test_solib
 
 DFLAGS = -DMODULE_NAME=$(TEST_MODULE_NAME)
 

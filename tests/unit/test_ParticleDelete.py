@@ -332,7 +332,7 @@ class TestParticleDeletion(unittest.TestCase):
         print("Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps")
         for sp in p_P.species_names:
             if p_P.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
-            p_P.move_particles_in_uniform_fields(sp, self.ctrl)
+            p_P.move_charged_species_in_uniform_fields(sp, self.ctrl)
 
         # Now check on the arrays again
         print("\nAfter a particle move step:\n")

@@ -20,7 +20,7 @@ from Particle_Module import *
 # Here's the mesh definition for this test
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
-import test_cpp
+import test_solib
 
 #STARTCLASS
 class TestPybind11(unittest.TestCase):
@@ -59,7 +59,8 @@ class TestPybind11(unittest.TestCase):
         pin.force_components = ['x', 'y',]
         """
         pin.force_precision = np_m.float64
-
+        pin.use_cpp_movers = True # Use C++ version of particle movers.
+        
         # Give the properties of the particle species.  The charges and masses are
         # normally those of the physical particles, and not the computational
         # macroparticles.  Macroparticle weights are specified or computed in a
@@ -76,7 +77,7 @@ class TestPybind11(unittest.TestCase):
         pin.particle_species = (neutralH_S,
                                )
         # Make the particle object from pin
-        self.particle_P = Particle_C(pin, use_cpp=True, print_flag=False)
+        self.particle_P = Particle_C(pin, print_flag=False)
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary-condition callbacks, source regions, etc.)
@@ -187,7 +188,7 @@ class TestPybind11(unittest.TestCase):
         ctrl.n_timesteps = 19
 
         # Pass a DT_control argument to C++:
-        test_cpp.function_with_DTcontrol_arg(ctrl)
+        test_solib.function_with_DTcontrol_arg(ctrl)
 
         return
 #    def test_1_pass_DnTcontrol:ENDDEF
@@ -241,7 +242,7 @@ class TestPybind11(unittest.TestCase):
         speciesName = 'neutral_H'
         psa = self.particle_P.pseg_arr[speciesName] # segmented array for this species
         
-        test_cpp.function_with_particle_P_arg(self.particle_P)
+        test_solib.function_with_particle_P_arg(self.particle_P)
 
         return
 #    def test_2_pass_mesh_M:ENDDEF

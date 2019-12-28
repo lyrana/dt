@@ -1,4 +1,4 @@
-/*! \file test_cpp.cpp
+/*! \file test_solib.cpp
 
   \brief This has the Python/C++ interface code for test.h
 
@@ -22,7 +22,7 @@
 namespace py = pybind11;
 
 // The PYBIND11_MODULE() macro creates a function that will be called when an import
-// statement is issued from within Python. The module name (test_cpp) is given as the
+// statement is issued from within Python. The module name (test_solib) is given as the
 // first macro argument (it should not be in quotes). The second argument (m) defines
 // a variable of type py::module which is the main interface for creating
 // bindings. The method module::def() generates binding code that exposes the C++
@@ -41,7 +41,7 @@ namespace dnt {
     m.def("function_with_DTcontrol_arg", &function_with_DTcontrol_arg);
     m.def("function_with_particle_P_arg", &function_with_particle_P_arg);
 
-  } // PYBIND11_MODULE(test_cpp, m)
+  } // PYBIND11_MODULE(test_solib, m)
 
   
 } // namespace dnt

@@ -1284,7 +1284,7 @@ class Particle_C(object):
                         if self.traj_T is not None:
                             if psegIn[ipIn]['bitflags'] & self.TRAJECTORY_FLAG != 0:
 #                                print "mover: Removing particle with ID", psegIn[ipIn]['unique_ID'], "ipIn", ipIn, "from trajectories", ", ipOut is", ipOut
-                                self.remove_trajectory_particleId(sn, ipIn, psegOut[ipOut], step, time, dt)
+                                self.remove_trajectory_particleId(sn, ipIn, ipOut, step, time, dt)
 
                     # Check if we've reached the end of this segment.  If
                     # so, we need to start writing on a new segment.
@@ -1531,7 +1531,7 @@ class Particle_C(object):
                                 # Get the storage index that currently identifies this
                                 # particle in the trajectory list of particles.
 # Move this call inside record_trajectory_datum:                                
-#                                fullIndex = psa.get_full_index(ipIn, "in")
+                                fullIndex = psa.get_full_index(ipIn, "in")
 #                                self.record_trajectory_datum(species_name, psegOut[ipOut], fullIndex, step, tStart, facet_crossing=True)
                                 self.record_trajectory_datum(species_name, ipOut, fullIndex, step, tStart, facet_crossing=True)
                             # A reference to dx[] is available in the BC function class.
@@ -1588,7 +1588,7 @@ class Particle_C(object):
                     if self.traj_T is not None:
                         if psegIn[ipIn]['bitflags'] & self.TRAJECTORY_FLAG != 0:
                             # print "mover: Removing particle with ID", psegIn[ipIn]['unique_ID'], "ipIn", ipIn, "from trajectories", ", ipOut is", ipOut
-                            self.remove_trajectory_particleId(species_name, ipIn, psegOut[ipOut], step, time, dt)
+                            self.remove_trajectory_particleId(species_name, ipIn, ipOut, step, time, dt)
 
                 # Check if we've reached the end of this segment.  If so, we need
                 # to start writing on a new segment.  If there are no more

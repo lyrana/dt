@@ -14,7 +14,7 @@ import DT_Module as DT_m
 from UserUnits_Module import MyPlasmaUnits_C
 from Particle_Module import *
 
-import p_cpp_cartesian_xyz as p_cpp
+import particle_cartesian_xyz_solib as p_cpp
 
 #STARTCLASS
 class Vec_C(object):
