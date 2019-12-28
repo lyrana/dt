@@ -24,9 +24,6 @@ Contents:
 
 */
 
-#ifndef PSTRUCT_H
-#define PSTRUCT_H
-
 #include <memory>
 
 #include <pybind11/pybind11.h>
@@ -105,5 +102,3 @@ py::list print_pstructarray(py::array_t<PS, 0> arr);
 // It uses template specialization to handle particle structs with different dimensions.
 template <typename PS>
 void pstruct_to_double(PS& ps, double* point);
-
-#endif

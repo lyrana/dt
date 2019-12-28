@@ -69,11 +69,14 @@ void add_weights_to_cells(py::array_t<PS, 0> pseg, dolfin::Function& dF) {
 template <typename PS>
 void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) { // The 0 means a continguous array with C ordering
 
+  // NEED to pass in npSeg to limit the range of the particle loop !!!!!!
+  // OR, pass pseg[0:npSeg] instead?
+
   const auto pseg_info = pseg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
   const auto p = static_cast<PS*>(pseg_info.ptr); // Pointer to a particle struct in pseg
-  
+
   std::shared_ptr< const dolfin::FunctionSpace > dFS = dF.function_space();
-  
+
   // Variables for cell information
   const dolfin::Mesh& mesh = *dFS->mesh();
   std::vector<double> dof_coordinates;
@@ -103,7 +106,7 @@ void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) 
     // Copy spatial coordinates of p[ip] to a double[] for passing to evaluate_basis()
 
     //TODO: Could p[] be used directly, avoiding the copy?
-    pstruct_to_double<PS>(p[ip], point);
+    pstruct_to_point<PS>(p[ip], point);
     
     auto cellIndex = p[ip].cell_index_;
     // std::cout << ip << " cellIndex=" << cellIndex << std::endl;
@@ -137,25 +140,93 @@ void interpolate_weights_to_dofs(py::array_t<PS, 0> pseg, dolfin::Function& dF) 
   
 }
 
-// Either of these works to make the needed specialized versions of the templated functions:
+//! Push a segment of neutral particles
 
-// void force_DnT_pstruct1D_instances(py::array_t<DnT_pstruct1D, 0> pseg, dolfin::Function& dF)
-// {
-//   add_weights_to_cells<DnT_pstruct1D>(pseg, dF);
-//   interpolate_weights_to_dofs<DnT_pstruct1D>(pseg, dF);
-// }
-// void force_DnT_pstruct2D_instances(py::array_t<DnT_pstruct2D, 0> pseg, dolfin::Function& dF)
-// {
-//   add_weights_to_cells<DnT_pstruct2D>(pseg, dF);
-//   interpolate_weights_to_dofs<DnT_pstruct2D>(pseg, dF);
-// }
-// void force_DnT_pstruct3D_instances(py::array_t<DnT_pstruct3D, 0> pseg, dolfin::Function& dF)
-// {
-//   add_weights_to_cells<DnT_pstruct3D>(pseg, dF);
-//   interpolate_weights_to_dofs<DnT_pstruct3D>(pseg, dF);
-// }
+/*!
+    Overload on the number of particle coordinates: 1D, 2D, 3D 
+ */
 
 // or
+
+/*
+
+template <typename PS>
+  void move_neutral_particle_segment(py::array_t<PS, 0> psegIn,py::array_t<PS, 0> psegOut, dolfin::Function& dF) { // The 0 means a continguous array with C ordering
+
+  const auto pseg_info = pseg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+  const auto p = static_cast<PS*>(pseg_info.ptr); // Pointer to a particle struct in pseg
+  
+  std::shared_ptr< const dolfin::FunctionSpace > dFS = dF.function_space();
+  
+  // Variables for cell information
+  const dolfin::Mesh& mesh = *dFS->mesh();
+  std::vector<double> dof_coordinates;
+  ufc::cell ufc_cell;
+
+  // Variables for evaluating the cell basis functions
+  const std::size_t rank = dFS->element()->value_rank();
+  std::size_t size_basis = 1;
+  for (std::size_t i = 0; i < rank; ++i)
+    size_basis *= dFS->element()->value_dimension(i);
+  std::size_t dofs_per_cell = dFS->element()->space_dimension();
+  std::vector<double> basis(size_basis);
+
+// This vector holds the values contributed by a particle to the density array.
+  std::vector<double> weights(dofs_per_cell);
+  
+  std::shared_ptr< const dolfin::GenericDofMap > dDofmap = dFS->dofmap();
+
+  // Print the DoF map. In this case it maps cell indices to DoF indices.
+  // dFS->print_dofmap();
+
+  // Add the particle weights to the Vector
+
+  
+  //// The particle loop
+
+  
+  double point[] = {0.0, 0.0, 0.0};
+  for (auto ip = 0; ip < pseg_info.size; ip++) {
+    // std::cout << ip << " x=" << p[ip].x_ << std::endl;
+
+    // Copy spatial coordinates of p[ip] to a double[] for passing to evaluate_basis()
+
+    //TODO: Could p[] be used directly, avoiding the copy?
+    pstruct_to_point<PS>(p[ip], point);
+    
+    auto cellIndex = p[ip].cell_index_;
+    // std::cout << ip << " cellIndex=" << cellIndex << std::endl;
+
+    // Get the indices of the DoFs in this cell.
+    auto dofIndices = dDofmap->cell_dofs(cellIndex);
+    
+    // Get the cell object containing this particle
+    dolfin::Cell cell(mesh, static_cast<std::size_t>(cellIndex));
+    // Get the coordinates of the DoFs in this cell
+    cell.get_coordinate_dofs(dof_coordinates);
+
+    // Evaluate all basis functions at the point[]
+    cell.get_cell_data(ufc_cell);
+    for (std::size_t i = 0; i < dofs_per_cell; ++i)
+    {
+      dFS->element()->evaluate_basis(i, basis.data(),
+                                     point,  // const double* x
+                                     dof_coordinates.data(),
+                                     ufc_cell.orientation);
+      double basis_sum = 0.0;
+      for (const auto& v : basis)
+        basis_sum += v;
+      weights[i] = p[ip].weight_*basis_sum;
+    }
+
+    //dF.vector() is a std::shared_ptr<GenericVector>
+    dF.vector()->add_local(weights.data(), dofs_per_cell, dofIndices.data());
+    
+  }
+  
+}
+
+*/
 
 void pseg_DnT_pstruct_instances()
 {

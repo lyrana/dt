@@ -42,11 +42,11 @@ void interpolate_field_to_points_v1(dolfin::Function& field,
 //template <typename PS>
 //bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, PS point);
 
-// Distinguish functions by their arguments
 bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct1D point);
 bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct2D point);
-bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct3D point);
 
-bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x);
-bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x, double& y);
-bool cell_contains_point(dolfin::Mesh& mesh, py::array_t<int> vertices, double& x, double& y, double& z);
+//bool cell_contains_point_1d(dolfin::Mesh& mesh, py::array_t<int> vertices, DnT_pstruct1D point);
+
+//bool cell_contains_point_1d_v1(dolfin::Mesh& mesh, unsigned int v0, unsigned int v1, double point);
+
+//bool cell_contains_point_1d_v2(dolfin::Mesh& mesh, py::list vertices, DnT_pstruct1D point);

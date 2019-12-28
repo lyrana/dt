@@ -1,0 +1,98 @@
+// Copyright (C) 2019, L. D. Hughes
+
+// Create the type of particle array needed and the corresponding
+// pusher code at runtime.
+
+#include "SegmentedArrayPair_Cpp.h"
+
+namespace dnt
+{
+  template<typename PS>
+  class SegmentedArrayPair_Cpp
+  {
+  public:
+    // The ctor
+    SegmentedArrayPair_Cpp(py::ssize_t segmentLength):
+      segment_length(segmentLength),
+      seg_list_pair{NULL, NULL},
+      first_not_full_segment{0, 0},
+      first_available_offset{0, 0},
+      current_segment{0, 0},
+      n_seg{0, 0},
+      np_max{0, 0},
+      in_segmented_array(1),
+      out_segmented_array(0)
+      {
+//        for (auto iSA : [0, 1])
+        for (auto iSA : {0, 1})
+        {
+        // Add the numpy array for the first segment
+//            SegListPair[iSA].append(np_m.empty(self.SEGMENTLENGTH, dtype=item_dtype))
+        
+//          seg_list_pair[iSA] = new SegList;
+          // Create a list to hold a set of structured arrays
+//          seg_list_pair[iSA] = new std::list<py::array_t<PS,0>>;
+          // Create the first structured array and push it onto the list
+          py::array_t<PS,0> one_segment = make_segment(segment_length);
+//            self.SegListPair[iSA].append(np_m.zeros(self.SEGMENTLENGTH, dtype=item_dtype))
+          seg_list_pair[iSA].push_back(one_segment);
+        
+          // Count the number of segments:
+          n_seg[iSA] = seg_list_pair[iSA].size();
+          // Maximum number of particles that can be stored at present
+          np_max[iSA] = n_seg[iSA]*segment_length;
+        }
+      }
+
+    // The dtor (See pybind 8.5 Non-public destructors)
+    ~SegmentedArrayPair_Cpp()
+      {
+        // Release the Numpy arrays
+        for (auto iSA : {0, 1})
+        {
+          for (auto const& seg : seg_list_pair[iSA])
+          {
+            delete[] seg; // Is this correct?
+          }
+        }
+      }
+
+    py::ssize_t get_number_of_segments()
+      {
+        return n_seg[0];
+      }
+    
+  private:
+    py::ssize_t segment_length;
+
+    // Make a pair of empty list of segments
+
+    // This contains two lists of Numpy arrays
+//    SegList seg_list_pair[2];
+    std::list<py::array_t<PS,0>> seg_list_pair[2];
+
+    int n_seg[2];
+    int np_max;
+    
+    // Segment number and offset for the first available opening
+    int first_not_full_segment[2];
+    int first_available_offset[2];
+    
+    // current_segment is used to count segments in loops over
+    // segments, e.g., to push particles.
+    int current_segment[2];
+
+    // Identify which of the array pairs is being written to. When
+    // the particles are being initialized, we write to the first
+    // one of the array pair, i.e., index 0.
+    int in_segmented_array;
+    int out_segmented_array;
+    
+    py::array_t<PS> make_segment(const py::ssize_t segment_length) 
+    {
+      // No pointer is passed, so NumPy will allocate the buffer
+      return py::array_t<PS>(segment_length);
+    }
+    
+  }; // Need ; after class definition
+}
