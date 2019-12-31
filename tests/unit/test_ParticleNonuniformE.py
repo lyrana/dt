@@ -223,11 +223,11 @@ class TestParticleNonuniformE(unittest.TestCase):
 #        species_names = self.particle_P.names
 
 # first particle:        
-#        getp = self.particle_P.pseg_arr['testelectrons'].get(0)
+#        getp = self.particle_P.sap_dict['testelectrons'].get(0)
 #        print 'getp is a', type(getp)
 #        print '1st electron:', getp
 # second particle:
-#        getparticle = self.particle_P.pseg_arr['testelectrons'].get(1)
+#        getparticle = self.particle_P.sap_dict['testelectrons'].get(1)
 #        print '2nd electron:', getparticle
 
         # Advance the particles one timestep
@@ -246,7 +246,7 @@ class TestParticleNonuniformE(unittest.TestCase):
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset]
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]

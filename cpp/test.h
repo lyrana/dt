@@ -104,10 +104,10 @@ std::cout << "key=" << std::string(py::str(item.first)) << ", "
 << "value=" << std::string(py::str(item.second)) << std::endl;
 }
     */
-    auto pseg_arr = particle_P.attr("pseg_arr").cast<py::dict>();
+    auto sap_dict = particle_P.attr("sap_dict").cast<py::dict>();
 
-    // Make a loop over all the species in pseg_arr
-    for (auto species : pseg_arr)
+    // Make a loop over all the species in sap_dict
+    for (auto species : sap_dict)
       {
         auto msg = "This is species " + std::string(py::str(species.first));
         std::cout << msg << std::endl;
@@ -116,12 +116,12 @@ std::cout << "key=" << std::string(py::str(item.first)) << ", "
     // pseg.arr is cast to a std::map from species names (strings) to a reference to a SAP
     // of the right type.
     // Note the pointer star: .cast<MyClass *>, not .cast<Myclass>. This is because
-    // pseg_arr is a Python dictionary and the dictionary values are *references* to SAPs.
-    // Note that attr("pseg_arr") is cast to a py::dict above, and to an std::map here.
-    auto pseg_arr_map = particle_P.attr("pseg_arr").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz> *>>();
+    // sap_dict is a Python dictionary and the dictionary values are *references* to SAPs.
+    // Note that attr("sap_dict") is cast to a py::dict above, and to an std::map here.
+    auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz> *>>();
 
-    auto psa1 = pseg_arr_map["neutral_H"];
-    auto msg = "Length of segments in psa1 = " + std::to_string(psa1->get_segment_length());
+    auto sap1 = sap_map["neutral_H"];
+    auto msg = "Length of segments in sap1 = " + std::to_string(sap1->get_segment_length());
     std::cout << msg << std::endl;
     
     // Access the dolfin::Mesh object from the particle_P object:
@@ -143,16 +143,16 @@ std::cout << "key=" << std::string(py::str(item.first)) << ", "
     std::cout << msg << std::endl;
 
     // Make a loop over all the species:
-    for (auto species : pseg_arr)
+    for (auto species : sap_dict)
       {
         auto msg = "This is species " + std::string(py::str(species.first));
         std::cout << msg << std::endl;
       }
 
-    // Access the SAP from py::ojbect pseg_arr using a cast
-    auto psa = pseg_arr[neutralSpecies[0]].cast<SegmentedArrayPair<Ptype::cartesian_xyz> *>();
+    // Access the SAP from py::ojbect sap_dict using a cast
+    auto sap = sap_dict[neutralSpecies[0]].cast<SegmentedArrayPair<Ptype::cartesian_xyz> *>();
     // Call an SAP function
-    msg = "Length of segments in psa = " + std::to_string(psa->get_segment_length());
+    msg = "Length of segments in sap = " + std::to_string(sap->get_segment_length());
     std::cout << msg << std::endl;
       
   }

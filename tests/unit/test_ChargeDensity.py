@@ -525,22 +525,22 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
+        sap = particles_P.sap_dict[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
+            segIndex, fullIndex = sap.push_back(particle_list[i])
 
         # Ions
         species_name = 'H_plus'
 
         number_of_macroparticles = 3
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
+        sap = particles_P.sap_dict[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
+            segIndex, fullIndex = sap.push_back(particle_list[i])
 
 
         ########## Source for the electric field ##########
@@ -736,11 +736,11 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
+        sap = particles_P.sap_dict[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
+            segIndex, fullIndex = sap.push_back(particle_list[i])
 
         ########## Source for the electric field ##########
 
@@ -936,14 +936,14 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
+        sap = particles_P.sap_dict[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
+            segIndex, fullIndex = sap.push_back(particle_list[i])
 
         # Check that we set the right cell index above
-        (pseg, offset) = pseg_arr.get_segment_and_offset(fullIndex)
+        (pseg, offset) = sap.get_segment_and_offset(fullIndex)
         p = pseg[offset]
         
         computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)
@@ -1140,14 +1140,14 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
+        sap = particles_P.sap_dict[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
+            segIndex, fullIndex = sap.push_back(particle_list[i])
 
         # Check that we set the right cell index above
-        (pseg, offset) = pseg_arr.get_segment_and_offset(fullIndex)
+        (pseg, offset) = sap.get_segment_and_offset(fullIndex)
         p = pseg[offset]
         
         computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)

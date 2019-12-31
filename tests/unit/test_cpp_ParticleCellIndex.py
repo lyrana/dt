@@ -235,11 +235,11 @@ class TestCppParticleCellIndex(unittest.TestCase):
         for sp in self.particle_P.species_names:
             if self.particle_P.get_species_particle_count(sp) == 0: continue
 
-            psa = self.particle_P.pseg_arr[sp] # segmented array for this species
+            sap = self.particle_P.sap_dict[sp] # segmented array for this species
 
             # Loop on the particles for this species
-            (np_seg, pseg) = psa.init_out_loop()
-#            pseg = psa.get_next_segment()
+            (np_seg, pseg) = sap.init_out_loop()
+#            pseg = sap.get_next_segment()
 
             while isinstance(pseg, np_m.ndarray):
                 # Check if the particle is still on the meshed region
@@ -280,7 +280,7 @@ class TestCppParticleCellIndex(unittest.TestCase):
 
                 # Done with this "in" segment.
                 # Get the next one, if it exists.
-                (np_seg, pseg) = psa.get_next_segment('out')
+                (np_seg, pseg) = sap.get_next_segment('out')
 
             # Move on to the next species
             isp += 1

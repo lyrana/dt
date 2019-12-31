@@ -166,16 +166,16 @@ class DTsystem_C(object):
 
                 if self.p_P.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
                 qmdt = self.qom[sp]*dt
-                psa = p_P.pseg_arr[sp] # segmented array for this species
+                sap = p_P.sap_dict[sp] # segmented array for this species
 
-                psa.init_segment_loop()
-                pseg = psa.get_next_segment()
+                sap.init_segment_loop()
+                pseg = sap.get_next_segment()
                 while isinstance(pseg, np_m.ndarray):
 #                while pseg != None:
                     fpCI.compute_phi_at_particles(pseg)
                     p_P.move_particle_segment_in_uniform_fields(dt, qmdt, pseg, E0)
 #                    print pseg['z']
-                    pseg = psa.get_next_segment()
+                    pseg = sap.get_next_segment()
 
         return
 #    def time_integrate_in_uniform_fields(self, ctrl):ENDDEF
@@ -227,8 +227,8 @@ class DTsystem_C(object):
 
             # f_M.compute_electrostatic_potential()
 
-            #     psa.init_segment_loop()
-            #     pseg = psa.get_next_segment()
+            #     sap.init_segment_loop()
+            #     pseg = sap.get_next_segment()
 
 
 # Q: What's the dim of Eseg? same as the field (2D) or same as the particle coord (3D)
@@ -274,7 +274,7 @@ class DTsystem_C(object):
 #                    p_P.move_particle_segment_in_electrostatic_field(dt, qmdt, pseg, E)
 
 #                    print pseg['z']
-#                    pseg = psa.get_next_segment()
+#                    pseg = sap.get_next_segment()
 
                 # Maybe this guy is only for testing?
                 # OR you build whatever calculation you want in this file!!!

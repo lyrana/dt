@@ -160,7 +160,7 @@ for i in range(numberOfParticles):
     # Trim the number of coordinates here if needed to match "position_coordinates"
     # variable in ParticleInput_C
     p0 = (x0, x0, ux0, weight0, bitflags, cell_index, unique_ID, crossings)
-    p, pFullIndex = particle_P.pseg_arr[speciesName].put(p0)
+    p, pFullIndex = particle_P.sap_dict[speciesName].put(p0)
     # Create a trajectory for the particle.
     if p['bitflags'] & particle_P.TRAJECTORY_FLAG != 0:
         dynamicsType = particle_P.dynamics[speciesName]

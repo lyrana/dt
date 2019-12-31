@@ -208,7 +208,7 @@ class TestParticleUniformE(unittest.TestCase):
             p_cpp.move_charged_species_in_uniform_fields(sp, ctrl, self.particle_P)
             
             # Check that the first particles in the array reach the right speed
-            (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(0)
+            (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(0)
             getparticle = pseg[offset]
 #            print 'calculated = ', getparticle
 #            print 'expected = ', p_expected[isp]
@@ -286,7 +286,7 @@ class TestParticleUniformE(unittest.TestCase):
         for sp in self.particle_P.species_names:
             if self.particle_P.get_species_particle_count(sp) == 0: continue
             # Check that the first particles in the array reach the right speed
-            (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(0)
+            (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(0)
             getparticle = pseg[offset]
 #            print('calculated = ', getparticle, 'for species', sp)
 #            print('expected = ', p_expected[isp], 'for species', sp)

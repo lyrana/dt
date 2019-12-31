@@ -205,7 +205,7 @@ class TestParticleInitialization(unittest.TestCase):
                 for i in range(ninput):
                     putparticle = particles[i]
                     # Get the stored particle data
-                    (pseg, offset) = self.particle_P.pseg_arr[s].get_segment_and_offset(i)
+                    (pseg, offset) = self.particle_P.sap_dict[s].get_segment_and_offset(i)
                     getparticle = pseg[offset] # Retrieve the particle from the SAP.
                     
 #                    print 'putparticle = ', putparticle

@@ -230,7 +230,7 @@ class Particle_C(object):
         self.implicit_species = []
         self.neutral_species = []
 
-        self.pseg_arr = {}
+        self.sap_dict = {}
         self.particle_count = {}
 
         # The names of the particle attributes and the data type of each attribute is
@@ -315,13 +315,13 @@ class Particle_C(object):
                 # storage.
                 if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
                     import particle_cartesian_x_solib as cppModule
-                    self.pseg_arr[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
+                    self.sap_dict[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xy':
                     import particle_cartesian_xy_solib as cppModule
-                    self.pseg_arr[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
+                    self.sap_dict[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xyz':
                     import particle_cartesian_xyz_solib as cppModule
-                    self.pseg_arr[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
+                    self.sap_dict[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
                 self.cpp_module = cppModule
             else:
             # If using Python-created SAPs:
@@ -329,7 +329,7 @@ class Particle_C(object):
 
                 # Use the Python SegmentedArrayPair class for particle storage
 #                print(fncName, "\tUsing Python SAPs for particles")                
-                self.pseg_arr[speciesName] = SA_M.SegmentedArrayPair_C(self.SEGMENT_LENGTH, self.particle_dtype)
+                self.sap_dict[speciesName] = SA_M.SegmentedArrayPair_C(self.SEGMENT_LENGTH, self.particle_dtype)
 
             # Initialize particle count for each species
             self.particle_count[speciesName] = 0
@@ -504,7 +504,7 @@ class Particle_C(object):
 
         userParticlesClass = self.user_particles_class
 
-        psegArrSp = self.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
+        psegArrSp = self.sap_dict[species_name] # The SegmentedArrayPair_C object for this species
 
         # The function that has the list of particles
         p_list_method = getattr(userParticlesClass, species_name)
@@ -566,7 +566,7 @@ class Particle_C(object):
         
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         
-        psegArrSp = self.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
+        psegArrSp = self.sap_dict[species_name] # The SegmentedArrayPair_C object for this species
 
         p_list_method = self.initial_distribution_function[species_name]
         number_of_macroparticles, particle_list = p_list_method(type='listed')
@@ -647,13 +647,13 @@ class Particle_C(object):
         
         # Sum up the macroparticles weights for this species
         species_number = 0.0
-        psa = self.pseg_arr[species_name] # segmented array for this species
+        sap = self.sap_dict[species_name] # segmented array for this species
 
         # Loop over the particle "out" segments
-        (npSeg, pseg) = psa.init_out_loop()
+        (npSeg, pseg) = sap.init_out_loop()
         while isinstance(pseg, np_m.ndarray):
             species_number += np_m.sum(pseg['weight'])
-            (npSeg, pseg) = psa.get_next_segment("out")
+            (npSeg, pseg) = sap.get_next_segment("out")
 
         if printSpeciesNumberFlag:
             print(fncName, "\tprintSpeciesNumberFlag=True:", species_name, "species has kinetic energy", species_number)
@@ -669,7 +669,7 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        psegArrSp = self.pseg_arr[species_name] # storage array for this species
+        psegArrSp = self.sap_dict[species_name] # storage array for this species
         number_of_macroparticles = psegArrSp.get_number_of_items()
         if print_flag: print(fncName, "\tDnT INFO:", species_name, "has", number_of_macroparticles, "macroparticles")
 # this should be done by the calling function?
@@ -686,7 +686,7 @@ class Particle_C(object):
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
         psum = 0
         for sn in self.species_names:
-            psegArrSp = self.pseg_arr[sn] # storage array for this species
+            psegArrSp = self.sap_dict[sn] # storage array for this species
             npar = psegArrSp.get_number_of_items()
             psum += npar
 
@@ -707,16 +707,16 @@ class Particle_C(object):
 
         # Sum up the kinetic energy of this species
         species_KE = 0.0
-        psa = self.pseg_arr[species_name] # segmented array for this species
+        sap = self.sap_dict[species_name] # segmented array for this species
 
         # Loop over the particle "out" segments
-        (npSeg, pseg) = psa.init_out_loop()
+        (npSeg, pseg) = sap.init_out_loop()
         while isinstance(pseg, np_m.ndarray):
             # Sum of 0.5*m*u^2 for particles in this segment
             for ucomp in self.velocity_coordinates:
                 species_KE += np_m.sum(pseg['weight']*pseg[ucomp]**2)
             
-            (npSeg, pseg) = psa.get_next_segment("out")
+            (npSeg, pseg) = sap.get_next_segment("out")
 
         species_KE *= 0.5*self.mass[species_name]
 
@@ -741,8 +741,8 @@ class Particle_C(object):
             for sn in self.species_names:
 # There could be a branch to a C++ particle loop here, if use_cpp_movers is True. Then we
 # wouldn't need to compute the Python version of cell_dict{} (needed by is_inside_cell()).
-                psa = self.pseg_arr[sn] # segmented array for this species
-                (npSeg, pseg) = psa.init_out_loop()
+                sap = self.sap_dict[sn] # segmented array for this species
+                (npSeg, pseg) = sap.init_out_loop()
 
                 while isinstance(pseg, np_m.ndarray):
     #                for ip in xrange(pseg.size):
@@ -757,7 +757,7 @@ class Particle_C(object):
                             raise RuntimeError(errorMsg) # sys.exit(errorMsg)
 #                        else:
 #                            print fncName, "*** is_inside_cell check passes for particle", pseg[ip], "***"
-                    (npSeg, pseg) = psa.get_next_segment("out")
+                    (npSeg, pseg) = sap.get_next_segment("out")
         else:
             print(fncName, "\tDnT WARNING: The reference to pmesh_M is None")
 
@@ -827,8 +827,8 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        psa = self.pseg_arr[species_name] # segmented array for this species
-        (npSeg, pseg) = psa.init_out_loop()
+        sap = self.sap_dict[species_name] # segmented array for this species
+        (npSeg, pseg) = sap.init_out_loop()
 
         while isinstance(pseg, np_m.ndarray):
             for p in pseg[0:npSeg]: # Need to avoid overrunning the initialized part of the array.
@@ -839,7 +839,7 @@ class Particle_C(object):
                 # Compute the cell number density as well, if needed.
                 if cell_number_density_F is not None:
                     cell_number_density_F.add_weight_to_cell(p)
-            (npSeg, pseg) = psa.get_next_segment("out")
+            (npSeg, pseg) = sap.get_next_segment("out")
 
         # Convert the cell values to a cell density    
         if cell_number_density_F is not None:
@@ -872,8 +872,8 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        psa = self.pseg_arr[species_name] # segmented array for this species
-        (npSeg, pseg) = psa.init_out_loop()
+        sap = self.sap_dict[species_name] # segmented array for this species
+        (npSeg, pseg) = sap.init_out_loop()
 
         while isinstance(pseg, np_m.ndarray):
             if dof_number_density_F is not None:
@@ -896,7 +896,7 @@ class Particle_C(object):
                     dnt_cpp.add_weights_to_cells2D(pseg, cell_number_density_F.function._cpp_object)
                 elif self.particle_dimension == 1:
                     dnt_cpp.add_weights_to_cells1D(pseg, cell_number_density_F.function._cpp_object)
-            (npSeg, pseg) = psa.get_next_segment("out")
+            (npSeg, pseg) = sap.get_next_segment("out")
 
         # After all the particles have been summed, convert the cell values
         # to a cell density
@@ -978,7 +978,7 @@ class Particle_C(object):
             qmdt = self.qom[sn]*dt
 
 #        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
-            psa = self.pseg_arr[sn] # segmented array for this species
+            sap = self.sap_dict[sn] # segmented array for this species
 
             if self.get_species_particle_count(sn) == 0: continue
 
@@ -986,9 +986,9 @@ class Particle_C(object):
             # of vector field values.
 
 #           Accelerate and move all the particles in this species
-#            (npSeg, psegIn, psegOut) = psa.init_inout_loop()
-#            (npSeg, psegIn) = psa.init_inout_loop()
-            (npSeg, psegIn, psegOut) = psa.init_inout_loop()
+#            (npSeg, psegIn, psegOut) = sap.init_inout_loop()
+#            (npSeg, psegIn) = sap.init_inout_loop()
+            (npSeg, psegIn, psegOut) = sap.init_inout_loop()
             particleCount = 0
             # ipOut counts particles being written to the current
             # "out" segment.
@@ -1073,7 +1073,7 @@ class Particle_C(object):
                     # Get the next "out" segment if the current "out" segment is
                     # full. If there are no more "out" segments, allocate a new one.
                     if ipOut == self.SEGMENT_LENGTH:
-                        psegOut = psa.get_next_out_segment()
+                        psegOut = sap.get_next_out_segment()
                         ipOut = 0 # Reset the slot counter for the new "out" segment
 
                     # COPY everything from "in" to "out", to ensure weights, flags, etc. get copied.
@@ -1213,7 +1213,7 @@ class Particle_C(object):
 
                                     # Get the storage index that currently identifies this
                                     # particle in the trajectory list.
-                                    fullIndex = psa.get_full_index(ipIn, "in")
+                                    fullIndex = sap.get_full_index(ipIn, "in")
 # Why is the None here for E? Because a particle may have gone out-of-bounds?  In that case, could compute E at initial coords instead of final coords.
 
 # Can I just send the interpolated E-field value?
@@ -1283,7 +1283,7 @@ class Particle_C(object):
 
                 # Done with this segment.
                 # Get the next one, if it exists.
-                (npSeg, psegIn) = psa.get_next_segment("in")
+                (npSeg, psegIn) = sap.get_next_segment("in")
             # End of while isinstance(psegIn, np_m.ndarray)
 
             # Set values that will be used to keep track of the particle arrays
@@ -1293,7 +1293,7 @@ class Particle_C(object):
                                                # SEGMENT_LENGTH to particleCount twice.
                 
                 particleCount += ipOut
-            psa.set_number_of_items("out", particleCount)
+            sap.set_number_of_items("out", particleCount)
             # End of loop over segmented array
 
 # Compute new density here?
@@ -1374,7 +1374,7 @@ class Particle_C(object):
 #        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
 
         # Accelerate the particles
-        psa = self.pseg_arr[species_name] # segmented array for this species
+        sap = self.sap_dict[species_name] # segmented array for this species
 
         # This loop moves particles, so swap the in/out particle arrays
 
@@ -1387,7 +1387,7 @@ class Particle_C(object):
 # See also HPL p. 137. b=a[1,:], but b is still an array.
 # What about getting a ref to one particle returned from a function? That's possible because it uses the stack?
         
-        (npSeg, psegIn, psegOut) = psa.init_inout_loop() # (number of particles in
+        (npSeg, psegIn, psegOut) = sap.init_inout_loop() # (number of particles in
                                                          # this segment, ref to
                                                          # segment)
         particleCount = 0
@@ -1416,7 +1416,7 @@ class Particle_C(object):
                 # since there are still some "in" particles to advance.  If
                 # there are no more "out" segments, allocate a new one.
                 if ipOut == self.SEGMENT_LENGTH:
-                    psegOut = psa.get_next_out_segment()
+                    psegOut = sap.get_next_out_segment()
                     ipOut = 0 # Reset the counter for the new segment
 
                 # The following COPIES data, rather than just setting a
@@ -1521,7 +1521,7 @@ class Particle_C(object):
                                 # Get the storage index that currently identifies this
                                 # particle in the trajectory list of particles.
 # Move this call inside record_trajectory_datum:                                
-                                fullIndex = psa.get_full_index(ipIn, "in")
+                                fullIndex = sap.get_full_index(ipIn, "in")
                                 self.record_trajectory_datum(species_name, ipOut, fullIndex, step, tStart, facet_crossing=True)
                             # A reference to dx[] is available in the BC function class.
                             self.pmesh_bcs.bc_function_dict[facValue][species_name](psegOut[ipOut], species_name, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
@@ -1589,7 +1589,7 @@ class Particle_C(object):
 
             # Done with this "in" segment.
             # Get the next one, if it exists.
-            (npSeg, psegIn) = psa.get_next_segment("in")
+            (npSeg, psegIn) = sap.get_next_segment("in")
         # End of while isinstance(psegIn, np_m.ndarray)                                   
 
 
@@ -1599,7 +1599,7 @@ class Particle_C(object):
                                            # more "in" segments.  Otherwise, we would add
                                            # SEGMENT_LENGTH to particleCount twice.
             particleCount += ipOut
-        psa.set_number_of_items("out", particleCount)
+        sap.set_number_of_items("out", particleCount)
         # Loop over segmented array for this species ends
 
         return
@@ -1617,18 +1617,18 @@ class Particle_C(object):
             qmdt = self.qom[sn]*dt
 
 #        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
-            psa = self.pseg_arr[sn] # segmented array for this species
+            sap = self.sap_dict[sn] # segmented array for this species
 
             # Eseg is long enough to hold one particle segment worth
             # of values.  If segment length is the same for all
             # species, this could be a Field_Particle class array,
             # i.e., one that persists.
 
-#            Eseg = np.empty(len(psa[0]), dtype=fpCI.Eseg_dict)
+#            Eseg = np.empty(len(sap[0]), dtype=fpCI.Eseg_dict)
 
 #           Accelerate and move all the particles in this species
-            psa.init_segment_loop()
-            pseg = psa.get_next_segment()
+            sap.init_segment_loop()
+            pseg = sap.get_next_segment()
 #            while pseg != None:
             while isinstance(pseg, np_m.ndarray):
 #            print pseg['z']
@@ -1651,7 +1651,7 @@ class Particle_C(object):
                 pseg['y'] += pseg['uy']*dt
                 pseg['z'] += pseg['uz']*dt
 #            print pseg['z']
-                pseg = psa.get_next_segment()
+                pseg = sap.get_next_segment()
 
         return
 #    def move_particles_in_electrostatic_potential(self, species_names, dt, fCI, fpCI):ENDDEF
@@ -1680,16 +1680,16 @@ class Particle_C(object):
 #        nlocal = self.particles.get_species_particle_count(sp, echoFlag = False)
 
         # Accelerate the particles
-        psa = self.pseg_arr[species_name] # segmented array for this species
+        sap = self.sap_dict[species_name] # segmented array for this species
 
         # This loop moves particles, so swap the in/out particle arrays
-#        (npSeg, psegIn, psegOut) = psa.init_inout_loop()
-#        (npSeg, psegIn) = psa.init_inout_loop()
-        (npSeg, psegIn, psegOut) = psa.init_inout_loop()
+#        (npSeg, psegIn, psegOut) = sap.init_inout_loop()
+#        (npSeg, psegIn) = sap.init_inout_loop()
+        (npSeg, psegIn, psegOut) = sap.init_inout_loop()
 
 #        print "move_charged_species_in_uniform_fields: npSeg, psegIn, psegOut:", npSeg, psegIn, psegOut
         # Get the first segment of particles to move
-#        pseg = psa.get_next_segment()
+#        pseg = sap.get_next_segment()
 
         # Loop on segments until a None value is returned
         particleCount = 0
@@ -1708,7 +1708,7 @@ class Particle_C(object):
                 # Get the next "out" segment if the current "out" segment is full.
                 # If there are no more "out" segments, allocate a new one.
                 if ipOut == self.SEGMENT_LENGTH:
-                    psegOut = psa.get_next_out_segment()
+                    psegOut = sap.get_next_out_segment()
                     ipOut = 0 # Reset the counter for the new segment
 
                     # COPY everything from "in" to "out", to ensure weights, flags, etc. get copied.
@@ -1737,11 +1737,11 @@ class Particle_C(object):
                     
             # Done with this segment.
             # Get the next one, if it exists.
-            (npSeg, psegIn) = psa.get_next_segment("in")
+            (npSeg, psegIn) = sap.get_next_segment("in")
 
         # Set values that will be used to keep track of the particle arrays
         particleCount += ipOut
-        psa.set_number_of_items("out", particleCount)
+        sap.set_number_of_items("out", particleCount)
 
         return
 #    def move_charged_species_in_uniform_fields(self, species_name, ctrl, print_flag = False):ENDDEF
@@ -1769,7 +1769,7 @@ class Particle_C(object):
 #    def move_particles_in_uniform_fields(self, species_name, ctrl, print_flag = False):ENDDEF
 
 #class Particle_C(object):
-    def update_trajectory_particleId(self, sn, i_in, i_out):
+    def update_trajectory_particleId(self, sn, ip_in, ip_out):
         """Replace the full index of a trajectory particle with the new value.
 
            Trajectory particles are identified by their full SA index.  When
@@ -1777,14 +1777,14 @@ class Particle_C(object):
            remaining particles, and have to be updated.
 
            :param str sn: The name of the current species being advanced.
-           :param int i_in: The particle's index in the current "in" segment.
-           :param int i_out: The particle's index in the current "out" segment.
+           :param int ip_in: The particle's index in the current "in" segment.
+           :param int ip_out: The particle's index in the current "out" segment.
         """
 
-        sap = self.pseg_arr[sn] # The segmented array for this species
+        sap = self.sap_dict[sn] # The segmented array for this species
 
         # Obtain the full indices of this particle in the "in" and "out" arrays.
-        (full_index_in, full_index_out) = sap.get_full_indices(i_in, i_out)
+        (full_index_in, full_index_out) = sap.get_full_indices(ip_in, ip_out)
 
         # Find the position of full_index_in in the trajectory storage list.  This is
         # the full index that previously identified the particle.
@@ -1795,7 +1795,7 @@ class Particle_C(object):
 #        print "update_traj: The particle that had index", full_index_in, "now has index", full_index_out
 
         return full_index_in, full_index_out
-#    def update_trajectory_particleId(self, sn, i_in, i_out):ENDDEF
+#    def update_trajectory_particleId(self, sn, ip_in, ip_out):ENDDEF
 
 #class Particle_C(object):
     def remove_trajectory_particleId(self, sn, ip_in, ip_out, step, time, dt):
@@ -1827,7 +1827,7 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        sap = self.pseg_arr[sn] # The segmented array for this species
+        sap = self.sap_dict[sn] # The segmented array for this species
         psegOut = sap.get_current_out_segment()
         p = psegOut[ip_out]
         
@@ -1920,10 +1920,10 @@ class Particle_C(object):
         self.traj_T.particle_index_list[sn][p_index] = self.traj_T.NO_PINDEX
 
         return full_index_in
-#    def remove_trajectory_particleId(self, sn, i_in):ENDDEF
+#    def remove_trajectory_particleId(self, sn, ip_in):ENDDEF
 
 #class Particle_C(object):
-    def record_trajectory_datum(self, species_name, i_out, full_index, step, time, neg_E_field=None, external_E_field=None, facet_crossing=False):
+    def record_trajectory_datum(self, species_name, ip_out, full_index, step, time, neg_E_field=None, external_E_field=None, facet_crossing=False):
         """Save a single data-record of a particle trajectory.
 
            NB: It is assumed that TRAJECTORY_FLAG has been checked before this
@@ -1931,7 +1931,7 @@ class Particle_C(object):
 
            :param species_name: Name of the species that the marked particle belongs
                                 to.
-           :param i_out: Index of the particle in the current "out" segment.
+           :param ip_out: Index of the particle in the current "out" segment.
 
            :param int full_index: The full storage index of the particle, which is used to identify the particle in the trajectory storage.
 
@@ -1952,12 +1952,12 @@ class Particle_C(object):
 
         # Access the particle's record in the current "out" segment. This has the
         # most up-to-date data for this particle.
-        sap = self.pseg_arr[species_name] # The segmented array for this species
+        sap = self.sap_dict[species_name] # The segmented array for this species
         psegOut = sap.get_current_out_segment()
-        p = psegOut[i_out]
+        p = psegOut[ip_out]
         # Get the storage index that currently identifies this particle in the
         # trajectory list of particles.
-#        fullIndex = sap.get_full_index(i_in, "in")
+#        fullIndex = sap.get_full_index(ip_in, "in")
         
         traj_T = self.traj_T
 
@@ -2090,7 +2090,7 @@ class Particle_C(object):
 
         # Record a trajectory data-point for particles with explicit dynamics
         for sp in traj_T.explicit_species:
-            psegArrSp = self.pseg_arr[sp] # The SA for this species
+            psegArrSp = self.sap_dict[sp] # The SA for this species
             for i in range(len(traj_T.particle_index_list[sp])): # i loops over the list of
                                                              # trajectory-particles for
                                                              # this species
@@ -2157,7 +2157,7 @@ class Particle_C(object):
 
         # Record a trajectory data-point for particles with implicit dynamics
         for sp in traj_T.implicit_species:
-            psegArrSp = self.pseg_arr[sp] # The SA for this species
+            psegArrSp = self.sap_dict[sp] # The SA for this species
             for i in range(len(traj_T.particle_index_list[sp])): # i loops on
                                                              # particle-index array
                 ip = traj_T.particle_index_list[sp][i] # Look up the full particle index
@@ -2209,7 +2209,7 @@ class Particle_C(object):
 
         # Record a trajectory data-point for particles with neutral dynamics
         for sp in traj_T.neutral_species:
-            psegArrSp = self.pseg_arr[sp] # The SA for this species
+            psegArrSp = self.sap_dict[sp] # The SA for this species
             for i in range(len(traj_T.particle_index_list[sp])): # i loops on
                                                              # particle-index array
                 ip = traj_T.particle_index_list[sp][i] # Look up the full particle index
@@ -2368,7 +2368,7 @@ class Particle_C(object):
         numberPerCell = paramDict['number_per_cell']
 
         # Get the storage for this species
-        psegArrSp = self.pseg_arr[speciesName] # The SegmentedArrayPair_C object for this species
+        psegArrSp = self.sap_dict[speciesName] # The SegmentedArrayPair_C object for this species
         pDim = self.particle_dimension
 
         # References to scratch space
@@ -2608,8 +2608,8 @@ class Particle_C(object):
                     aOff += npSpecies
                 else:
                     ## Loop over the segments of the "out" array to get the attribute pA
-                    psa = self.pseg_arr[s] # segmented array for this species
-                    (npSeg, pseg) = psa.init_out_loop()
+                    sap = self.sap_dict[s] # segmented array for this species
+                    (npSeg, pseg) = sap.init_out_loop()
 #                    particleCount = 0
                     while isinstance(pseg, np_m.ndarray):
 #                        print "Array for", pA, "is: ", pseg[pA], "shape = ", pseg.shape
@@ -2617,7 +2617,7 @@ class Particle_C(object):
                         h5Buf[aOff:aOff+npSeg] = pseg[pA] # Copy all the values of attribute pA to
                                                           # contiguous locations in the buffer.
                         aOff += npSeg # Advance the offset by the number of values just copied.
-                        (npSeg, pseg) = psa.get_next_segment("out")
+                        (npSeg, pseg) = sap.get_next_segment("out")
 
 #            print "h5Buf is:", h5Buf[0:aOff]
             dset = group.create_dataset(pA, data=h5Buf[0:aOff])

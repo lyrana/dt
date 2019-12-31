@@ -240,7 +240,7 @@ class TestPybind11(unittest.TestCase):
 # Test passing the 1D particle storage to C++
 
         speciesName = 'neutral_H'
-        psa = self.particle_P.pseg_arr[speciesName] # segmented array for this species
+        sap = self.particle_P.sap_dict[speciesName] # segmented array for this species
         
         test_solib.function_with_Particle_C_arg(self.particle_P)
 

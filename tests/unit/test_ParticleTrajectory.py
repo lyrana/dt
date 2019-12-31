@@ -421,7 +421,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(ip)
+                (pseg, offset) = p_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset]
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
@@ -548,7 +548,7 @@ class TestParticleTrajectory(unittest.TestCase):
                 continue
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(ip)
+                (pseg, offset) = p_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset]
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
@@ -670,7 +670,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(ip)
+                (pseg, offset) = p_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset]
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]

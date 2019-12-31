@@ -308,7 +308,7 @@ class TestCppParticleMigration(unittest.TestCase):
         #
         
         speciesName = 'neutral_H'
-        psa = self.particle_P.pseg_arr[speciesName] # segmented array for this species
+        sap = self.particle_P.sap_dict[speciesName] # segmented array for this species
 
         # Print the cell indices
 #        print("cell_vertices_dict = ", self.particle_P.pmesh_M.cell_vertices_dict)
@@ -323,9 +323,9 @@ class TestCppParticleMigration(unittest.TestCase):
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
-                # getparticle = self.particle_P.pseg_arr[sp].get(ip)
+                # getparticle = self.particle_P.sap_dict[sp].get(ip)
                 # Instead of .get(), retrieve the particle structure using the returned Numpy array it's in.
-                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset] # Retrieve the particle from the SAP.
 #                print('expected = ', p_expected[ip])
 #                print('calculated = ', getparticle)
@@ -378,10 +378,10 @@ class TestCppParticleMigration(unittest.TestCase):
         p_ic = []
         sp = self.particle_P.neutral_species[0]
         for ip in [0, 1]:
-            (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+            (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
             p = pseg[offset].copy()  # Have to make a copy! Otherwise you overwrite the only copy of the particle
             
-#            p_ic.append(self.particle_P.pseg_arr[sp].get(ip)) # Don't do this: it's a reference.
+#            p_ic.append(self.particle_P.sap_dict[sp].get(ip)) # Don't do this: it's a reference.
             p_ic.append(p)
 #            print 'ip =', ip, 'p_ic =', p_ic[ip]
 
@@ -429,7 +429,7 @@ class TestCppParticleMigration(unittest.TestCase):
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
-                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset] # Retrieve the particle from the SAP.
                 if self.plot_results is True:
                     #mplot_m.plot(data_arr['x'], data_arr['y'])
@@ -493,7 +493,7 @@ class TestCppParticleMigration(unittest.TestCase):
         p_ic = []
         sp = self.particle_P.neutral_species[0]
         for ip in [0, 1]:
-            (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+            (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
             p = pseg[offset].copy()  # Have to make a copy! Otherwise you overwrite the only copy of the particle
             p_ic.append(p)
 
@@ -542,7 +542,7 @@ class TestCppParticleMigration(unittest.TestCase):
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
-                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset] # Retrieve the particle from the SAP.
                 if self.plot_results is True:
                     mplot_m.plot([p_ic[ip][0], getparticle[0]], [p_ic[ip][1], getparticle[1]], [p_ic[ip][2], getparticle[2]])

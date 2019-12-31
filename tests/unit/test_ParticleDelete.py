@@ -237,7 +237,7 @@ class TestParticleDeletion(unittest.TestCase):
         dx = 0.2
         for sp in p_P.species_names:
             if p_P.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
-            (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(0)
+            (pseg, offset) = p_P.sap_dict[sp].get_segment_and_offset(0)
             getparticle = pseg[offset]
             print ("getparticle = ", getparticle)
             putparticle = getparticle
@@ -255,10 +255,10 @@ class TestParticleDeletion(unittest.TestCase):
                     putparticle[10] = 0b00 # initialize all bits to 0
 
                 # Store the particle
-                seg_index, full_index = p_P.pseg_arr[sp].push_back(putparticle)
+                seg_index, full_index = p_P.sap_dict[sp].push_back(putparticle)
 
                 # Retrieve the particle structure using the returned Numpy array it's in.
-                (parray, offset) = p_P.pseg_arr[sp].get_segment_and_offset(full_index)
+                (parray, offset) = p_P.sap_dict[sp].get_segment_and_offset(full_index)
                 p = parray[offset] # Retrieve the particle from the SAP.
                 
                 ## Add the new particles to the trajectory object.
@@ -275,9 +275,9 @@ class TestParticleDeletion(unittest.TestCase):
 
         # Query the particle arrays after initialization.
         for sp in p_P.species_names:
-            (nseg_in, nseg_out) = p_P.pseg_arr[sp].get_number_of_segments()
+            (nseg_in, nseg_out) = p_P.sap_dict[sp].get_number_of_segments()
             print(sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out))
-#            npart_out = p_P.pseg_arr[sp].get_number_of_items()
+#            npart_out = p_P.sap_dict[sp].get_number_of_items()
             npart_out = p_P.get_species_particle_count(sp)
             print(sp, "species has %d particles in the 'out' array" % npart_out)
 
@@ -300,10 +300,10 @@ class TestParticleDeletion(unittest.TestCase):
 #            delparts = (0, np-1, np/51, np/31, np/11)
             for ip in delparts:
                 # We need to change the stored data, so use get_segment_and_offset()
-                (parray, offset) = p_P.pseg_arr[sp].get_segment_and_offset(full_index)
+                (parray, offset) = p_P.sap_dict[sp].get_segment_and_offset(full_index)
                 getparticle = parray[offset]
 # This systax only works for the Python SAP:                
-#                getparticle = p_P.pseg_arr[sp].get_item(ip)
+#                getparticle = p_P.sap_dict[sp].get_item(ip)
 
 #                print ("getparticle['bitflags']", getparticle['bitflags'])
                 # Set the delete flag for these particles.
@@ -326,7 +326,7 @@ class TestParticleDeletion(unittest.TestCase):
         # Now check on the arrays again
         print("\nAfter a particle move step:\n")
         for sp in p_P.species_names:
-            (nseg_in, nseg_out) = p_P.pseg_arr[sp].get_number_of_segments()
+            (nseg_in, nseg_out) = p_P.sap_dict[sp].get_number_of_segments()
             print(sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out))
             npart_out = p_P.get_species_particle_count(sp)
             print(sp, "species has %d particles in the 'out' array" % npart_out)

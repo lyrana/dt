@@ -97,7 +97,7 @@ namespace dnt
     // Get attributes from the Particle_C argument
     auto pmesh_M = particle_P.attr("pmesh_M");
     auto pDim = particle_P.attr("particle_dimension").cast<int>();
-    auto pseg_arr_map = particle_P.attr("pseg_arr").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
+    auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
     auto traj_T = particle_P.attr("traj_T"); // There's no cast<>() here as we only need to check if traj_T is None below.
 
     // Get attributes from the DTcontrol_C argument
@@ -117,7 +117,7 @@ namespace dnt
     
     // Get the data for the species to be advanced
     // See move_charged_species_in_uniform_fields() below for accessing the SAP without constructing a std::map. Note that sap is a pointer.
-    auto sap = pseg_arr_map[std::string(py::str(species_name))];
+    auto sap = sap_map[std::string(py::str(species_name))];
     const py::ssize_t segmentLength = sap->get_segment_length();
     
     // Start a loop over the sap segments. segTuple contains (npSeg, psegIn, psegOut)
@@ -480,11 +480,11 @@ namespace dnt
     //    std::cout << "Hello from move_charged_species_in_uniform_fields@1" << std::endl;
 
     // Get the data for the species to be advanced
-    //    auto pseg_arr_map = particle_P.attr("pseg_arr").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
-    //    auto sap = pseg_arr_map[std::string(py::str(species_name))];
+    //    auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
+    //    auto sap = sap_map[std::string(py::str(species_name))];
     // This is equivalent to the above two lines:
-    // (pseg_arr[species_name] is a pointer to the SAP?)
-    auto sap = particle_P.attr("pseg_arr")[species_name].cast<SegmentedArrayPair<PT> *>();
+    // (sap_dict[species_name] is a pointer to the SAP?)
+    auto sap = particle_P.attr("sap_dict")[species_name].cast<SegmentedArrayPair<PT> *>();
     
     const py::ssize_t segmentLength = sap->get_segment_length();
     

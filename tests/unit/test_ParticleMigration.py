@@ -297,7 +297,7 @@ class TestParticleMigration(unittest.TestCase):
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
-                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset] # Retrieve the particle from the SAP.
                 
 #                print 'expected = ', p_expected[ip]
@@ -342,9 +342,9 @@ class TestParticleMigration(unittest.TestCase):
         p_ic = []
         sp = self.particle_P.neutral_species[0]
         for ip in [0, 1]:
-            (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+            (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
             p = pseg[offset].copy()  # Have to make a copy! Otherwise you overwrite the only copy of the particle
-#            p_ic.append(self.particle_P.pseg_arr[sp].get(ip)) # Don't do this: it's a reference.
+#            p_ic.append(self.particle_P.sap_dict[sp].get(ip)) # Don't do this: it's a reference.
             p_ic.append(p)
 #            print 'ip =', ip, 'p_ic =', p_ic[ip]
 
@@ -392,7 +392,7 @@ class TestParticleMigration(unittest.TestCase):
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
-                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset] # Retrieve the particle from the SAP.
 #                mplot_m.plot(data_arr['x'], data_arr['y'])
                 if self.plotResults is True:
@@ -441,7 +441,7 @@ class TestParticleMigration(unittest.TestCase):
         p_ic = []
         sp = self.particle_P.neutral_species[0]
         for ip in [0, 1]:
-            (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+            (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
             p = pseg[offset].copy()  # Have to make a copy! Otherwise you overwrite the only copy of the particle
             p_ic.append(p)
 
@@ -489,7 +489,7 @@ class TestParticleMigration(unittest.TestCase):
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
         for sp in self.particle_P.neutral_species:
             for ip in [0, 1]:
-                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset] # Retrieve the particle from the SAP.
                 if self.plotResults is True:
                     mplot_m.plot([p_ic[ip][0], getparticle[0]], [p_ic[ip][1], getparticle[1]], [p_ic[ip][2], getparticle[2]])
