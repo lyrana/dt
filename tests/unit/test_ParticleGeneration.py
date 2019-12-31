@@ -17,7 +17,7 @@ from DT_Module import DTcontrol_C
 from Dolfin_Module import *
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
-from SegmentedArrayPair_Module import SegmentedArray_C
+from SegmentedArrayPair_Module import SegmentedArrayPair_C
 from Particle_Module import *
 from RecordedData_Module import *
 
@@ -59,7 +59,7 @@ class TestParticleGeneration(unittest.TestCase):
 
         pin = self.pin
 
-        pin.position_coordinates = ['x',] # determines the particle-storage dimensions
+        pin.coordinate_system = 'cartesian_x'
         pin.force_components = ['x',]
 
         ### Particle input
@@ -97,7 +97,7 @@ class TestParticleGeneration(unittest.TestCase):
         umi1D.cells_on_side = (20,) # Need the comma to indicate a tuple
 
         ### Create the 1D particle mesh and add to the Particle_C object
-        pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
         particle_P.pmesh_M = pmesh1D
 
         ### Input for particle sources

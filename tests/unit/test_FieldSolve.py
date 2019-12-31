@@ -24,6 +24,14 @@ class TestFieldSolve(unittest.TestCase):
     def setUp(self):
         # initializations for each test go here...
 
+        self.plotMesh = False
+        self.plotResults = False
+
+        # Turn plots off if there's no display.
+        if os.environ.get('DISPLAY') is None:
+            self.plotMesh = False
+            self.plotResults = False
+        
         fncName = '(' + __file__ + ') ' + sys._getframe().f_code.co_name + "():"
 #        print("\n", fncName, "This is DOLFIN Version", df_m.DOLFIN_VERSION_STRING)
         print("\n", fncName, "This is DOLFIN Version", df_m.__version__)
@@ -50,12 +58,6 @@ class TestFieldSolve(unittest.TestCase):
         from UserMesh_y_Fields_Spherical1D_Module import UserMesh1DS_C
         from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve1DS_C
 
-        ## Plotting
-        if os.environ.get('DISPLAY') is None:
-            plotFlag=False
-        else:
-            plotFlag=True
-
         # For this calculation, we use the Dolfin framework for finite-element fields.
 #        field_infrastructure_module = 'Dolfin_Module'
 #        fI_M = im_m.import_module(field_infrastructure_module)
@@ -81,7 +83,7 @@ class TestFieldSolve(unittest.TestCase):
         umi.field_boundary_dict = fieldBoundaryDict
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
-        mesh_M = UserMesh1DS_C(umi, compute_tree=False, plot_flag=True, plot_title=plotTitle)
+        mesh_M = UserMesh1DS_C(umi, compute_tree=False, plot_flag=self.plotMesh, plot_title=plotTitle)
 #        yesno = raw_input("Just called UserMesh1DS_C() in test_1_1D_spherical_laplace_solver")
 
         ## Storage for the potential and electric field
@@ -135,7 +137,7 @@ class TestFieldSolve(unittest.TestCase):
 
         # Solve for the potential
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
-        laplacesolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
+        laplacesolve.solve_for_phi(plot_flag=self.plotResults, plot_title=plotTitle)
 
 #        yesno = raw_input("Looks OK [Y/n]?")
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
@@ -231,12 +233,6 @@ class TestFieldSolve(unittest.TestCase):
         from UserMesh_y_Fields_FE2D_Module import UserMeshInput2DCirc_C
         from UserMesh_y_Fields_FE2D_Module import UserPoissonSolve2DCirc_C
 
-        # Plotting
-        if os.environ.get('DISPLAY') is None:
-            plotFlag=False
-        else:
-            plotFlag=True
-
         # For this calculation, we use the Dolfin framework for finite-element fields.
 #        field_infrastructure_module = 'Dolfin_Module'
 #        fI_M = im_m.import_module(field_infrastructure_module)
@@ -268,7 +264,7 @@ class TestFieldSolve(unittest.TestCase):
         # Options: 'left, 'right', 'left/right', 'crossed'
         umi.diagonal = 'crossed'
 
-        mesh_M = UserMesh2DCirc_C(umi, compute_tree=False, plot_flag=False)
+        mesh_M = UserMesh2DCirc_C(umi, compute_tree=False, plot_flag=self.plotMesh)
 
         # Storage for the potential and electric field
         phiElementType = 'Lagrange'
@@ -323,7 +319,7 @@ class TestFieldSolve(unittest.TestCase):
         laplacesolve.assemble_source_expression(0.0)
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
-        laplacesolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
+        laplacesolve.solve_for_phi(plot_flag=self.plotResults, plot_title=plotTitle)
 
 #        yesno = raw_input("Looks OK [Y/n]?")
 #        self.assertNotEqual(yesno, 'n', "Problem with mesh")
@@ -371,18 +367,11 @@ class TestFieldSolve(unittest.TestCase):
         from UserMesh_y_Fields_FE_XYZ_Module import UserMeshInput_C
         from UserMesh_y_Fields_FE_XYZ_Module import UserPoissonSolve1D_C
 
-        ### Set plot flag ###
-
-        if os.environ.get('DISPLAY') is None:
-            plotFlag=False
-        else:
-            plotFlag=True
-
         ### Read the mesh and boundary-condition markers ###
 
         # Create the mesh object and read in the mesh and boundary markers
         coordinateSystem = 'Cartesian'
-        mesh1d_M = Mesh_C(mesh_file='mesh_2cell_1D.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_2cell_1D_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = Mesh_C(mesh_file='mesh_2cell_1D.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_2cell_1D_Fbcs.xml', compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
 
         ### Create the charge-density vector ###
 
@@ -471,7 +460,7 @@ class TestFieldSolve(unittest.TestCase):
 
         # Solve for the potential
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
-        poissonsolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
+        poissonsolve.solve_for_phi(plot_flag=self.plotResults, plot_title=plotTitle)
 
         return
 #    def test_3_1D_poisson_solver(self):ENDDEF
@@ -506,18 +495,11 @@ class TestFieldSolve(unittest.TestCase):
 
         from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve1DS_C
 
-        ### Set plot flag ###
-
-        if os.environ.get('DISPLAY') is None:
-            plotFlag=False
-        else:
-            plotFlag=True
-
         ### Read the mesh and boundary-condition markers ###
 
         # Create a mesh object and read in the mesh.
         coordinateSystem = '1D-spherical-radial'
-        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_1D_radial_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_1D_radial_Fbcs.xml', compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
 
         ### Create the charge-density vector ###
 
@@ -610,7 +592,7 @@ class TestFieldSolve(unittest.TestCase):
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
 #        poissonsolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
         spacechargeFactor = 1.0
-        potentialsolve.solve_for_phi(assembled_charge=chargeDensity_F, assembled_charge_factor=spacechargeFactor, plot_flag=plotFlag, plot_title=plotTitle)
+        potentialsolve.solve_for_phi(assembled_charge=chargeDensity_F, assembled_charge_factor=spacechargeFactor, plot_flag=self.plotResults, plot_title=plotTitle)
 
         # Write the potential to a file in VTK and XML formats
         file = df_m.File('phi_test_4_1D.pvd')
@@ -674,18 +656,11 @@ class TestFieldSolve(unittest.TestCase):
         from UserMesh_y_Fields_Spherical1D_Module import UserMeshInput1DS_C
         from UserMesh_y_Fields_Spherical1D_Module import UserPoissonSolve1DS_C
 
-        ### Set plot flag ###
-
-        if os.environ.get('DISPLAY') is None:
-            plotFlag=False
-        else:
-            plotFlag=True
-
         ### Read the mesh and boundary-condition markers ###
 
         # Create a mesh object and read in the mesh.
         coordinateSystem = '1D-spherical-radial'
-        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial_r0.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_1D_radial_r0_Fbcs.xml', compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = Mesh_C(mesh_file='mesh_1D_radial_r0.xml', coordinate_system=coordinateSystem, field_boundary_marker_file='mesh_1D_radial_r0_Fbcs.xml', compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
 
         ### Create the charge-density vector ###
 
@@ -778,7 +753,7 @@ class TestFieldSolve(unittest.TestCase):
 #        poissonsolve.solve_for_phi(plot_flag=plotFlag, plot_title=plotTitle)
 
         spacechargeFactor = 1.0
-        potentialsolve.solve_for_phi(assembled_charge=chargeDensity_F, assembled_charge_factor=spacechargeFactor, plot_flag=plotFlag, plot_title=plotTitle)
+        potentialsolve.solve_for_phi(assembled_charge=chargeDensity_F, assembled_charge_factor=spacechargeFactor, plot_flag=self.plotResults, plot_title=plotTitle)
         
         # Write the potential to a file in VTK and XML formats
         file = df_m.File('phi_test_5_1D.pvd')

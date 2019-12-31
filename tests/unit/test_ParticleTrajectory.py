@@ -21,7 +21,7 @@ from Particle_Module import *
 
 from RecordedData_Module import *
 
-from SegmentedArrayPair_Module import SegmentedArray_C
+from SegmentedArrayPair_Module import SegmentedArrayPair_C
 
 from UserMesh_y_Fields_FE2D_Module import *
 
@@ -34,6 +34,14 @@ class TestParticleTrajectory(unittest.TestCase):
     
     def setUp(self):
 
+        self.plotMesh = False
+        self.plotResults = False
+
+        # Turn plots off if there's no display.
+        if os.environ.get('DISPLAY') is None:
+            self.plotMesh = False
+            self.plotResults = False
+        
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         # initializations for each test go here...
@@ -41,7 +49,8 @@ class TestParticleTrajectory(unittest.TestCase):
         self.ctrl = DTcontrol_C()
 
         self.ctrl.dt = 1.0e-6
-
+        self.ctrl.MAX_FACET_CROSS_COUNT = 100
+        
         # Initialize time counters
         self.ctrl.timeloop_count = 0
         self.ctrl.time = 0.0
@@ -56,7 +65,7 @@ class TestParticleTrajectory(unittest.TestCase):
         # Initialize particles
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
-        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
+        pin.coordinate_system = 'cartesian_xy'
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
 
@@ -192,7 +201,7 @@ class TestParticleTrajectory(unittest.TestCase):
 #        pin.pmesh_M = UserMesh_C(meshFile='quarter_circle_mesh_crossed.xml', particleBoundaryFile='Pbcs_quarter_circle_mesh_crossed.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
 
 # Can this be attached to Particle_C after Particle_C construction? YES
-        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
 
         self.particle_P.pmesh_M = pmesh_M
 
@@ -288,12 +297,6 @@ class TestParticleTrajectory(unittest.TestCase):
         # with TRAJECTORY_FLAG on are encountered.
         traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
         self.particle_P.traj_T = traj_T
-
-
-        # if os.environ.get('DISPLAY') is None:
-        #     plotFlag=False
-        # else:
-        #     plotFlag=True
 
         # Create particles that are selected for trajectories.
 # Could call particle_P.initialize_distributions() instead?
@@ -418,7 +421,8 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                getparticle = p_P.pseg_arr[sp].get(ip)
+                (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset]
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
                 for ic in range(ncoords):
@@ -433,12 +437,12 @@ class TestParticleTrajectory(unittest.TestCase):
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         mesh = p_P.pmesh_M.mesh
         holdPlot = False # Set to True to stop the plot from disappearing.
-        p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        if self.plotResults is True:
+            p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
-        # Plot the trajectory in phase-space
-
-        plotPhaseSpace = False
-        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
+            # Plot the trajectory in phase-space
+#        plotPhaseSpace = False
+#        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
             p_P.traj_T.plot() # Phase-space plot of trajectory
 
         return
@@ -544,7 +548,8 @@ class TestParticleTrajectory(unittest.TestCase):
                 continue
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                getparticle = p_P.pseg_arr[sp].get(ip)
+                (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset]
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
                 for ic in range(ncoords):
@@ -559,12 +564,12 @@ class TestParticleTrajectory(unittest.TestCase):
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         mesh = p_P.pmesh_M.mesh
         holdPlot = True # Set to True to stop the plot from disappearing.
-        p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        if self.plotResults is True:
+            p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
-        # Plot the trajectory in phase-space
-
-        plotPhaseSpace = True
-        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
+            # Plot the trajectory in phase-space
+#        plotPhaseSpace = False
+#        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
             p_P.traj_T.plot()
 
         return
@@ -665,7 +670,8 @@ class TestParticleTrajectory(unittest.TestCase):
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                getparticle = p_P.pseg_arr[sp].get(ip)
+                (pseg, offset) = p_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset]
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
 #                for ic in range(ncoords):
@@ -680,12 +686,12 @@ class TestParticleTrajectory(unittest.TestCase):
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         mesh = p_P.pmesh_M.mesh
         holdPlot = True # Set to True to stop the plot from disappearing.
-        p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        if self.plotResults is True:
+            p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         # Plot the trajectory in phase-space
-
-        plotPhaseSpace = False
-        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
+#        plotPhaseSpace = False
+#        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
             p_P.traj_T.plot()
 
         return

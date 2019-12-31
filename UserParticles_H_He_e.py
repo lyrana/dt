@@ -60,7 +60,12 @@ class UserParticleDistributions_C(object):
 # Initialize a few particles from each species
     @staticmethod
     def plasma_electrons(type):
-        """The plasma electrons are specified as lists of coordinates and weights.
+        """
+           The plasma electrons are specified as lists of coordinates, weights, etc.
+
+           The plasma electrons are given 3 coordinate values and 3 velocity values.
+
+           :returns: The tuple (number of particles, list of particles)
         """
         # Check that the caller knows this function returns 'listed' particles:
         if type != 'listed':
@@ -117,7 +122,12 @@ class UserParticleDistributions_C(object):
 
     @staticmethod
     def H_plus(type):
-        """The H_plus ions are specified as lists of coordinates and weights.
+        """
+           The H_plus ions are specified as lists of coordinates, weights, etc.
+
+           The plasma electrons are given 3 coordinate values and 3 velocity values.
+
+           :returns: The tuple (number of particles, list of particles)
         """
         # Check that the caller knows this function returns 'listed' particles:
         if type != 'listed':

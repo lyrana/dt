@@ -12,20 +12,34 @@ import unittest
 import dolfin as df_m
 import matplotlib.pyplot as mplot_m
 
-from UserMesh_y_Fields_FE2D_Module import *
+from UserMesh_y_Fields_FE_XYZ_Module import *
 
 class TestMeshFunctions(unittest.TestCase):
-    """Test the mesh class in UserMesh_y_Fields_FE2D_Module.py"""
+    """Test algorithms that create lookup tables for meshes.
+    
+     """
     
     def setUp(self):
         # initializations for each test go here...
 
+        self.plotMesh = False
+        self.plotResults = False
+
+        # Turn plots off if there's no display.
+        if os.environ.get('DISPLAY') is None:
+            self.plotMesh = False
+            self.plotResults = False
+
         return
 
 
-    def test_1_cell_neighbor_list(self):
-        """Example from:
-           http://fenicsproject.org/qa/3843/cell-neighbours
+    def test_1_cell_neighbors_list(self):
+        """ For each cell in a mesh, make a list of its neighbor cells.
+
+            Check the list against a list created by visual inspection of the mesh.
+
+            This example is from:
+              http://fenicsproject.org/qa/3843/cell-neighbours
         """
 
         mesh = df_m.UnitSquareMesh(2, 2)
@@ -48,18 +62,65 @@ class TestMeshFunctions(unittest.TestCase):
         # facet.entities(tdim) are the entities of dimension 2 touching that facet
         cell_neighbors = {cell.index(): sum(([ci for ci in facet.entities(tdim) if ci != cell.index()] for facet in df_m.facets(cell)), []) for cell in df_m.cells(mesh)}
 
-#        print cell_neighbors
+#        print cell vertex coordinates
+#        for cell in df_m.cells(mesh):
+#            print("cell index", cell.index(), "vertices", cell.get_vertex_coordinates())
 
-        df_m.plot(mesh, title=plotTitle)
-        mplot_m.show()
+        if self.plotMesh is True:
+            df_m.plot(mesh, title=plotTitle)
+            mplot_m.show()
+        # Write the mesh to a VTK file
+        meshFileName = "UnitSquareMesh_2by2.pvd"
+        meshFile = df_m.File(meshFileName)
+        meshFile << mesh            
 
-#        self.assertEqual(len(shared_items), len(expected_neighbors), msg="Cell neighbor list is not correct")
-#        self.assertEqual(cmp(cell_neighbors, expected_neighbors), 0, msg="Cell neighbor list is not correct")
-#26aug18 cmp() was removed from python3:
         self.assertEqual(cell_neighbors, expected_neighbors, msg="Cell neighbor list is not correct")
-
 
         return
 
+
+    def test_2_cell_facet_normals(self):
+        """ Test the function compute_cell_facet_normals_dict().
+
+            Check the list of normals against a manual computation of the normals.
+
+            Note: This uses a different mesh from the previous test. File
+            XY-8-tris-left-diag.png has a picture of the mesh.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName, '('+__file__+')')
+        
+        # Describe a 2D mesh from (-10,-10) to (10,10) with 2 cells on a side.
+        # The mesh is triangular, so there's a total of 4x2 = 8 cells.
+        umi2d_I = UserMeshInput_C()
+        umi2d_I.pmin = df_m.Point(-10.0, -10.0)
+        umi2d_I.pmax = df_m.Point(10.0, 10.0)
+        umi2d_I.cells_on_side = (2, 2)
+        umi2d_I.diagonal = 'left'
+
+        # UserMesh_FE_XYZ_Module can make the mesh from the above input.
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
+        mesh2d_M = UserMesh_C(umi2d_I, plot_flag=self.plotMesh, plot_title=plotTitle)
+        
+        # Compute the facet-normals:
+        mesh2d_M.compute_cell_facet_normals_dict() # Unit vectors normal to cell facets        
+        # print("cell_facet_normals_dict: ", mesh2d_M.cell_facet_normals_dict)
+        
+        cell_0_expected_facet_normals = [[0.70710678, 0.70710678], # opposite vertex 0
+                                         [-1., 0.], # opposite vertex 1
+                                         [ 0., -1.] # opposite vertex 3
+                                        ]
+
+
+        decimalPlaces = 6 # Accuracy of test
+        # Check the computed values of the normal vector for the 3 facets of cell 0:
+        for facet_id in range(3):
+            for comp in range(2):
+                self.assertAlmostEqual(mesh2d_M.cell_facet_normals_dict[0][facet_id][comp], cell_0_expected_facet_normals[facet_id][comp], places=decimalPlaces, msg="Cell facet normals for cell 0 are not correct")
+
+        return
+    
 if __name__ == '__main__':
     unittest.main()

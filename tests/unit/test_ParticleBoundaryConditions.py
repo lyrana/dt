@@ -16,7 +16,7 @@ from DT_Module import DTcontrol_C
 
 from Dolfin_Module import Field_C
 
-from SegmentedArrayPair_Module import SegmentedArray_C
+from SegmentedArrayPair_Module import SegmentedArrayPair_C
 
 from Particle_Module import *
 from Particle_Module import *
@@ -34,6 +34,14 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # Initialization code common to the tests go here...
 
+        self.plotMesh = False
+        self.plotResults = False
+
+        # Turn plots off if there's no display.
+        if os.environ.get('DISPLAY') is None:
+            self.plotMesh = False
+            self.plotResults = False
+
         return
 
 #class TestParticleBoundaryConditions(unittest.TestCase):
@@ -45,10 +53,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName)
 
-        # if os.environ.get('DISPLAY') is None:
-        #     plotFlag=False
-        # else:
-        #     plotFlag=True
+        if os.environ.get('DISPLAY') is None:
+            plotFlag=False
+        else:
+            plotFlag=self.plotMesh
 
         ctrl = DTcontrol_C()
 
@@ -62,13 +70,15 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ctrl.dt = 0.5
         ctrl.n_timesteps = 100
+        ctrl.MAX_FACET_CROSS_COUNT = 100
 
         # Create an instance of the DTparticleInput class
         pin = ParticleInput_C()
         # Settings common to all species
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
-        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.coordinate_system = 'cartesian_xyz'
+#        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_precision = numpy.float64
 
         # Specify the particle species properties
@@ -184,7 +194,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         from UserMesh_y_Fields_FE_XYZ_Module import UserMesh_C
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        pmesh_M = UserMesh_C(umi2D, compute_dictionaries=True, compute_tree=True, plot_flag=False, plot_title=plotTitle)
+        pmesh_M = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle)
         # Add this to the particle object:
         particle_P.pmesh_M = pmesh_M
 
@@ -270,10 +280,11 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                 p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
 
         # Plot the trajectory onto the particle mesh
-        mesh = p_P.pmesh_M.mesh
-        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        holdPlot = True # Set to True to stop the plot from disappearing.
-        p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        if self.plotResults is True:
+            mesh = p_P.pmesh_M.mesh
+            plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
+            holdPlot = True # Set to True to stop the plot from disappearing.
+            p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
             
         return
 #    def test_1_2D_x_y_absorbing_boundary(self):ENDDEF
@@ -287,10 +298,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName)
 
-        # if os.environ.get('DISPLAY') is None:
-        #     plotFlag=False
-        # else:
-        #     plotFlag=True
+        if os.environ.get('DISPLAY') is None:
+            plotFlag=False
+        else:
+            plotFlag=self.plotResults
 
         ### Particle species input
 
@@ -299,6 +310,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Initialize particles
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = 'cartesian_xy'        
         pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
@@ -389,7 +401,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ## Create the particle mesh
         from UserMesh_y_Fields_FE2D_Module import UserMesh2DCirc_C
-        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
 
         # Add this to the particle object:
         particle_P.pmesh_M = pmesh_M
@@ -479,6 +491,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # These are fast electrons, so the timestep is small
         ctrl.dt = 1.0e-6
         ctrl.n_timesteps = 14
+        ctrl.MAX_FACET_CROSS_COUNT = 100
         
         # The trajectory object can now be created and added to particle_P
         p_P = particle_P
@@ -499,6 +512,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         for istep in range(ctrl.n_timesteps):
 
+#            print("istep", istep)
+            
             if p_P.traj_T is not None:
 #                print 'p_P.traj_T.skip:', p_P.traj_T.skip
                 if istep % p_P.traj_T.skip == 0:
@@ -514,11 +529,11 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                 p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=negElectricField)
 
         # Plot the trajectory onto the particle mesh
-
-        mesh = p_P.pmesh_M.mesh
-        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        holdPlot = True # Set to True to stop the plot from disappearing.
-        p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+        if self.plotResults is True:
+            mesh = p_P.pmesh_M.mesh
+            plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
+            holdPlot = True # Set to True to stop the plot from disappearing.
+            p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         return
 #    def test_2D_r_theta_absorbing_boundary(self):

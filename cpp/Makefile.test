@@ -1,0 +1,23 @@
+# Make the Python module called test_solib
+
+TEST_MODULE_NAME = test_solib
+
+DFLAGS = -DMODULE_NAME=$(TEST_MODULE_NAME)
+
+$(TEST_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: $(TEST_MODULE_NAME).cpp SegmentedArrayPair.h test.h
+	c++ $(DFLAGS) -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` $(TEST_MODULE_NAME).cpp -o $(TEST_MODULE_NAME)`python3-config --extension-suffix`
+
+# test_pyb.cpython-36m-x86_64-linux-gnu.so: test_pyb.cpp SegmentedArrayPair.h test_control.h test_particle_advance.h
+# 	c++ -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` test_pyb.cpp -o test_pyb`python3-config --extension-suffix`
+
+# test_pyb.cpython-36m-x86_64-linux-gnu.so: test_pyb.cpp SegmentedArrayPair.h test.h
+# 	c++ -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` test_pyb.cpp -o test_pyb`python3-config --extension-suffix`
+
+#SegmentedArrayPair_Cpp.o: SegmentedArrayPair_Cpp.cpp SegmentedArrayPair_Cpp.h pstruct.h
+#	c++ -c -O3 -Wall -std=c++11 -fPIC -fvisibility=hidden `python3 -m pybind11 --includes` SegmentedArrayPair_Cpp.cpp -o SegmentedArrayPair_Cpp.o
+
+#test_segmented_arrays: test_segmented_arrays.cpp SegmentedArrayPair_Cpp.cpp
+#	c++ -O0 -g -Wall -std=c++11 -fPIC -fvisibility=hidden `python3-config --cflags` test_segmented_arrays.cpp -o test_segmented_arrays `python3-config --ldflags`
+
+clean:
+	/bin/rm *.so *.o

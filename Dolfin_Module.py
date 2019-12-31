@@ -11,6 +11,9 @@ __all__ = ['Field_C',
            'WholeMesh_C']
 
 """Dolfin_Module contains classes that use the DOLFIN finite-element library.
+
+    The local source files are at ~/workspace/dolfin/python/src
+
 """
 
 import sys
@@ -18,8 +21,6 @@ import os
 import dolfin as df_m
 import matplotlib.pyplot as mplot_m
 import numpy as np_m
-
-import dnt_cpp
 
 #STARTCLASS
 class Mesh_C(object):
@@ -37,11 +38,15 @@ class Mesh_C(object):
     # Constructor
 
 # Examine the need for the Mesh and mesh_to_copy args:
-    def __init__(self, Mesh=None, mesh_to_copy=None, mesh_file=None, coordinate_system = None, field_boundary_marker_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title="Mesh"):
+    def __init__(self, Mesh=None, mesh_to_copy=None, mesh_file=None, coordinate_system = None, field_boundary_marker_file=None, compute_dictionaries=False, compute_cpp_arrays=False, compute_tree=False, plot_flag=False, plot_title="Mesh"):
         """
            :param Mesh: a Dolfin Mesh object
+           :param mesh_to_copy: a Dolfin Mesh object to be copied
            :param mesh_file: The name of a file containing an XML mesh
-           :param compute_dictionaries: Boolean flag to compute dictionaries of mesh entities
+           :param compute_dictionaries: Boolean flag to compute Python dictionaries
+                                        of mesh entities
+           :param compute_cpp_arrays: Boolean flag to compute a C++ object containing 
+                                      arrays of mesh entities
            :param compute_tree: Boolean flag to compute the mesh bounding-box tree
 
            :cvar gdim: Geometric dimension of the mesh
@@ -52,7 +57,7 @@ class Mesh_C(object):
         
         # Get a ref to the mesh from the arglist,
         if Mesh is not None:
-            self.mesh = Mesh
+            self.mesh = Mesh # See docs above
         # or make a copy of the arglist mesh,
         elif mesh_to_copy is not None:
             self.mesh = df_m.Mesh(mesh_to_copy)
@@ -93,26 +98,45 @@ class Mesh_C(object):
             # documentation.
             self.cell_dict = {}
 
+            self.cell_vertices_dict = {}
             self.entity_dimension = {'vertex': 0, 'edge': 1, 'facet': self.tdim-1}
-            self.cell_entity_index_dict = {}
-            self.vertex_cell_dict = {}
-            self.cell_facet_normals_dict = {}
-            self.cell_neighbor_dict = {}
+            self.cell_entity_indices_dict = {}
+            self.vertex_cells_dict = {}
+            self.cell_facet_normals_dict = None
+            self.cell_neighbors_dict = None
 
             self.cell_volume_dict = {}
 
-            # Compute lookup dictionaries
+            # Compute entity lookup dictionaries.
+
+            # These dicts are usually needed only when particles are used. In that case,
+            # they should be made by calling initialize_particle_mesh() (in
+            # Particle_Module.py).
             if compute_dictionaries is True:
-                self.compute_cell_dict()
-                self.compute_cell_vertex_dict() # Get vertex indices from a cell index
-#               self.compute_cell_entity_index_dict('vertex') # Get vertex indices from a cell index
-                self.compute_cell_entity_index_dict('facet') # Get facet indices from a cell index
-                self.compute_vertex_cell_dict() # Get cell indices from a vertex index
-
+                self.compute_cell_dict() # Get the Cell object from a cell index
+                # usually only needed for particles:
+                self.compute_cell_vertices_dict() # Get vertex indices from a cell index
+# Repeat of above
+#                self.compute_cell_entity_indices_dict('vertex') # Get vertex indices from a cell index
+                self.compute_cell_entity_indices_dict('facet') # Get facet indices from a cell index
+                self.compute_vertex_cells_dict() # Get cell indices from a vertex index
                 self.compute_cell_facet_normals_dict() # Unit vectors normal to cell facets
-                self.compute_cell_neighbor_dict() # Get neighbor cell indices from a cell index
+                self.compute_cell_neighbors_dict() # Get neighbor cell indices from a cell index
 
+# If this is never used on the field mesh, then remove it:
                 self.compute_cell_volume_dict() # Compute cell volumes indexed by cell index
+
+            # Create a C++ object of type MeshEntityArrays.
+            if compute_cpp_arrays is True:                
+                import mesh_entity_arrays_solib
+                mesh_df = self.mesh
+                # Create the name of the specialized MeshEntityArrays class with the right
+                # number of cell-facets
+                tDim = mesh_df.topology().dim()
+                nFacets = tDim + 1
+                meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
+                meaCtor = getattr(mesh_entity_arrays_solib, meaClass)
+                self.mea_object = meaCtor(mesh_df, compute_particle_mesh_maps=True)
 
             # Read the field boundary marker from a file, if one is provided
             if field_boundary_marker_file is not None:
@@ -122,7 +146,7 @@ class Mesh_C(object):
                 self.field_boundary_marker = fieldBoundaryMarker
 
         return
-#    def __init__(self, Mesh=None, mesh_file=None, compute_dictionaries=False, compute_tree=False, plot_flag=False):ENDDEF
+#    def __init__(self, Mesh=None, mesh_to_copy=None, mesh_file=None, coordinate_system = None, field_boundary_marker_file=None, compute_dictionaries=False, compute_cpp_arrays=False, compute_tree=False, plot_flag=False, plot_title="Mesh"):ENDDEF
 
 
  # Compute the search tree for this mesh
@@ -183,7 +207,7 @@ class Mesh_C(object):
 #  Things indexed by cell number
 #
 
-    def compute_cell_entity_index_dict(self, entity_name):
+    def compute_cell_entity_indices_dict(self, entity_name):
         """
            Make a dictionary where the keys are cell indices and the values are
            lists of the cell entity indices.
@@ -211,7 +235,7 @@ class Mesh_C(object):
         # Type issue: Had to convert numpy.uint32 to long (using tolist()) and
         # then to int (using map()).
         # This is because a FacetFunction wants the facet index as an int.
-        self.cell_entity_index_dict[entity_name] = dict((cell.index(), list(map(int, cell.entities(d).tolist()))) for cell in df_m.cells(self.mesh))
+        self.cell_entity_indices_dict[entity_name] = dict((cell.index(), list(map(int, cell.entities(d).tolist()))) for cell in df_m.cells(self.mesh))
 
         # E.g., use the dictionary to print the vertex coordinates:
 
@@ -220,39 +244,41 @@ class Mesh_C(object):
         # coordinates = self.mesh.coordinates()
         # for c in range(self.mesh.num_cells()):
         #     print "Vertices of cell", c
-        #     for vertex in self.cell_vertex_dict[c]:
+        #     for vertex in self.cell_vertices_dict[c]:
         #         print "\t", vertex, coordinates[vertex]
 
         return
-#    def compute_cell_entity_index_dict(self, entity_name):ENDDEF
+#    def compute_cell_entity_indices_dict(self, entity_name):ENDDEF
 
 #class Mesh_C(object):
-    def compute_cell_vertex_dict(self):
+    def compute_cell_vertices_dict(self):
         """
            Make a dictionary giving a list of the cell vertex indices, indexed by
            the cell index.  The vertex indices can be used, e.g., to
            obtain the x, y, z coordinates of the vertices.
+
+           The index list is returned as an Eigen::Map (see ~/workspace/dolfin/python/src/mesh.cpp) 
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
         # For each cell, get a list of the vertices in it
         # A vertex has topological dimension 0
-        self.cell_vertex_dict = dict((cell.index(), cell.entities(0)) for cell in df_m.cells(self.mesh))
+        self.cell_vertices_dict = dict((cell.index(), cell.entities(0).tolist()) for cell in df_m.cells(self.mesh))
 
-        # Use the dictionary to print the vertex coordinates:
+        # Example: Use the dictionary to print the vertex coordinates:
 
         # coordinates = self.mesh.coordinates()
         # for c in range(self.mesh.num_cells()):
         #     print "Vertices of cell", c
-        #     for vertex in self.cell_vertex_dict[c]:
+        #     for vertex in self.cell_vertices_dict[c]:
         #         print "\t", vertex, coordinates[vertex]
 
         return
-#    def compute_cell_vertex_dict(self):ENDDEF
+#    def compute_cell_vertices_dict(self):ENDDEF
 
 #class Mesh_C(object):
-    def compute_cell_neighbor_dict(self):
+    def compute_cell_neighbors_dict(self):
         """Make a dictionary that gives the indices of cells that
            share a common facet.
 
@@ -263,6 +289,7 @@ class Mesh_C(object):
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
         tdim = self.tdim
+        self.cell_neighbors_dict = {}
 
         # Generate facet-to-cell connectivity data
         self.mesh.init(tdim - 1, tdim)
@@ -295,14 +322,15 @@ class Mesh_C(object):
         #  
 
 
-# Used "tdim" for quantities independent of geometry, like indices.
+# Use "tdim" for quantities independent of geometry, like indices, number of cell
+# facets, etc.
 
 # The following commented-out line creates a correct dictionary, but if a
 # cell is at a boundary it skips that facet.  That doesn't work for
 # our purpose because we need to use the local facet number as an
 # index for the list of neighbor cells.
 
-#        self.cell_neighbor_dict = {cell.index(): sum((filter(lambda ci: ci != cell.index(), facet.entities(tdim)) for facet in df_m.facets(cell)), []) for cell in df_m.cells(self.mesh)}
+#        self.cell_neighbors_dict = {cell.index(): sum((filter(lambda ci: ci != cell.index(), facet.entities(tdim)) for facet in df_m.facets(cell)), []) for cell in df_m.cells(self.mesh)}
 
         n_facets = tdim + 1
 #        n_normal_coords = self.gdim
@@ -328,67 +356,68 @@ class Mesh_C(object):
                     neighbor_cells[fi] = Mesh_C.NO_CELL
                 fi += 1
 
-            self.cell_neighbor_dict[cell.index()] = neighbor_cells
+            self.cell_neighbors_dict[cell.index()] = neighbor_cells
 
-#        print cell_neighbor_dict
+#        print cell_neighbors_dict
 
         return
-#    def compute_cell_neighbor_dict(self):ENDDEF
+#    def compute_cell_neighbors_dict(self):ENDDEF
 
 #
 #  Things indexed by vertex number
 #
 
 #class Mesh_C(object):
-    def compute_vertex_cell_dict(self):
+    def compute_vertex_cells_dict(self):
         """
            Make a dictionary giving a list of the indices of cells
            that have a given vertex index.
+
+           This doesn't seem to be used in any algorithm.
+
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
         
         # For each vertex, get a list of the cells that contain this vertex
-        self.vertex_cell_dict = dict((v.index(), [c.index() for c in df_m.cells(v)]) for v in df_m.vertices(self.mesh))
+        self.vertex_cells_dict = dict((v.index(), [c.index() for c in df_m.cells(v)]) for v in df_m.vertices(self.mesh))
 
         return
 
 #class Mesh_C(object):
     def compute_cell_facet_normals_dict(self):
-        """
-           Make a dictionary giving a list of cell facet-normal
-           vectors, indexed by the cell index.
+        """Make a dictionary giving a list of cell facet-normal vectors, indexed by the
+           cell index.
 
-           NO:The normals are unit vectors represented by Points.  
-
-           The normals are unit vectors with the number of coordinates
-           equal to the number of coordinates of the mesh.
+           NB: The normals computed by Dolfin are unit vectors represented by Points,
+           which are always 3-vectors. Here, we don't use Points: The normals stored in
+           the dictionary are unit vectors whose number of coordinates is equal to the
+           number of coordinates of the mesh.
 
            The dictionary looks like: {cell_index: [n0, n1, ...]}
            where n0, n1, ... are the unit normal vectors on each facet.
+
+           Here, [n0, n1, ...] is a Numpy array.
 
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
-        # For each cell, get a list of the vertices in it
-        # (cell.entities(d) returns a list of indices).
-        # A vertex has dimension 0.
-
         # cell.normal(fi) returns a Point representing the unit normal to the fi-th facet of the cell
+        self.cell_facet_normals_dict = {}            
 
         n_facets = self.gdim+1
         n_normal_coords = self.gdim
 
-        facet_normal_3d = self.facet_normal_3d
-        
+        facet_normal_3d = self.facet_normal_3d # Use scratch array
+
         for cell in df_m.cells(self.mesh):
+            # normals hold the facet-normal vectors for one cell
             normals = np_m.empty(shape=(n_facets, n_normal_coords), dtype = np_m.float64)
             for fi in range(n_facets):
                 facet_normal_3d[0] = cell.normal(fi).x()
                 facet_normal_3d[1] = cell.normal(fi).y()
                 facet_normal_3d[2] = cell.normal(fi).z()
-#                normals[fi][:] = facet_normal_3d
                 normals[fi] = facet_normal_3d[0:n_normal_coords]
             self.cell_facet_normals_dict[cell.index()] = normals
 
@@ -497,9 +526,34 @@ class Mesh_C(object):
         return
 #    def compute_cell_volume_dict(self):ENDDEF
 
+
 #class Mesh_C(object):
-    def is_inside(self, point, cell_index):
-        """Check if a point lies within a give cell
+    def compute_cpp_arrays(self):
+        """Create a MeshEntityArrays object, which has non-standard mesh entity
+           lists needed by particle movers.
+
+        """
+
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+
+        import mesh_entity_arrays_solib
+
+        mesh_df = self.mesh
+        # Create the name of the specialized MeshEntityArrays class with the right
+        # number of cell-facets
+        tDim = mesh_df.topology().dim()
+        nFacets = tDim + 1
+        meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
+        meaCtor = getattr(mesh_entity_arrays_solib, meaClass)
+        self.mea_object = meaCtor(mesh_df, compute_particle_mesh_maps=True)
+        
+        return
+#    def compute_cpp_arrays(self):ENDDEF
+
+
+#class Mesh_C(object):
+    def is_inside_cell(self, point, cell_index):
+        """Check if a point lies within a given cell
 
            Use the topological dimension "tdim" since the number of parameters used to
            do the test is tdim. Being "inside a cell" is a topological property.
@@ -520,20 +574,20 @@ class Mesh_C(object):
             p = df_m.Point(point['x'], point['y'], point['z'])
         elif self.gdim == 2:
             p = df_m.Point(point['x'], point['y'])
-#            print("is_inside: p is:", p.x(), p.y())
-            vertex_coords = np_m.array(cell.get_vertex_coordinates()).reshape((-1, self.gdim))
-#            print("is_inside: cell index is:", cell_index)
-#            print("is_inside: vertices are:", self.cell_vertex_dict[cell_index])
-#            print("is_inside: cell vertex coordinates are:", vertex_coords)
+#            print("is_inside_cell: p is:", p.x(), p.y())
+#            vertex_coords = np_m.array(cell.get_vertex_coordinates()).reshape((-1, self.gdim))
+#            print("is_inside_cell: cell index is:", cell_index)
+#            print("is_inside_cell: vertices are:", self.cell_vertices_dict[cell_index])
+#            print("is_inside_cell: cell vertex coordinates are:", vertex_coords)
         else:
-            p = df_m.Point(point['x'])
+            p = df_m.Point(point['x']) # or Point(point['x'], 0., 0.)
 
         return cell.contains(p)
-#    def is_inside(self, point, cell_index):ENDDEF
+#    def is_inside_cell(self, point, cell_index):ENDDEF
 
 #class Mesh_C(object):
     def is_inside_cpp_bak(self, point, cell_index):
-        """Check if a point lies within a give cell
+        """Check if a point lies within a given cell
 
         :param point: a record array of coordinates (x), (x,y), or (x, y, z)
                       with field names 'x', 'y', 'z'
@@ -548,58 +602,21 @@ class Mesh_C(object):
 #        cell = self.cell_dict[cell_index]
 
         # Get the cell vertices
-        vertices = self.cell_vertex_dict[cell_index]
+        vertices = self.cell_vertices_dict[cell_index]
         
         # Get the coordinates of the cell vertices
         p0 = self.mesh.coordinates()[vertices[0]]
         p1 = self.mesh.coordinates()[vertices[1]]
 
-        YesOrNo = dnt_cpp.cell_contains_point_1d(p0, p1, point['x'])
+        YesOrNo = dolfin_functions_solib.cell_contains_point_1d(p0, p1, point['x'])
         
         return YesOrNo
 #    def is_inside_cpp_bak(self, point, cell_index):ENDDEF
 
 
 #class Mesh_C(object):
-    def is_inside_CPP(self, point, cell_index):
-        """Check if a point lies within a give cell.
-
-           Use the topological dimension "tdim" since the number of parameters used to
-           do the test is tdim. Being "inside a cell " is a topological property.
-
-           :param point: a structured array of coordinates (x), (x,y), or (x, y, z)
-                      with field names 'x', 'y', 'z'
-           :param cell_index: a (global?) cell index
-
-           :returns: True iff the point is inside the cell.
-           :rtype: bool
-
-        """
-
-        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
-        
-        vertices = self.cell_vertex_dict[cell_index]
-        
-        if self.tdim == 3:
-            YesOrNo = dnt_cpp.cell_contains_point(self.mesh,
-                                                  vertices, # a numpy array
-                                                  point['x'], point['y'], point['z'])
-
-        elif self.tdim == 2:
-            YesOrNo = dnt_cpp.cell_contains_point(self.mesh,
-                                                  vertices, # a numpy array
-                                                  point['x'], point['y'])
-        elif self.tdim == 1:
-            YesOrNo = dnt_cpp.cell_contains_point(self.mesh,
-                                                  vertices, # a numpy array
-                                                  point['x'])
-        
-        return YesOrNo
-#    def is_inside_CPP(self, point, cell_index):ENDDEF
-
-#class Mesh_C(object):
     def find_facet(self, r0, dr, cell_index):
-        """Compute the cell facet crossed in traveling along a
+        """Find the cell facet crossed in traveling along a
            displacement vector dr from position r0.
 
            The facet crossed is the one with the smallest value of the
@@ -638,12 +655,12 @@ class Mesh_C(object):
 
         gDim = self.gdim # The geometric dimension of the mesh
 
-        dx = self.dx
-        x0 = self.x0
+        dx = self.dx # scratch space
+        x0 = self.x0 # scratch space
+        
         dx[:] = dr[0:gDim] # Convert displacement vector to a vector with
-                          # dimension equal to the number of mesh dimensions.
+                           # dimension equal to the number of mesh dimensions.
         x0[:] = r0[0:gDim]
-#        x0[:] = r0[gDim:2*gDim]
 
         facet = Mesh_C.NO_FACET
 
@@ -655,27 +672,29 @@ class Mesh_C(object):
 
         cell = self.cell_dict[cell_index]
 
-        # The coordinates of all the vertices in this cell, in (x, y,
-        # z) tuple form
+        # The coordinates of all the vertices in this cell, in (x, y, z) tuple
+        # form. There are four of these in sequence for a tetrahedron.
         vertex_coords = np_m.array(cell.get_vertex_coordinates()).reshape((-1, gDim))
 
 #        print "find_facet(): vertex_coords=", vertex_coords
 
         # The facet-normals of this cell:
-        facet_normal_vectors = self.cell_facet_normals_dict[cell_index]
+        facetNormalVectors = self.cell_facet_normals_dict[cell_index]
 
         if gDim == 3:
 
             # 3D mesh: There are 4 facets indexed 0,1,2,3, and the normal vector is 3D.
+            # The index of a facet is the same as the index of the vertex opposite
+            # (except in 1D)
 
             # Test if the plane of facet 0 is crossed:
-            n0_dot_dx = np_m.dot(facet_normal_vectors[0], dx)
-#            print "find_facet(): facet_normal_vectors[0] = ", facet_normal_vectors[0], "dx=", dx, "n0_dot_dx=", n0_dot_dx
+            n0_dot_dx = np_m.dot(facetNormalVectors[0], dx)
+#            print "find_facet(): facetNormalVectors[0] = ", facetNormalVectors[0], "dx=", dx, "n0_dot_dx=", n0_dot_dx
             if n0_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
                 vecToFacet = np_m.subtract(vertex_coords[1], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_m.dot(facet_normal_vectors[0], vecToFacet)
+                distanceToFacet = np_m.dot(facetNormalVectors[0], vecToFacet)
 #                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
                 if distanceToFacet < 0.0:
                     print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
@@ -687,13 +706,13 @@ class Mesh_C(object):
 #                    print "f0 find_facet(): facet=", facet, "dxFraction=", dxFraction
 
             # Next, test if the plane of facet 1 is crossed:
-            n1_dot_dx = np_m.dot(facet_normal_vectors[1], dx)
+            n1_dot_dx = np_m.dot(facetNormalVectors[1], dx)
 #            print "find_facet(): n1_dot_dx=", n1_dot_dx
             if n1_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
                 vecToFacet = np_m.subtract(vertex_coords[2], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_m.dot(facet_normal_vectors[1], vecToFacet)
+                distanceToFacet = np_m.dot(facetNormalVectors[1], vecToFacet)
                 if distanceToFacet < 0.0:
                     print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
@@ -703,13 +722,13 @@ class Mesh_C(object):
                     dxFraction = distanceToFacet/n1_dot_dx
 
             # Next, test if the plane of facet 2 is crossed:
-            n2_dot_dx = np_m.dot(facet_normal_vectors[2], dx)
+            n2_dot_dx = np_m.dot(facetNormalVectors[2], dx)
 #            print "find_facet(): n2_dot_dx=", n2_dot_dx
             if n2_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
                 vecToFacet = np_m.subtract(vertex_coords[3], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_m.dot(facet_normal_vectors[2], vecToFacet)
+                distanceToFacet = np_m.dot(facetNormalVectors[2], vecToFacet)
                 if distanceToFacet < 0.0:
                     print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
@@ -719,13 +738,13 @@ class Mesh_C(object):
                     dxFraction = distanceToFacet/n2_dot_dx
 
             # Next, test if the plane of facet 3 is crossed:
-            n3_dot_dx = np_m.dot(facet_normal_vectors[3], dx)
+            n3_dot_dx = np_m.dot(facetNormalVectors[3], dx)
 #            print "find_facet(): n3_dot_dx=", n3_dot_dx
             if n3_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
                 vecToFacet = np_m.subtract(vertex_coords[0], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_m.dot(facet_normal_vectors[3], vecToFacet)
+                distanceToFacet = np_m.dot(facetNormalVectors[3], vecToFacet)
                 if distanceToFacet < 0.0:
                     print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
@@ -733,12 +752,13 @@ class Mesh_C(object):
                 if distanceToFacet < dxFraction*n3_dot_dx:
                     facet = 3
                     dxFraction = distanceToFacet/n3_dot_dx
-
+                    
+            # Check that dxFraction lies in the range [0.0, 1.0]
             if dxFraction > 1.0 or dxFraction < 0.0:
                 print(fncName, "!!! Bad value for dxFraction:", dxFraction)
                 sys.exit()
 
-            return facet, dxFraction, facet_normal_vectors[facet]
+            return facet, dxFraction, facetNormalVectors[facet]
 
         elif gDim == 2:
 
@@ -748,13 +768,13 @@ class Mesh_C(object):
 
             # Test if the plane of facet 0 is crossed.
             # Distance traveled normal to facet 0:
-            n0_dot_dx = np_m.dot(facet_normal_vectors[0], dx)
-#            print "find_facet(): facet_normal_vectors[0] = ", facet_normal_vectors[0], "dx=", dx, "n0_dot_dx=", n0_dot_dx
+            n0_dot_dx = np_m.dot(facetNormalVectors[0], dx)
+#            print "find_facet(): facetNormalVectors[0] = ", facetNormalVectors[0], "dx=", dx, "n0_dot_dx=", n0_dot_dx
             if n0_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
                 vecToFacet = np_m.subtract(vertex_coords[1], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_m.dot(facet_normal_vectors[0], vecToFacet)
+                distanceToFacet = np_m.dot(facetNormalVectors[0], vecToFacet)
                 if distanceToFacet < 0.0:
                     print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
@@ -768,13 +788,13 @@ class Mesh_C(object):
 
             # Next, test if the plane of facet 1 is crossed.
             # Distance traveled normal to facet 0:
-            n1_dot_dx = np_m.dot(facet_normal_vectors[1], dx)
+            n1_dot_dx = np_m.dot(facetNormalVectors[1], dx)
 #            print "find_facet(): n1_dot_dx=", n1_dot_dx
             if n1_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
                 vecToFacet = np_m.subtract(vertex_coords[2], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_m.dot(facet_normal_vectors[1], vecToFacet)
+                distanceToFacet = np_m.dot(facetNormalVectors[1], vecToFacet)
                 # If the path-fraction to this facet's plane is
                 # smaller than for facet 0, this may be the one crossed.
                 if distanceToFacet < 0.0:
@@ -788,13 +808,13 @@ class Mesh_C(object):
 
             # Next, test if the plane of facet 2 is crossed.
             # Distance traveled normal to facet 2:
-            n2_dot_dx = np_m.dot(facet_normal_vectors[2], dx)
+            n2_dot_dx = np_m.dot(facetNormalVectors[2], dx)
 #            print "find_facet(): n2_dot_dx=", n2_dot_dx
             if n2_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
                 vecToFacet = np_m.subtract(vertex_coords[0], x0)
                 # The normal distance to the facet plane
-                distanceToFacet = np_m.dot(facet_normal_vectors[2], vecToFacet)
+                distanceToFacet = np_m.dot(facetNormalVectors[2], vecToFacet)
                 if distanceToFacet < 0.0:
                     print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
@@ -805,6 +825,7 @@ class Mesh_C(object):
                     facet = 2
                     dxFraction = distanceToFacet/n2_dot_dx
 
+            # Check the range of dxFraction
             if dxFraction > 1.0 or dxFraction < 0.0:
                 print(fncName, "!!! Bad value for dxFraction:", dxFraction, "!!!")
                 sys.exit()
@@ -813,53 +834,55 @@ class Mesh_C(object):
 #                else:
 #                    sys.exit()
 
-            return facet, dxFraction, facet_normal_vectors[facet]
+            return facet, dxFraction, facetNormalVectors[facet]
         
         else:
 
             # 1D mesh: There are 2 facets indexed 0 1, and the normal vector is 1D.
 
             # Test if facet 0 is crossed:
-            n0_dot_dx = facet_normal_vectors[0]*dx[0]
-#            print "find_facet()", "n0_dot_dx=", n0_dot_dx
+            n0_dot_dx = facetNormalVectors[0]*dx[0]
+#            print("find_facet() x0[0]=", x0[0], "dx[0]=", dx[0], "n0_dot_dx=", n0_dot_dx, "vertex_coords[0]=", vertex_coords[0], "facetNormalVectors[0]=", facetNormalVectors[0])
             if n0_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
                 vecToFacet = vertex_coords[0] - x0[0]
                 # The normal distance to the facet plane
-                distanceToFacet = facet_normal_vectors[0]*vecToFacet
+                distanceToFacet = facetNormalVectors[0]*vecToFacet
                 if distanceToFacet < 0.0:
                     print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
                 if distanceToFacet < dxFraction*n0_dot_dx:
-                    facet=0
+                    facet=0 # The plane of facet 0 was crossed
                     dxFraction = distanceToFacet/n0_dot_dx
-                    return facet, dxFraction, facet_normal_vectors[facet]                
+                    return facet, dxFraction, facetNormalVectors[facet]                
 
-            # Next, test if facet 1 is crossed:
-            n1_dot_dx = facet_normal_vectors[1]*dx[0]
+            # Next, test if the plane of facet 1 is crossed:
+            n1_dot_dx = facetNormalVectors[1]*dx[0]
 #            print "find_facet()", "n1_dot_dx=", n1_dot_dx
             if n1_dot_dx > 0:
                 # The vector from the starting point to a vertex in the facet plane
                 vecToFacet = vertex_coords[1] - x0[0]
                 # The normal distance to the facet plane
-                distanceToFacet = facet_normal_vectors[1]*vecToFacet
+                distanceToFacet = facetNormalVectors[1]*vecToFacet
+#                print("f1 find_facet(): vecToFacet= ", vecToFacet[0], " distanceToFacet= ", distanceToFacet)
                 if distanceToFacet < 0.0:
                     print(fncName, "!!! Bad value for distanceToFacet:", distanceToFacet, "flipping the sign!!!")
                     # Assume this is round-off error and flip the sign
                     distanceToFacet = -distanceToFacet
-#                print "find_facet()", "distanceToFacet:", distanceToFacet, "vecToFacet:", vecToFacet, "facet_normal_vectors[1]:", facet_normal_vectors[1]
+#                print("find_facet()", "distanceToFacet:", distanceToFacet, "vecToFacet:", vecToFacet, "facetNormalVectors[1]:", facetNormalVectors[1])
                 if distanceToFacet < dxFraction*n1_dot_dx:
                     facet=1
                     dxFraction = distanceToFacet/n1_dot_dx
 #                    print "find_facet", "n1_dot_dx=", n1_dot_dx, "vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
-                    return facet, dxFraction, facet_normal_vectors[facet]                
+                    return facet, dxFraction, facetNormalVectors[facet]                
 
-            if dxFraction > 1.0 or dxFraction < 0.0:
-                print(fncName, "!!! Bad value for dxFraction:", dxFraction)
-                sys.exit()
+                # Check range of dxFraction
+                if dxFraction > 1.0 or dxFraction < 0.0:
+                    print(fncName, "!!! Bad value for dxFraction:", dxFraction)
+                    sys.exit()
 
-            return facet, dxFraction, facet_normal_vectors[facet]                
+            return facet, dxFraction, facetNormalVectors[facet]                
 #    def find_facet(self, r0, dr, cell_index):ENDDEF
 
 #class Mesh_C(object):ENDCLASS
@@ -1108,6 +1131,7 @@ class Field_C(object):
             p = [points[ip][d] for d in range(self.mesh_gdim)]
 
             # Evaluate the finite-element function at the point p
+#            print(fncName, "\np=", p)
             self.function(p, values=fieldValue)
 #            field_at_points[ip] = fieldValue
 # 25aug18: Had to change to this to:

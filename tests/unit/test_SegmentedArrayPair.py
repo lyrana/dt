@@ -9,7 +9,7 @@ import numpy
 import unittest
 
 from Dolfin_Module import Mesh_C
-from SegmentedArrayPair_Module import SegmentedArray_C
+from SegmentedArrayPair_Module import SegmentedArrayPair_C
 
 class TestSegmentedArray(unittest.TestCase):
     """Test the classes in SegmentedArray_Module.py"""
@@ -30,7 +30,6 @@ class TestSegmentedArray(unittest.TestCase):
 
         pvars.append('weight')
         self.pvars = pvars
-#        pvartypes = [precision for coord in phase_coordinates]
         pvartypes = [precision for var in pvars]
 
         pvars.append('bitflags')
@@ -43,10 +42,7 @@ class TestSegmentedArray(unittest.TestCase):
 
         metadata = {'names' : pvars, 'formats': pvartypes}
         
-        self.seg_array_obj = SegmentedArray_C(self.segment_length, metadata)
-
-        # put a particle into the array
-
+        self.seg_array_obj = SegmentedArrayPair_C(self.segment_length, metadata)
 
         return
 
@@ -61,19 +57,24 @@ class TestSegmentedArray(unittest.TestCase):
             number_of_segments = 1
             self.assertEqual(nSeg, number_of_segments, msg="nSeg should be 1")
 
+        return
+#    def test_1_nSeg(self):ENDDEF
+
     def test_2_field_names(self):
         """ Test field names. """
 
         fncname = sys._getframe().f_code.co_name
         print('\ntest: ', fncname, '('+__file__+')')
 
-#        names = self.seg_array_obj.SegList[0].dtype.names
         for iSA in (0, 1):
-            names = self.seg_array_obj.SegListPair[iSA][0].dtype.names
+            names = self.seg_array_obj.segListPair[iSA][0].dtype.names
             for i in range(len(names)):
                 self.assertEqual(names[i], self.pvars[i], msg="Field names are not correct")
 
-    def test_3_put_and_getitem(self):
+        return
+#    def test_2_field_names(self):ENDDEF
+
+    def test_3_push_and_getitem(self):
         """ Test putting particle data into the array using 'put'. """
 
         fncname = sys._getframe().f_code.co_name
@@ -88,7 +89,7 @@ class TestSegmentedArray(unittest.TestCase):
         # Trim the number of coordinates here to match "position_coordinates" variable above
         putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index)
 
-        self.seg_array_obj.put(putparticle)
+        self.seg_array_obj.push_back(putparticle)
 
         # Get the item back out by subscripting and check it
         getparticle = self.seg_array_obj[0]
@@ -96,7 +97,7 @@ class TestSegmentedArray(unittest.TestCase):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
 
         return
-#    def test_3_put_and_getitem(self):ENDDEF
+#    def test_3_push_and_getitem(self):ENDDEF
     
     def test_4_setitem_and_getitem(self):
         """ Test putting particle data into the array using a subscript. """
@@ -117,6 +118,10 @@ class TestSegmentedArray(unittest.TestCase):
         for i in range(len(getparticle)):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
 
+        return
+#    def test_4_setitem_and_getitem(self):ENDDEF
+
+
     def test_5_one_new_segment(self):
         """ Test the creation of a new segment when needed. Also test
         the get_number_of_segments() function.
@@ -134,7 +139,7 @@ class TestSegmentedArray(unittest.TestCase):
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):
             putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
-            self.seg_array_obj.put(putparticle)
+            self.seg_array_obj.push_back(putparticle)
             x += dx
 
         # Check that there are now 2 segments
@@ -146,6 +151,9 @@ class TestSegmentedArray(unittest.TestCase):
         for i in range(len(getparticle)):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle in Segment 2 is not correct")
 
+        return
+#    def test_5_one_new_segment(self):ENDDEF
+            
     def test_6_several_segments(self):
         """ Test the creation of several new segments.
         """
@@ -162,13 +170,13 @@ class TestSegmentedArray(unittest.TestCase):
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):
             putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
-            self.seg_array_obj.put(putparticle)
+            self.seg_array_obj.push_back(putparticle)
             x += dx
 
         # Add more particles, so there are 2 particles in the 3rd segment
         for i in range(self.segment_length+1):
             putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
-            self.seg_array_obj.put(putparticle)
+            self.seg_array_obj.push_back(putparticle)
             x += dx
 
         # Check that there are now 3 segments
@@ -177,10 +185,11 @@ class TestSegmentedArray(unittest.TestCase):
 
         # Check the current capacity
         nmax_expected = nseg_out*self.segment_length
-        nmax_in, nmax_out = self.seg_array_obj.get_item_capacity()
+        nmax_in, nmax_out = self.seg_array_obj.get_capacity()
         self.assertEqual(nmax_expected, nmax_out, msg="Capacity returned is not correct")
 
         # Check the current number of megabytes allocated for the particle arrays
+        #     These sizes need to be set for each case separately
         n_double64 = 7
         n_bytes_per_double = 8
         n_int32 = 2
@@ -198,10 +207,9 @@ class TestSegmentedArray(unittest.TestCase):
         getparticle = self.seg_array_obj[2*self.segment_length+1]
         for i in range(len(getparticle)):
             self.assertEqual(getparticle[i], putparticle[i], msg="Last particle in Segment 3 is not correct")
+
         return
 #    def test_6_several_segments(self): ENDDEF
-
-
 
 
 #class TestSegmentedArray(unittest.TestCase): ENDCLASS

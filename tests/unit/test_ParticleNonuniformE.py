@@ -20,14 +20,14 @@ from Dolfin_Module import Field_C
 
 from Particle_Module import *
 
-from SegmentedArrayPair_Module import SegmentedArray_C
+from SegmentedArrayPair_Module import SegmentedArrayPair_C
 
 from UserUnits_Module import MyPlasmaUnits_C
 
 #STARTCLASS
 class TestParticleNonuniformE(unittest.TestCase):
     """Test classes in Particle_Module that push particles in a
-       uniform E field
+       non-uniform E field
     """
     
     def setUp(self):
@@ -43,7 +43,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         pin.precision = numpy.float64
 #        pin.copy_field_mesh = False
         pin.particle_integration_loop = 'loop-on-particles'
-        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
+        pin.coordinate_system = 'cartesian_xy'
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
 
@@ -142,7 +142,7 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         umi.particle_boundary_dict = particleBoundaryDict
 
-        pmesh2D_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        pmesh2D_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         self.particle_P.pmesh_M = pmesh2D_M
 
@@ -200,6 +200,7 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         ctrl.dt = 1.0e-5
         ctrl.n_timesteps = 1
+        ctrl.MAX_FACET_CROSS_COUNT = 100        
                 
         dt = ctrl.dt
 
@@ -245,7 +246,8 @@ class TestParticleNonuniformE(unittest.TestCase):
 
             # Check that the first two particles in the array reaches the correct values
             for ip in [0, 1]:
-                getparticle = self.particle_P.pseg_arr[sp].get(ip)
+                (pseg, offset) = self.particle_P.pseg_arr[sp].get_segment_and_offset(ip)
+                getparticle = pseg[offset]
 #                print 'calculated = ', getparticle
 #                print 'expected = ', p_expected[ip]
                 for ic in range(ncoords):

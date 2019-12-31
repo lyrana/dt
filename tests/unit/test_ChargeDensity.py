@@ -32,6 +32,14 @@ class TestChargeDensity(unittest.TestCase):
     def setUp(self):
         # initializations for each test go here...
 
+        self.plotMesh = False
+        self.plotResults = False
+
+        # Turn plots off if there's no display.
+        if os.environ.get('DISPLAY') is None:
+            self.plotMesh = False
+            self.plotResults = False
+        
         return
 
 #class TestChargeDensity(unittest.TestCase):
@@ -56,7 +64,7 @@ class TestChargeDensity(unittest.TestCase):
         mesh = df_m.IntervalMesh(2, -0.5, 0.5)
         coordinateSystem = 'Cartesian'
 
-        mesh1d_M = Mesh_C(Mesh=mesh, coordinate_system=coordinateSystem, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = Mesh_C(Mesh=mesh, coordinate_system=coordinateSystem, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
 
         # Put 3 DT particles in the meshed region.
 
@@ -205,8 +213,8 @@ class TestChargeDensity(unittest.TestCase):
         plotFlag = False
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
 
-        pmesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
-#        pmesh2d_M.compute_cell_vertex_dict()
+        pmesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle)
+#        pmesh2d_M.compute_cell_vertices_dict()
 #        pmesh2d_M.compute_cell_dict()
 
         # Put 3 particles inside the meshed region
@@ -313,9 +321,10 @@ class TestChargeDensity(unittest.TestCase):
 
         # Plot the result
 
-        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": number density"
-        df_m.plot(dofNumberDensity_F.function, title=plotTitle)
-        mplot_m.show()
+        if self.plotResults is True:
+            plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": number density"
+            df_m.plot(dofNumberDensity_F.function, title=plotTitle)
+            mplot_m.show()
 #        yesno = raw_input("Just called show() in test_2_particle_densities_on_2D_mesh")
 
         ## Check the values vs. those computed in test_ChargeDensity.ods:test_2
@@ -422,7 +431,7 @@ class TestChargeDensity(unittest.TestCase):
         plotFlag = False
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
         # Make the mesh
-        mesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
+        mesh2d_M = UserMesh_C(umi2d_I, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle)
 
         ########## Kinetic particles ##########
 
@@ -432,7 +441,8 @@ class TestChargeDensity(unittest.TestCase):
         pin.precision = np_m.float64
 
         pin.particle_integration_loop = 'loop-on-particles'
-        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.coordinate_system = 'cartesian_xyz'
+#        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
 
@@ -515,22 +525,22 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
         # Ions
         species_name = 'H_plus'
 
         number_of_macroparticles = 3
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
 
         ########## Source for the electric field ##########
@@ -599,9 +609,10 @@ class TestChargeDensity(unittest.TestCase):
 
         # Plot the result
 
-        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": charge density"
-        df_m.plot(chargeDensity_F.function, title=plotTitle)
-        mplot_m.show()
+        if self.plotResults is True:
+            plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": charge density"
+            df_m.plot(chargeDensity_F.function, title=plotTitle)
+            mplot_m.show()
 #        yesno = raw_input("Just called show() in test_3_compute_charge_density_on_2D_mesh")
         
         ## Check the values vs. those computed in test_ChargeDensity.ods:test_3
@@ -664,7 +675,7 @@ class TestChargeDensity(unittest.TestCase):
         # UserMesh_FE_XYZ_Module can make the mesh from the above input.
         plotFlag = False
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        mesh1d_M = UserMesh_C(umi1D, compute_dictionaries=True, compute_tree=True, plot_flag=plotFlag, plot_title=plotTitle)
+        mesh1d_M = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle)
 
         ########## Kinetic particles ##########
 
@@ -674,6 +685,7 @@ class TestChargeDensity(unittest.TestCase):
         pin.precision = np_m.float64
 
         pin.particle_integration_loop = 'loop-on-particles'
+        pin.coordinate_system = 'cartesian_xyz'
         pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
@@ -724,11 +736,11 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
         ########## Source for the electric field ##########
 
@@ -856,17 +868,10 @@ class TestChargeDensity(unittest.TestCase):
         umi1DS_I.mesh_file = 'mesh_1D_radial.xml'
         umi1DS_I.field_boundary_marker_file = 'mesh_1D_radial_Fbcs.xml'
 
-        ### Set plot flag ###
-
-        if os.environ.get('DISPLAY') is None:
-            plotFlag=False
-        else:
-            plotFlag=True
-
         ### Read the mesh and boundary-condition markers ###
 
         # Create a mesh object and read in the mesh.
-        mesh1d_M = UserMesh1DS_C(umi1DS_I, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = UserMesh1DS_C(umi1DS_I, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
 
         ########## Kinetic particles ##########
 
@@ -919,7 +924,7 @@ class TestChargeDensity(unittest.TestCase):
         crossings = 0
 
         # The particle tuple has to match the one in Particle_C:
-        # ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID']
+        # ['x','x0', 'ux', 'weight', 'bitflags', 'cell_index', 'unique_ID']
         p0 = (x0, x0, ux0, weight0, bitflags0, cell_index0, unique_ID, crossings)
 
         particle_list = (p0, )
@@ -931,13 +936,16 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
         # Check that we set the right cell index above
+        (pseg, offset) = pseg_arr.get_segment_and_offset(fullIndex)
+        p = pseg[offset]
+        
         computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)
         if cell_index0 != computed_cell_index:
             errorMsg = "%s Particle cell index should be %d, not %d" % (fncName, computed_cell_index, cell_index0)
@@ -1064,17 +1072,10 @@ class TestChargeDensity(unittest.TestCase):
         umi1DS_I.mesh_file = 'mesh_1D_radial_r0.xml'
         umi1DS_I.field_boundary_marker_file = 'mesh_1D_radial_r0_Fbcs.xml'
 
-        ### Set plot flag ###
-
-        if os.environ.get('DISPLAY') is None:
-            plotFlag=False
-        else:
-            plotFlag=True
-
         ### Read the mesh and boundary-condition markers ###
 
         # Create a mesh object and read in the mesh.
-        mesh1d_M = UserMesh1DS_C(umi1DS_I, compute_dictionaries=True, compute_tree=True, plot_flag=False)
+        mesh1d_M = UserMesh1DS_C(umi1DS_I, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
 
         ########## Kinetic particles ##########
 
@@ -1139,13 +1140,16 @@ class TestChargeDensity(unittest.TestCase):
 
         number_of_macroparticles = len(particle_list)
 
-        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArray_C object for this species
+        pseg_arr = particles_P.pseg_arr[species_name] # The SegmentedArrayPair_C object for this species
 
         for i in range(number_of_macroparticles):
 #            print 'species_name, particle_list[i] = ', species_name, particle_list[i]
-            p, pindex = pseg_arr.put(particle_list[i])
+            segIndex, fullIndex = pseg_arr.push_back(particle_list[i])
 
         # Check that we set the right cell index above
+        (pseg, offset) = pseg_arr.get_segment_and_offset(fullIndex)
+        p = pseg[offset]
+        
         computed_cell_index = particles_P.pmesh_M.compute_cell_index(p)
         if cell_index0 != computed_cell_index:
             errorMsg = "%s Particle cell index should be %d, not %d" % (fncName, computed_cell_index, cell_index0)

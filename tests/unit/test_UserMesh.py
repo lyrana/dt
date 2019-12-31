@@ -19,6 +19,13 @@ class TestUserMesh(unittest.TestCase):
     def setUp(self):
         # initializations for each test go here...
 
+        self.plotMesh = False
+        self.plotResults = False
+
+        # Turn plots off if there's no display.
+        if os.environ.get('DISPLAY') is None:
+            self.plotMesh = False
+            self.plotResults = False
 
         # 1D spherical-coordinate mesh
         from UserMesh_y_Fields_Spherical1D_Module import UserMeshInput1DS_C, UserMesh1DS_C
@@ -119,13 +126,8 @@ class TestUserMesh(unittest.TestCase):
 
         from UserMesh_y_Fields_Spherical1D_Module import UserMesh1DS_C
 
-        if os.environ.get('DISPLAY') is None:
-            plotFlag=False
-        else:
-            plotFlag=True
-
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
-        mesh_M = UserMesh1DS_C(self.umi1DS, compute_tree=False, plot_flag=plotFlag, plot_title=plotTitle)
+        mesh_M = UserMesh1DS_C(self.umi1DS, compute_tree=False, plot_flag=self.plotMesh, plot_title=plotTitle)
 
         # Write the mesh to a file:
         mesh_file = df_m.File('mesh_1D_radial.xml')
@@ -164,7 +166,7 @@ class TestUserMesh(unittest.TestCase):
         self.umi1DS.rmin, self.umi1DS.rmax = 0.0, 4.0 # Mesh goes from rmin to rmax in radius
         
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
-        mesh_M = UserMesh1DS_C(self.umi1DS, compute_tree=False, plot_flag=plotFlag, plot_title=plotTitle)
+        mesh_M = UserMesh1DS_C(self.umi1DS, compute_tree=False, plot_flag=self.plotMesh, plot_title=plotTitle)
 
         # Write the mesh to a file:
         mesh_file = df_m.File('mesh_1D_radial_r0.xml')
@@ -189,7 +191,7 @@ class TestUserMesh(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         from UserMesh_y_Fields_FE2D_Module import UserMesh2DCirc_C
-        mesh_M = UserMesh2DCirc_C(self.umi2DCirc, plot_flag=False)
+        mesh_M = UserMesh2DCirc_C(self.umi2DCirc, plot_flag=self.plotMesh)
 
         return
 #    def test_quarter_circle_plot_false(self):ENDDEF
@@ -207,7 +209,7 @@ class TestUserMesh(unittest.TestCase):
 
         from UserMesh_y_Fields_FE2D_Module import UserMesh2DCirc_C
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": mesh"
-        mesh_M = UserMesh2DCirc_C(self.umi2DCirc, plot_flag=plotFlag, plot_title=plotTitle)
+        mesh_M = UserMesh2DCirc_C(self.umi2DCirc, plot_flag=self.plotMesh, plot_title=plotTitle)
 
 #        df_m.plot(mesh_M.mesh, title='cylindrical mesh', axes=True)
 #        df_m.interactive()

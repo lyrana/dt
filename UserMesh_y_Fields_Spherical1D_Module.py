@@ -151,7 +151,7 @@ class UserMesh1DS_C(Mesh_C):
 
 # Mesh_C constructor:
 #class UserMesh1DS_C(Mesh_C):
-    def __init__(self, mesh_input, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):
+    def __init__(self, mesh_input, compute_dictionaries=False, compute_cpp_arrays=False, compute_tree=False, plot_flag=False, plot_title=None):
         """
             The class UserMesh1DS_C contains these attributes:
                 1. A mesh.
@@ -163,6 +163,7 @@ class UserMesh1DS_C(Mesh_C):
 
         # These kwargs are passed to the parent later, so give them local names for clarity
         computeDictionaries=compute_dictionaries
+        computeCppArrays=compute_cpp_arrays
         computeTree=compute_tree
         plotFlag=plot_flag
         plotTitle=plot_title
@@ -176,7 +177,7 @@ class UserMesh1DS_C(Mesh_C):
         meshFile = mesh_input.mesh_file
         coordinateSystem = '1D-spherical-radial' # Mesh coordinates are spherical
                                                  # radial coordinates.
-        super(self.__class__, self).__init__(mesh_file=meshFile, coordinate_system=coordinateSystem, compute_dictionaries=computeDictionaries, compute_tree=computeTree, plot_flag=plotFlag, plot_title=plotTitle)
+        super(self.__class__, self).__init__(mesh_file=meshFile, coordinate_system=coordinateSystem, compute_dictionaries=computeDictionaries, compute_cpp_arrays=computeCppArrays, compute_tree=computeTree)
 
 
         self.field_boundary_dict = mesh_input.field_boundary_dict
@@ -192,7 +193,7 @@ class UserMesh1DS_C(Mesh_C):
 # or:       particleBoundaryMarker = df_m.MeshFunctionSizet(self.mesh, "Pbcs_quarter_circle_mesh_crossed.xml")
 
         return
-#    def __init__(self, mesh_input, compute_dictionaries=False, compute_tree=False, plot_flag=False, plot_title=None):ENDDEF
+#    def __init__(self, mesh_input, compute_dictionaries=False, compute_cpp_arrays=False, compute_tree=False, plot_flag=False, plot_title=None):ENDDEF
 
 #class UserMesh1DS_C(Mesh_C):
     def __str__(self):

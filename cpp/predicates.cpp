@@ -3,7 +3,7 @@
 
 //-----------------------------------------------------------------------------
 
-// Never use these since they use Point
+// Never use these since they use the FEniCS Point type
 
 /*
 double dnt::orient1d(double a, double b, double x)
