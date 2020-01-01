@@ -1,4 +1,4 @@
-/*! \file segmentedarraypair_solib.cpp
+/*! \file segmented_array_pair_solib.cpp
 
   \brief This file creates a shared library containing the Python bindings for
   SegmentedArrayPair storage that's created in C++.
@@ -68,15 +68,15 @@ namespace dnt {
         .def("get_full_indices", &SAP::get_full_indices)
         .def("get_item", &SAP::get_item)
         // Set a default value of a keyword argument:
-        .def("get_next_out_segment", &SAP::get_next_out_segment, py::arg("returnDataPtr") = false)
-        .def("get_next_segment", &SAP::get_next_segment, py::arg(), py::arg("returnDataPtr") = false)
+        .def("get_next_out_segment", &SAP::get_next_out_segment, py::arg("return_data_ptr") = false)
+        .def("get_next_segment", &SAP::get_next_segment, py::arg(), py::arg("return_data_ptr") = false)
         .def("get_current_out_segment", &SAP::get_current_out_segment)
         .def("get_number_of_items", &SAP::get_number_of_items)
         .def("get_number_of_mbytes", &SAP::get_number_of_mbytes)
         .def("get_number_of_segments", &SAP::get_number_of_segments)
         .def("get_segment_and_offset", &SAP::get_segment_and_offset)
-        .def("init_inout_loop", &SAP::init_inout_loop, py::arg("returnDataPtrs") = false)
-        .def("init_out_loop", &SAP::init_out_loop, py::arg("returnDataPtr") = false)
+        .def("init_inout_loop", &SAP::init_inout_loop, py::arg("return_data_ptrs") = false)
+        .def("init_out_loop", &SAP::init_out_loop, py::arg("return_data_ptr") = false)
         // Overloaded versions of push_back().
         // Put a signature in parens in front of &SAP::push_back to disambiguate the versions.
         // Note: (py::tuble (SAP::*) (arg)) &SAP::push_back(): This means that &SAP::push_bash
@@ -119,7 +119,7 @@ namespace dnt {
   // Interface to the C++ class SegmentedArrayPair
 
   // Create a variable 'm' of type py::module
-  PYBIND11_MODULE(segmentedarraypair_solib, m)
+  PYBIND11_MODULE(segmented_array_pair_solib, m)
   {
     
     // The following registrations are needed for the Pstruct<> structured types to work with py::array_t. See pybind11: 12.2.3 Structured types.
@@ -133,7 +133,7 @@ namespace dnt {
     makeSegmentedArrayPair<Ptype::cartesian_xy>(m, "cartesian_xy");
     makeSegmentedArrayPair<Ptype::cartesian_xyz>(m, "cartesian_xyz");
       
-  } // ENDDEF: PYBIND11_MODULE(segmentedarraypair_solib, m)
+  } // ENDDEF: PYBIND11_MODULE(segmented_array_pair_solib, m)
 
   
 } // namespace dnt

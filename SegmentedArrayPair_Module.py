@@ -44,53 +44,40 @@ class SegmentedArrayPair_C(object):
         """Set up the segmented array.
         """
 
-        self.segmentLength = segment_length
-        self.ItemType = item_dtype
+        self.segment_length = segment_length
+        self.item_dtype = item_dtype
 
-        # Make a pair of empty list of segments
-        self.segListPair = [ [], [] ]
+        # Make a pair of empty lists of segments
+        self.seg_list_pair = [ [], [] ]
 
         # Segment number and offset for the first available opening
-        self.firstNotFullSegment = [0, 0]
-        self.firstAvailableOffset = [0, 0]
+        self.first_not_full_segment = [0, 0]
+        self.first_available_offset = [0, 0]
 
         # currentSegment is used to count segments in loops over
         # segments, e.g., to push particles.
-        self.currentSegment = [0, 0]
+        self.current_segment = [0, 0]
 
-        self.nSeg = [0, 0]
-        self.nPmax = [0, 0]
+        self.nseg = [0, 0]
+        self.npmax = [0, 0]
         for iSA in (0, 1):
             # Add the numpy array for the first segment
-            self.segListPair[iSA].append(np_m.empty(self.segmentLength, dtype=item_dtype))
-#            self.segListPair[iSA].append(np_m.zeros(self.segmentLength, dtype=item_dtype))
+            self.seg_list_pair[iSA].append(np_m.empty(self.segment_length, dtype=item_dtype))
+#            self.seg_list_pair[iSA].append(np_m.zeros(self.segment_length, dtype=item_dtype))
             # Count the number of segments:
-            self.nSeg[iSA] = len(self.segListPair[iSA])
+            self.nseg[iSA] = len(self.seg_list_pair[iSA])
             # Maximum number of particles that can be stored at present
-            self.nPmax[iSA] = self.nSeg[iSA]*self.segmentLength
+            self.npmax[iSA] = self.nseg[iSA]*self.segment_length
 
         # Identify which of the array pairs is being written to. When
         # the particles are being initialized, we write to the first
         # one of the array pair, i.e., index 0.
-        self.inSegmentedArray = 1
-        self.outSegmentedArray = 0
+        self.in_segmented_array = 1
+        self.out_segmented_array = 0
 
         # Make a list of segments with erased items.  The segment items are
 #        self.SegmentsWithHoles = []
 #    def __init__(self, segment_length, item_dict): ENDDEF
-
-#class SegmentedArrayPair_C(object):
-    def reset_array(self):
-        """Set the first available slot to the start of the segmented
-           array.
-           
-        """
-        
-        self.firstAvailableSegment = 0
-        self.firstAvailableOffset = 0
-
-        return
-#   def reset_array(self):ENDDEF
 
 #class SegmentedArrayPair_C(object):
     def push_back(self, item_input):
@@ -103,25 +90,25 @@ class SegmentedArrayPair_C(object):
            :param item_input: A tuple containing a complete item structure, or a
                               1-element Numpy array containing an item.
            :type input_item: tuple(float,...) or ndarray with 1 element.
-           :var int full_index: The full index into the SA.
+           :var int fullIndex: The full index into the SA.
            :return: (offset into the "out" segment, full SA index of item)
            old: return (item structure, full SA index in the "out" array)
 
         """
 
         # Abbreviations
-        outSA = self.outSegmentedArray
+        outSA = self.out_segmented_array
 
         # If we've reached the end of the current segment, we need to
         # switch to the next segment, if there is one, or else add a
         # new segment.
-        if self.firstAvailableOffset[outSA] == self.segmentLength:
+        if self.first_available_offset[outSA] == self.segment_length:
             # If another segment is already available, use
             # it. Otherwise, allocate a new segment.
-            self.currentSegment[outSA] += 1
-            if self.currentSegment[outSA] < self.nSeg[outSA]:
-                self.firstNotFullSegment[outSA] += 1
-                self.firstAvailableOffset[outSA] = 0
+            self.current_segment[outSA] += 1
+            if self.current_segment[outSA] < self.nseg[outSA]:
+                self.first_not_full_segment[outSA] += 1
+                self.first_available_offset[outSA] = 0
             else:
                 # The following call increments
                 # firstNotFullSegment[] and nSeg[], and sets
@@ -134,17 +121,17 @@ class SegmentedArrayPair_C(object):
         else:
             item = item_input
     
-        vec = self.segListPair[outSA][self.firstNotFullSegment[outSA]]
-        vec[self.firstAvailableOffset[outSA]] = item
+        vec = self.seg_list_pair[outSA][self.first_not_full_segment[outSA]]
+        vec[self.first_available_offset[outSA]] = item
 
         # Compute the full zero-based index of the particle for return
-        full_index = self.firstNotFullSegment[outSA]*self.segmentLength + self.firstAvailableOffset[outSA]
+        fullIndex = self.first_not_full_segment[outSA]*self.segment_length + self.first_available_offset[outSA]
 
         # Increment the next available slot for next time
-        self.firstAvailableOffset[outSA] += 1
+        self.first_available_offset[outSA] += 1
 
-        return self.firstAvailableOffset[outSA]-1, full_index
-# old:       return vec[self.firstAvailableOffset[outSA]-1], full_index
+        return self.first_available_offset[outSA]-1, fullIndex
+# old:       return vec[self.first_available_offset[outSA]-1], fullIndex
 #    def push_back(self, item_input):ENDDEF
 
 #class SegmentedArrayPair_C(object):
@@ -161,9 +148,9 @@ class SegmentedArrayPair_C(object):
 
         """
 
-        (seg, offset) = divmod(i, self.segmentLength)
-        outSA = self.outSegmentedArray
-        return (self.segListPair[outSA][seg], offset)
+        (seg, offset) = divmod(i, self.segment_length)
+        outSA = self.out_segmented_array
+        return (self.seg_list_pair[outSA][seg], offset)
 #    def get_segment_and_offset(self, i):ENDDEF
 
 #class SegmentedArrayPair_C(object):
@@ -176,12 +163,12 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        outSA = self.outSegmentedArray
+        outSA = self.out_segmented_array
 
-#        print 'get_item: i =', i, 'outSA = ', self.outSegmentedArray
+#        print 'get_item: i =', i, 'outSA = ', self.out_segmented_array
 
-        (seg, offset) = divmod(i, self.segmentLength)
-        return self.segListPair[outSA][seg][offset]
+        (seg, offset) = divmod(i, self.segment_length)
+        return self.seg_list_pair[outSA][seg][offset]
 #    def get_item(self, i):ENDDEF
 
 #class SegmentedArrayPair_C(object):
@@ -202,10 +189,10 @@ class SegmentedArrayPair_C(object):
         """
         # Abbreviations
         # By default, __getitem__() uses the "out" array since it contains the most up-to-date values
-        outSA = self.outSegmentedArray
+        outSA = self.out_segmented_array
 
-        (seg, offset) = divmod(i, self.segmentLength)
-        return self.segListPair[outSA][seg][offset]
+        (seg, offset) = divmod(i, self.segment_length)
+        return self.seg_list_pair[outSA][seg][offset]
 
 #class SegmentedArrayPair_C(object):
     def __setitem__(self, i, value):
@@ -219,10 +206,10 @@ class SegmentedArrayPair_C(object):
 
         # Abbreviations
         # By definition, __setitem__() uses the "out" array
-        outSA = self.outSegmentedArray
+        outSA = self.out_segmented_array
 
-        (seg, offset) = divmod(i, self.segmentLength)
-        self.segListPair[outSA][seg][offset] = value
+        (seg, offset) = divmod(i, self.segment_length)
+        self.seg_list_pair[outSA][seg][offset] = value
 
         return
 
@@ -232,11 +219,11 @@ class SegmentedArrayPair_C(object):
         """
         # Abbreviations
 
-        self.nSeg[theSA] += 1
-        self.segListPair[theSA].append(np_m.empty(self.segmentLength, dtype=self.ItemType))
-#        self.segListPair[theSA].append(np_m.zeros(self.segmentLength, dtype=self.ItemType))
-        self.firstNotFullSegment[theSA] += 1
-        self.firstAvailableOffset[theSA] = 0
+        self.nseg[theSA] += 1
+        self.seg_list_pair[theSA].append(np_m.empty(self.segment_length, dtype=self.item_dtype))
+#        self.seg_list_pair[theSA].append(np_m.zeros(self.segment_length, dtype=self.item_dtype))
+        self.first_not_full_segment[theSA] += 1
+        self.first_available_offset[theSA] = 0
 
         return
     
@@ -253,19 +240,19 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        outSA = self.outSegmentedArray
+        outSA = self.out_segmented_array
 
         # This is used to count through the segments
-        self.currentSegment[outSA] = 0
+        self.current_segment[outSA] = 0
 
         # Return the first segment of the "out" array
 
-#        print 'init_out_loop: self.firstNotFullSegment[outSA]=', self.firstNotFullSegment[outSA]
+#        print 'init_out_loop: self.first_not_full_segment[outSA]=', self.first_not_full_segment[outSA]
 
         # If the first segment is also the last segment, the number of
         # items in it may be less than the length of the segment
-        if self.firstNotFullSegment[outSA] == 0:
-            lastItem = self.firstAvailableOffset[outSA]
+        if self.first_not_full_segment[outSA] == 0:
+            lastItem = self.first_available_offset[outSA]
 #            print 'init_out_loop: lastItem=', lastItem
             # If this is the last segment and it's empty, return None.
             # ===> This should cause the caller to break out of its loop over segments <===
@@ -273,10 +260,10 @@ class SegmentedArrayPair_C(object):
             # down.
             if lastItem == 0: return (0, None)
         else:
-            lastItem = self.segmentLength
+            lastItem = self.segment_length
 
         segIndex = 0
-        return (lastItem, self.segListPair[outSA][segIndex][0:lastItem])
+        return (lastItem, self.seg_list_pair[outSA][segIndex][0:lastItem])
 #    def init_out_loop(self): ENDDEF
 
 #class SegmentedArrayPair_C(object):
@@ -291,8 +278,8 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        inSA = self.inSegmentedArray
-        outSA = self.outSegmentedArray
+        inSA = self.in_segmented_array
+        outSA = self.out_segmented_array
 
 #        print 'init_segment_loop A: inSA =', inSA
 
@@ -311,17 +298,17 @@ class SegmentedArrayPair_C(object):
 
         # These counters are used to count through the segments.
         # Segment indexing is zero-based.
-        self.currentSegment[0] = 0
-        self.currentSegment[1] = 0
+        self.current_segment[0] = 0
+        self.current_segment[1] = 0
 
         # Return the first segment of the "in" array
 
-#        print 'init_segment_loop: self.firstNotFullSegment[inSA]=', self.firstNotFullSegment[inSA]
+#        print 'init_segment_loop: self.first_not_full_segment[inSA]=', self.first_not_full_segment[inSA]
 
         # If the first segment is also the last segment, the number of
         # items in it may be less than the length of the segment
-        if self.firstNotFullSegment[inSA] == 0:
-            lastItem = self.firstAvailableOffset[inSA]
+        if self.first_not_full_segment[inSA] == 0:
+            lastItem = self.first_available_offset[inSA]
 #            print 'init_segment_loop: lastItem=', lastItem
             # If this is the last segment and it's empty, return None.
             # ===> This should cause the caller to break out of its loop over segments <===
@@ -329,15 +316,15 @@ class SegmentedArrayPair_C(object):
             # down.
             if lastItem == 0: return (0, None, None)
         else:
-            lastItem = self.segmentLength
+            lastItem = self.segment_length
 
         # Store the member values
-        self.inSegmentedArray = inSA
-        self.outSegmentedArray = outSA
+        self.in_segmented_array = inSA
+        self.out_segmented_array = outSA
 
         segIndex = 0
 
-        return (lastItem, self.segListPair[inSA][segIndex][0:lastItem], self.segListPair[outSA][segIndex])
+        return (lastItem, self.seg_list_pair[inSA][segIndex][0:lastItem], self.seg_list_pair[outSA][segIndex])
 #    def init_inout_loop(self): ENDDEF
 
 #class SegmentedArrayPair_C(object):
@@ -347,30 +334,30 @@ class SegmentedArrayPair_C(object):
         """
 
         if InOut == "in":
-            theSA = self.inSegmentedArray
+            theSA = self.in_segmented_array
         elif InOut == "out":
-            theSA = self.outSegmentedArray
+            theSA = self.out_segmented_array
 
-        self.currentSegment[theSA] += 1
-        segIndex = self.currentSegment[theSA]
+        self.current_segment[theSA] += 1
+        segIndex = self.current_segment[theSA]
 
         # If the segment index exceeds occupied limit, return None.
-        if segIndex > self.firstNotFullSegment[theSA]: return (0, None)
+        if segIndex > self.first_not_full_segment[theSA]: return (0, None)
         # If this is the last segment and it's empty, return None.
         # ===> This should cause the caller to break out of the loop <===
         # If it's not empty, return the non-empty items
-        if self.firstNotFullSegment[theSA] == segIndex:
-            lastItem = self.firstAvailableOffset[theSA]
+        if self.first_not_full_segment[theSA] == segIndex:
+            lastItem = self.first_available_offset[theSA]
             if lastItem == 0: return (0, None)
         else:
-            lastItem = self.segmentLength
+            lastItem = self.segment_length
 
-#        self.currentSegment[inSA] += 1 # Increment for next time
+#        self.current_segment[inSA] += 1 # Increment for next time
         
 # Q: What's this returning? Looks like a COPY of the items?  Or is it a ref?
 # A: It's a ref to a numpy array with the indicated length.
-#        print 'seg.py', self.segListPair[inSA][segIndex]
-        return (lastItem, self.segListPair[theSA][segIndex][0:lastItem])
+#        print 'seg.py', self.seg_list_pair[inSA][segIndex]
+        return (lastItem, self.seg_list_pair[theSA][segIndex][0:lastItem])
 #    def get_next_in_segment(self): ENDDEF
 
 #class SegmentedArrayPair_C(object):
@@ -388,22 +375,22 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        outSA = self.outSegmentedArray
-        self.currentSegment[outSA] += 1
-        segIndex = self.currentSegment[outSA]
+        outSA = self.out_segmented_array
+        self.current_segment[outSA] += 1
+        segIndex = self.current_segment[outSA]
 
         # If another segment is already available, use
         # it. Otherwise, allocate a new segment.
-        if segIndex < self.nSeg[outSA]:
-            self.firstNotFullSegment[outSA] += 1
-            self.firstAvailableOffset[outSA] = 0
+        if segIndex < self.nseg[outSA]:
+            self.first_not_full_segment[outSA] += 1
+            self.first_available_offset[outSA] = 0
         else:
             # The following call increments the variables
             # firstNotFullSegment[] and nSeg[], and sets
             # firstAvailableOffset[] = 0
             self.add_segment(outSA)
 
-        return self.segListPair[outSA][segIndex]
+        return self.seg_list_pair[outSA][segIndex]
 #    def get_next_out_segment(self): ENDDEF
 
 #class SegmentedArrayPair_C(object):
@@ -415,10 +402,10 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        outSA = self.outSegmentedArray
-        segIndex = self.currentSegment[outSA]
+        outSA = self.out_segmented_array
+        segIndex = self.current_segment[outSA]
 
-        return self.segListPair[outSA][segIndex]
+        return self.seg_list_pair[outSA][segIndex]
 #    def get_current_out_segment(self): ENDDEF
 
 #class SegmentedArrayPair_C(object):
@@ -428,10 +415,10 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        inSA = self.inSegmentedArray
-        outSA = self.outSegmentedArray
+        inSA = self.in_segmented_array
+        outSA = self.out_segmented_array
 
-        return (self.nSeg[inSA], self.nSeg[outSA])
+        return (self.nseg[inSA], self.nseg[outSA])
 
 #class SegmentedArrayPair_C(object):
     def get_number_of_items(self):
@@ -442,9 +429,9 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        outSA = self.outSegmentedArray
+        outSA = self.out_segmented_array
 
-        return self.firstNotFullSegment[outSA]*self.segmentLength + self.firstAvailableOffset[outSA]
+        return self.first_not_full_segment[outSA]*self.segment_length + self.first_available_offset[outSA]
 
 #class SegmentedArrayPair_C(object):
     def set_number_of_items(self, InOut, n_items):
@@ -457,16 +444,16 @@ class SegmentedArrayPair_C(object):
         """
 
         if InOut == "in":
-            theSA = self.inSegmentedArray
+            theSA = self.in_segmented_array
         elif InOut == "out":
-            theSA = self.outSegmentedArray
+            theSA = self.out_segmented_array
 
         # Compute the segment and offset of the last item. The
         # zero-based index of the last item is n_items-1
-        (seg, offset) = divmod(n_items-1, self.segmentLength)
+        (seg, offset) = divmod(n_items-1, self.segment_length)
 
-        self.firstNotFullSegment[theSA] = seg
-        self.firstAvailableOffset[theSA] = offset+1
+        self.first_not_full_segment[theSA] = seg
+        self.first_available_offset[theSA] = offset+1
 
         return
 
@@ -476,10 +463,10 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        inSA = self.inSegmentedArray
-        outSA = self.outSegmentedArray
+        inSA = self.in_segmented_array
+        outSA = self.out_segmented_array
 
-        return (self.nSeg[inSA]*self.segmentLength, self.nSeg[outSA]*self.segmentLength)
+        return (self.nseg[inSA]*self.segment_length, self.nseg[outSA]*self.segment_length)
 
 #class SegmentedArrayPair_C(object):
     def get_number_of_mbytes(self):
@@ -493,11 +480,11 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        inSA = self.inSegmentedArray
-        outSA = self.outSegmentedArray
+        inSA = self.in_segmented_array
+        outSA = self.out_segmented_array
 
-        return (self.nSeg[inSA]*self.segListPair[inSA][0].nbytes/(1.0e6),
-                self.nSeg[outSA]*self.segListPair[outSA][0].nbytes/(1.0e6))
+        return (self.nseg[inSA]*self.seg_list_pair[inSA][0].nbytes/(1.0e6),
+                self.nseg[outSA]*self.seg_list_pair[outSA][0].nbytes/(1.0e6))
 
 #class SegmentedArrayPair_C(object):
     def compress(self):
@@ -507,7 +494,7 @@ class SegmentedArrayPair_C(object):
         """
 
         # Loop on segments
-        for i in range(self.nSeg[cSA]):
+        for i in range(self.nseg[cSA]):
             compress_segment(self, i)
         pass
 #    def compress(self): ENDDEF
@@ -532,13 +519,13 @@ class SegmentedArrayPair_C(object):
         """
 
         if InOut == "in":
-            theSA = self.inSegmentedArray
+            theSA = self.in_segmented_array
         elif InOut == "out":
-            theSA = self.outSegmentedArray
+            theSA = self.out_segmented_array
 
-        full_index = self.currentSegment[theSA]*self.segmentLength + indx
+        fullIndex = self.current_segment[theSA]*self.segment_length + indx
 
-        return full_index
+        return fullIndex
 #    def get_full_index(self, indx, inout):ENDDEF
         
 #class SegmentedArrayPair_C(object):
@@ -554,37 +541,14 @@ class SegmentedArrayPair_C(object):
         """
 
         # Abbreviations
-        inSA = self.inSegmentedArray
-        outSA = self.outSegmentedArray
+        inSA = self.in_segmented_array
+        outSA = self.out_segmented_array
 
-        full_index_in = self.currentSegment[inSA]*self.segmentLength + i_in
-        full_index_out = self.currentSegment[outSA]*self.segmentLength + i_out
+        fullIndexIn = self.current_segment[inSA]*self.segment_length + i_in
+        fullIndexInOut = self.current_segment[outSA]*self.segment_length + i_out
 
-        return (full_index_in, full_index_out)
+        return (fullIndexIn, fullIndexInOut)
 #    def get_full_indices(self, i_in, i_out):ENDDEF
 
-#class SegmentedArrayPair_C(object):
-    def delete_item(self, full_index):
-        """Deletes an item given its full index.
-        """
-        # Compute the segment number
-        iseg = full_index/self.segmentLength
-        # Compute the offset into this segment
-        ioff = full_index%self.segmentLength
-
-        # Save the location
-
-        self.HolesIndices[iseg][Nholes] = ioff
-
-        vec = self.segList[self.firstNotFullSegment]
-
-        i = self.firstAvailableIndex
-        if i == segment_length:
-            self.add_segment()
-
-        i += 1
-        
-        pass
-#    def delete_item(self, full_index): ENDDEF
 
 #class SegmentedArrayPair_C(object): ENDCLASS

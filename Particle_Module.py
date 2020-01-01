@@ -307,21 +307,21 @@ class Particle_C(object):
             # species name.
             # If using C++ SAPs:
             if self.use_cpp_movers is True:
-                # Create the SAPs in C++ (segmentedarraypair_cpp.so)
-                import segmentedarraypair_solib
+                # Create the SAPs in C++ (segmented_array_pair_cpp.so)
+                import segmented_array_pair_solib
                 import mesh_entity_arrays_solib
                 # Use the C++ SegmentedArrayPair class for particle storage.  This
                 # avoids having to call back to Python from C++ to manage the
                 # storage.
                 if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
                     import particle_cartesian_x_solib as cppModule
-                    self.sap_dict[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
+                    self.sap_dict[speciesName] = segmented_array_pair_solib.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xy':
                     import particle_cartesian_xy_solib as cppModule
-                    self.sap_dict[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
+                    self.sap_dict[speciesName] = segmented_array_pair_solib.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xyz':
                     import particle_cartesian_xyz_solib as cppModule
-                    self.sap_dict[speciesName] = segmentedarraypair_solib.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
+                    self.sap_dict[speciesName] = segmented_array_pair_solib.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
                 self.cpp_module = cppModule
             else:
             # If using Python-created SAPs:
@@ -1002,9 +1002,9 @@ class Particle_C(object):
 #                print 'particles_mod: particles module: psegIn = ', psegIn
                 # Compute electric field for each particle
 
-                print("Before:")
-                print("position:", psegIn['x'][0:npSeg], psegIn['y'][0:npSeg]) #, psegIn['z']
-                print("velocity:", psegIn['ux'][0:npSeg], psegIn['uy'][0:npSeg]) #, psegIn['uz']
+#                print("Before:")
+#                print("position:", psegIn['x'][0:npSeg], psegIn['y'][0:npSeg]) #, psegIn['z']
+#                print("velocity:", psegIn['ux'][0:npSeg], psegIn['uy'][0:npSeg]) #, psegIn['uz']
 
                 Eseg = None # This is for the case where no fields are to be applied to the particles,
                 if neg_E_field is not None:

@@ -26,13 +26,13 @@ class TestFacetCrossing(unittest.TestCase):
 
         # Initializations performed before each test go here...
 
-        self.plotMesh = False
-        self.plotResults = False
+        self.plot_mesh = False
+        self.plot_results = False
 
         # Turn plots off if there's no display.
         if os.environ.get('DISPLAY') is None:
-            self.plotMesh = False
-            self.plotResults = False
+            self.plot_mesh = False
+            self.plot_results = False
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
 
@@ -49,7 +49,7 @@ class TestFacetCrossing(unittest.TestCase):
         self.mesh1D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
-        self.mesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle + ": 1D")
+        self.mesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plot_mesh, plot_title=plotTitle + ": 1D")
 #        self.mesh1D.compute_cell_vertices_dict()
 #        self.mesh1D.compute_cell_dict()
 
@@ -65,7 +65,7 @@ class TestFacetCrossing(unittest.TestCase):
         self.mesh2D_dx = (pmax-pmin)/cells_on_side
 
         # Create mesh
-        self.mesh2D = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle + ": 2D")
+        self.mesh2D = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plot_mesh, plot_title=plotTitle + ": 2D")
 #        self.mesh2D.compute_cell_vertices_dict()
 #        self.mesh2D.compute_cell_dict()
 
@@ -75,7 +75,7 @@ class TestFacetCrossing(unittest.TestCase):
         umi3D.pmax = df_m.Point(0.03, 0.03, 0.03)
         umi3D.cells_on_side = (4, 4, 4)
         # Create mesh
-        self.mesh3D = UserMesh_C(umi3D, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle + ": 3D")
+        self.mesh3D = UserMesh_C(umi3D, compute_tree=True, plot_flag=self.plot_mesh, plot_title=plotTitle + ": 3D")
         self.mesh3D.compute_cell_dict()
         self.mesh3D.compute_cell_entity_indices_dict('vertex')
         self.mesh3D.compute_cell_entity_indices_dict('facet')

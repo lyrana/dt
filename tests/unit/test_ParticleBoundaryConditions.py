@@ -34,13 +34,13 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # Initialization code common to the tests go here...
 
-        self.plotMesh = False
-        self.plotResults = False
+        self.plot_mesh = False
+        self.plot_results = False
 
         # Turn plots off if there's no display.
         if os.environ.get('DISPLAY') is None:
-            self.plotMesh = False
-            self.plotResults = False
+            self.plot_mesh = False
+            self.plot_results = False
 
         return
 
@@ -56,7 +56,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         if os.environ.get('DISPLAY') is None:
             plotFlag=False
         else:
-            plotFlag=self.plotMesh
+            plotFlag=self.plot_mesh
 
         ctrl = DTcontrol_C()
 
@@ -194,7 +194,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         from UserMesh_y_Fields_FE_XYZ_Module import UserMesh_C
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        pmesh_M = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle)
+        pmesh_M = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plot_mesh, plot_title=plotTitle)
         # Add this to the particle object:
         particle_P.pmesh_M = pmesh_M
 
@@ -280,7 +280,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                 p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
 
         # Plot the trajectory onto the particle mesh
-        if self.plotResults is True:
+        if self.plot_results is True:
             mesh = p_P.pmesh_M.mesh
             plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
             holdPlot = True # Set to True to stop the plot from disappearing.
@@ -301,7 +301,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         if os.environ.get('DISPLAY') is None:
             plotFlag=False
         else:
-            plotFlag=self.plotResults
+            plotFlag=self.plot_results
 
         ### Particle species input
 
@@ -401,7 +401,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         ## Create the particle mesh
         from UserMesh_y_Fields_FE2D_Module import UserMesh2DCirc_C
-        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
+        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plot_mesh)
 
         # Add this to the particle object:
         particle_P.pmesh_M = pmesh_M
@@ -529,7 +529,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                 p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=negElectricField)
 
         # Plot the trajectory onto the particle mesh
-        if self.plotResults is True:
+        if self.plot_results is True:
             mesh = p_P.pmesh_M.mesh
             plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
             holdPlot = True # Set to True to stop the plot from disappearing.

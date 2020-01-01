@@ -34,13 +34,13 @@ class TestParticleTrajectory(unittest.TestCase):
     
     def setUp(self):
 
-        self.plotMesh = False
-        self.plotResults = False
+        self.plot_mesh = False
+        self.plot_results = False
 
         # Turn plots off if there's no display.
         if os.environ.get('DISPLAY') is None:
-            self.plotMesh = False
-            self.plotResults = False
+            self.plot_mesh = False
+            self.plot_results = False
         
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
@@ -201,7 +201,7 @@ class TestParticleTrajectory(unittest.TestCase):
 #        pin.pmesh_M = UserMesh_C(meshFile='quarter_circle_mesh_crossed.xml', particleBoundaryFile='Pbcs_quarter_circle_mesh_crossed.xml', computeDictionaries=True, computeTree=True, plotFlag=False)
 
 # Can this be attached to Particle_C after Particle_C construction? YES
-        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
+        pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plot_mesh)
 
         self.particle_P.pmesh_M = pmesh_M
 
@@ -437,7 +437,7 @@ class TestParticleTrajectory(unittest.TestCase):
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         mesh = p_P.pmesh_M.mesh
         holdPlot = False # Set to True to stop the plot from disappearing.
-        if self.plotResults is True:
+        if self.plot_results is True:
             p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
             # Plot the trajectory in phase-space
@@ -564,7 +564,7 @@ class TestParticleTrajectory(unittest.TestCase):
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         mesh = p_P.pmesh_M.mesh
         holdPlot = True # Set to True to stop the plot from disappearing.
-        if self.plotResults is True:
+        if self.plot_results is True:
             p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
             # Plot the trajectory in phase-space
@@ -686,7 +686,7 @@ class TestParticleTrajectory(unittest.TestCase):
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name
         mesh = p_P.pmesh_M.mesh
         holdPlot = True # Set to True to stop the plot from disappearing.
-        if self.plotResults is True:
+        if self.plot_results is True:
             p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         # Plot the trajectory in phase-space

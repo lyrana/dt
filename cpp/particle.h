@@ -5,10 +5,10 @@
   \namespace dnt
 
   template <Ptype PT>
-    void move_neutral_species(py::object species_name, py::object ctrl, py::object particle_P)
+    void move_neutral_species(py::object particle_P, py::str species_name, py::object ctrl)
 
   template <Ptype PT>
-    void move_charged_species_in_uniform_fields(py::object species_name, py::object ctrl, py::object particle_P)
+    void move_charged_species_in_uniform_fields(py::object particle_P, py::str species_name, py::object ctrl)
 
   \sa particle_solib.cpp, MeshEntityArrays.h, SegmentedArrayPair.h
 */
@@ -65,7 +65,7 @@ dolfin::Cell* pcellPtr; // File scoped needed? Probably not.
 namespace dnt
 {
 
-  // BEGINDEF: move_neutral_species(py::object particle_P, py::object species_name, py::object ctrl)
+  // BEGINDEF: move_neutral_species(py::object particle_P, py::str species_name, py::object ctrl)
   //! Advance a neutral particle species by one time-increment on a mesh.
   /*!          
 
@@ -76,9 +76,10 @@ namespace dnt
     containing the final position is found.
 
     \param particle_P is a Particle_C object.
-    \param species_name is the string name of the species to be advanced.
+    \param species_name is the py::str name of the species to be advanced.
     \param ctrl is a DTcontrol_C object.
 
+    :cvar sap: This is a pointer-to-SegmentedArrayPair containing the particle data for one neutral species.
     :cvar double dtRemaining: The time a particle has left to move in the new cell
                               the particle has entered.
     :cvar int pDim: Number of spatial coordinates in the particle location.
@@ -87,17 +88,21 @@ namespace dnt
 
   */
   template <Ptype PT, size_t N_CELL_FACETS>
-    void move_neutral_species(py::object particle_P, py::object species_name, py::object ctrl)
+    void move_neutral_species(py::object particle_P, py::str species_name, py::object ctrl)
   {
     using namespace pybind11::literals;
         
-    //    std::cout << "Hello from move_neutral_species@0" << std::endl;
-    //    std::cout << "This is species " << std::string(py::str(species_name)) << std::endl;
+    // std::cout << "Hello from move_neutral_species@0" << std::endl;
+    // std::cout << "This is species " << std::string(species_name) << std::endl;
 
     // Get attributes from the Particle_C argument
     auto pmesh_M = particle_P.attr("pmesh_M");
     auto pDim = particle_P.attr("particle_dimension").cast<int>();
-    auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
+    auto sap = particle_P.attr("sap_dict")[species_name].cast<SegmentedArrayPair<PT> *>();
+    // Note that sap is a pointer.
+    // Could also get sap by first casting to an std::map:
+    //   auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
+    //   auto sap = sap_map[std::string(species_name)];
     auto traj_T = particle_P.attr("traj_T"); // There's no cast<>() here as we only need to check if traj_T is None below.
 
     // Get attributes from the DTcontrol_C argument
@@ -116,8 +121,6 @@ namespace dnt
     //    std::cout << "NO_FACET " << NO_FACET << std::endl;
     
     // Get the data for the species to be advanced
-    // See move_charged_species_in_uniform_fields() below for accessing the SAP without constructing a std::map. Note that sap is a pointer.
-    auto sap = sap_map[std::string(py::str(species_name))];
     const py::ssize_t segmentLength = sap->get_segment_length();
     
     // Start a loop over the sap segments. segTuple contains (npSeg, psegIn, psegOut)
@@ -308,14 +311,15 @@ namespace dnt
                             // Get the storage index that currently identifies this
                             // particle in the trajectory list of particles.
                             auto fullIndex = sap->get_full_index(ipIn, "in");
-                            particle_P.attr("record_trajectory_datum")(species_name, ipOut, fullIndex, step, tStart, "facet_crossing"_a=true); // Does this work?
+                            particle_P.attr("record_trajectory_datum")(std::string(species_name), ipOut, fullIndex, step, tStart, "facet_crossing"_a=true); // Does this work?
                           }
                         // A reference to dx[] is available in the BC function class.
                         // ?? Test for is_none() first?
                         auto bcFunctionDict = particle_P.attr("pmesh_bcs").attr("bc_function_dict").cast<py::dict>();
                         // A py::dict needs a py::str key value. Convert facValue to a string first.
                         auto bcFunction = bcFunctionDict[py::str(std::to_string(facValue))].cast<py::dict>();
-                        bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);                        
+                        // bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);                        
+                        bcFunction[species_name](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);                        
                       }
 
                     // Look up the cell index of the new cell.
@@ -440,9 +444,9 @@ namespace dnt
     //    std::cout << "particleCount: " << particleCount << std::endl;
     sap->set_number_of_items("out", particleCount);
   }
-  // ENDDEF: void move_neutral_species(py::object species_name, py::object ctrl, py::object particle_P)
+  // ENDDEF: void move_neutral_species(py::object particle_P, py::str species_name, py::object ctrl)
   
-  // BEGINDEF: void move_charged_species_in_uniform_fields(py::object species_name, py::object ctrl, py::object particle_P)
+  // BEGINDEF: void move_charged_species_in_uniform_fields(py::object particle_P, py::str species_name, py::object ctrl)
   //! Advance a charged-particle species one timestep in uniform fields.
   /*!          
     Apply the electric field ctrl.E0 to particles of the given species for a
@@ -452,38 +456,38 @@ namespace dnt
     NB: There is no implementation of boundary-conditions in this function, so
     particles do not get deleted.
 
-    \param species_name is the string name of the charged-particle species.
+    \param particle_P is a Particle_C object.
+    \param species_name is the py::str name of the charged-particle species.
     \param ctrl is a DTcontrol_C object.
-    \param sap is a SegmentedArrayPair containing the particle data for one neutral species.
+
+    :cvar sap: This is a pointer-to-SegmentedArrayPair containing the particle data for one neutral species.
 
   */
   template <Ptype PT>
-  void move_charged_species_in_uniform_fields(py::object species_name, py::object ctrl, py::object particle_P)
+    void move_charged_species_in_uniform_fields(py::object particle_P, py::str species_name, py::object ctrl)
   {
 
     //    std::cout << "Hello from move_charged_species_in_uniform_fields@0" << std::endl;
 
-    // Get parameters needed from ctrl arg
+    // Get attributes needed from Particle_C arg
+    auto qom = particle_P.attr("qom")[species_name].cast<double>();
+    // auto pDim = particle_P.attr("particle_dimension").cast<int>();
+
+    // Get attributes needed from ctrl arg
     auto dt = ctrl.attr("dt").cast<double>(); // This does a COPY.
     auto E0x = ctrl.attr("E0").attr("x").cast<double>();
     auto E0y = ctrl.attr("E0").attr("y").cast<double>();
     auto E0z = ctrl.attr("E0").attr("z").cast<double>();
 
-    // Get attributes needed from Particle_C arg
-    auto qom = particle_P.attr("qom")[species_name].cast<double>();
     auto qmdt = qom*dt;
-          
-    auto pDim = particle_P.attr("particle_dimension").cast<int>();
 
     //    std::cout << "pDim " << pDim << std::endl;
 
     //    std::cout << "Hello from move_charged_species_in_uniform_fields@1" << std::endl;
 
     // Get the data for the species to be advanced
-    //    auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
-    //    auto sap = sap_map[std::string(py::str(species_name))];
-    // This is equivalent to the above two lines:
-    // (sap_dict[species_name] is a pointer to the SAP?)
+    // auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
+    // auto sap = sap_map[std::string(species_name)];
     auto sap = particle_P.attr("sap_dict")[species_name].cast<SegmentedArrayPair<PT> *>();
     
     const py::ssize_t segmentLength = sap->get_segment_length();
@@ -524,7 +528,7 @@ namespace dnt
     
     // ipOut counts particles being written to the current "out" segment.
     py::ssize_t ipOut = 0;
-    bool indexChange = false; // Flag to indicate if the particle SA indices have
+    // bool indexChange = false; // Flag to indicate if the particle SA indices have
                               // changed. This affects, e.g., trajectories, which use SA
                               // indices to identify particles chosen for trajectory
                               // plots.
@@ -535,6 +539,7 @@ namespace dnt
       {
         for (auto ipIn = 0; ipIn < npSeg; ipIn++)
           {
+            /* No particle deletion in this algorithm
             // Skip deleted particles
             if ((psegIn[ipIn].bitflags_ & Pstruct<PT>::DELETE_FLAG) != 0b0)
               {
@@ -542,6 +547,7 @@ namespace dnt
                                     // due to deletions.
                 continue; // skip to the next particle in the "in" segment.
               }
+            */
 
             // If this "out" segment is full, get the next "out" segment, since
             // there are still some "in" particles to advance.  If there are no more
@@ -626,7 +632,7 @@ namespace dnt
       }
     sap->set_number_of_items("out", particleCount);
   }
-  // ENDDEF: void move_charged_species_in_uniform_fields(py::object species_name, py::object ctrl, py::object particle_P)
+  // ENDDEF: void move_charged_species_in_uniform_fields(py::object particle_P, py::str species_name, py::object ctrl)
   
 } // namespace dnt
 

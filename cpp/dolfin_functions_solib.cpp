@@ -4,7 +4,7 @@
   the C++ dolfin-based functions in dolfin_functions.cpp.
 
   \namespace dnt
-  \sa dolfin_functions.h, dolfin_functions.cpp, segmentedarraypair_solib.cpp
+  \sa dolfin_functions.h, dolfin_functions.cpp, segmented_array_pair_solib.cpp
 
   This file contains the Python-to-C++ bindings allows access to the C++ versions of
   functions defined in dolfin_functions.cpp.

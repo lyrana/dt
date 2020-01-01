@@ -38,13 +38,13 @@ class TestParticleMigration(unittest.TestCase):
 
         # Initializations performed before each test go here...
 
-        self.plotMesh = False
-        self.plotResults = False
+        self.plot_mesh = False
+        self.plot_results = False
 
         # Turn plots off if there's no display.
         if os.environ.get('DISPLAY') is None:
-            self.plotMesh = False
-            self.plotResults = False
+            self.plot_mesh = False
+            self.plot_results = False
         
         # Create an instance of the DTparticleInput class
         pin = ParticleInput_C()
@@ -140,7 +140,7 @@ class TestParticleMigration(unittest.TestCase):
         if os.environ.get('DISPLAY') is None:
             plotFlag=False
         else:
-            plotFlag=self.plotMesh
+            plotFlag=self.plot_mesh
 
         # Create 1D, 2D and 3D meshes that the particles can be tested against
 
@@ -160,7 +160,7 @@ class TestParticleMigration(unittest.TestCase):
         umi1D.particle_boundary_dict = particleBoundaryDict
 
         # Create a 1D particle mesh
-        self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle + ": 1D")
+        self.pmesh1D = UserMesh_C(umi1D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plot_mesh, plot_title=plotTitle + ": 1D")
 #        self.pmesh1D.compute_cell_vertices_dict()
 #        self.pmesh1D.compute_cell_dict()
 
@@ -184,7 +184,7 @@ class TestParticleMigration(unittest.TestCase):
         umi2D.particle_boundary_dict = particleBoundaryDict
 
         # Create a 2D particle mesh
-        self.pmesh2D = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle + ": 2D")
+        self.pmesh2D = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plot_mesh, plot_title=plotTitle + ": 2D")
 #        self.pmesh2D.compute_cell_vertices_dict()
 #        self.pmesh2D.compute_cell_dict()
 
@@ -213,7 +213,7 @@ class TestParticleMigration(unittest.TestCase):
 
 
         # Create a 3D particle mesh
-        self.pmesh3D_M = UserMesh_C(umi3D, compute_tree=True, plot_flag=self.plotMesh, plot_title=plotTitle + ": 3D")
+        self.pmesh3D_M = UserMesh_C(umi3D, compute_tree=True, plot_flag=self.plot_mesh, plot_title=plotTitle + ": 3D")
         # Explicitly compute dictionaries needed
 #        self.pmesh3D_M.compute_cell_entity_indices_dict('vertex')
         self.pmesh3D_M.compute_cell_vertices_dict()
@@ -395,7 +395,7 @@ class TestParticleMigration(unittest.TestCase):
                 (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset] # Retrieve the particle from the SAP.
 #                mplot_m.plot(data_arr['x'], data_arr['y'])
-                if self.plotResults is True:
+                if self.plot_results is True:
                     mplot_m.plot([p_ic[ip][0], getparticle[0]], [p_ic[ip][1], getparticle[1]])
 #                print 'sp =', sp, 'expected =', p_expected[ip]
 #                print 'calculated = ', getparticle
@@ -409,7 +409,7 @@ class TestParticleMigration(unittest.TestCase):
 #                print fncName, "expected cell =", p_expected[ip][cell_index_position], "computed cell =", getparticle[cell_index_position]
                 self.assertEqual(p_expected[ip][cell_index_position], getparticle[cell_index_position], msg="Particle is not in correct cell")
 
-        if self.plotResults is True:
+        if self.plot_results is True:
             mplot_m.show()
 
         return
@@ -483,7 +483,8 @@ class TestParticleMigration(unittest.TestCase):
         # Create a mesh plotter to display the trajectory (just the
         # first and last positions)
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": First & last positions"
-        plotter=df_m.plot(self.particle_P.pmesh_M.mesh, title=plotTitle)
+        if self.plot_results is True:        
+            plotter=df_m.plot(self.particle_P.pmesh_M.mesh, title=plotTitle)
         
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -491,7 +492,7 @@ class TestParticleMigration(unittest.TestCase):
             for ip in [0, 1]:
                 (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset] # Retrieve the particle from the SAP.
-                if self.plotResults is True:
+                if self.plot_results is True:
                     mplot_m.plot([p_ic[ip][0], getparticle[0]], [p_ic[ip][1], getparticle[1]], [p_ic[ip][2], getparticle[2]])
 #                print 'expected = ', p_expected[ip]
 #                print 'calculated = ', getparticle
@@ -504,7 +505,7 @@ class TestParticleMigration(unittest.TestCase):
                 cell_index_position = -3
 #                print fncName, "expected cell =", p_expected[ip][cell_index_position], "computed cell =", getparticle[cell_index_position]
                 self.assertEqual(p_expected[ip][cell_index_position], getparticle[cell_index_position], msg="Particle is not in correct cell")
-        if self.plotResults is True:
+        if self.plot_results is True:
             mplot_m.show()
 #        yesno = raw_input("Just called show() in test_3D_particle_migration")
 

@@ -23,10 +23,10 @@ class TestSegmentedArray(unittest.TestCase):
         self.trajectory_flag = 0b10 # the second lowest bit is 1
 
         precision = numpy.float64
-        position_coordinates = ('x', 'y', 'z')
-        momentum_coordinates = ('ux', 'uy', 'uz')
-        phase_coordinates = position_coordinates + momentum_coordinates
-        pvars = [coord for coord in phase_coordinates]
+        positionCoordinates = ('x', 'y', 'z')
+        momentumCoordinates = ('ux', 'uy', 'uz')
+        phaseCoordinates = positionCoordinates + momentumCoordinates
+        pvars = [coord for coord in phaseCoordinates]
 
         pvars.append('weight')
         self.pvars = pvars
@@ -42,7 +42,7 @@ class TestSegmentedArray(unittest.TestCase):
 
         metadata = {'names' : pvars, 'formats': pvartypes}
         
-        self.seg_array_obj = SegmentedArrayPair_C(self.segment_length, metadata)
+        self.sap = SegmentedArrayPair_C(self.segment_length, metadata)
 
         return
 
@@ -53,7 +53,7 @@ class TestSegmentedArray(unittest.TestCase):
         print('\ntest: ', fncname, '('+__file__+')')
 
         for iSA in (0, 1):
-            nSeg = self.seg_array_obj.nSeg[iSA]
+            nSeg = self.sap.nseg[iSA]
             number_of_segments = 1
             self.assertEqual(nSeg, number_of_segments, msg="nSeg should be 1")
 
@@ -67,7 +67,7 @@ class TestSegmentedArray(unittest.TestCase):
         print('\ntest: ', fncname, '('+__file__+')')
 
         for iSA in (0, 1):
-            names = self.seg_array_obj.segListPair[iSA][0].dtype.names
+            names = self.sap.seg_list_pair[iSA][0].dtype.names
             for i in range(len(names)):
                 self.assertEqual(names[i], self.pvars[i], msg="Field names are not correct")
 
@@ -83,16 +83,16 @@ class TestSegmentedArray(unittest.TestCase):
         x=0.0; y=1.0; z=2.0; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
         bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
-#        cell_index = -1
-        cell_index = Mesh_C.NO_CELL
+#        cellIndex = -1
+        cellIndex = Mesh_C.NO_CELL
 
-        # Trim the number of coordinates here to match "position_coordinates" variable above
-        putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index)
+        # Trim the number of coordinates here to match "positionCoordinates" variable above
+        putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cellIndex)
 
-        self.seg_array_obj.push_back(putparticle)
+        self.sap.push_back(putparticle)
 
         # Get the item back out by subscripting and check it
-        getparticle = self.seg_array_obj[0]
+        getparticle = self.sap[0]
         for i in range(len(getparticle)):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
 
@@ -108,12 +108,12 @@ class TestSegmentedArray(unittest.TestCase):
         x=0.0; y=1.0; z=2.0; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
         bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
-        cell_index = Mesh_C.NO_CELL
-        putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index)
-        self.seg_array_obj[0] = putparticle
+        cellIndex = Mesh_C.NO_CELL
+        putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cellIndex)
+        self.sap[0] = putparticle
 
         # Get the item back out by subscripting and check it
-        getparticle = self.seg_array_obj[0]
+        getparticle = self.sap[0]
 
         for i in range(len(getparticle)):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle variables are not correct")
@@ -133,21 +133,21 @@ class TestSegmentedArray(unittest.TestCase):
         x=0.0; y=1.0; z=2.0; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
         bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
-        cell_index = Mesh_C.NO_CELL
+        cellIndex = Mesh_C.NO_CELL
         dx = 0.1
 
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):
-            putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
-            self.seg_array_obj.push_back(putparticle)
+            putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cellIndex,)
+            self.sap.push_back(putparticle)
             x += dx
 
         # Check that there are now 2 segments
-        nseg_in, nseg_out = self.seg_array_obj.get_number_of_segments()
-        self.assertEqual(nseg_out, 2, msg="Should have 2 segments now.")
+        nsegIn, nsegOut = self.sap.get_number_of_segments()
+        self.assertEqual(nsegOut, 2, msg="Should have 2 segments now.")
 
         # Get the last particle out by subscripting and check it
-        getparticle = self.seg_array_obj[self.segment_length]
+        getparticle = self.sap[self.segment_length]
         for i in range(len(getparticle)):
             self.assertEqual(getparticle[i], putparticle[i], msg="Particle in Segment 2 is not correct")
 
@@ -164,47 +164,47 @@ class TestSegmentedArray(unittest.TestCase):
         x=0.0; y=1.0; z=2.0; ux=3.0; uy=4; uz=5.0; weight = 101.1
         bitflags = 0b00 # initialize all bits to 0
         bitflags = bitflags | self.trajectory_flag # turn on trajectory flag
-        cell_index = Mesh_C.NO_CELL
+        cellIndex = Mesh_C.NO_CELL
         dx = 0.2
 
         # Put in more particles than one segment can hold
         for i in range(self.segment_length+1):
-            putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
-            self.seg_array_obj.push_back(putparticle)
+            putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cellIndex,)
+            self.sap.push_back(putparticle)
             x += dx
 
         # Add more particles, so there are 2 particles in the 3rd segment
         for i in range(self.segment_length+1):
-            putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cell_index,)
-            self.seg_array_obj.push_back(putparticle)
+            putparticle = (x, y, z, ux, uy, uz, weight, bitflags, cellIndex,)
+            self.sap.push_back(putparticle)
             x += dx
 
         # Check that there are now 3 segments
-        nseg_in, nseg_out = self.seg_array_obj.get_number_of_segments()
-        self.assertEqual(nseg_out, 3, msg="Should have 3 segments now.")
+        nsegIn, nsegOut = self.sap.get_number_of_segments()
+        self.assertEqual(nsegOut, 3, msg="Should have 3 segments now.")
 
         # Check the current capacity
-        nmax_expected = nseg_out*self.segment_length
-        nmax_in, nmax_out = self.seg_array_obj.get_capacity()
-        self.assertEqual(nmax_expected, nmax_out, msg="Capacity returned is not correct")
+        nmaxExpected = nsegOut*self.segment_length
+        nmaxIn, nmaxOut = self.sap.get_capacity()
+        self.assertEqual(nmaxExpected, nmaxOut, msg="Capacity returned is not correct")
 
         # Check the current number of megabytes allocated for the particle arrays
         #     These sizes need to be set for each case separately
-        n_double64 = 7
-        n_bytes_per_double = 8
-        n_int32 = 2
-        n_bytes_per_int = 4
-        mb_expected = (n_double64*n_bytes_per_double+n_int32*n_bytes_per_int)*nmax_out/1.0e6
-        mb_in, mb_out = self.seg_array_obj.get_number_of_mbytes()
-        self.assertAlmostEqual(mb_out, mb_expected, msg="MB allocated is not correct")
+        nDouble64 = 7
+        nBytesPerDouble = 8
+        nInt32 = 2
+        nBytesPerInt = 4
+        mbExpected = (nDouble64*nBytesPerDouble+nInt32*nBytesPerInt)*nmaxOut/1.0e6
+        mbIn, mbOut = self.sap.get_number_of_mbytes()
+        self.assertAlmostEqual(mbOut, mbExpected, msg="MB allocated is not correct")
 
         # Check the number of items currently stored
-        n_expected = (nseg_out-1)*self.segment_length+2
-        n = self.seg_array_obj.get_number_of_items()
-        self.assertEqual(n_expected, n, msg="Count of stored items is not currect")
+        nExpected = (nsegOut-1)*self.segment_length+2
+        n = self.sap.get_number_of_items()
+        self.assertEqual(nExpected, n, msg="Count of stored items is not currect")
 
         # Get the last particle out using [index] and check it
-        getparticle = self.seg_array_obj[2*self.segment_length+1]
+        getparticle = self.sap[2*self.segment_length+1]
         for i in range(len(getparticle)):
             self.assertEqual(getparticle[i], putparticle[i], msg="Last particle in Segment 3 is not correct")
 

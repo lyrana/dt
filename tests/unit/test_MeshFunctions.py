@@ -22,13 +22,13 @@ class TestMeshFunctions(unittest.TestCase):
     def setUp(self):
         # initializations for each test go here...
 
-        self.plotMesh = False
-        self.plotResults = False
+        self.plot_mesh = False
+        self.plot_results = False
 
         # Turn plots off if there's no display.
         if os.environ.get('DISPLAY') is None:
-            self.plotMesh = False
-            self.plotResults = False
+            self.plot_mesh = False
+            self.plot_results = False
 
         return
 
@@ -66,7 +66,7 @@ class TestMeshFunctions(unittest.TestCase):
 #        for cell in df_m.cells(mesh):
 #            print("cell index", cell.index(), "vertices", cell.get_vertex_coordinates())
 
-        if self.plotMesh is True:
+        if self.plot_mesh is True:
             df_m.plot(mesh, title=plotTitle)
             mplot_m.show()
         # Write the mesh to a VTK file
@@ -102,7 +102,7 @@ class TestMeshFunctions(unittest.TestCase):
 
         # UserMesh_FE_XYZ_Module can make the mesh from the above input.
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
-        mesh2d_M = UserMesh_C(umi2d_I, plot_flag=self.plotMesh, plot_title=plotTitle)
+        mesh2d_M = UserMesh_C(umi2d_I, plot_flag=self.plot_mesh, plot_title=plotTitle)
         
         # Compute the facet-normals:
         mesh2d_M.compute_cell_facet_normals_dict() # Unit vectors normal to cell facets        
