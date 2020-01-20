@@ -17,7 +17,7 @@ import matplotlib.pyplot as mplot_m
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
 # Use the C++ functions in the mesh_entity_arrays_solib.so library
-import mesh_entity_arrays_solib
+import mesh_entity_arrays_solib as mea_so
 
 
 class TestCppMeshFunctions(unittest.TestCase):
@@ -67,7 +67,7 @@ class TestCppMeshFunctions(unittest.TestCase):
         tDim = mesh_df.topology().dim()
         nFacets = tDim + 1
         meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
-        meaCtor = getattr(mesh_entity_arrays_solib, meaClass)
+        meaCtor = getattr(mea_so, meaClass)
         
         # Call the MEA constructor
         meaObj = meaCtor(mesh_df, compute_particle_mesh_maps=True)        
@@ -120,7 +120,7 @@ class TestCppMeshFunctions(unittest.TestCase):
         tDim = mesh_df.topology().dim()
         nFacets = tDim + 1
         meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
-        meaCtor = getattr(mesh_entity_arrays_solib, meaClass)
+        meaCtor = getattr(mea_so, meaClass)
 
         # Call the MEA constructor
         # print("Calling the MEA constructor...")

@@ -337,6 +337,7 @@ namespace dnt
 
 } // namespace dnt
 
+// These statements cause the compiler to make the specialized classes using the general template.
 template class dnt::MeshEntityArrays<2>;
 template class dnt::MeshEntityArrays<3>;
 template class dnt::MeshEntityArrays<4>;

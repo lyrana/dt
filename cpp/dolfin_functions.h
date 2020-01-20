@@ -7,6 +7,9 @@
 
 */
 
+#ifndef DOLFINFUNCTIONS_H
+#define DOLFINFUNCTIONS_H
+
 #include <dolfin/common/Array.h>
 #include <dolfin/common/Hierarchical.h>
 #include <dolfin/function/assign.h>
@@ -32,7 +35,7 @@
 
 //#include <Eigen/Dense>
 
-//#include "Pstruct.h"
+#include "Pstruct.h"
 //#include "Fstruct.h"
 
 #include <pybind11/pybind11.h>
@@ -44,13 +47,20 @@
 
 namespace py = pybind11;
 
-
-// Put these in namespace dnt:
-
 namespace dnt
 {
-  
-  bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point);
+
   py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index, bool returnStdArray = false);
+
+  bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point);
+
+  //template <Ptype PT, typename Ftype>
+  template <Ptype PT>
+  void interpolate_field_to_points(dolfin::Function& field,
+                                   py::array_t<Pstruct<PT>, 0> points,
+                                   py::ssize_t npoints,
+                                   py::array_t<double> field_at_points);
   
 } // namespace dnt
+
+#endif

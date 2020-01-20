@@ -4,14 +4,14 @@
 
   The following C++ functions are defined:
     divide_by_cell_volumes()
+    find_facet()
     interpolate_field_to_points()
     is_inside_vertices()
-    find_facet()
 
   The Python bindings for these are in dolfin_functions_solib.cpp.
 
   \namespace dnt
-  \sa dolfin_functions.h, dolfin_functions_solib.cpp
+  \sa dolfin_functions.h, MeshEntityArrays.h, predicates.h, dolfin_functions_solib.cpp
 
 */
 
@@ -31,133 +31,6 @@ double vecToFacet[3];
 
 namespace dnt
 {
-  // BEGINDEF: bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point)
-  //! Test whether a point lies within the simplex (cell) defined by the vertices.
-  /*!
-
-  */
-  bool is_inside_vertices(dolfin::Mesh& mesh,
-                           const unsigned int* vertices,
-                           double* point)
-  {
-    // The algorithm used depends on the mesh dimension
-    const std::size_t tDim = mesh.topology().dim();
-    const std::size_t gDim = mesh.geometry().dim();
-
-    // 1D mesh
-    if (tDim == 1 && gDim == 1)
-      {
-        auto v0 = vertices[0];
-        auto v1 = vertices[1];
-        double p0 = mesh.coordinates()[v0];
-        double p1 = mesh.coordinates()[v1];
-
-        //        std::cout << "dolfin_functions.cpp::is_inside_vertices: point[0] = " << point[0] << " vertex p0 = " << p0 << ", p1 = " << p1 << std::endl;
-
-        if (p0 > p1)
-          std::swap(p0, p1);
-        return p0 <= point[0] and point[0] <= p1;
-      }
-
-    // 2D mesh
-    else if (tDim == 2 && gDim == 2)
-      {
-        auto v0 = vertices[0];
-        auto v1 = vertices[1];
-        auto v2 = vertices[2];
-
-        // mesh.coordinates() returns a 1D array of doubles: x0, y0, x1, y1,... in
-        // this case.  So the value of x for vertex n is at offset n*2. Set pointers
-        // to each vertex point:
-        double* p0 = &mesh.coordinates()[v0*gDim];
-        double* p1 = &mesh.coordinates()[v1*gDim];
-        double* p2 = &mesh.coordinates()[v2*gDim];
-
-        // The rest is code copied from CollisionPredicates.cpp
-  
-        const double ref = dnt::_orient2d(p0, p1, p2);
-
-        if (ref > 0.0)
-          {
-            return (dnt::_orient2d(p1, p2, point) >= 0.0 and
-                    dnt::_orient2d(p2, p0, point) >= 0.0 and
-                    dnt::_orient2d(p0, p1, point) >= 0.0);
-          }
-        else if (ref < 0.0)
-          {
-            return (dnt::_orient2d(p1, p2, point) <= 0.0 and
-                    dnt::_orient2d(p2, p0, point) <= 0.0 and
-                    dnt::_orient2d(p0, p1, point) <= 0.0);
-          }
-        else
-          {
-            return ((dnt::_orient2d(p0, p1, point) == 0.0 and
-                     dnt::_collides_segment_point_1d(p0[0], p1[0], point[0]) and
-                     dnt::_collides_segment_point_1d(p0[1], p1[1], point[1])) or
-                    (dnt::_orient2d(p1, p2, point) == 0.0 and
-                     dnt::_collides_segment_point_1d(p1[0], p2[0], point[0]) and
-                     dnt::_collides_segment_point_1d(p1[1], p2[1], point[1])) or
-                    (dnt::_orient2d(p2, p0, point) == 0.0 and
-                     dnt::_collides_segment_point_1d(p2[0], p0[0], point[0]) and
-                     dnt::_collides_segment_point_1d(p2[1], p0[1], point[1])));
-          }
-      }
-
-    // 3D mesh
-    else if (tDim == 3 && gDim == 3)
-      {
-        auto v0 = vertices[0];
-        auto v1 = vertices[1];
-        auto v2 = vertices[2];
-        auto v3 = vertices[3];
-
-        //  std::cout << "v0: " << v0 << " v1: " << v1 << " v2: " << v2 << " v3: " << v3 << std::endl;
-        //  std::cout << "x: " << x << " y: " << y << " z: " << z << std::endl;
-  
-        // mesh.coordinates() returns a 1D array of doubles: x0, y0, z0, x1, y1, z1,... in this
-        // case.  So the value of x for vertex n is at n*2.
-        double* p0 = &mesh.coordinates()[v0*gDim];
-        double* p1 = &mesh.coordinates()[v1*gDim];
-        double* p2 = &mesh.coordinates()[v2*gDim];
-        double* p3 = &mesh.coordinates()[v3*gDim];
-
-        // std::cout << "p0: " << p0[0] << ", " << p0[1] << ", " << p0[2] << "\n"
-        //           << "p1: " << p1[0] << ", " << p1[1] << ", " << p1[2] << "\n"
-        //           << "p2: " << p2[0] << ", " << p2[1] << ", " << p2[2] << "\n"
-        //           << "p3: " << p3[0] << ", " << p3[1] << ", " << p3[2]
-        //           << std::endl;
-
-        //  std::cout << "Point coords p: " << point[0] << " py: " << point[1] <<" pz: " << point[2] << std::endl;
-
-        const double ref = dnt::_orient3d(p0, p1, p2, p3);
-
-        if (ref > 0.0)
-          {
-            return (dnt::_orient3d(p0, p1, p2, point) >= 0.0 and
-                    dnt::_orient3d(p0, p3, p1, point) >= 0.0 and
-                    dnt::_orient3d(p0, p2, p3, point) >= 0.0 and
-                    dnt::_orient3d(p1, p3, p2, point) >= 0.0);
-          }
-        else if (ref < 0.0)
-          {
-            return (dnt::_orient3d(p0, p1, p2, point) <= 0.0 and
-                    dnt::_orient3d(p0, p3, p1, point) <= 0.0 and
-                    dnt::_orient3d(p0, p2, p3, point) <= 0.0 and
-                    dnt::_orient3d(p1, p3, p2, point) <= 0.0);
-          }
-        else
-          {
-            dolfin::dolfin_error("is_inside_vertices (3D)",
-                                 "compute tetrahedron point collision",
-                                 "Not implemented for degenerate tetrahedron");
-          }
-      }
-
-    return false;
-  } // ENDDEF: bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point)
-
-  
-  // BEGINDEF: py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index, bool returnStdArray)
   //! Find the cell facet crossed in traveling along a displacement vector dr from position r0.
   /*!
     The facet crossed is the one with the smallest value of the
@@ -588,6 +461,200 @@ namespace dnt
     
     return py::make_tuple(NO_FACET, 0.0, nullptr); // Shouldn't reach this. This statement just stops a compiler warning.
     
-  } // ENDDEF: py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index)
+  } // ENDDEF: py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index, bool returnStdArray)
+
+
+  //! Evaluate a dolfin Function at a set of points. The point data are in a Python structured array.
+  /*!
+
+    This is the C++ version of the Python function in Dolfin_Module.py:
+    interpolate_field_to_points(self, points, field_at_points)
+
+    \param field is a reference to a Dolfin Function that has the values of the
+    field on a finite-element mesh.
+
+    \param points is a structured Numpy array containing the point data.
+
+    \param npoints is the number of points in "points" to interpolate to.
+
+    \param field_at_points is a structured Numpy array to hold the values computed at the
+    points.
+
+  */
+  //  template <Ptype PT, typename Ftype>
+  template <Ptype PT>
+  void interpolate_field_to_points(dolfin::Function& field,
+                                   py::array_t<Pstruct<PT>, 0> points,
+                                   py::ssize_t npoints,
+                                   py::array_t<double> field_at_points)
+  {
+    /*
+    const auto points_info = points.request(); // request() returns metadata about the Python array (ptr, ndim, size, shape)
+    const auto pArray = static_cast<Pstruct<PT>*>(points_info.ptr); // Pointer to a struct in points
+    */
+    // Use an unchecked proxy instead
+    //const auto pointsRef = points.unchecked<1>();
+    //auto pointsRef = points.unchecked<1>();
+    auto pointsRef = points.unchecked();
+    
+    std::shared_ptr< const dolfin::FunctionSpace > functionSpace = field.function_space();
+    // The value of dofs_per_cell should be 1, since there's just one E value per
+    // cell: std::size_t dofs_per_cell = functionSpace->element()->space_dimension();
+    std::shared_ptr< const dolfin::GenericDofMap > dofMap = functionSpace->dofmap();
+  
+    // Temporary variables to access cell information
+    const dolfin::Mesh& mesh = *functionSpace->mesh();
+
+    auto fieldAtPointsRef = field_at_points.unchecked<2>();
+    
+    double values[] = {0.0, 0.0, 0.0}; // This holds the returned function values. Could the values be put directly into field_at_points[]? YES, if we're calling from C++. NO, if we're using Ftype for field_at_points, instead of double*.
+    for (auto ip = 0; ip < npoints; ip++) {
+      // std::cout << ip << " x=" << pArray[ip].x_ << std::endl;
+
+      // auto cellIndex = pArray[ip].cell_index_;
+      auto cellIndex = pointsRef(ip).cell_index_;
+      // std::cout << ip << " cellIndex=" << cellIndex << std::endl;
+
+      // In the case of constant-E-in-cell, there's only one DoF in the cell, so we
+      // use the name 'dofIndex' instead of 'dofIndices':
+      auto dofIndex = dofMap->cell_dofs(cellIndex);
+
+      // Pull out the values of the (constant) field in this cell
+      // field.vector()->get_local(values, dofIndex.size(), dofIndex.data());
+      field.vector()->get_local(fieldAtPointsRef(ip), dofIndex.size(), dofIndex.data());
+      
+      // Copy the field vector values to the field struct
+      // double_to_fstruct<Ftype>(values, field_at_points[ip]);
+    
+    }
+
+  }
+  //ENDDEF: void interpolate_field_to_points(dolfin::Function& field,...
+
+
+  //! Test whether a point lies within the simplex (cell) defined by the vertices.
+  /*!
+
+  */
+  bool is_inside_vertices(dolfin::Mesh& mesh,
+                           const unsigned int* vertices,
+                           double* point)
+  {
+    // The algorithm used depends on the mesh dimension
+    const std::size_t tDim = mesh.topology().dim();
+    const std::size_t gDim = mesh.geometry().dim();
+
+    // 1D mesh
+    if (tDim == 1 && gDim == 1)
+      {
+        auto v0 = vertices[0];
+        auto v1 = vertices[1];
+        double p0 = mesh.coordinates()[v0];
+        double p1 = mesh.coordinates()[v1];
+
+        //        std::cout << "dolfin_functions.cpp::is_inside_vertices: point[0] = " << point[0] << " vertex p0 = " << p0 << ", p1 = " << p1 << std::endl;
+
+        if (p0 > p1)
+          std::swap(p0, p1);
+        return p0 <= point[0] and point[0] <= p1;
+      }
+
+    // 2D mesh
+    else if (tDim == 2 && gDim == 2)
+      {
+        auto v0 = vertices[0];
+        auto v1 = vertices[1];
+        auto v2 = vertices[2];
+
+        // mesh.coordinates() returns a 1D array of doubles: x0, y0, x1, y1,... in
+        // this case.  So the value of x for vertex n is at offset n*2. Set pointers
+        // to each vertex point:
+        double* p0 = &mesh.coordinates()[v0*gDim];
+        double* p1 = &mesh.coordinates()[v1*gDim];
+        double* p2 = &mesh.coordinates()[v2*gDim];
+
+        // The rest is code copied from CollisionPredicates.cpp
+  
+        const double ref = dnt::_orient2d(p0, p1, p2);
+
+        if (ref > 0.0)
+          {
+            return (dnt::_orient2d(p1, p2, point) >= 0.0 and
+                    dnt::_orient2d(p2, p0, point) >= 0.0 and
+                    dnt::_orient2d(p0, p1, point) >= 0.0);
+          }
+        else if (ref < 0.0)
+          {
+            return (dnt::_orient2d(p1, p2, point) <= 0.0 and
+                    dnt::_orient2d(p2, p0, point) <= 0.0 and
+                    dnt::_orient2d(p0, p1, point) <= 0.0);
+          }
+        else
+          {
+            return ((dnt::_orient2d(p0, p1, point) == 0.0 and
+                     dnt::_collides_segment_point_1d(p0[0], p1[0], point[0]) and
+                     dnt::_collides_segment_point_1d(p0[1], p1[1], point[1])) or
+                    (dnt::_orient2d(p1, p2, point) == 0.0 and
+                     dnt::_collides_segment_point_1d(p1[0], p2[0], point[0]) and
+                     dnt::_collides_segment_point_1d(p1[1], p2[1], point[1])) or
+                    (dnt::_orient2d(p2, p0, point) == 0.0 and
+                     dnt::_collides_segment_point_1d(p2[0], p0[0], point[0]) and
+                     dnt::_collides_segment_point_1d(p2[1], p0[1], point[1])));
+          }
+      }
+
+    // 3D mesh
+    else if (tDim == 3 && gDim == 3)
+      {
+        auto v0 = vertices[0];
+        auto v1 = vertices[1];
+        auto v2 = vertices[2];
+        auto v3 = vertices[3];
+
+        //  std::cout << "v0: " << v0 << " v1: " << v1 << " v2: " << v2 << " v3: " << v3 << std::endl;
+        //  std::cout << "x: " << x << " y: " << y << " z: " << z << std::endl;
+  
+        // mesh.coordinates() returns a 1D array of doubles: x0, y0, z0, x1, y1, z1,... in this
+        // case.  So the value of x for vertex n is at n*2.
+        double* p0 = &mesh.coordinates()[v0*gDim];
+        double* p1 = &mesh.coordinates()[v1*gDim];
+        double* p2 = &mesh.coordinates()[v2*gDim];
+        double* p3 = &mesh.coordinates()[v3*gDim];
+
+        // std::cout << "p0: " << p0[0] << ", " << p0[1] << ", " << p0[2] << "\n"
+        //           << "p1: " << p1[0] << ", " << p1[1] << ", " << p1[2] << "\n"
+        //           << "p2: " << p2[0] << ", " << p2[1] << ", " << p2[2] << "\n"
+        //           << "p3: " << p3[0] << ", " << p3[1] << ", " << p3[2]
+        //           << std::endl;
+
+        //  std::cout << "Point coords p: " << point[0] << " py: " << point[1] <<" pz: " << point[2] << std::endl;
+
+        const double ref = dnt::_orient3d(p0, p1, p2, p3);
+
+        if (ref > 0.0)
+          {
+            return (dnt::_orient3d(p0, p1, p2, point) >= 0.0 and
+                    dnt::_orient3d(p0, p3, p1, point) >= 0.0 and
+                    dnt::_orient3d(p0, p2, p3, point) >= 0.0 and
+                    dnt::_orient3d(p1, p3, p2, point) >= 0.0);
+          }
+        else if (ref < 0.0)
+          {
+            return (dnt::_orient3d(p0, p1, p2, point) <= 0.0 and
+                    dnt::_orient3d(p0, p3, p1, point) <= 0.0 and
+                    dnt::_orient3d(p0, p2, p3, point) <= 0.0 and
+                    dnt::_orient3d(p1, p3, p2, point) <= 0.0);
+          }
+        else
+          {
+            dolfin::dolfin_error("is_inside_vertices (3D)",
+                                 "compute tetrahedron point collision",
+                                 "Not implemented for degenerate tetrahedron");
+          }
+      }
+
+    return false;
+  } // ENDDEF: bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point)
+
   
 } // namespace dnt

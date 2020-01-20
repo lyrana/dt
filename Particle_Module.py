@@ -46,7 +46,7 @@ class ParticleInput_C(object):
         self.force_precision = None
 
         # The flag to use either Python (default) or C++ to store and move particles
-        self.use_cpp_movers = None
+        self.use_cpp_integrators = None
         self.cpp_module = None
         
         # Values: 'loop-on-particles', 'loop-on-cells'
@@ -76,7 +76,7 @@ class ParticleSpecies_C(object):
        For species-specific attributes, this can be used as the parent class.
     """
 
-    def __init__(self, name, charge, mass, dynamics):
+    def __init__(self, name, charge, mass, dynamics, integrator_name):
         """Initialize a ParticleSpecies_C instance.
 
            :cvar str name: An arbitrary name but unique for the species
@@ -84,6 +84,10 @@ class ParticleSpecies_C(object):
            :cvar double mass: The mass of a single physical particle.
            :cvar str dynamics: A string identifying how particles are pushed.  Valid
                                values are 'explicit' and 'implicit'.
+
+           :cvar str integrator_name: A string identifying the particle-advance algorithm
+                                 for this species. Valid values are
+                                'advance_neutral_species'.
 
         """
 
@@ -100,6 +104,7 @@ class ParticleSpecies_C(object):
         self.charge = charge
         self.mass = mass
         self.dynamics = dynamics
+        self.integrator_name = integrator_name
         
         return
 #    def __init__(self, name, charge, mass, dynamics):ENDDEF
@@ -150,12 +155,16 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
+        
         # Set local variables from passed parameters
         precision = particle_input.precision
+        particleSpecies = particle_input.particle_species
+        
+        # Set Particle_C variables
         self.precision = precision
         self.coordinate_system = particle_input.coordinate_system
-        particleSpecies = particle_input.particle_species
-        self.use_cpp_movers = particle_input.use_cpp_movers
+        self.use_cpp_integrators = particle_input.use_cpp_integrators
+        self.force_components = particle_input.force_components
         
         # The spatial coordinates of a particle
 #        self.position_coordinates = particle_input.position_coordinates
@@ -220,6 +229,7 @@ class Particle_C(object):
         self.charge = {}
         self.mass = {}
         self.dynamics = {}
+        self.integrator_names = {}
         self.qom = {}
 
 # don't know about number_per_cell; not a fundamental number; just a particular
@@ -230,7 +240,7 @@ class Particle_C(object):
         self.implicit_species = []
         self.neutral_species = []
 
-        self.sap_dict = {}
+        self.sap_dict = {} # This is where particle data arrays are stored.
         self.particle_count = {}
 
         # The names of the particle attributes and the data type of each attribute is
@@ -301,12 +311,15 @@ class Particle_C(object):
                 errorMsg = "Unknown type of dynamics " + sp.dynamics + ' for species ' + sp_name
                 raise RuntimeError(errorMsg) # sys.exit(errorMsg)
 
+            # key: 'integrator_names'
+            self.integrator_names[speciesName] = sp.integrator_name
+            
             # Process user input giving the particle-variable names and types
             # for each plasma species.  Allocate initial storage
             # for particles using segmented vectors indexed by the
             # species name.
             # If using C++ SAPs:
-            if self.use_cpp_movers is True:
+            if self.use_cpp_integrators is True:
                 # Create the SAPs in C++ (segmented_array_pair_cpp.so)
                 import segmented_array_pair_solib
                 import mesh_entity_arrays_solib
@@ -395,36 +408,8 @@ class Particle_C(object):
         self.h5_buffer_length = self.number_of_species*self.SEGMENT_LENGTH
         self.h5_buffer = np_m.empty(self.h5_buffer_length, dtype=np_m.float64)
 
-        # Make reusable arrays for computing solved and external E at particle positions
-        if particle_input.force_components is not None:
-            Ecomps = particle_input.force_components
-            force_precision = particle_input.force_precision
-            Etypes = [force_precision for comp in Ecomps] # variable type
-            Eseg_dict = {'names': Ecomps, 'formats': Etypes}
-            # reusable array for the solved field:
-            self.negE = np_m.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
-            # Same thing, for an external field:
-            self.Eext = np_m.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
-
-            # Create a reusable E array with all components zero
-            self.zeroE = np_m.zeros(self.SEGMENT_LENGTH, dtype=Eseg_dict)
-            
-            # self.negE1 is a reusable array for one-particle field data for a
-            # trajectory
-            # Make an explicit name like 'Ex', 'Ey', 'Ez'
-            E1comps = ['E'+comp for comp in Ecomps]
-            E1seg_dict = {'names': E1comps, 'formats': Etypes}
-            self.negE1 = np_m.empty(1, dtype=E1seg_dict)
-            # Create a reusable E array with all components zero
-#            self.zeroE = np_m.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
-
-            # self.Eext is a reusable array for one-particle external field data for a
-            # trajectory.
-            # Make an explicit name like 'Ex_ext', 'Ey_ext', 'Ez_ext'
-            E1comps = ['E'+comp+'_ext' for comp in Ecomps]
-            E1seg_dict = {'names': E1comps, 'formats': Etypes}
-            self.Eext1 = np_m.empty(1, dtype=E1seg_dict)
-            
+        # Moved negE, etc., to initialize_particle_integration()
+        
         # Not used yet
         self.particle_integration_loop = particle_input.particle_integration_loop
 
@@ -491,6 +476,85 @@ class Particle_C(object):
 
         return
 #    def initialize_particles(self, print_flags):ENDDEF
+
+#class Particle_C(object):
+    def initialize_particle_integration(self):
+        """Create objects needed to advance a particle species.
+
+           If there are charged particles, create arrays to hold the interpolated
+           electric fields.
+
+           Set the name of an integration function for each species. Either Python or
+           C++ particle integration functions can be used.
+
+        """
+
+        className = self.__class__.__name__
+        fncName = '('+__file__+') ' + className + "." + sys._getframe().f_code.co_name + '():\n'
+
+        # If electric forces will be applied to particles, make reusable arrays for
+        # computing the solved and external E at particle positions.
+        # XXThese arrays can
+        # be used for particle integration by both Python and C++ functionsXX.
+        if self.force_components is not None:
+            Ecomps = self.force_components
+            force_precision = self.force_precision
+            if self.use_cpp_integrators is True:
+                nComps = len(Ecomps)
+#                HERE
+# make these have a shape, with C-ordering py::array::c_stype. pybind11 12.2.2, 12.2.5
+                # "NumPy arrays are by default in row-major order".
+                self.negE = np_m.empty((self.SEGMENT_LENGTH, nComps), dtype=force_precision)
+                self.Eext = np_m.empty((self.SEGMENT_LENGTH, nComps), dtype=force_precision)
+                self.zeroE = np_m.empty((self.SEGMENT_LENGTH, nComps), dtype=force_precision)
+                self.cpp_module.initialize_particle_integration(self.negE, self.Eext, self.zeroE)
+
+            else:
+                Etypes = [force_precision for comp in Ecomps] # variable type
+                Eseg_dict = {'names': Ecomps, 'formats': Etypes}
+                # reusable array for the solved field:
+                self.negE = np_m.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
+                # Same thing, for an external field:
+                self.Eext = np_m.empty(self.SEGMENT_LENGTH, dtype=Eseg_dict)
+                # Create a reusable E array with all components zero
+                self.zeroE = np_m.zeros(self.SEGMENT_LENGTH, dtype=Eseg_dict)
+
+                # self.negE1 is a reusable array for one-particle field data for a
+                # trajectory
+                # Make an explicit name like 'Ex', 'Ey', 'Ez'
+                E1comps = ['E'+comp for comp in Ecomps]
+                E1seg_dict = {'names': E1comps, 'formats': Etypes}
+                self.negE1 = np_m.empty(1, dtype=E1seg_dict)
+                # Create a reusable E array with all components zero
+                #            self.zeroE = np_m.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
+
+                # self.Eext is a reusable array for one-particle external field data for a
+                # trajectory.
+                # Make an explicit name like 'Ex_ext', 'Ey_ext', 'Ez_ext'
+                E1comps = ['E'+comp+'_ext' for comp in Ecomps]
+                E1seg_dict = {'names': E1comps, 'formats': Etypes}
+                self.Eext1 = np_m.empty(1, dtype=E1seg_dict)
+
+        # Make a dictionary of the functions that will advance the particle species.
+        self.integrators = {}
+        if self.use_cpp_integrators is True:
+            # Switch order?:
+            for sn in self.species_names:
+                # Advance the particles in this species with C++ functions.
+                # Use the integrator specialized to the right number of cell-facets.
+                tDim = self.pmesh_M.mesh.topology().dim()
+                nFacets = tDim + 1
+                integratorName = self.integrator_names[sn] + "_" + str(nFacets) + "_facets"
+                integrator = getattr(self.cpp_module, integratorName)
+                self.integrators[sn] = integrator
+        else:
+            for sn in self.species_names:
+                # Advance the particles in this species with the Python functions in this module
+                self.integrators[sn] = getattr(self, self.integrator_names[sn])
+                
+        return
+#    def initialize_particle_integration(self): ENDDEF    
+
 
 #class Particle_C(object):
     def create_from_list(self, species_name, print_flag=False):
@@ -739,7 +803,7 @@ class Particle_C(object):
         
         if self.pmesh_M is not None:
             for sn in self.species_names:
-# There could be a branch to a C++ particle loop here, if use_cpp_movers is True. Then we
+# There could be a branch to a C++ particle loop here, if use_cpp_integrators is True. Then we
 # wouldn't need to compute the Python version of cell_dict{} (needed by is_inside_cell()).
                 sap = self.sap_dict[sn] # segmented array for this species
                 (npSeg, pseg) = sap.init_out_loop()
@@ -778,7 +842,7 @@ class Particle_C(object):
         
         if mesh_M is not None:
             self.pmesh_M = mesh_M
-            if self.use_cpp_movers is True:
+            if self.use_cpp_integrators is True:
                 # Create a MeshEntityArrays object, which has non-standard mesh entity
                 # lists needed by particle movers.
                 import mesh_entity_arrays_solib
@@ -1303,7 +1367,7 @@ class Particle_C(object):
 #    def move_particles_in_electrostatic_field(self, ctrl, neg_E_field=None, external_E_field=None, accel_only=False):ENDDEF
 
 #class Particle_C(object):
-    def move_neutral_particles(self, ctrl):
+    def advance_neutral_particles(self, ctrl):
         """Advance all neutral particles by one time increment on a mesh.
 
            Either Python or C++ particle movers can be used.
@@ -1314,26 +1378,27 @@ class Particle_C(object):
 
         for sn in self.neutral_species:
             if self.get_species_particle_count(sn) == 0: continue
-            if self.use_cpp_movers is True:
-                # Move the particles in this species with C++
+            if self.use_cpp_integrators is True:
+                # Advance the particles in this species with C++
                 # Invoke the mover for the right number of cell-facets
                 tDim = self.pmesh_M.mesh.topology().dim()
                 nFacets = tDim + 1
-                particleMoverName = "move_neutral_species_" + str(nFacets) + "_facets"
-                particleMover = getattr(self.cpp_module, particleMoverName)
-#                print(fncName, "\tCalling", particleMoverName)
-                particleMover(self, sn, ctrl)
+                particleAdvancerName = "advance_neutral_species_" + str(nFacets) + "_facets"
+                particleAdvancer = getattr(self.cpp_module, particleAdvancerName)
+#                print(fncName, "\tCalling", particleAdvancerName)
+                particleAdvancer(self, sn, ctrl)
             else:
-                # Move the particles in this species with Python
-                self.move_neutral_species(sn, ctrl)
+                # Advance the particles in this species with Python
+                self.advance_neutral_species(sn, ctrl)
 
         return
-#    def move_neutral_particles(self, ctrl):ENDDEF
+#    def advance_neutral_particles(self, ctrl):ENDDEF
 
 
 #class Particle_C(object):
-    def move_neutral_species(self, species_name, ctrl, print_flag = False):
-        """Move a neutral species for one timestep using Python.
+    def advance_neutral_species(self, species_name, ctrl, print_flag = False):
+#    def integrate_neutral_species(self, species_name, ctrl, print_flag = False):
+        """Advance a neutral species for one timestep using Python.
 
            Compute change in position in time dt. Use an explicit method to calculate the
            final position.  If a particle leaves its initial cell, the cell that the
@@ -1603,7 +1668,7 @@ class Particle_C(object):
         # Loop over segmented array for this species ends
 
         return
-#     def move_neutral_species(self, species_name, ctrl, print_flag = False): ENDDEF
+#     def advance_neutral_species(self, species_name, ctrl, print_flag = False): ENDDEF
 
 
 #class Particle_C(object):

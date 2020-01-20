@@ -49,7 +49,7 @@ class TestParticleUniformE(unittest.TestCase):
         pin.coordinate_system = 'cartesian_xyz'        
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
-        pin.use_cpp_movers = False
+        pin.use_cpp_integrators = False
         
         # Specify the particle species for this calculation
 

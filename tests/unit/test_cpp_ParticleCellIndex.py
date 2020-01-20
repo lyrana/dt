@@ -37,7 +37,7 @@ class TestCppParticleCellIndex(unittest.TestCase):
         # Set up particle variables
         pin.precision = np_m.float64
         
-        pin.use_cpp_movers = True # Use C++ version of particle movers.
+        pin.use_cpp_integrators = True # Use C++ version of particle movers.
         
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xyz' # Particle have 3 coordinates.

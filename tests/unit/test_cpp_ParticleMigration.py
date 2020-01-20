@@ -53,7 +53,7 @@ class TestCppParticleMigration(unittest.TestCase):
         pin.force_components = ['x', 'y',]
         """
         pin.force_precision = np_m.float64
-        pin.use_cpp_movers = True # Use C++ version of particle movers.
+        pin.use_cpp_integrators = True # Use C++ version of particle movers.
 
         # Give the properties of the particle species.  The charges and masses are
         # normally those of the physical particles, and not the computational
@@ -65,7 +65,8 @@ class TestCppParticleMigration(unittest.TestCase):
         charge = 0.0
         mass = 1.0*MyPlasmaUnits_C.AMU
         dynamics = 'neutral'
-        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        integratorName = "integrate_neutral_species"        
+        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics, integratorName)
 
         # Add these species to particle input
         pin.particle_species = (neutralH_S,
@@ -263,6 +264,9 @@ class TestCppParticleMigration(unittest.TestCase):
         # 3. Compute the cell-neighbors and facet-normals for the particle movers.
         self.particle_P.initialize_particle_mesh(self.pmesh1D)
 
+        # Attach the particle integrators
+        self.particle_P.initialize_particle_integrators()
+
         # cell_dict{} is needed by the Python version of is_inside_cell(), which is
         # used in compute_mesh_cell_indices() below.
         self.particle_P.pmesh_M.compute_cell_dict()
@@ -314,10 +318,14 @@ class TestCppParticleMigration(unittest.TestCase):
 #        print("cell_vertices_dict = ", self.particle_P.pmesh_M.cell_vertices_dict)
 
         # Integrate for n_timesteps
-        print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 1D mesh")
+        print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 1D mesh")
         for istep in range(ctrl.n_timesteps):
 #            print(fncName, "istep:", istep)
-            self.particle_P.move_neutral_particles(ctrl)
+#            self.particle_P.move_neutral_particles(ctrl)
+            # Advance each species for 1 timestep
+#            for sp in self.particle_P.species_names:
+            for sp in self.particle_P.neutral_species:
+                self.particle_P.integrators[sp](sp, ctrl)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -416,9 +424,12 @@ class TestCppParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
-        print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 2D mesh")
+        print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 2D mesh")
         for istep in range(ctrl.n_timesteps):
-            self.particle_P.move_neutral_particles(ctrl)
+#            self.particle_P.move_neutral_particles(ctrl)
+            # Advance each species for 1 timestep
+            for sp in self.particle_P.species_names:
+                self.particle_P.integrators[sp](sp, ctrl)
 
         # Create a mesh plotter to display the trajectory
         if self.plot_results is True:
@@ -528,9 +539,12 @@ class TestCppParticleMigration(unittest.TestCase):
         p_expected = (psp0, psp1)
 
         # Integrate for n_timesteps
-        print("Moving", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 3D mesh")
+        print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 3D mesh")
         for istep in range(ctrl.n_timesteps):
-            self.particle_P.move_neutral_particles(ctrl)
+#            self.particle_P.move_neutral_particles(ctrl)
+            # Advance each species for 1 timestep
+            for sp in self.particle_P.species_names:
+                self.particle_P.integrators[sp](sp, ctrl)
 
         # Create a mesh plotter to display the trajectory (just the
         # first and last positions)

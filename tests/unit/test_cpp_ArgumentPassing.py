@@ -59,7 +59,7 @@ class TestPybind11(unittest.TestCase):
         pin.force_components = ['x', 'y',]
         """
         pin.force_precision = np_m.float64
-        pin.use_cpp_movers = True # Use C++ version of particle movers.
+        pin.use_cpp_integrators = True # Use C++ version of particle movers.
         
         # Give the properties of the particle species.  The charges and masses are
         # normally those of the physical particles, and not the computational

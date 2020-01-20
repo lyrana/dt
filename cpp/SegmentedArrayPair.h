@@ -86,27 +86,22 @@ namespace dnt
     unsigned out_segmented_array;
 
 
-    // BEGINDEF: py::array_t<Pstruct<PT>, 0> allocate_a_segment(const py::ssize_t segment_length)
-    // BEGINDEF: py::array_t<Pstruct<PT>, 0> allocate_a_segment(void)
-    //! Create a Numpy array in C++.
+    //! Create a structured Numpy array of length *segment_length*.
     /*!
-      allocate_a_segment() creates a Numpy array of length segment_length for the PT
-      particle type, and returns a pointer to it.
+      Function allocate_a_segment() creates a Numpy array of length *segment_length*
+      for the PT particle type, and returns a pointer to it.
 
-      X\param segment_length is the length of the Numpy array to be allocatedX
-      \return pointer to the new Numpy array
+      \return pointer to the new Numpy array.
 
     */
-    //    py::array_t<Pstruct<PT>, 0> allocate_a_segment(const py::ssize_t segment_length)
     py::array_t<Pstruct<PT>, 0> allocate_a_segment(void)
     {
       // No pointer is passed, so Numpy will allocate the buffer
       return py::array_t<Pstruct<PT>, 0>(segment_length);
     }
     // ENDDEF: py::array_t<Pstruct<PT>, 0> allocate_a_segment(void)
-    // ENDDEF: py::array_t<Pstruct<PT>, 0> allocate_a_segment(const py::ssize_t segment_length)
 
-    // BEGINDEF: void add_segment(unsigned theSA)
+
     //! Add another segment to the specified SegmentedArray in order to store more items.
     /*!
 
@@ -118,7 +113,9 @@ namespace dnt
     {
       nseg[theSA] += 1;
       //      py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment(segment_length);
-      py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment();
+      //      py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment();
+      // No pointer is passed, so Numpy will allocate the buffer
+      py::array_t<Pstruct<PT>, 0> newSegment = py::array_t<Pstruct<PT>, 0>(segment_length);
       seg_list_pair[theSA].push_back(newSegment);
 
       first_not_full_segment[theSA] += 1;
@@ -127,7 +124,6 @@ namespace dnt
     // ENDDEF: void add_segment(unsigned theSA)
     
   public:
-    // BEGINDEF: SegmentedArrayPair(py::ssize_t segment_length)
     //! The one and only SegmentedArrayPair ctor.
     /*!
 
@@ -151,7 +147,8 @@ namespace dnt
           {
             // Add the Numpy arrays for the first segment pair
             //            py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment(segment_length);
-            py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment();
+            //            py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment();
+            py::array_t<Pstruct<PT>, 0> newSegment = py::array_t<Pstruct<PT>, 0>(segment_length);
             seg_list_pair[iSA].push_back(newSegment);
             // Count the number of segments:
             nseg[iSA] = seg_list_pair[iSA].size();
@@ -180,7 +177,6 @@ namespace dnt
       } 
 
 
-    // BEGINDEF: py::ssize_t get_segment_length()
     //! Return the segment length
     py::ssize_t get_segment_length()
       {
@@ -189,7 +185,6 @@ namespace dnt
     // ENDDEF: py::ssize_t get_segment_length()
 
 
-    // BEGINDEF: py::tuple get_number_of_segments()
     //! Return a py::tuple with the current number of segments in the "in" and "out" arrays.
     py::tuple get_number_of_segments()
       {
@@ -214,7 +209,6 @@ namespace dnt
       // ENDDEF: py::ssize_t get_number_of_items()
 
 
-      // BEGINDEF: void set_number_of_items(std::string in_out, py::ssize_t n_items)      
       //! Sets the number of active items currently stored.
       /*! 
           \param string in_out: Either "in" or "out" depending on whether
@@ -247,7 +241,6 @@ namespace dnt
       // ENDDEF: void set_number_of_items(std::string in_out, py::ssize_t n_items)      
 
 
-    // BEGINDEF: py::tuple get_capacity()
     //! Return the total number of items that can currently be stored.
     py::tuple get_capacity()
       {
@@ -260,7 +253,6 @@ namespace dnt
     // ENDDEF: py::tuple get_capacity()
 
     
-    // BEGINDEF: py::tuple get_number_of_mbytes()    
     //! Return the number of megabytes allocated for the item arrays
     py::tuple get_number_of_mbytes()
       {
@@ -279,8 +271,7 @@ namespace dnt
     // ENDDEF: py::tuple get_number_of_mbytes()    
 
 
-    // BEGINDEF: py::tuple push_back(py::array_t<Pstruct<PT>, 0> input_item)
-    //! Add data from a 1-element py::array_t the "out" SegmentedArray.
+    //! Add data from a 1-element py::array_t to the "out" SegmentedArray.
     /*!
 
       \param input_item is a 1-element py::array_t<Pstruct<PT>, 0> containing a complete item.
@@ -320,7 +311,7 @@ namespace dnt
         // "out" SA
         py::buffer_info segInfo = seg_list_pair[outSA][first_not_full_segment[outSA]].request(); // request() returns metadata about the array (ptr, ndim, size, shape)
         const auto pseg = static_cast<Pstruct<PT>*>(segInfo.ptr); // Pointer to the contiguous data.
-        // input_item
+        // See docs above for *input_item*
         py::buffer_info itemInputInfo = input_item.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
         const auto inputArray = static_cast<Pstruct<PT>*>(itemInputInfo.ptr); // Pointer to the contiguous data.
         
@@ -348,7 +339,6 @@ namespace dnt
     // ENDDEF: py::tuple push_back(py::array_t<Pstruct<PT>, 0> input_item)
 
 
-    // BEGINDEF: py::tuple push_back(py::tuple item_input)
     //! Add data from a py::tuple to the "out" SegmentedArray.
     /*!
 
@@ -411,7 +401,6 @@ namespace dnt
 // #undef LIST
 #define LIST
 #ifdef LIST 
-    // BEGINDEF: py::tuple push_back(py::list item_input)
     //! Add data from a py::list to the "out" SegmentedArray.
     /*!
 
@@ -465,7 +454,6 @@ namespace dnt
 #endif
 
     
-    // BEGINDEF: py::tuple get_segment_and_offset(py::ssize_t full_index)
     //! Get the Numpy array and offset given a full SA index.
     /*!
 
@@ -489,7 +477,6 @@ namespace dnt
     // ENDDEF: py::tuple get_segment_and_offset(py::ssize_t full_index)
 
 
-    // BEGINDEF: py::dict get_item(py::ssize_t full_index)
     //! Return a copy of an item, as a py::dict, given the full SA index
     py::dict get_item(py::ssize_t full_index)
       {
@@ -506,7 +493,6 @@ namespace dnt
     // ENDDEF: py::dict get_item(py::ssize_t full_index)
     
     
-    // BEGINDEF: py::tuple get_as_tuple(py::ssize_t full_index)
     //! Get a copy of an item's values, as a py::tuple, given the full SA index of the item.
     /*!  Note that the returned py::tuple cannot be modified. If the returned copy of
          the item values is to be modified, use get_as_list() instead.
@@ -529,7 +515,6 @@ namespace dnt
     // ENDDEF: py::tuple get_as_tuple(py::ssize_t full_index)
 
 
-    // BEGINDEF: py::list get_as_list(py::ssize_t full_index)
     //! Get a copy of an item's values, as a py::list, given the full SA index of the item.
     /*!  The returned py::list can be modified, but this does not modify the stored item.
 
@@ -552,7 +537,6 @@ namespace dnt
     // ENDDEF: py::list get_as_list(py::ssize_t full_index)
 
 
-    // BEGINDEF: py::tuple init_out_loop(bool return_data_ptr = false)
     //! Initialize a loop over the segments of the "out" array.
     /*!
 
@@ -611,7 +595,6 @@ namespace dnt
     bool swapPair = true; // Set to false if the 'in' and 'out' SAs should not be
                           // swapped. For testing, uncomment the swapPair =! swapPair
                           // statement below. Don't modify this statement.
-    // BEGINDEF:     py::tuple init_inout_loop(bool return_data_ptrs = false)
     //! Initialize a loop over the all the array segments.
     /*!
 
@@ -699,10 +682,8 @@ namespace dnt
     // ENDDEF: py::tuple init_inout_loop(bool return_data_ptrs = false)
 
 
-    // BEGINDEF py::tuple get_next_segment(std::string in_out, bool return_data_ptr = false)
-    /*! Return a tuple with a reference to the next segment of either the "in" or
-        "out" array, and the number of active items.
-
+    //! Return a tuple with a reference to the next segment of either the "in" or "out" array, and the number of active items.
+    /*      
         \param in_out is a string, either "in" or "out".
         \param return_data_ptr: if true, return a pointer to the data instead of a Numpy array
         \return The tuple (number of active items in the next array segment, 
@@ -763,11 +744,10 @@ namespace dnt
     // ENDDEF py::tuple get_next_segment(std::string in_out, bool return_data_ptr = false)
 
     
-    // BEGINDEF: py::tuple get_next_out_segment(bool return_data_ptr = false)
     //! Return a tuple containing a reference to the next segment of the "out" array.
     /*!
 
-      If this function is called, it assumes that you need space to write on, so it
+      When this function is called, it assumes that you need space to write on, so it
       will allocate a new segment if we're out of "out" segments.
 
       This method looks similar to the push_back() method above, since the "out"
@@ -819,7 +799,6 @@ namespace dnt
     // ENDDEF: py::tuple get_next_out_segment(bool return_data_ptr = false)
 
     
-    // BEGINDEF: py::array_t<Pstruct<PT>,0> get_current_out_segment(void)
     //! Return a reference to the current segment of the "out" array.
     /*!
 
@@ -836,7 +815,6 @@ namespace dnt
       }
     // ENDDEF: py::tuple get_current_out_segment(bool return_data_ptr = false)
                       
-    // BEGINDEF: py::ssize_t get_full_index(py::ssize_t indx, std::string in_out)
     //! Get the full index of an item in either the "in" or "out" SA.
     /*!  
       \param indx[in] offset of an item into the SA.
@@ -860,7 +838,6 @@ namespace dnt
     // ENDDEF: py::ssize_t get_full_index(py::ssize_t indx, std::string in_out)
     
                       
-    // BEGINDEF: py::tuple get_full_indices(py::ssize_t i_in, py::ssize_t i_out)
     //! Get the full indices of an item in the "in" and "out" SA.
     /*!  
       \param i_in: offset of an item into the "in" SA.

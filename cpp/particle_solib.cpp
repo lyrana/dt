@@ -27,17 +27,20 @@ namespace py = pybind11;
 
 namespace dnt {
 
-  PYBIND11_MODULE(PARTICLE_MODULE_NAME, m) {
+  PYBIND11_MODULE(MODULE_NAME, m) {
 
     // C++ functions defined in particle.cpp
   
     // Interface to the C++ particle-advance functions
+    // Note that PARTICLE_TYPE here is defined in Makefile.part
 
-    m.def("move_charged_species_in_uniform_fields", &move_charged_species_in_uniform_fields<Ptype::PARTICLE_TYPE>);
+    m.def("initialize_particle_integration", &initialize_particle_integration<Ptype::PARTICLE_TYPE>);
+    
+    m.def("advance_charged_species_in_uniform_fields", &advance_charged_species_in_uniform_fields<Ptype::PARTICLE_TYPE>);
 
-    m.def("move_neutral_species_2_facets", &move_neutral_species<Ptype::PARTICLE_TYPE, 2>);
-    m.def("move_neutral_species_3_facets", &move_neutral_species<Ptype::PARTICLE_TYPE, 3>);
-    m.def("move_neutral_species_4_facets", &move_neutral_species<Ptype::PARTICLE_TYPE, 4>);
+    m.def("advance_neutral_species_2_facets", &advance_neutral_species<Ptype::PARTICLE_TYPE, 2>);
+    m.def("advance_neutral_species_3_facets", &advance_neutral_species<Ptype::PARTICLE_TYPE, 3>);
+    m.def("advance_neutral_species_4_facets", &advance_neutral_species<Ptype::PARTICLE_TYPE, 4>);
     
   
   } // ENDDEF: PYBIND11_MODULE()

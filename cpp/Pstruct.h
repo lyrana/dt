@@ -55,7 +55,7 @@ namespace dnt
   \brief The Pstruct for an unspecified particle structure type.
 
   \param PT is the particle structure type.
-  \sa Ptype, Pstruct_cartesian_x, 
+  \sa Ptype, Pstruct_cartesian_x
 
 */
   template <Ptype PT>
@@ -184,8 +184,8 @@ namespace dnt
   
   // Set the bit patterns for flags. These are static class members, so they're set
   // outside the ctor.
-    int Pstruct<Ptype::cartesian_x>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-    int Pstruct<Ptype::cartesian_x>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
+  //    int Pstruct<Ptype::cartesian_x>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+  //    int Pstruct<Ptype::cartesian_x>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
 
     
 /*! \struct pstruct2D
@@ -296,8 +296,8 @@ namespace dnt
   
   // Set the bit patterns for flags. These are static class members, so they're set
   // outside the ctor.
-    int Pstruct<Ptype::cartesian_xy>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-    int Pstruct<Ptype::cartesian_xy>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
+  //    int Pstruct<Ptype::cartesian_xy>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+  //    int Pstruct<Ptype::cartesian_xy>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
 
 
 /*! \struct pstruct3D
@@ -420,8 +420,8 @@ namespace dnt
   
   // Set the bit patterns for flags. These are static class members, so they're set
   // outside the ctor.
-    int Pstruct<Ptype::cartesian_xyz>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-    int Pstruct<Ptype::cartesian_xyz>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
+  //    int Pstruct<Ptype::cartesian_xyz>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+  //    int Pstruct<Ptype::cartesian_xyz>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
   
 
 // Declare the C++ function print_pstructarray(): it's templated on the type of the struct

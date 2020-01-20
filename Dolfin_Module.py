@@ -1092,7 +1092,6 @@ class Field_C(object):
         return
 #    def multiply_add(self, field_to_add, multiplier=None):ENDDEF
 
-#    def interpolate_vectorField_to_points(self, points, vFpoints):
 #class Field_C(object):
     def interpolate_field_to_points(self, points, field_at_points):
         """Interpolate the field in this Field_C object to the given points.

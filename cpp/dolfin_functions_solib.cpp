@@ -11,6 +11,8 @@
 
 */
 
+#define STRINGIZE(s) #s
+
 #include "dolfin_functions.h"
 
 namespace py = pybind11;
@@ -25,14 +27,38 @@ namespace py = pybind11;
 namespace dnt {
 
   // Create a variable 'm' of type py::module
-  PYBIND11_MODULE(dolfin_functions_solib, m) {
+  PYBIND11_MODULE(MODULE_NAME, m) {
 
-    // C++ functions defined in dolfin_functions.cpp that are called from Python.
+    // m.def makes the Python binding for each C++ function defined in
+    // dolfin_functions.cpp.
 
-    //  C++ signature of is_inside_vertices() is:
-    //    bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point);
+    m.def("find_facet", [](py::object mesh_M, py::list x0, py::list dx, std::size_t cell_index, bool returnStdArray = false)
+          {
+            // Convert the above Python args to the args of the C++ function.
+            //  C++ signature of find_facet() is:
+            //    py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index, bool returnStdArray)
+            // Create double* to hold x0, dx. 
+            double xTmp[3], dxTmp[3];
+            for (size_t i = 0; i < x0.size(); i++)
+              {
+                xTmp[i] = x0[i].cast<double>();
+                dxTmp[i] = dx[i].cast<double>();
+              }
+            return find_facet(mesh_M, xTmp, dxTmp, cell_index, returnStdArray);
+          }, py::arg("mesh_M"), py::arg("x0"), py::arg("dx"), py::arg("cell_index"), py::arg("returnStdArray") = false); // Sets a default value for the last arg.
+
+    m.def("interpolate_field_to_points_" STRINGIZE(PARTICLE_TYPE), [](py::object field_F, py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, py::ssize_t npoints, py::array_t<double> field_at_points)
+          {
+            auto fieldFunction = field_F.attr("function").cast<dolfin::Function&>();
+            interpolate_field_to_points<Ptype::PARTICLE_TYPE>(fieldFunction, points, npoints, field_at_points);
+          });
+
     m.def("is_inside_vertices", [](dolfin::Mesh& mesh, py::list vertices, py::list point)
           {
+            // Convert the above Python args to the args of the C++ function
+            //  C++ signature of is_inside_vertices() is:
+            //    bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point);
+            
             // Create const unsigned int* to hold vertices
             unsigned int verticesTmp[4];
             for (size_t i = 0; i < vertices.size(); i++)
@@ -50,19 +76,6 @@ namespace dnt {
             return YesNo;
           });
     
-    //  C++ signature of find_facet() is:
-    //    py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index, bool returnStdArray)
-    m.def("find_facet", [](py::object mesh_M, py::list x0, py::list dx, std::size_t cell_index, bool returnStdArray = false)
-          {
-            // Create double* to hold x0, dx
-            double xTmp[3], dxTmp[3];
-            for (size_t i = 0; i < x0.size(); i++)
-              {
-                xTmp[i] = x0[i].cast<double>();
-                dxTmp[i] = dx[i].cast<double>();
-              }
-            return find_facet(mesh_M, xTmp, dxTmp, cell_index, returnStdArray);
-          }, py::arg("mesh_M"), py::arg("x0"), py::arg("dx"), py::arg("cell_index"), py::arg("returnStdArray") = false);
           
     // Call the C++ functions defined in dolfin_functions.cpp
     // This is a check that the functions have been compiled, and have the right
