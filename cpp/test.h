@@ -49,6 +49,7 @@ Contents:
 #include <dolfin/la/GenericMatrix.h>
 #include <dolfin/mesh/Mesh.h>
 
+#include "SegmentedArrayPair.h"
 
 namespace py = pybind11;
 
@@ -58,7 +59,7 @@ namespace dnt
   
   void function_with_DTcontrol_C_arg(py::object ctrl)
   {
-    std::cout << "Hello from function_with_DTcontrol_C_arg" << std::endl;
+    std::cout << "Hello from C++: function_with_DTcontrol_C_arg" << std::endl;
     auto title = ctrl.attr("title").cast<std::string>();
     auto author = ctrl.attr("author").cast<std::string>();
     auto dt = ctrl.attr("dt").cast<double>();
@@ -78,85 +79,99 @@ namespace dnt
     msg = "The number of timesteps is: " + n_timesteps_str;
     std::cout << msg << std::endl;
   }
-
+  // ENDDEF: void function_with_DTcontrol_C_arg(py::object ctrl)
+  
   void function_with_Particle_C_arg(py::object particle_P)
   {
-    std::cout << "Hello from function_with_Particle_C_arg" << std::endl;
+    std::cout << "Hello from C++: function_with_Particle_C_arg" << std::endl;
 
-    //dolfin::Mesh& mesh
-    
+    // Access particle_P class variables:
     auto NO_FACET = particle_P.attr("pmesh_M").attr("NO_FACET").cast<int>();
+    auto msg = "The value of NO_FACET is " + std::to_string(NO_FACET);
+    std::cout << msg << std::endl;
 
+    // Access the dolfin::Mesh object from the particle_P object:
     auto pmesh_M = particle_P.attr("pmesh_M");
-    auto pDim = particle_P.attr("particle_dimension").cast<int>();
+    auto mesh = pmesh_M.attr("mesh").cast<dolfin::Mesh>();
 
+    auto pDim = particle_P.attr("particle_dimension").cast<int>();
+    msg = "pDim = " + std::to_string(pDim);
+    std::cout << msg << std::endl;
+    
+    // Get the list of species names from particle_P as a py::list
     // Is the cast needed? NO, but then we can't use 'auto' as the type: it must be explicit.
     //    auto neutralSpecies = particle_P.attr("neutral_species").cast<py::list>();
     py::list neutralSpecies = particle_P.attr("neutral_species");
-
-    //std::vector<int> &v
-    auto neutralSpecies2 = particle_P.attr("neutral_species").cast<std::vector<std::string>>();
-    
-    /*    
-void print_dict(py::dict dict) {
-for (auto item : dict)
-std::cout << "key=" << std::string(py::str(item.first)) << ", "
-<< "value=" << std::string(py::str(item.second)) << std::endl;
-}
-    */
-    auto sap_dict = particle_P.attr("sap_dict").cast<py::dict>();
-
-    // Make a loop over all the species in sap_dict
-    for (auto species : sap_dict)
-      {
-        auto msg = "This is species " + std::string(py::str(species.first));
-        std::cout << msg << std::endl;
-      }
-
-    // pseg.arr is cast to a std::map from species names (strings) to a reference to a SAP
-    // of the right type.
-    // Note the pointer star: .cast<MyClass *>, not .cast<Myclass>. This is because
-    // sap_dict is a Python dictionary and the dictionary values are *references* to SAPs.
-    // Note that attr("sap_dict") is cast to a py::dict above, and to an std::map here.
-    auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz> *>>();
-
-    auto sap1 = sap_map["neutral_H"];
-    auto msg = "Length of segments in sap1 = " + std::to_string(sap1->get_segment_length());
-    std::cout << msg << std::endl;
-    
-    // Access the dolfin::Mesh object from the particle_P object:
-    auto mesh = pmesh_M.attr("mesh").cast<dolfin::Mesh>();
-
-    // Access particle_P class variables:
-    msg = "The value of NO_FACET is " + std::to_string(NO_FACET);
-    std::cout << msg << std::endl;
-    
-    msg = "pDim = " + std::to_string(pDim);
-    std::cout << msg << std::endl;
-
-    // Access the name of a species from the neutralSpecies py::list:
+    // Access the name of a species from the neutralSpecies py::list. Note the cast
+    // is needed to get an std::string
     msg = "neutral species 0 = " + neutralSpecies[0].cast<std::string>();
     std::cout << msg << std::endl;
 
+    // Get the list of species names from particle_P as an std::vector of strings
+    auto neutralSpecies2 = particle_P.attr("neutral_species").cast<std::vector<std::string>>();
     // Access the name of a species from the neutralSpecies2 std::vector:
     msg = "neutral species 0 #2 = " + neutralSpecies2[0];
     std::cout << msg << std::endl;
+     
+    // Addess the SAPs in particle_P by casting to a py::dict
+    
+    auto sapDict = particle_P.attr("sap_dict").cast<py::dict>();
 
-    // Make a loop over all the species:
-    for (auto species : sap_dict)
+    // Make a loop over all the species in sapDict
+    msg = "Loop on species:";
+    std::cout << msg << std::endl;
+    for (auto species : sapDict)
       {
-        auto msg = "This is species " + std::string(py::str(species.first));
+        auto msg = "\tThis is species " + std::string(py::str(species.first));
         std::cout << msg << std::endl;
       }
 
-    // Access the SAP from py::ojbect sap_dict using a cast
-    auto sap = sap_dict[neutralSpecies[0]].cast<SegmentedArrayPair<Ptype::cartesian_xyz> *>();
-    // Call an SAP function
-    msg = "Length of segments in sap = " + std::to_string(sap->get_segment_length());
+    // Access a particular SAP in sapDict
+    auto sapSp0 = sapDict[neutralSpecies[0]].cast<SegmentedArrayPair<Ptype::cartesian_xyz> *>();
+    // Call a SAP function
+    msg = "Length of segments in sapSp0 = " + std::to_string(sapSp0->get_segment_length());
     std::cout << msg << std::endl;
-      
-  }
+    
+    // Access the SAPs in particle_P by casting to a std::map of species names
+    // (std::strings) to references to a SAP of the right type.
+    
+    // Note the pointer star: .cast<MyClass *>, not .cast<Myclass>. This is because
+    // sapDict is a Python dictionary and the dictionary values are *references* to SAPs.
+    auto sapMap = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz> *>>();
 
+    auto sapH = sapMap["neutral_H"];
+    msg = "Length of segments in sapH = " + std::to_string(sapH->get_segment_length());
+    std::cout << msg << std::endl;
+    
+  }
+  // ENDDEF: void function_with_Particle_C_arg(py::object particle_P)
+
+  
+  template <Ptype PT>
+    void function_with_pseg_arg(py::ssize_t np_seg, py::array_t<Pstruct<PT>,0> pseg)
+  {
+    std::cout << "Hello from C++: function_with_pseg_arg" << std::endl;
+    std::cout << "There are " << np_seg << " elements in the passed pseg array" << std::endl;
+
+    auto psegProxy = pseg.unchecked();
+    for (auto ip = 0; ip < np_seg; ip++) {
+      std::cout << "Particle " << ip << std::endl;
+      std::cout << "\tx=" << psegProxy(ip).x_ << std::endl;
+      std::cout << "\ty=" << psegProxy(ip).y_ << std::endl;
+      std::cout << "\tz=" << psegProxy(ip).z_ << std::endl;
+      std::cout << "\tx0=" << psegProxy(ip).x0_ << std::endl;
+      std::cout << "\ty0=" << psegProxy(ip).y0_ << std::endl;
+      std::cout << "\tz0=" << psegProxy(ip).z0_ << std::endl;
+      std::cout << "\tux=" << psegProxy(ip).ux_ << std::endl;
+      std::cout << "\tuy=" << psegProxy(ip).uy_ << std::endl;
+      std::cout << "\tuz=" << psegProxy(ip).uz_ << std::endl;
+      std::cout << "\tweight=" << psegProxy(ip).weight_ << std::endl;
+      std::cout << "\tcell_index=" << psegProxy(ip).cell_index_ << std::endl;
+      std::cout << "\tcrossings=" << psegProxy(ip).crossings_ << std::endl;
+    }
+
+  }
+  
 } // namespace dnt
 
 #endif

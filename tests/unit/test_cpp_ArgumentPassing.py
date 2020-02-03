@@ -20,7 +20,7 @@ from Particle_Module import *
 # Here's the mesh definition for this test
 from UserMesh_y_Fields_FE_XYZ_Module import *
 
-import test_solib
+import test_cartesian_xyz_solib as test_so
 
 #STARTCLASS
 class TestPybind11(unittest.TestCase):
@@ -59,7 +59,7 @@ class TestPybind11(unittest.TestCase):
         pin.force_components = ['x', 'y',]
         """
         pin.force_precision = np_m.float64
-        pin.use_cpp_integrators = True # Use C++ version of particle movers.
+        pin.use_cpp_integrators = True # Use C++ version of SAPs and particle integrators.
         
         # Give the properties of the particle species.  The charges and masses are
         # normally those of the physical particles, and not the computational
@@ -71,7 +71,8 @@ class TestPybind11(unittest.TestCase):
         charge = 1.0
         mass = 1.0*MyPlasmaUnits_C.AMU
         dynamics = 'neutral'
-        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+        integratorName = "integrate_neutral_species"        
+        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics, integratorName)
 
         # Add these species to particle input
         pin.particle_species = (neutralH_S,
@@ -83,7 +84,7 @@ class TestPybind11(unittest.TestCase):
         # particles, boundary-condition callbacks, source regions, etc.)
         # Particles have a 3D/3D phase-space even though mesh is just 2D
         userParticlesModuleName = "UserParticles_3D"
-#        print "setUp: UserParticle module is", userParticlesModuleName
+        print("setUp: The UserParticle module is", userParticlesModuleName)
 
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
@@ -164,50 +165,8 @@ class TestPybind11(unittest.TestCase):
 #        self.pmesh1D.compute_cell_vertices_dict()
 #        self.pmesh1D.compute_cell_dict()
 
-        return
-#    def setUp(self):ENDDEF
 
-    def test_1_pass_DnTcontrol(self):
-        """Test that we can pass and access attributes of a DnTcontrol Python object
-           in C++.
-
-        """
-
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print('\ntest: ', fncName)
-
-        ctrl = DTcontrol_C()
-
-        # Run identifier
-        ctrl.title = "Test of argument-passing from Python to C++"
-        # Run author
-        ctrl.author = "tph"
-
-        ctrl.time = 0.0
-        ctrl.dt = 0.5
-        ctrl.n_timesteps = 19
-
-        # Pass a DT_control argument to C++:
-        test_solib.function_with_DTcontrol_C_arg(ctrl)
-
-        return
-#    def test_1_pass_DnTcontrol:ENDDEF
-
-    def test_2_pass_mesh_M(self):
-        """Test that we can pass and access attributes of Particle_C object.
-
-        """
-
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print('\ntest: ', fncName)
-
-        # Run on a 1D mesh
-        self.particle_P.pmesh_M = self.pmesh1D
-
-        # Get the initial cell index of each particle.
-        self.particle_P.compute_mesh_cell_indices()
-
-        ### Put the expected ending results into the p_expected tuple ###
+        ### Put the expected results into the p_expected tuple ###
 
         # First particle
 
@@ -235,19 +194,117 @@ class TestPybind11(unittest.TestCase):
 
         psp1 = (xsp1,ysp1,zsp1, vxsp1,vysp1,vzsp1, weight1, bitflag1, cell_index1, unique_ID1, crossings)
 
-        p_expected = (psp0, psp1)
+        self.p_expected = (psp0, psp1)
 
-# Test passing the 1D particle storage to C++
+        return
+#    def setUp(self):ENDDEF
+
+    def test_1_pass_DnTcontrol(self):
+        """Test that we can pass and access attributes of a DnTcontrol Python object
+           in C++.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName)
+
+        ctrl = DTcontrol_C()
+
+        # Run identifier
+        ctrl.title = "Test of argument-passing from Python to C++"
+        # Run author
+        ctrl.author = "tph"
+
+        ctrl.time = 0.0
+        ctrl.dt = 0.5
+        ctrl.n_timesteps = 19
+
+        # Pass a DT_control argument to C++:
+        test_so.function_with_DTcontrol_C_arg(ctrl)
+
+        return
+#    def test_1_pass_DnTcontrol:ENDDEF
+
+    def test_2_pass_Particle_C(self):
+        """Test that we can pass and access attributes of Particle_C object.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName)
+
+        # Run on a 1D mesh
+        self.particle_P.pmesh_M = self.pmesh1D
+
+        # Get the initial cell index of each particle.
+        self.particle_P.compute_mesh_cell_indices()
+
+
+#        speciesName = 'neutral_H'
+#        sap = self.particle_P.sap_dict[speciesName] # segmented array for this species
+        
+        # Pass the Particle_C object to C++
+        test_so.function_with_Particle_C_arg(self.particle_P)
+
+        return
+#    def test_2_pass_Particle_C:ENDDEF
+
+  # template <Ptype PT>
+  # void interpolate_field_to_points(dolfin::Function& field,
+  #                                  py::array_t<Pstruct<PT>, 0> points,
+  #                                  py::ssize_t npoints,
+  #                                  py::array_t<double> field_at_points)
+
+    def test_3_pass_SAP(self):
+        """Test that we can pass and access attributes of an SAP object.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName)
+
+        # Run on a 1D mesh
+        self.particle_P.pmesh_M = self.pmesh1D
+
+        # Get the initial cell index of each particle.
+        self.particle_P.compute_mesh_cell_indices()
 
         speciesName = 'neutral_H'
         sap = self.particle_P.sap_dict[speciesName] # segmented array for this species
-        
-        test_solib.function_with_Particle_C_arg(self.particle_P)
+
+        # Pass the SAP object to C++
+#        test_so.function_with_SAP_arg(sap)
 
         return
-#    def test_2_pass_mesh_M:ENDDEF
+#    def test_3_pass_sap:ENDDEF
 
-#class TestPybind11:ENDCLASS
+
+    def test_3_pass_pseg(self):
+        """Test that we can pass and access attributes of an pseg object.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName)
+
+        # Run on a 1D mesh
+        self.particle_P.pmesh_M = self.pmesh1D
+
+        # Get the initial cell index of each particle.
+        self.particle_P.compute_mesh_cell_indices()
+
+        speciesName = 'neutral_H'
+        sap = self.particle_P.sap_dict[speciesName] # segmented array for this species
+
+        (np_seg, pseg) = sap.init_out_loop()
+            
+        # Pass the pseg object to C++
+        test_so.function_with_pseg_arg(np_seg, pseg)
+
+        return
+#    def test_3_pass_sap:ENDDEF
+
+#Class TestPybind11:ENDCLASS
 
 if __name__ == '__main__':
     unittest.main()

@@ -11,7 +11,8 @@
 
 */
 
-#define STRINGIZE(s) #s
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
 
 #include "dolfin_functions.h"
 
@@ -32,6 +33,12 @@ namespace dnt {
     // m.def makes the Python binding for each C++ function defined in
     // dolfin_functions.cpp.
 
+    // The following registrations are needed for the Pstruct<> structured types to work with py::array_t. See pybind11: 12.2.3 Structured types.
+    // The "_EX" variation allows the Python names of the variables in the structure to be different from the variable names in the C++ struct.
+    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x>, x_, "x", x0_, "x0", ux_, "ux", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
+    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_xy>, x_, "x", y_, "y", x0_, "x0", y0_, "y0", ux_, "ux", uy_, "uy", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
+    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_xyz>, x_, "x", y_, "y", z_, "z", x0_, "x0", y0_, "y0", z0_, "z0", ux_, "ux", uy_, "uy", uz_, "uz", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
+    
     m.def("find_facet", [](py::object mesh_M, py::list x0, py::list dx, std::size_t cell_index, bool returnStdArray = false)
           {
             // Convert the above Python args to the args of the C++ function.
@@ -47,12 +54,30 @@ namespace dnt {
             return find_facet(mesh_M, xTmp, dxTmp, cell_index, returnStdArray);
           }, py::arg("mesh_M"), py::arg("x0"), py::arg("dx"), py::arg("cell_index"), py::arg("returnStdArray") = false); // Sets a default value for the last arg.
 
-    m.def("interpolate_field_to_points_" STRINGIZE(PARTICLE_TYPE), [](py::object field_F, py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, py::ssize_t npoints, py::array_t<double> field_at_points)
+    // Don't need the PARTICLE_TYPE in the function name if it's in the module name?
+    /*
+    m.def("interpolate_field_to_points_" TOSTRING(PARTICLE_TYPE), [](py::object field_F, py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, py::ssize_t npoints, py::array_t<double> field_at_points)
           {
             auto fieldFunction = field_F.attr("function").cast<dolfin::Function&>();
             interpolate_field_to_points<Ptype::PARTICLE_TYPE>(fieldFunction, points, npoints, field_at_points);
           });
+    */
 
+    //    m.def("interpolate_field_to_points_" TOSTRING(PARTICLE_TYPE), [](py::object field_F, py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, py::ssize_t npoints)
+    m.def("interpolate_field_to_points_" TOSTRING(PARTICLE_TYPE), [](py::object field_F, py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, py::ssize_t npoints, py::array_t<double> field_at_points)
+          {
+            //            auto fieldFunction = field_F.attr("function").cast<dolfin::Function&>();
+            //            auto fieldFunction = field_F.attr("function").cast<dolfin.function.function.Function&>();
+
+            auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
+            
+            //            auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
+            //            std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
+            
+            interpolate_field_to_points<Ptype::PARTICLE_TYPE>(fieldFunction, points, npoints, field_at_points);
+            
+          });
+    
     m.def("is_inside_vertices", [](dolfin::Mesh& mesh, py::list vertices, py::list point)
           {
             // Convert the above Python args to the args of the C++ function
@@ -80,7 +105,9 @@ namespace dnt {
     // Call the C++ functions defined in dolfin_functions.cpp
     // This is a check that the functions have been compiled, and have the right
     // argument types. If they haven't, the compiler will give an error.
-  
+
+    // Not clear that these serve any useful purpose. They don't cause a compile of the functions.
+    // They just check if the args match the declarations in "dolfin_functions.h" above.
     dolfin::Mesh mesh;
     dolfin::Mesh& meshRef = mesh;
     const unsigned int* vertices(nullptr);
@@ -88,6 +115,15 @@ namespace dnt {
 
     is_inside_vertices(meshRef, vertices, point);
 
+    dolfin::Function field;
+    dolfin::Function& fieldRef = field;
+    py::array_t<Pstruct<Ptype::cartesian_xyz>, 0> points;
+    py::ssize_t npoints = 0;
+    py::array_t<double> field_at_points;
+
+    // This runs when the .so is imported, and bombs:
+    //interpolate_field_to_points(fieldRef, points, npoints, field_at_points);
+    
     // Write one for find_facet():
   }
 

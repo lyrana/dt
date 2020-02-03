@@ -43,6 +43,7 @@ namespace dnt {
     // C++ classes and functions declared and defined in test.h
     m.def("function_with_DTcontrol_C_arg", &function_with_DTcontrol_C_arg);
     m.def("function_with_Particle_C_arg", &function_with_Particle_C_arg);
+    m.def("function_with_pseg_arg", &function_with_pseg_arg<Ptype::PARTICLE_TYPE>);
 
   } // PYBIND11_MODULE(test_solib, m)
 

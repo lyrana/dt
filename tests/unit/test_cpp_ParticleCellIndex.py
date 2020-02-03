@@ -23,7 +23,11 @@ import dolfin_functions_solib
 
 #STARTCLASS
 class TestCppParticleCellIndex(unittest.TestCase):
-    """Test mesh-cell functions for particles"""
+    """Test mesh-cell functions for particles.
+
+       The particles are defined in UserParticles_H_He_e.py.
+
+"""
     
     def setUp(self):
 

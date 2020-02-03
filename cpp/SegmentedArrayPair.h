@@ -162,7 +162,7 @@ namespace dnt
     // The dtor (See pybind 8.5 Non-public destructors)
     ~SegmentedArrayPair()
       {
-        std::cout << "The dtor ~SegmentedArrayPair has been called" << std::endl;
+        std::cout << "\nSegmentedArrayPair.h: The dtor ~SegmentedArrayPair has been called\n" << std::endl;
       
         // Release the Numpy arrays?  No: this causes a crash. The
         // syntax may be wrong below. How should this memory be released?

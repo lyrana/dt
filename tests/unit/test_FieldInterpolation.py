@@ -14,11 +14,18 @@ import dolfin as df_m
 from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 
-# Use the C++ functions in the dolfin_functions_solib.so library
-import dolfin_functions_solib as df_so
+# Use the C++ functions in the dolfin_functions_cartesian_xyz_solib.so library
+#import dolfin_functions_cartesian_xyz_solib.so as df_so
+#import mesh_entity_arrays_solib as mea_so
+import dolfin_functions_cartesian_xyz_solib as df_so
 
 class TestFieldInterpolation(unittest.TestCase):
-    """Test the field-to-particle interpolation functions in Field_C class"""
+    """Test the field-to-particle interpolation functions in Field_C class
+
+       The mesh is a on a 2D quarter-circle and is read from a file. The E-field
+       is also read from a file.
+
+    """
     
     def setUp(self):
         # initializations for each test go here...
@@ -93,6 +100,30 @@ class TestFieldInterpolation(unittest.TestCase):
 
         self.points = np_m.array([p0, p1, p2])
 
+        # Also create a version with the standard set of attributes for particles
+        # with 3D Cartesian coordinates
+
+        # Here is the dtype dictionary:
+        self.particle_dtype = {'names' : ['x','y','z', 'x0','y0','z0', 'ux','uy','uz', 'weight', 'bitflags', 'cell_index', 'unique_ID', 'crossings'],
+                               'formats': [np_m.float64, np_m.float64, np_m.float64,
+                                           np_m.float64, np_m.float64, np_m.float64,
+                                           np_m.float64, np_m.float64, np_m.float64,
+                                           np_m.float64,
+                                           np_m.int32, np_m.int32, np_m.int32, np_m.int32]}
+
+        cell_index0 = 1
+        particle0 = (x0,y0,z0, x0,y0,z0, ux0,uy0,uz0, weight0, 0, cell_index0, 0, 0)
+        cell_index1 = 36
+        particle1 = (x1,y1,z1, x1,y1,z1, ux1,uy1,uz1, weight1, 0, cell_index1, 0, 0)
+        cell_index2 = 36
+        particle2 = (x2,y2,z2, x2,y2,z2, ux2,uy2,uz2, weight2, 0, cell_index2, 0, 0)
+        
+        self.pseg = np_m.array([particle0, particle1, particle2], dtype=self.particle_dtype)
+        
+        #print("Mesh cell index of particle 0 is",mesh2D_M.compute_cell_index(self.pseg[0]))
+        #print("Mesh cell index of particle 1 is",mesh2D_M.compute_cell_index(self.pseg[1]))
+        #print("Mesh cell index of particle 2 is",mesh2D_M.compute_cell_index(self.pseg[2]))
+                               
         # dtype of E field at the particles
         self.Ecomps = ['x', 'y',]
         Eexpected = np_m.empty([len(self.points), len(self.Ecomps)], dtype=float)
@@ -101,8 +132,10 @@ class TestFieldInterpolation(unittest.TestCase):
         Eexpected[2] = [-0.19694748, -0.00773809]
         self.E_expected = Eexpected
         
-        flpoint = np_m.float64
-        self.E_points = np_m.empty(self.points.shape[0], dtype={'names': self.Ecomps, 'formats': (flpoint, flpoint)})
+        force_precision = np_m.float64
+        nComps = len(self.Ecomps)
+        self.E_points = np_m.empty((nComps, len(self.points)), dtype=force_precision)
+        
         
         return
 
@@ -118,20 +151,25 @@ class TestFieldInterpolation(unittest.TestCase):
         """
         fncname = sys._getframe().f_code.co_name
         print('\ntest: ', fncname, '('+__file__+')')
+
+        force_precision = np_m.float64
+        # Make a structured Numpy array
+        E_points = np_m.empty(self.points.shape[0], dtype={'names': self.Ecomps, 'formats': (force_precision, force_precision)})
         
-        self.neg_electric_field.interpolate_field_to_points(self.points, self.E_points)
+        self.neg_electric_field.interpolate_field_to_points(self.points, E_points)
 
         # Check the interpolated electric field against the expected values
         for ip in range(len(self.points)):
             for ic in range(len(self.Ecomps)):
-#                print "Ecalc, Eexpect =", self.E_points[ip][ic], self.E_expected[ip][ic]
-                self.assertAlmostEqual(self.E_points[ip][ic], self.E_expected[ip][ic], places=3, msg="Wrong value of E")
+#                print "Ecalc, Eexpect =", E_points[ip][ic], self.E_expected[ip][ic]
+                self.assertAlmostEqual(E_points[ip][ic], self.E_expected[ip][ic], places=3, msg="Wrong value of E")
 
         return
 #    def test_1_interpolate_vectorField_to_points(self): ENDDEF
 
     def test_2_cpp_interpolate_vectorField_to_points(self):
-        """Provide 3 points and compute the values of a vector field at these points.
+        """C++ test. Provide 3 points and compute the values of a vector field
+           at these points.
 
            The point data has spatial coordinates and other data, such as velocities.
            The number of spatial coordinates can be greater than the spatial
@@ -143,6 +181,11 @@ class TestFieldInterpolation(unittest.TestCase):
         fncname = sys._getframe().f_code.co_name
         print('\ntest: ', fncname, '('+__file__+')')
 
+        force_precision = np_m.float64
+        nComps = len(self.Ecomps)
+        # Make a Numpy 2D array of doubles to hold the field evaluated at the points.
+        E_points = np_m.empty((nComps, len(self.points)), dtype=force_precision)
+        
   # template <Ptype PT, typename Ftype>
   # void interpolate_field_to_points(dolfin::Function& field,
   #                                  py::array_t<Pstruct<PT>, 0> points,
@@ -150,19 +193,29 @@ class TestFieldInterpolation(unittest.TestCase):
   #                                  Ftype& field_at_points)
         # Create the name of the specialized MeshEntityArrays class with the right
         # number of cell-facets
-        tDim = mesh_df.topology().dim()
-        nFacets = tDim + 1
-        meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
-        meaCtor = getattr(mea_so, meaClass)
-
+        # tDim = mesh_df.topology().dim()
+        # nFacets = tDim + 1
+        # meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
+        # meaCtor = getattr(mea_so, meaClass)
         
-        self.neg_electric_field.interpolate_field_to_points(self.points, self.E_points)
+#        self.neg_electric_field.interpolate_field_to_points(self.points, E_points)
+
+        npoints = len(self.points)
+#        df_so.interpolate_field_to_points_cartesian_xyz(self.neg_electric_field.function, self.pseg, npoints, E_points)
+# Just pass the Field_C object:
+#        print("self.neg_electric_field", self.neg_electric_field)
+        
+#        df_so.interpolate_field_to_points_cartesian_xyz(self.neg_electric_field, self.pseg, npoints, E_points)
+
+#        df_so.interpolate_field_to_points_cartesian_xyz(self.neg_electric_field.function.vector(), self.pseg, npoints)
+#        df_so.interpolate_field_to_points_cartesian_xyz(self.neg_electric_field.function.vector(), self.pseg, npoints, E_points)
+        df_so.interpolate_field_to_points_cartesian_xyz(self.neg_electric_field, self.pseg, npoints, E_points)
 
         # Check the interpolated electric field against the expected values
         for ip in range(len(self.points)):
             for ic in range(len(self.Ecomps)):
-#                print "Ecalc, Eexpect =", self.E_points[ip][ic], self.E_expected[ip][ic]
-                self.assertAlmostEqual(self.E_points[ip][ic], self.E_expected[ip][ic], places=3, msg="Wrong value of E")
+#                print "Ecalc, Eexpect =", E_points[ip][ic], self.E_expected[ip][ic]
+                self.assertAlmostEqual(E_points[ip][ic], self.E_expected[ip][ic], places=3, msg="Wrong value of E")
 
         return
 #    def test_2_cpp_interpolate_vectorField_to_points(self): ENDDEF

@@ -56,10 +56,16 @@ namespace dnt
 
   //template <Ptype PT, typename Ftype>
   template <Ptype PT>
+  void interpolate_field_to_points(dolfin::Function* field,
+                                   py::array_t<Pstruct<PT>, 0> points,
+                                   py::ssize_t npoints,
+                                   py::array_t<double> field_at_points);
+  /*
   void interpolate_field_to_points(dolfin::Function& field,
                                    py::array_t<Pstruct<PT>, 0> points,
                                    py::ssize_t npoints,
                                    py::array_t<double> field_at_points);
+  */
   
 } // namespace dnt
 

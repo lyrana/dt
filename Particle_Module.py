@@ -240,7 +240,8 @@ class Particle_C(object):
         self.implicit_species = []
         self.neutral_species = []
 
-        self.sap_dict = {} # This is where particle data arrays are stored.
+        self.sap_dict = {} # This is a dictionary of SAPs. There is a key:value pair for
+                           # each species.
         self.particle_count = {}
 
         # The names of the particle attributes and the data type of each attribute is
@@ -266,8 +267,11 @@ class Particle_C(object):
         pvartypes.append(np_m.int32) # The size determines how many cell-crossings
                                      # you can count.
                                      
-        #        self.particle_dtype = {'names' : pvars, 'formats': pvartypes}
         particleAttributes = {'names' : pvars, 'formats': pvartypes}
+        # For a particle with 3D Cartesian coordindates, the attributes stored in a
+        # structure have the string names
+        # ‘x’,’y’,’z’, ‘x0’,’y0’,’z0’, ‘ux’,’uy’,’uz’,
+        #              ‘weight’, ‘bitflags’, ‘cell_index’, ‘unique_ID’, ‘crossings’
         self.particle_dtype = np_m.dtype(particleAttributes)
 
         if print_flag: print(fncName, "\tDnT INFO: Particle metadata is %s" % self.particle_dtype)
@@ -504,7 +508,9 @@ class Particle_C(object):
 #                HERE
 # make these have a shape, with C-ordering py::array::c_stype. pybind11 12.2.2, 12.2.5
                 # "NumPy arrays are by default in row-major order".
-                self.negE = np_m.empty((self.SEGMENT_LENGTH, nComps), dtype=force_precision)
+#                self.negE = np_m.empty((self.SEGMENT_LENGTH, nComps), dtype=force_precision)
+                self.negE = np_m.empty((nComps, self.SEGMENT_LENGTH), dtype=force_precision)
+                # Change order of these too?
                 self.Eext = np_m.empty((self.SEGMENT_LENGTH, nComps), dtype=force_precision)
                 self.zeroE = np_m.empty((self.SEGMENT_LENGTH, nComps), dtype=force_precision)
                 self.cpp_module.initialize_particle_integration(self.negE, self.Eext, self.zeroE)
