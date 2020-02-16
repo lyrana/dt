@@ -132,9 +132,9 @@ class TestFieldInterpolation(unittest.TestCase):
         Eexpected[2] = [-0.19694748, -0.00773809]
         self.E_expected = Eexpected
         
-        force_precision = np_m.float64
-        nComps = len(self.Ecomps)
-        self.E_points = np_m.empty((nComps, len(self.points)), dtype=force_precision)
+#        force_precision = np_m.float64
+#        nComps = len(self.Ecomps)
+#        self.E_points = np_m.empty((len(self.points),nComps), dtype=force_precision)
         
         
         return
@@ -153,7 +153,7 @@ class TestFieldInterpolation(unittest.TestCase):
         print('\ntest: ', fncname, '('+__file__+')')
 
         force_precision = np_m.float64
-        # Make a structured Numpy array
+        # Make a structured Numpy array to hold the field values at the points
         E_points = np_m.empty(self.points.shape[0], dtype={'names': self.Ecomps, 'formats': (force_precision, force_precision)})
         
         self.neg_electric_field.interpolate_field_to_points(self.points, E_points)
@@ -184,7 +184,7 @@ class TestFieldInterpolation(unittest.TestCase):
         force_precision = np_m.float64
         nComps = len(self.Ecomps)
         # Make a Numpy 2D array of doubles to hold the field evaluated at the points.
-        E_points = np_m.empty((nComps, len(self.points)), dtype=force_precision)
+        E_points = np_m.empty((len(self.points), nComps), dtype=force_precision)
         
   # template <Ptype PT, typename Ftype>
   # void interpolate_field_to_points(dolfin::Function& field,

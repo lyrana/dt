@@ -203,7 +203,7 @@ class TestParticleUniformE(unittest.TestCase):
         for sp in self.particle_P.species_names:
             if self.particle_P.get_species_particle_count(sp) == 0: continue
             
-            self.particle_P.move_charged_species_in_uniform_fields(sp, ctrl)
+            self.particle_P.advance_charged_species_in_uniform_fields(sp, ctrl)
             
             # Check that the first particles in the array reach the right speed
             (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(0)
@@ -274,7 +274,7 @@ class TestParticleUniformE(unittest.TestCase):
 #                print 'test_2_electric_field_push_10steps: sp =', sp
                 if self.particle_P.get_species_particle_count(sp) == 0: continue
 
-                self.particle_P.move_charged_species_in_uniform_fields(sp, ctrl)
+                self.particle_P.advance_charged_species_in_uniform_fields(sp, ctrl)
 
             ctrl.time_step += 1
             ctrl.time += ctrl.dt

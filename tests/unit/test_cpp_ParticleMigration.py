@@ -65,8 +65,9 @@ class TestCppParticleMigration(unittest.TestCase):
         charge = 0.0
         mass = 1.0*MyPlasmaUnits_C.AMU
         dynamics = 'neutral'
-        integratorName = "integrate_neutral_species"        
-        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics, integratorName)
+#        integratorName = "advance_neutral_species"        
+#        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics, integratorName)
+        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add these species to particle input
         pin.particle_species = (neutralH_S,
@@ -265,7 +266,7 @@ class TestCppParticleMigration(unittest.TestCase):
         self.particle_P.initialize_particle_mesh(self.pmesh1D)
 
         # Attach the particle integrators
-        self.particle_P.initialize_particle_integrators()
+        self.particle_P.initialize_particle_integration()
 
         # cell_dict{} is needed by the Python version of is_inside_cell(), which is
         # used in compute_mesh_cell_indices() below.
@@ -321,11 +322,11 @@ class TestCppParticleMigration(unittest.TestCase):
         print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 1D mesh")
         for istep in range(ctrl.n_timesteps):
 #            print(fncName, "istep:", istep)
-#            self.particle_P.move_neutral_particles(ctrl)
+            self.particle_P.advance_neutral_particles(ctrl)
             # Advance each species for 1 timestep
 #            for sp in self.particle_P.species_names:
-            for sp in self.particle_P.neutral_species:
-                self.particle_P.integrators[sp](sp, ctrl)
+#            for sp in self.particle_P.neutral_species:
+#                self.particle_P.integrators[sp](sp, ctrl)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -375,6 +376,9 @@ class TestCppParticleMigration(unittest.TestCase):
         # 3. Compute the cell-neighbors and facet-normals for the particle movers.
         self.particle_P.initialize_particle_mesh(self.pmesh2D)
 
+        # Attach the particle integrators
+        self.particle_P.initialize_particle_integration()
+        
         # cell_dict{} is needed by the Python version of is_inside_cell(), which is
         # used in compute_mesh_cell_indices() below.
         self.particle_P.pmesh_M.compute_cell_dict()
@@ -426,10 +430,10 @@ class TestCppParticleMigration(unittest.TestCase):
         # Integrate for n_timesteps
         print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 2D mesh")
         for istep in range(ctrl.n_timesteps):
-#            self.particle_P.move_neutral_particles(ctrl)
+            self.particle_P.advance_neutral_particles(ctrl)
             # Advance each species for 1 timestep
-            for sp in self.particle_P.species_names:
-                self.particle_P.integrators[sp](sp, ctrl)
+#            for sp in self.particle_P.species_names:
+#                self.particle_P.integrators[sp](sp, ctrl)
 
         # Create a mesh plotter to display the trajectory
         if self.plot_results is True:
@@ -493,6 +497,9 @@ class TestCppParticleMigration(unittest.TestCase):
         # 3. Compute the cell-neighbors and facet-normals for the particle movers.
         self.particle_P.initialize_particle_mesh(self.pmesh3D)
         
+        # Attach the particle integrators
+        self.particle_P.initialize_particle_integration()
+
         # cell_dict{} is needed by the Python version of is_inside_cell(), which is
         # used in compute_mesh_cell_indices() below.
         self.particle_P.pmesh_M.compute_cell_dict()
@@ -541,10 +548,10 @@ class TestCppParticleMigration(unittest.TestCase):
         # Integrate for n_timesteps
         print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 3D mesh")
         for istep in range(ctrl.n_timesteps):
-#            self.particle_P.move_neutral_particles(ctrl)
+            self.particle_P.advance_neutral_particles(ctrl)
             # Advance each species for 1 timestep
-            for sp in self.particle_P.species_names:
-                self.particle_P.integrators[sp](sp, ctrl)
+#            for sp in self.particle_P.species_names:
+#                self.particle_P.integrators[sp](sp, ctrl)
 
         # Create a mesh plotter to display the trajectory (just the
         # first and last positions)

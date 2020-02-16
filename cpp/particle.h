@@ -67,8 +67,19 @@ static dolfin::Cell* pcellPtr; // File scoped needed? Probably not.
 // double* negE_array, Eext_array, zeroE_array;
 // size_t E_array_len, E_array_ncomps;
 
-static py::array_t<double> negE, Eext, zeroE;
-  
+static py::array_t<double> *negE, *Eext, *zeroE;
+
+//static py::detail::unchecked_mutable_reference<double,2> negE, Eext, zeroE;
+//static py::detail::unchecked_reference<double,2> negE, Eext, zeroE;
+//static void *negE, *Eext, *zeroE;
+
+// From https://en.cppreference.com/w/cpp/language/function_template:
+// A function template by itself is not a type, or a function, or any other entity. No
+// code is generated from a source file that contains only template definitions. In order
+// for any code to appear, a template must be instantiated: the template arguments must be
+// determined so that the compiler can generate an actual function (or class, from a class
+// template).
+
 namespace dnt
 {
 
@@ -79,14 +90,26 @@ namespace dnt
       \return void
 
     */
-  template <typename Ftype>
+  //  template <typename Ftype>
     //  void initialize_particle_integration(py::array_t<Fstruct<FT>, 0> negE, py::array_t<Fstruct<FT>, 0> Eext, py::array_t<Fstruct<FT>, 0> zeroE)
-  void initialize_particle_integration(py::array_t<double> negE_in, py::array_t<double> Eext_in, py::array_t<double> zeroE_in)
+  //  void initialize_particle_integration(py::array_t<double> negE_in, py::array_t<double> Eext_in, py::array_t<double> zeroE_in)
+  void initialize_particle_integration(py::array_t<double>& negE_in, py::array_t<double>& Eext_in, py::array_t<double>& zeroE_in)
     {
-      // Initialize the interpolation arrays
-      negE = negE_in;
-      Eext = Eext_in;
-      zeroE = zeroE_in;
+      // Initialize the static interpolation arrays
+      // Check if this does a data copy.
+      //      negE = negE_in;
+      //      Eext = Eext_in;
+      //      zeroE = zeroE_in;
+      // negE = negE_in.mutable_unchecked<2>();
+      //      static void* negE = &(negE_in.mutable_unchecked<2>());
+      //      negE = &(negE_in.mutable_unchecked<2>());
+      //static negE = negE_in.mutable_unchecked<2>());
+      //static py::array_t<double>& negE = negE_in;
+      negE = &negE_in;
+      Eext = &Eext_in;
+      zeroE = &zeroE_in;
+      //      Eext = Eext_in.mutable_unchecked<2>();
+      //      zeroE = zeroE_in.mutable_unchecked<2>();
       /*
       py::buffer_info negEinfo = negE.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
       negE_array = (double*) negEinfo.ptr;
@@ -135,8 +158,11 @@ namespace dnt
 
   */
   // template <Ptype PT, size_t TOPOL_DIM>
+  //self.integrators[sn](self, sn, ctrl, neg_E_field=neg_E_field, external_E_field=external_E_field, accel_only=accel_only)
+  
   template <Ptype PT, size_t N_CELL_FACETS>
-    void advance_charged_species_in_E_field(py::object particle_P, py::str species_name, py::object ctrl, dolfin::Function& neg_E_field, dolfin::Function& external_E_field, bool accel_only)
+    //    void advance_charged_species_in_E_field(py::object particle_P, py::str species_name, py::object ctrl, dolfin::Function& neg_E_field, dolfin::Function& external_E_field, bool accel_only)
+    void advance_charged_species_in_E_field(py::object particle_P, py::str species_name, py::object ctrl, dolfin::Function* neg_E_field, dolfin::Function* external_E_field, bool accel_only)
   {
     using namespace pybind11::literals;
         
@@ -159,7 +185,9 @@ namespace dnt
     auto time = ctrl.attr("time").cast<double>();
     auto MAX_FACET_CROSS_COUNT = ctrl.attr("MAX_FACET_CROSS_COUNT").cast<size_t>();
     auto applySolvedElectricField = ctrl.attr("apply_solved_electric_field");
+    std::map<std::string, bool> applySolvedElectricFieldMap;
     
+    // Check if self-electric field should be applied to this species
     bool applySolvedElectricFieldFlag;
     if (applySolvedElectricField.is_none())
       {
@@ -169,10 +197,9 @@ namespace dnt
       {
         applySolvedElectricFieldFlag = true;
         // auto applySolvedElectricField = ctrl.attr("apply_solved_electric_field").cast<py::dict>(); // Is this the same?
-        py::dict applySolvedElectricField = ctrl.attr("apply_solved_electric_field");
+        //        py::dict applySolvedElectricField = ctrl.attr("apply_solved_electric_field");
+        applySolvedElectricFieldMap = applySolvedElectricField.cast<std::map<std::string, bool>>();
       }
-    
-    if ctrl.apply_solved_electric_field is None or ctrl.apply_solved_electric_field[sn] is True:
     
     // Get particle-mesh data
     auto mesh = pmesh_M.attr("mesh").cast<dolfin::Mesh>();
@@ -229,321 +256,50 @@ namespace dnt
 
     //    std::cout << "Hello from advance_charged_species_in_E_field@2" << std::endl;
     
+    py::detail::unchecked_mutable_reference<double,2> Eseg;
+    //auto Eseg = negE->mutable_unchecked<2>();
+    
     while (psegIn != nullptr) // Keep looping until we run out of "in" segments.
       {
 
         // Compute the electric field at each particle
 
-        //                Eseg = None # This is for the case where no fields are to be applied to the particles,
-        // if (!traj_T.is_none())
-        if (!neg_E_field.is_none())
+        // Eseg = None # This is for the case where no fields are to be applied to the particles,
+        //        if (!neg_E_field.is_none())
+        if (neg_E_field != nullptr)
           {
-            if ((applySolvedElectricFieldFlag == false) !! (applySolvedElectricField[species_name] == true))
+            if ((applySolvedElectricFieldFlag == false) || (applySolvedElectricFieldMap[species_name] == true))
               {
             // interpolate_field_to_points() is declared in dolfin_functions.h.
-            interpolate_field_to_points<Ptype::PARTICLE_TYPE>(neg_E_field, psegIn, npSeg, negE);
+                interpolate_field_to_points<Ptype::PARTICLE_TYPE>(neg_E_field, psegIn, npSeg, negE);
 
-            HERE
+            //            HERE
+
+            // auto Eseg = negE.mutable_unchecked<2>(); // Eseg is a 2D array of doubles.
+            //
+                Eseg = *negE;
             
-            // Truncate negE to the number of particles to get the
-            // += operations below to work: These operations need
-            // the vectors to be the same length.
-            // This is a ref, not a copy
-            Ftype& Eseg = negE_array;
-            // Flip the sign to get the E-field. (This is a vector
-            // operation on each component of E.)
-            Ftype& Eseg_array = negE_array.flip_sign();
-            
-                        for n in Eseg.dtype.names:
-                            Eseg[n] *= -1.0
+            // std::cout << " shape(0)= " << Eseg.shape(0) << " shape(1)= " << Eseg.shape(1) << std::endl;
+                auto nComps = Eseg.shape(1);
+                // Flip the sign of negE
+                for (ssize_t i = 0; i < npSeg; i++)
+                  {
+                    for (ssize_t j = 0; j < nComps; j++)
+                      {
+                        //                        Eseg(i,j) = -negE(i,j);
+                        Eseg(i,j) *= -1.0;
+                        std::cout << "Eseg i, j " << i << " , " << j << " = " <<  Eseg(i,j) << std::endl;
+                      }
+                  }
               }
-            
-            
           }
         else
           {
-                    self.negE[0:npSeg] = self.zeroE[0:npSeg]
-                    Eseg = self.negE[0:npSeg] // A ref, not a copy.
-            
+            // self.negE[0:npSeg] = self.zeroE[0:npSeg]
+            // Eseg = self.negE[0:npSeg] // A ref, not a copy.
+            Eseg = zeroE;
           }
-
-
-        
-        for (auto ipIn = 0; ipIn < npSeg; ipIn++)
-          {
-            // Skip deleted particles
-            if ((psegIn[ipIn].bitflags_ & Pstruct<PT>::DELETE_FLAG) != 0b0)
-              {
-                indexChange = true; // Particle SA indices are stale past this point
-                                    // due to deletions.
-                continue; // skip to the next particle in the "in" segment.
-              }
-
-            // If this "out" segment is full, get the next "out" segment, since
-            // there are still some "in" particles to advance.  If there are no more
-            // "out" segments, allocate a new one.
-            if (ipOut == segmentLength)
-              {
-                // Using pointers to the plain arrays:
-                py::tuple segTuple = sap->get_next_out_segment(true);                
-                // auto psegOutCap = segTuple[0].cast<py::capsule>();
-                // Pstruct<PT>* psegOut = psegInCap;
-                psegOut = segTuple[0].cast<py::capsule>(); // This compresses the above 2 lines into 1
-                
-                // If using Numpy structured arrays:
-                /*
-                py::tuple segTuple = sap->get_next_out_segment();
-                auto psegOutNumpyArray = segTuple[0].cast<py::array_t<Pstruct<PT>,0>>();
-                const auto psegOutNumpyArray_info = psegOutNumpyArray.request();
-                const auto psegOut = static_cast<Pstruct<PT>*>(psegOutNumpyArray_info.ptr);
-                */
-                
-                ipOut = 0; // Reset the counter for the new segment
-              }
-            
-            psegOut[ipOut] = psegIn[ipIn]; // Copy all of this particle's data from the
-                                           // input slot to the output slot
-
-            // Move the neutral particle
-            // 1. Save the initial position
-            psegOut[ipOut].x0_ = psegOut[ipOut].x_;
-            psegOut[ipOut].y0_ = psegOut[ipOut].y_;
-            psegOut[ipOut].z0_ = psegOut[ipOut].z_;
-            // 2. Move the particle. NON-RELATIVISTIC: v and u are the same
-            psegOut[ipOut].x_ += psegOut[ipOut].ux_*dt;
-            psegOut[ipOut].y_ += psegOut[ipOut].uy_*dt;
-            psegOut[ipOut].z_ += psegOut[ipOut].uz_*dt;
-
-            auto pCellIndex = psegOut[ipOut].cell_index_;
-
-            //            std::cout << "advance_charged_species_in_E_field. step: " << step << " ipOut: " << ipOut << " x_: " << psegOut[ipOut].x_ << std::endl;
-            
-            // Loop until the particle is in the current cell
-            auto mLastFacet = NO_FACET;
-            size_t facetCrossCount = 0;
-            auto tStart = time - dt;
-            auto dtRemaining = dt;
-
-            // Create a view to this cell in the dolfin::Mesh object so that we can
-            // call the entities() function to get indices of vertices, facets, etc.
-            // dolfin::Cell* pcellPtr = new dolfin::Cell(mesh, pCellIndex);
-            pcellPtr = new dolfin::Cell(mesh, pCellIndex);
-            auto vertices = pcellPtr->entities(0);
-
-            // std::cout << "vertices " << vertices[0] << ", " << vertices[1] << std::endl;
-            
-            particlePosition[0] = psegOut[ipOut].x_;
-            particlePosition[1] = psegOut[ipOut].y_;
-            particlePosition[2] = psegOut[ipOut].z_;
-            // std::cout << "Calling is_inside_vertices" << std::endl;
-            
-            while (! is_inside_vertices(mesh, vertices, particlePosition))
-              {
-                //                std::cout << "Hello from call to is_inside_vertices" << std::endl;
-                /*
-                  The particle has left this cell.  We need to track it across each
-                  facet in case there's a boundary-condition on that facet.
-                */
-                facetCrossCount += 1;
-                // Check for an abnormal number of facet crossings:
-                if (facetCrossCount > MAX_FACET_CROSS_COUNT)
-                  {
-                    std::cout << "DnT:particle.h:advance_charged_species_in_E_field: !!! MAX_FACET_CROSS_COUNT exceeded!!!" << std::endl;
-                    exit(EXIT_FAILURE);
-                  }
-                
-                // Compute dx[], the move vector that starts in the current cell
-                // Current particle position
-                pCoord2[0] = psegOut[ipOut].x_;
-                pCoord2[1] = psegOut[ipOut].y_;
-                pCoord2[2] = psegOut[ipOut].z_;
-                // Starting particle position in this cell
-                pCoord2[3] = psegOut[ipOut].x0_;
-                pCoord2[4] = psegOut[ipOut].y0_;
-                pCoord2[5] = psegOut[ipOut].z0_;
-                // The move vector in this cell
-                dx[0] = pCoord2[0] - pCoord2[3];
-                dx[1] = pCoord2[1] - pCoord2[4];
-                dx[2] = pCoord2[2] - pCoord2[5];
-
-                // bool returnDataPtr = true;
-                bool returnDataPtr = false;
-                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnDataPtr);
-                // This returns the tuple (facet, dxFraction, facet_normal_vectors[facet])
-                // Extract the values from the tuple:
-                auto cFacet = facetTupl[0].cast<int>();
-                auto dxFraction = facetTupl[1].cast<double>();
-                auto facetNormalVector = facetTupl[2].cast<py::array_t<double>>();
- 
-                if (cFacet != NO_FACET)
-                  {
-                    tStart = tStart + dxFraction*dtRemaining; // The starting time in the new cell
-                    dtRemaining = (1.0 - dxFraction)*dtRemaining;
-
-                    // Compute the crossing point
-                    psegOut[ipOut].x0_ = psegOut[ipOut].x0_ + dxFraction*dx[0];
-                    psegOut[ipOut].y0_ = psegOut[ipOut].y0_ + dxFraction*dx[1];
-                    psegOut[ipOut].z0_ = psegOut[ipOut].z0_ + dxFraction*dx[2];
-                    
-                    // Look up the mesh-level index of this facet...
-                    auto mFacetArray = pcellPtr->entities(tDim-1); // The mesh-level indices of the facets of this cell.
-                    auto mFacet = mFacetArray[cFacet]; // The mesh-level index of the facet just crossed.
-
-                    // mFacet should never be the same as the last facet crossed: check this
-                    if (mFacet == (size_t)mLastFacet) // If the particle has crossed the same facet twice in succession, there's an error:
-                      {
-                        std::string errorMsg = "In advance_charged_species_in_E_field(): The mesh index of the facet crossed is "  + std::to_string(mFacet) + ", the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!";
-                        exit(EXIT_FAILURE);
-                      }
-                    else // The particle has crossed a new facet.
-                      {
-                        mLastFacet = mFacet;
-                      }
-                    // ...and get the value of the facet marker.
-                    auto facValue = particleBoundaryMarker[mFacet];
-                    //                    int facValue = 0;
-                    // Check if this facet has a non-zero marker, indicating that,
-                    // e.g., the facet is a boundary.
-                    if (facValue != 0)
-                      {
-                        // Call the function associated with this value.
-                        if ((psegOut[ipOut].bitflags_ & Pstruct<PT>::TRAJECTORY_FLAG) != 0b0) // If this is a trajectory particle.
-                          {
-                            // Get the storage index that currently identifies this
-                            // particle in the trajectory list of particles.
-                            auto fullIndex = sap->get_full_index(ipIn, "in");
-                            particle_P.attr("record_trajectory_datum")(std::string(species_name), ipOut, fullIndex, step, tStart, "facet_crossing"_a=true); // Does this work?
-                          }
-                        // A reference to dx[] is available in the BC function class.
-                        // ?? Test for is_none() first?
-                        auto bcFunctionDict = particle_P.attr("pmesh_bcs").attr("bc_function_dict").cast<py::dict>();
-                        // A py::dict needs a py::str key value. Convert facValue to a string first.
-                        auto bcFunction = bcFunctionDict[py::str(std::to_string(facValue))].cast<py::dict>();
-                        // bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);                        
-                        bcFunction[species_name](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);                        
-                      }
-
-                    // Look up the cell index of the new cell.
-                    auto pCellIndexNew = meshEntityArrays->get_cell_neighbors(pCellIndex)[cFacet];
-
-                    /* If the particle has left the mesh, and has been deleted, end
-                       the search.  If it hasn't been deleted (e.g., reflected),
-                       continue tracking it.
-                    */
-                    if (pCellIndexNew == NO_CELL)
-                      {
-                        if ((psegOut[ipOut].bitflags_ & Pstruct<PT>::DELETE_FLAG) == 0b1)
-                          {
-                            psegOut[ipOut].cell_index_ = NO_CELL;
-                              break; // Breaks out of the facet-crossing 'while' loop.
-                          }
-                        // else: The boundary did not absorb the particle, so the
-                        // particle is now at the cell boundary and the cell index
-                        // is unchanged.
-                      }
-                    else
-                      {
-                        psegOut[ipOut].cell_index_ = pCellIndexNew;
-                        pCellIndex = pCellIndexNew; // Needed for the next iteration of the while loop.
-                      }
-                  }
-                else // The crossed facet is NO_FACET, which shouldn't happen.
-                  {
-                    std::string errorMsg = "In move_neutral_particle_species(): The cell index of the facet crossed is NO_FACET (" + std::to_string(cFacet) + "). This should not happen since the particle has left its initial cell!";
-                    exit(EXIT_FAILURE);
-                  } // END: if (cFacet != NO_FACET)
-
-                // The following is needed in C++ because of is_inside_vertices() usage.
-                // Prepare for the next 'while' iteration: need the new cell index and the cell vertices:
-                delete pcellPtr; // To avoid a leak
-                pcellPtr = new dolfin::Cell(mesh, pCellIndex);
-                vertices = pcellPtr->entities(0);
-                
-                particlePosition[0] = psegOut[ipOut].x_;
-                particlePosition[1] = psegOut[ipOut].y_;
-                particlePosition[2] = psegOut[ipOut].z_;
-              } // END: while (! is_inside_vertices(mesh, vertices, particlePosition))
-            delete pcellPtr; // Not needed past this point.
-
-            // Record the number of facet-crossings
-            psegOut[ipOut].crossings_ = facetCrossCount;
-
-            if ((psegOut[ipOut].bitflags_ & Pstruct<PT>::DELETE_FLAG) == 0b0) // If this particle has not been deleted...
-              {
-                /*
-                  If particle indices in the "out" SA have changed (i.e., indexChange
-                  is 'true') due to deletions, then update this particle's index where
-                  needed.  E.g., if this is a trajectory particle, update its SA
-                  index in the list of trajectory particles.
-                */
-                if (!traj_T.is_none())
-                  {
-                    if ((psegOut[ipOut].bitflags_ & Pstruct<PT>::TRAJECTORY_FLAG) != 0b0) // If this is a trajectory particle.
-                      {
-                        if (indexChange == true)
-                          {
-                            particle_P.attr("update_trajectory_particleId")(species_name, ipIn, ipOut);
-                          }
-                      }
-                  }
-                // Advance the "out" array counter for the next particle
-                ipOut += 1;
-              }
-            else // This particle has been deleted
-              {
-                indexChange = true; // This indicates that particle SA indices are changed past this point due to deletions.
-                // If this was a trajectory particle, remove it's index from the trajectory-particle list.
-                if (!traj_T.is_none())
-                  {
-                    if ((psegIn[ipIn].bitflags_ & Pstruct<PT>::TRAJECTORY_FLAG) != 0b0)
-                      {
-                        particle_P.attr("remove_trajectory_particleId")(species_name, ipIn, ipOut, step, time, dt);
-                      }
-                  }
-              }
-
-            /*
-              Check if we've reached the end of this segment.  If so, we need to start
-              writing on a new segment.  If there are no more segments, allocate a new one.
-            */
-            if (ipOut == segmentLength)
-              {
-                particleCount += segmentLength;
-              }
-
-          } // loop over particles in the "in" segment
-        
-        // Done with this "in" segment. Get the next one, if it exists.
-        py::tuple segTuple = sap->get_next_segment("in", true);
-        auto npSeg = segTuple[0].cast<py::ssize_t>();
-        if (npSeg >  0)
-          {
-            psegIn = segTuple[1].cast<py::capsule>(); // This is a compressed expression: there's a cast performed to make psegIn, which has it's type from above (Pstruct<PT>* psegIn)
-          }
-        else
-          {
-            // py::print("*segTuple: ", *segTuple);
-            psegIn = segTuple[1].cast<nullptr_t>(); // This will fail if segTuple[1] is not None
-            assert(psegIn == nullptr);
-          }
-
-        // If we use Numpy structured arrays:
-        /*
-        py::tuple segTuple = sap->get_next_segment("in");
-        npSeg = segTuple[0].cast<py::ssize_t>();
-        auto psegInNumpyArray = segTuple[1].cast<py::array_t<Pstruct<PT>,0>>();
-        const auto psegInNumpyArray_info = psegInNumpyArray.request();
-        psegIn = static_cast<Pstruct<PT>*>(psegInNumpyArray_info.ptr);
-        */
-      } // while there are more "in" segments, keep looping
-
-    // Set values that will be used to keep track of the particle arrays
-    if (ipOut != segmentLength) // This catches the case where we exit the loop when ipOut = segmentLength and there are no more "in" segments.  Otherwise, we would add segmentLength to particleCount twice.
-      {
-        particleCount += ipOut;
       }
-    //    std::cout << "particleCount: " << particleCount << std::endl;
-    sap->set_number_of_items("out", particleCount);
   }
   // ENDDEF: void advance_charged_species_in_E_field(py::object particle_P, py::str species_name, py::object ctrl)
 
@@ -1119,5 +875,13 @@ namespace dnt
   // ENDDEF: void advance_charged_species_in_uniform_fields(py::object particle_P, py::str species_name, py::object ctrl)
   
 } // namespace dnt
+
+
+//  template <Ptype PT, size_t N_CELL_FACETS>
+//    void advance_neutral_species(py::object particle_P, py::str species_name, py::object ctrl)
+
+template void dnt::advance_neutral_species<dnt::Ptype::PARTICLE_TYPE, 2>(py::object,
+                                                                         py::str,
+                                                                         py::object);
 
 #endif

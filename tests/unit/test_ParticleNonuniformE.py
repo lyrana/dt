@@ -66,7 +66,7 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         # Add these species to particle input
         pin.particle_species = (testElectrons_S,
-                                 )
+                               )
         # Make the particle object from pin
         self.particle_P = Particle_C(pin, print_flag=False)
 
@@ -145,6 +145,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         pmesh2D_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         self.particle_P.pmesh_M = pmesh2D_M
+        self.particle_P.initialize_particle_integration()        
 
         ### Particle boundary-conditions
 
@@ -223,19 +224,20 @@ class TestParticleNonuniformE(unittest.TestCase):
 #        species_names = self.particle_P.names
 
 # first particle:        
-#        getp = self.particle_P.sap_dict['testelectrons'].get(0)
+        getp = self.particle_P.sap_dict['two_electrons'].get_item(0)
 #        print 'getp is a', type(getp)
-#        print '1st electron:', getp
+        # print('1st electron:', getp)
 # second particle:
-#        getparticle = self.particle_P.sap_dict['testelectrons'].get(1)
-#        print '2nd electron:', getparticle
+        getparticle = self.particle_P.sap_dict['two_electrons'].get_item(1)
+        # print('2nd electron:', getparticle)
 
         # Advance the particles one timestep
         print("Moving", self.particle_P.get_total_particle_count(), "particles for one timestep")
         ctrl.time_step = 0
         ctrl.time = 0.0
 
-        self.particle_P.move_particles_in_electrostatic_field(ctrl, self.neg_electric_field)
+#        self.particle_P.move_particles_in_electrostatic_field(ctrl, neg_E_field=self.neg_electric_field)
+        self.particle_P.advance_charged_particles_in_E_field(ctrl, neg_E_field=self.neg_electric_field)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -248,8 +250,8 @@ class TestParticleNonuniformE(unittest.TestCase):
             for ip in [0, 1]:
                 (pseg, offset) = self.particle_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = pseg[offset]
-#                print 'calculated = ', getparticle
-#                print 'expected = ', p_expected[ip]
+                # print('calculated = ', getparticle)
+                # print('expected = ', p_expected[ip])
                 for ic in range(ncoords):
 #                    print "result:", getparticle[ic]/p_expected[ip][ic]
 # Note: for different field solver, may have to reduce the places:
@@ -283,15 +285,6 @@ class TestParticleNonuniformE(unittest.TestCase):
     #     pass
 
     #     return
-
-    def test_something(self):
-        """ Check the number of particles in each species.
-        """
-        fncName = sys._getframe().f_code.co_name
-        print('\ntest: ', fncName, '('+__file__+')')
-        pass
-
-        return
 
 #class TestParticleNonuniformE(unittest.TestCase):ENDCLASS
 

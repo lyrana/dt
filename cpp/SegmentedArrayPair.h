@@ -19,6 +19,13 @@
 #include <cassert>
 #include "Pstruct.h"
 
+// From https://en.cppreference.com/w/cpp/language/function_template:
+// A function template by itself is not a type, or a function, or any other entity. No
+// code is generated from a source file that contains only template definitions. In order
+// for any code to appear, a template must be instantiated: the template arguments must be
+// determined so that the compiler can generate an actual function (or class, from a class
+// template).
+
 namespace dnt
 {
   // WhichArray is NOT USED anywhere.

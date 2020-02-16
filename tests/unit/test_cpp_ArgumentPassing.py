@@ -71,8 +71,9 @@ class TestPybind11(unittest.TestCase):
         charge = 1.0
         mass = 1.0*MyPlasmaUnits_C.AMU
         dynamics = 'neutral'
-        integratorName = "integrate_neutral_species"        
-        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics, integratorName)
+#        integratorName = "integrate_neutral_species"        
+#        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics, integratorName)
+        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add these species to particle input
         pin.particle_species = (neutralH_S,

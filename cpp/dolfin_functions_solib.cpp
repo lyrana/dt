@@ -108,6 +108,8 @@ namespace dnt {
 
     // Not clear that these serve any useful purpose. They don't cause a compile of the functions.
     // They just check if the args match the declarations in "dolfin_functions.h" above.
+
+    /*
     dolfin::Mesh mesh;
     dolfin::Mesh& meshRef = mesh;
     const unsigned int* vertices(nullptr);
@@ -122,7 +124,8 @@ namespace dnt {
     py::array_t<double> field_at_points;
 
     // This runs when the .so is imported, and bombs:
-    //interpolate_field_to_points(fieldRef, points, npoints, field_at_points);
+    interpolate_field_to_points(fieldRef, points, npoints, field_at_points);
+    */
     
     // Write one for find_facet():
   }

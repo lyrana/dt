@@ -79,7 +79,7 @@ namespace dnt {
         .def("init_out_loop", &SAP::init_out_loop, py::arg("return_data_ptr") = false)
         // Overloaded versions of push_back().
         // Put a signature in parens in front of &SAP::push_back to disambiguate the versions.
-        // Note: (py::tuble (SAP::*) (arg)) &SAP::push_back(): This means that &SAP::push_bash
+        // Note: (py::tuple (SAP::*) (arg)) &SAP::push_back(): This means that &SAP::push_back
         // is a pointer-to-a-function that takes 'arg' and returns a py::tuple.
         .def("push_back", (py::tuple (SAP::*) (py::array_t<Pstruct<PT>, 0>)) &SAP::push_back)
         .def("push_back", (py::tuple (SAP::*) (py::tuple)) &SAP::push_back)

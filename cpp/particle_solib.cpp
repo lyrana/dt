@@ -27,6 +27,12 @@ namespace py = pybind11;
 
 namespace dnt {
 
+  // Set the bit patterns for flags. These are static class members, so they're set
+  // outside the ctor, in a C++ source file, so they're compiled only once. (If they're in
+  // a header file that's included in more than one file, that generates an error)
+  int Pstruct<Ptype::PARTICLE_TYPE>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+  int Pstruct<Ptype::PARTICLE_TYPE>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit 
+  
   PYBIND11_MODULE(MODULE_NAME, m) {
 
     // C++ functions defined in particle.cpp
@@ -34,7 +40,15 @@ namespace dnt {
     // Interface to the C++ particle-advance functions
     // Note that PARTICLE_TYPE here is defined in Makefile.part
 
-    m.def("initialize_particle_integration", &initialize_particle_integration<Ptype::PARTICLE_TYPE>);
+    // From https://en.cppreference.com/w/cpp/language/function_template:
+    // A function template by itself is not a type, or a function, or any other entity. No
+    // code is generated from a source file that contains only template definitions. In order
+    // for any code to appear, a template must be instantiated: the template arguments must be
+    // determined so that the compiler can generate an actual function (or class, from a class
+    // template).
+    
+    //    m.def("initialize_particle_integration", &initialize_particle_integration<Ptype::PARTICLE_TYPE>);
+    m.def("initialize_particle_integration", &initialize_particle_integration);    
     
     m.def("advance_charged_species_in_uniform_fields", &advance_charged_species_in_uniform_fields<Ptype::PARTICLE_TYPE>);
 
