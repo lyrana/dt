@@ -63,18 +63,47 @@ namespace dnt {
           });
     */
 
-    //    m.def("interpolate_field_to_points_" TOSTRING(PARTICLE_TYPE), [](py::object field_F, py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, py::ssize_t npoints)
-    m.def("interpolate_field_to_points_" TOSTRING(PARTICLE_TYPE), [](py::object field_F, py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, py::ssize_t npoints, py::array_t<double> field_at_points)
+    // For py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, i.e., points is a Numpy array.
+    m.def("interpolate_field_to_points_cartesian_xyz", [](py::object field_F, py::array_t<Pstruct<Ptype::cartesian_xyz>, 0> points, py::ssize_t npoints, py::array_t<double> field_at_points)
           {
-            //            auto fieldFunction = field_F.attr("function").cast<dolfin::Function&>();
-            //            auto fieldFunction = field_F.attr("function").cast<dolfin.function.function.Function&>();
-
             auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
             
             //            auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
             //            std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
             
-            interpolate_field_to_points<Ptype::PARTICLE_TYPE>(fieldFunction, points, npoints, field_at_points);
+            interpolate_field_to_points<Ptype::cartesian_xyz>(fieldFunction, points, npoints, field_at_points);
+            
+          });
+    m.def("interpolate_field_to_points_cartesian_xy", [](py::object field_F, py::array_t<Pstruct<Ptype::cartesian_xy>, 0> points, py::ssize_t npoints, py::array_t<double> field_at_points)
+          {
+            auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
+            
+            //            auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
+            //            std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
+            
+            interpolate_field_to_points<Ptype::cartesian_xy>(fieldFunction, points, npoints, field_at_points);
+            
+          });
+    
+    // For Pstruct<PT>* points, i.e., points is a pointer to the particle-structs array.
+    m.def("interpolate_field_to_points_cartesian_xyz", [](py::object field_F, Pstruct<Ptype::cartesian_xyz>* points, py::ssize_t npoints, py::array_t<double> field_at_points)
+          {
+            auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
+            
+            //            auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
+            //            std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
+            
+            interpolate_field_to_points<Ptype::cartesian_xyz>(fieldFunction, points, npoints, field_at_points);
+            
+          });
+    m.def("interpolate_field_to_points_cartesian_xy", [](py::object field_F, Pstruct<Ptype::cartesian_xy>* points, py::ssize_t npoints, py::array_t<double> field_at_points)
+          {
+            auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
+            
+            //            auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
+            //            std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
+            
+            interpolate_field_to_points<Ptype::cartesian_xy>(fieldFunction, points, npoints, field_at_points);
             
           });
     
@@ -84,7 +113,7 @@ namespace dnt {
             //  C++ signature of is_inside_vertices() is:
             //    bool is_inside_vertices(dolfin::Mesh& mesh, const unsigned int* vertices, double* point);
             
-            // Create const unsigned int* to hold vertices
+            // Create unsigned int* to hold vertices
             unsigned int verticesTmp[4];
             for (size_t i = 0; i < vertices.size(); i++)
               {

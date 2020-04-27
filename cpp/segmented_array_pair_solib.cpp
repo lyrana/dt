@@ -49,7 +49,7 @@ namespace dnt {
       // "SegmentedArrayPair"
       std::string pyclass_name = std::string("SegmentedArrayPair_") + PStype;
       
-      // Create the Python binding for 
+      // Create the Python binding for this class
       py::class_<SAP>(m, pyclass_name.c_str())
 
         // The ctor

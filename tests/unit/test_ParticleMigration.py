@@ -59,7 +59,7 @@ class TestParticleMigration(unittest.TestCase):
         pin.force_components = ['x', 'y',]
         """
         pin.force_precision = np_m.float64
-        pin.use_cpp_integrators = False        
+        pin.use_cpp_integrators = False
 
         # Give the properties of the particle species.  The charges
         # and masses are normally those of the physical particles, and

@@ -46,7 +46,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         pin.coordinate_system = 'cartesian_xy'
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
-        pin.use_cpp_integrators = False # Use Python version of particle movers.
+        pin.use_cpp_integrators = True # Use C++ version of particle movers.
         
         # Specify the particle properties
         # 1. electrons
@@ -74,7 +74,10 @@ class TestParticleNonuniformE(unittest.TestCase):
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary conditions, source regions, etc.)
         userParticlesModuleName = "UserParticles_2D_e"
-
+        # Give the name of the C++ .so file
+        # userParticlesSOlibName = "user_particles_2D_e_solib"
+        userParticlesSOlibName = "user_particle_boundary_functions_solib"
+        
         # Import this module
         userParticlesModule = im_m.import_module(userParticlesModuleName)
         self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
@@ -129,8 +132,9 @@ class TestParticleNonuniformE(unittest.TestCase):
         umi.mesh_file = 'mesh_quarter_circle_crossed.xml'
         umi.particle_boundary_file='mesh_quarter_circle_crossed_Pbcs.xml'
 
-        # These are the (int boundary-name) pairs used to mark mesh
-        # facets. The string value of the int is used as the index.
+        # These are the (int boundary-name) pairs used to mark mesh facets. The
+        # string value of the int is used as the index. The string name given to the
+        # boundary determines what call-back function is invoked.
         rmin_indx = 1
         rmax_indx = 2
         thmin_indx = 4
@@ -143,21 +147,42 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         umi.particle_boundary_dict = particleBoundaryDict
 
+        # Make the particle-mesh object
         pmesh2D_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         self.particle_P.pmesh_M = pmesh2D_M
+
+        # 1. Attach the particle mesh to particle_P.
+        # 2. Attach the C++ particle movers.
+        # 3. Compute the cell-neighbors and facet-normals for the particle movers.
+        self.particle_P.initialize_particle_mesh(pmesh2D_M)
+        
         self.particle_P.initialize_particle_integration()        
 
         ### Particle boundary-conditions
 
-        # UserParticleBoundaryFunctions_C is where the facet-crossing callback
-        # functions are defined.
+        # Create a UserParticleBoundaryFunctions_C object, which contains the
+        # boundary-crossing callback functions.
         # userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # Now need an instantiation, not just a class name:
-        userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(self.particle_P.position_coordinates, self.particle_P.dx)
+        if self.particle_P.use_cpp_integrators is True:
+            userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_solib"
+            # Import this module
+            userParticleBoundaryFunctionsModule = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
+            # Call the constructor to make a UserParticleBoundaryFunctions object
+            userPBndFns = userParticleBoundaryFunctionsModule.UserParticleBoundaryFunctions_cartesian_xy(self.particle_P.position_coordinates)
+#            userPBndFns = None
+        else:
+            userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(self.particle_P.position_coordinates, self.particle_P.dx)
 
+        # Make a dictionary associating the above-named boundaries of the particle mesh with
+        # user-supplied call-back functions.
         spNames = self.particle_P.species_names
         pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh2D_M, userPBndFns, print_flag=False)
+        # Add this to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs
+        #tph
+        self.particle_P.userPBndFns = userPBndFns
+        #endtph
 
         # The following value should correspond to the element degree
         # used in the potential from which negE was obtained
@@ -189,7 +214,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         return
 #    def setUp(self):ENDDEF
 
-    def test_1_electric_field_push_1step(self):
+    def test_1_cpp_electric_field_push_1step(self):
         """ Check that the electric field push is correct.  
 
             Push test particles for 1 step on a 2D 1/4-circle mesh.
@@ -199,6 +224,14 @@ class TestParticleNonuniformE(unittest.TestCase):
         print('\ntest: ', fncName, '('+__file__+')')
 
         ctrl = DTcontrol_C()
+
+        # Run identifier
+        ctrl.title = "2D particle advance using C++"
+        # Run author
+        ctrl.author = "tph"
+
+        ctrl.time = 0.0
+        ctrl.timeloop_count = 0
 
         ctrl.dt = 1.0e-5
         ctrl.n_timesteps = 1
@@ -261,7 +294,7 @@ class TestParticleNonuniformE(unittest.TestCase):
             isp += 1
 
         return
-# def test_1_electric_field_push_1step(self): ENDDEF
+# def test_1_cpp_electric_field_push_1step(self):ENDDEF
 
     # def test_electric_field_push_10steps(self):
     #     """ Check that the electric field push is correct.  Push

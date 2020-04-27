@@ -204,7 +204,6 @@ namespace dnt
     // ENDDEF: py::tuple get_number_of_segments()
 
 
-    // BEGINDEF: py::ssize_t get_number_of_items()
     //! Return the number of items stored in the "out" array
       py::ssize_t get_number_of_items()
       {
@@ -550,7 +549,9 @@ namespace dnt
       This function is used to start a loop that doesn't change the positions of the
       items, so the "in" array isn't needed.
 
-      \param return_data_ptr: if true, return pointers to the data instead of Numpy arrays
+      \param return_data_ptr: if true, return pointers to the data instead of Numpy arrays.
+                              (See Gdrive notes on pybind11 capsules.)
+
       \return The tuple: (number of items in the first segment of "out" SA,
                           ref to first segment of "out" SA)
     */
@@ -602,13 +603,17 @@ namespace dnt
     bool swapPair = true; // Set to false if the 'in' and 'out' SAs should not be
                           // swapped. For testing, uncomment the swapPair =! swapPair
                           // statement below. Don't modify this statement.
+    
     //! Initialize a loop over the all the array segments.
     /*!
 
-      The loop should call get_next_segment("in") and get_next_out_segment() in the
-      iteration loop.
+      This function can be used when we want to read from an "in" segment and write to an
+      "out" segment. The loop should call get_next_segment("in") and
+      get_next_out_segment() in the iteration loop.
 
-      \param return_data_ptrs: if true, return pointers to the data instead of Numpy arrays
+      \param return_data_ptrs: if true, return pointers to the data instead of Numpy
+                               arrays. (See Gdrive notes on pybind11 capsules.)
+
       \return The tuple: (number of items in the first segment of "in" SA,
       ref to first segment of "in" SA,
       ref to first segment of "out" SA)
@@ -678,7 +683,7 @@ namespace dnt
             py::buffer_info outSegInfo = outSeg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
             const auto outSegData = static_cast<Pstruct<PT>*>(outSegInfo.ptr); // Pointer to a structured Numpy array
 
-            return py::make_tuple(lastItem, py::capsule(inSegData, "inSegData pointer", nullptr), py::capsule(outSegData, "outSegData pointer", nullptr));
+            return py::make_tuple(lastItem, py::capsule(inSegData, "inSegData pointer", nullptr), py::capsule(outSegData, "outSegData pointer", nullptr)); // optional 3rd arg is a dtor
           }
         else
           {

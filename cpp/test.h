@@ -5,8 +5,10 @@
 /*
 Contents:
 
+  void function_with_several_args(bool tf, py::list& list3, py::array_t<double>& darray3)
   void function_with_DTcontrol_C_arg(py::object ctrl)
   void function_with_Particle_C_arg(py::object particle_P)
+  void function_with_pseg_arg(py::ssize_t np_seg, py::array_t<Pstruct<PT>,0> pseg)
 
 //remove:
   Particle structs in C++:
@@ -55,7 +57,34 @@ namespace py = pybind11;
 
 namespace dnt
 {
-  //! Test passing of various DnT Python classes to C++
+  //! Test passing of various Python types and classes to C++
+
+  void function_with_several_args(bool tf, py::list& int_list3, py::list& string_list3, py::array_t<double>& darray3)
+  {
+    std::cout << "Hello from C++: function_with_several_args" << std::endl;
+    std::cout << "tf is " << tf << std::endl;
+    
+    for (size_t i = 0; i < int_list3.size(); i++)
+      {
+        std::cout << "int_list3[" << i << "] = " << int_list3[i].cast<int>() << std::endl;        
+      }
+
+    for (size_t i = 0; i < string_list3.size(); i++)
+      {
+        std::cout << "string_list3[" << i << "] = " << string_list3[i].cast<std::string>() << std::endl;
+        // Note: std::string(py::str(string_list3[i])) also works.
+      }
+
+    auto darray3Proxy = darray3.unchecked<1>();
+    // If we use size_t i, get warning: comparison between signed and unsigned integer expressions
+    // py::ssize_t is signed.
+    for (py::ssize_t i = 0; i < darray3Proxy.shape(0); i++)
+      {
+        
+        std::cout << "darray3[" << i << "] = " << darray3Proxy(i) << std::endl;
+      }
+
+  }
   
   void function_with_DTcontrol_C_arg(py::object ctrl)
   {

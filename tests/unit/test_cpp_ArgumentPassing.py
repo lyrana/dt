@@ -68,7 +68,7 @@ class TestPybind11(unittest.TestCase):
         # particle distribution functions, and can vary from particle to particle.
 
         speciesName = 'neutral_H'
-        charge = 1.0
+        charge = 0.0
         mass = 1.0*MyPlasmaUnits_C.AMU
         dynamics = 'neutral'
 #        integratorName = "integrate_neutral_species"        
@@ -79,7 +79,7 @@ class TestPybind11(unittest.TestCase):
         pin.particle_species = (neutralH_S,
                                )
         # Make the particle object from pin
-        self.particle_P = Particle_C(pin, print_flag=False)
+        self.particle_P = Particle_C(pin, print_flag=True)
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary-condition callbacks, source regions, etc.)
@@ -200,6 +200,37 @@ class TestPybind11(unittest.TestCase):
         return
 #    def setUp(self):ENDDEF
 
+    def test_1_pass_simple_types(self):
+        """Test that we can pass and access Python types in C++.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName)
+
+
+        # Boolean
+        tf = True
+
+        # List of integers
+        int_list3 = [0, 1, 2]
+
+        # List of strings
+
+        string_list3 = ['x', 'y', 'z']
+        
+        # Numpy array
+        darray3 = np_m.empty(3, dtype=np_m.float64)
+        darray3[0] = 8.0
+        darray3[1] = 9.0
+        darray3[2] = 10.0
+        
+        test_so.function_with_several_args(tf, int_list3, string_list3, darray3)
+
+        return
+#    def test_1_pass_simple_types(self):ENDDEF
+
+        
     def test_1_pass_DnTcontrol(self):
         """Test that we can pass and access attributes of a DnTcontrol Python object
            in C++.
@@ -250,11 +281,6 @@ class TestPybind11(unittest.TestCase):
         return
 #    def test_2_pass_Particle_C:ENDDEF
 
-  # template <Ptype PT>
-  # void interpolate_field_to_points(dolfin::Function& field,
-  #                                  py::array_t<Pstruct<PT>, 0> points,
-  #                                  py::ssize_t npoints,
-  #                                  py::array_t<double> field_at_points)
 
     def test_3_pass_SAP(self):
         """Test that we can pass and access attributes of an SAP object.

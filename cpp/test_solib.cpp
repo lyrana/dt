@@ -41,6 +41,8 @@ namespace dnt {
   {
 
     // C++ classes and functions declared and defined in test.h
+    
+    m.def("function_with_several_args", &function_with_several_args);
     m.def("function_with_DTcontrol_C_arg", &function_with_DTcontrol_C_arg);
     m.def("function_with_Particle_C_arg", &function_with_Particle_C_arg);
     m.def("function_with_pseg_arg", &function_with_pseg_arg<Ptype::PARTICLE_TYPE>);

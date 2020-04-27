@@ -70,12 +70,12 @@ class TestCppMeshFunctions(unittest.TestCase):
         meaCtor = getattr(mea_so, meaClass)
         
         # Call the MEA constructor
-        meaObj = meaCtor(mesh_df, compute_particle_mesh_maps=True)        
+        meaObj = meaCtor(mesh_df, compute_particle_mesh_maps=True)
 
         # The list from test_MeshFunctions.py:
         # expected_neighbors = {0: [3, 1], 1: [4, 0], 2: [3], 3: [6, 2, 0], 4: [7, 5, 1], 5: [4], 6: [7, 3], 7: [6, 4]}
         # Include the NO_CELL neighbors that are outside the mesh:
-        expected_neighbors = {0: [3,1,-1], 1: [4,0,-1], 2: [-1,3,-1], 3: [6,2,0], 4: [7,5,1], 5: [-1,4,-1], 6: [-1,7,3], 7: [-1,6,4]}        
+        expected_neighbors = {0: [3,1,-1], 1: [4,0,-1], 2: [-1,3,-1], 3: [6,2,0], 4: [7,5,1], 5: [-1,4,-1], 6: [-1,7,3], 7: [-1,6,4]}
 
         # Get the neighbors from the C++ array
         cell_neighbors = {icell: meaObj.get_cell_neighbors(icell) for icell in range(mesh_df.num_cells())}

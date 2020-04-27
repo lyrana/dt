@@ -17,7 +17,8 @@ from Dolfin_Module import Field_C
 # Use the C++ functions in the dolfin_functions_cartesian_xyz_solib.so library
 #import dolfin_functions_cartesian_xyz_solib.so as df_so
 #import mesh_entity_arrays_solib as mea_so
-import dolfin_functions_cartesian_xyz_solib as df_so
+#import dolfin_functions_cartesian_xyz_solib as df_so
+import dolfin_functions_solib as df_so
 
 class TestFieldInterpolation(unittest.TestCase):
     """Test the field-to-particle interpolation functions in Field_C class
@@ -140,7 +141,8 @@ class TestFieldInterpolation(unittest.TestCase):
         return
 
     def test_1_interpolate_vectorField_to_points(self):
-        """Provide 3 points and compute the values of a vector field at these points.
+        """Python test. Provide 3 points and compute the values of a vector field at
+           these points.
 
            The point data has spatial coordinates and other data, such as velocities.
            The number of spatial coordinates can be greater than the spatial
@@ -186,29 +188,7 @@ class TestFieldInterpolation(unittest.TestCase):
         # Make a Numpy 2D array of doubles to hold the field evaluated at the points.
         E_points = np_m.empty((len(self.points), nComps), dtype=force_precision)
         
-  # template <Ptype PT, typename Ftype>
-  # void interpolate_field_to_points(dolfin::Function& field,
-  #                                  py::array_t<Pstruct<PT>, 0> points,
-  #                                  py::ssize_t npoints,
-  #                                  Ftype& field_at_points)
-        # Create the name of the specialized MeshEntityArrays class with the right
-        # number of cell-facets
-        # tDim = mesh_df.topology().dim()
-        # nFacets = tDim + 1
-        # meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
-        # meaCtor = getattr(mea_so, meaClass)
-        
-#        self.neg_electric_field.interpolate_field_to_points(self.points, E_points)
-
         npoints = len(self.points)
-#        df_so.interpolate_field_to_points_cartesian_xyz(self.neg_electric_field.function, self.pseg, npoints, E_points)
-# Just pass the Field_C object:
-#        print("self.neg_electric_field", self.neg_electric_field)
-        
-#        df_so.interpolate_field_to_points_cartesian_xyz(self.neg_electric_field, self.pseg, npoints, E_points)
-
-#        df_so.interpolate_field_to_points_cartesian_xyz(self.neg_electric_field.function.vector(), self.pseg, npoints)
-#        df_so.interpolate_field_to_points_cartesian_xyz(self.neg_electric_field.function.vector(), self.pseg, npoints, E_points)
         df_so.interpolate_field_to_points_cartesian_xyz(self.neg_electric_field, self.pseg, npoints, E_points)
 
         # Check the interpolated electric field against the expected values

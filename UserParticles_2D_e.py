@@ -204,7 +204,7 @@ class UserParticleDistributions_C(object):
         ynew = x0*np_m.sin(theta0)+y0*np_m.cos(theta0)
         (x0, y0, z0) = (xnew, ynew, z0)
 
-#        print 'x0, y0, z0 =', x0, y0, z0
+        print('x0, y0, z0 =', x0, y0, z0)
 
 #        (ux0, uy0, uz0) = (3000.0, 2000.0, 1000.0)
         (ux0, uy0, uz0) = (0.0, 0.0, 1000.0)
@@ -228,7 +228,7 @@ class UserParticleDistributions_C(object):
         ynew = x1*np_m.sin(theta1)+y1*np_m.cos(theta1)
         (x1, y1, z1) = (xnew, ynew, z1)
 
-#        print 'x1, y1, z1 =', x1, y1, z1
+        print('x1, y1, z1 =', x1, y1, z1)
 
 #        (ux1, uy1, uz1) = (3000.0, 2000.0, 1000.0)
         (ux1, uy1, uz1) = (0.0, 0.0, 1000.0)
@@ -291,8 +291,8 @@ class UserParticleBoundaryFunctions_C(object):
 
 #class UserParticleBoundaryFunctions_C(object):
     @staticmethod
-    def default_bc(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
-        """Global default boundary condition for all species.
+    def default_bc(p, species_name, facet_index, dx_fraction=None, facet_normal=None):
+        """Default boundary condition for all species on all boundaries.
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -302,21 +302,21 @@ class UserParticleBoundaryFunctions_C(object):
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 
         return
-#    def default_bc(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
+#    def default_bc(p, species_name, facet_index, dx_fraction=None, facet_normal=None):ENDDEF
 
 
 #class UserParticleBoundaryFunctions_C(object):
     @staticmethod
-    def default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
-        """Default boundary condition particles incident on rmin.
+    def default_bc_at_rmin(p, species_name, facet_index, dx_fraction=None, facet_normal=None):
+        """Default boundary condition for all particles incident on rmin.
         """
 
-        printInfoInvoked = False
+        printInfoInvoked = True
         
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
 
         if printInfoInvoked is True:
-            print("DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName))
+            print("DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, species_name))
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -324,18 +324,18 @@ class UserParticleBoundaryFunctions_C(object):
         # Count the number/charge/energy of deleted particles
 
         return
-#    def default_bc_at_rmin(p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
+#    def default_bc_at_rmin(p, species_name, facet_index, dx_fraction=None, facet_normal=None):ENDDEF
     
 #class UserParticleBoundaryFunctions_C(object):
-    def bc_at_rmin_for_test_electrons(self, p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
-        """Boundary condition for test_electrons incident on rmin.
+    def bc_at_rmin_for_test_electrons(self, p, species_name, facet_index, dx_fraction=None, facet_normal=None):
+        """Boundary condition for test_electrons species incident on rmin.
 
 
            :param p: A full particle record
-           :param str speciesName: This is redundant since the function contains the
+           :param str species_name: This is redundant since the function contains the
                                    name of the species, but may be useful for
                                    indexing.
-           :param int facetIndex: The mesh index of the facet that generated the call
+           :param int facet_index: The mesh index of the facet that generated the call
                                   to this function.
            :param double dx_fraction: The fraction of the move vector traveled before
                                       the facet was crossed.
@@ -348,7 +348,7 @@ class UserParticleBoundaryFunctions_C(object):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
 
         if printInfoInvoked is True:
-            print("DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName))
+            print("DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, species_name))
         pDim = self.particle_dimension
 
         # Scratch space
@@ -386,6 +386,6 @@ class UserParticleBoundaryFunctions_C(object):
 #        p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
 
         return
-#    def bc_at_rmin_for_test_electrons(self, p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):ENDDEF
+#    def bc_at_rmin_for_test_electrons(self, p, species_name, facet_index, dx_fraction=None, facet_normal=None):ENDDEF
 
 #class UserParticleBoundaryFunctions_C(object):ENDCLASS

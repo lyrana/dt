@@ -464,7 +464,7 @@ namespace dnt
   } // ENDDEF: py::tuple find_facet(py::object mesh_M, double* x0, double* dx, size_t cell_index, bool returnStdArray)
 
 
-  //! Evaluate a dolfin Function at a set of points. The point data are in a structured Numpy array.
+  //! (Version for py::array_t points) Evaluate a dolfin Function at a set of points. The point data are in a structured Numpy array.
   /*!
 
     This is the C++ version of the Python function in Dolfin_Module.py:
@@ -482,6 +482,9 @@ namespace dnt
     \param field_at_points is a structured Numpy array to hold the values computed at the
            points. This is laid out in C-order as [number_of_points, number_of_field_components].
 
+     The "points" Numpy array is accessed using a "unchecked proxy" to bypass
+     array bounds-checking.
+
   */
   //  template <Ptype PT, typename Ftype>
   template <Ptype PT>
@@ -490,6 +493,8 @@ namespace dnt
                                    py::ssize_t npoints,
                                    py::array_t<double> field_at_points)
   {
+    std::cout << "Hello from interpolate_field_to_points()@A1"  << std::endl;
+    
     // Use the buffer protocol to access the data in points:
     /*
     const auto points_info = points.request(); // request() returns metadata about the Python array (ptr, ndim, size, shape)
@@ -512,7 +517,68 @@ namespace dnt
     // auto nComps = fieldAtPointsProxy.shape(1);
     for (auto ip = 0; ip < npoints; ip++) {
       // std::cout << "particle " << ip << " x= " << pointsProxy[ip].x_ << std::endl;
+      
       auto cellIndex = pointsProxy(ip).cell_index_;
+      
+      // std::cout << "particle " << ip << " cellIndex= " << cellIndex << std::endl;
+      // In the case of constant-E-in-cell, there's just one set of E values in the cell, so we
+      // use the name 'fieldValue' instead of 'fieldValues':
+      auto fieldValue = dofMap->cell_dofs(cellIndex);
+      // std::cout << "particle " << ip << " nComps= " << fieldValue.size() << std::endl;
+      field->vector()->get_local(&fieldAtPointsProxy(ip, 0), fieldValue.size(), fieldValue.data());
+      
+      // Copy the field vector values to the field struct
+      // double_to_fstruct<Ftype>(values, field_at_points[ip]);
+    }
+
+  }
+  //ENDDEF: void interpolate_field_to_points(dolfin::Function& field,...
+
+    //! (Version for Pstruct* points) Evaluate a dolfin Function at a set of points. The point data are in a structured Numpy array.
+  /*!
+
+    This is the C++ version of the Python function in Dolfin_Module.py:
+    interpolate_field_to_points(self, points, field_at_points).
+
+    Note that, because E is constant-over-element, no linear interpolation is needed.
+
+    \param field is a reference to a Dolfin Function that has the values of the
+           field on a finite-element mesh.
+
+    \param points is a standard C array of Pstructs containing the point data.
+
+    \param npoints is the number of points in "points" to interpolate to.
+
+    \param field_at_points is a structured Numpy array to hold the values computed at the
+           points. This is laid out in C-order as [number_of_points, number_of_field_components].
+
+  */
+  //  template <Ptype PT, typename Ftype>
+  template <Ptype PT>
+  void interpolate_field_to_points(dolfin::Function* field,
+                                   Pstruct<PT>* points,
+                                   py::ssize_t npoints,
+                                   py::array_t<double> field_at_points)
+  {
+    std::cout << "Hello from interpolate_field_to_points()@B1"  << std::endl;
+
+    std::shared_ptr< const dolfin::FunctionSpace > functionSpace = field->function_space();
+
+    // The value of dofs_per_cell is the number of E-components times the order-of-the-element (1 for constant E-in-element)
+    // std::size_t dofs_per_cell = functionSpace->element()->space_dimension();
+    // std::cout << "interpolate_field_to_points(): dofs_per_cell = " << dofs_per_cell << std::endl;
+    std::shared_ptr< const dolfin::GenericDofMap > dofMap = functionSpace->dofmap();
+  
+    auto fieldAtPointsProxy = field_at_points.mutable_unchecked<2>(); // fieldAtPointsProxy is a 2D array of doubles.
+    // std::cout << " shape(0)= " << fieldAtPointsProxy.shape(0) << " shape(1)= " << fieldAtPointsProxy.shape(1) << std::endl;
+
+    // Pull out the components of the (constant) field in this cell
+    // auto nComps = fieldAtPointsProxy.shape(1);
+    for (auto ip = 0; ip < npoints; ip++) {
+      // std::cout << "particle " << ip << " x= " << pointsProxy[ip].x_ << std::endl;
+      
+      auto cellIndex = points[ip].cell_index_;      
+      
       // std::cout << "particle " << ip << " cellIndex= " << cellIndex << std::endl;
       // In the case of constant-E-in-cell, there's just one set of E values in the cell, so we
       // use the name 'fieldValue' instead of 'fieldValues':
@@ -670,7 +736,23 @@ namespace dnt
 
 // Instantiate the function with a particular type, to make the compiler compile the function.
 //template void dnt::interpolate_field_to_points<>(dolfin::Function&,
+
+// Use this one if given the points in a Numpy array
 template void dnt::interpolate_field_to_points<>(dolfin::Function*,
                                                  py::array_t<Pstruct<Ptype::cartesian_xyz>, 0>,
+                                                 py::ssize_t,
+                                                 py::array_t<double>);
+template void dnt::interpolate_field_to_points<>(dolfin::Function*,
+                                                 py::array_t<Pstruct<Ptype::cartesian_xy>, 0>,
+                                                 py::ssize_t,
+                                                 py::array_t<double>);
+
+// Use this one if given a pointer to the particle-struct array
+template void dnt::interpolate_field_to_points<>(dolfin::Function*,
+                                                 Pstruct<Ptype::cartesian_xyz>* points,
+                                                 py::ssize_t,
+                                                 py::array_t<double>);
+template void dnt::interpolate_field_to_points<>(dolfin::Function*,
+                                                 Pstruct<Ptype::cartesian_xy>* points,
                                                  py::ssize_t,
                                                  py::array_t<double>);
