@@ -125,7 +125,7 @@ namespace dnt
     
       //    void compute_cell_volume_array(); // Compute cell volumes indexed by cell index
 
-    };
+    }; // class MeshEntityArrays<N_CELL_FACETS>: ENDCLASS
   
 } // namespace dnt
 

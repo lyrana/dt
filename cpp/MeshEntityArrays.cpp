@@ -49,7 +49,6 @@ namespace dnt
   template<size_t N_CELL_FACETS>
   int MeshEntityArrays<N_CELL_FACETS>::NO_CELL = -1;
     
-  // BEGINDEF: MeshEntityArrays ctor
   //! The one and only MeshEntityArrays ctor.
   /*!
 
@@ -77,7 +76,7 @@ namespace dnt
         compute_cell_facet_normals_array();
       }
   }
-  // ENDDEF: MeshEntityArrays ctor
+  // MeshEntityArrays ctor: ENDDEF
 
   // The dtor (See pybind 8.5 Non-public destructors)
   template<size_t N_CELL_FACETS>
@@ -87,9 +86,8 @@ namespace dnt
       
     // Release the arrays?
       
-  } 
+  } // dtor
   
-  // BEGINDEF: compute_cell_neighbors_array
   //! Make a 2D array that gives the indices of cells that share a common facet.
   /*!
 
@@ -192,10 +190,9 @@ namespace dnt
     
     return;
   }
-  // ENDDEF: compute_cell_neighbors_array
+  // compute_cell_neighbors_array: ENDDEF
 
 
-  // BEGINDEF: get_cell_neighbors
   //! Return the list of cell indices of cells that share a facet with the current cell.
   /*!  
 
@@ -224,10 +221,9 @@ namespace dnt
 
     return neighborCells;
   }
-  // ENDDEF: get_cell_neighbors
+  // get_cell_neighbors: ENDDEF
 
   
-  // BEGINDEF: compute_cell_facet_normals_array
   //! Make a 1D array giving the cell facet-normal 3-vectors, indexed by the cell index.
   /*!  
     The normals are unit vectors represented by Points (3-vectors; see below).  For
@@ -287,10 +283,9 @@ namespace dnt
     
     return;
   }
-  // ENDDEF: void compute_cell_facet_normals_array
+  // void compute_cell_facet_normals_array: ENDDEF
 
 
-  // BEGINDEF: get_cell_facet_normals
   //! Return the list of cell indices of cells that share a facet with the current cell.
   /*!  
 
@@ -333,11 +328,11 @@ namespace dnt
     //    return cellFacetNormals;
     return cell_facet_normals_array[cell_index];
   }
-  // ENDDEF: get_cell_facet_normals
+  // get_cell_facet_normals: ENDDEF
 
 } // namespace dnt
 
-// These statements cause the compiler to make the specialized classes using the general template.
+// These statements cause the compiler to make the specialized classes using the template.
 template class dnt::MeshEntityArrays<2>;
 template class dnt::MeshEntityArrays<3>;
 template class dnt::MeshEntityArrays<4>;

@@ -1,7 +1,7 @@
 /*! \file mesh_entity_arrays_solib.cpp
 
-  \brief This file creates a shared library with the Python bindings for the
-  C++ MeshEntityArrays object.
+  \brief This file creates a shared library with the Python bindings for C++
+         MeshEntityArrays objects, specialized for the number of facets in a mesh cell.
 
   This file contains the Python-to-C++ bindings allowing access to the C++ version of
   MeshEntityArrays from Python.
@@ -19,14 +19,6 @@
 #include "MeshEntityArrays.cpp"
 
 namespace py = pybind11;
-
-// The PYBIND11_MODULE() macro creates a function that will be called when an import
-// statement is issued from within Python. The module name (mesh_entity_arrays_solib) is
-// given as the first macro argument (it should not be in quotes). The second argument (m)
-// defines a variable of type py::module which is the main interface for creating
-// bindings. The method module::def() generates binding code that exposes the C++
-// functions to Python.
-
 
 namespace dnt {
 
@@ -62,7 +54,7 @@ namespace dnt {
 
       //      std::cout << "{mesh_entity_arrays_solib.cpp}makeMeshEntityArrays: pyclass_name " << pyclass_name << std::endl;
                                                       
-      // Create the Python binding for 
+      // Create the Python binding for a class with name pyclass_name.
       py::class_<MEA>(m, pyclass_name.c_str())
 
         // The ctor
@@ -88,9 +80,13 @@ namespace dnt {
   } // namespace is anonymous
   
 
-  // Create a shared library for the specialized C++ MeshEntityArrays classes
-  // specified below, along with Python bindings for these classes.
-
+  // The PYBIND11_MODULE() macro creates a function that will be called when an import
+  // statement is issued from within Python. The module name (mesh_entity_arrays_solib) is
+  // given as the first macro argument (it should not be in quotes). The second argument (m)
+  // defines a variable of type py::module which is the main interface for creating
+  // bindings. The method module::def() generates binding code that exposes the C++
+  // functions to Python.
+  
   // Create a variable 'm' of type py::module
   PYBIND11_MODULE(mesh_entity_arrays_solib, m)
   {

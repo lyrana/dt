@@ -1416,7 +1416,7 @@ class Particle_C(object):
                 # Invoke the mover for the right number of cell-facets
                 # Pull out the field data needed for interpolation to the particles
 #            auto negEfieldFunction = neg_E_field.field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
-                negEfieldFunction = neg_E_field.function.cpp_object()
+                negEfieldFunction = neg_E_field.function.cpp_object() # Received as a dolfin::Function*
                 self.integrators[sn](self, sn, ctrl, neg_E_field=negEfieldFunction, external_E_field=external_E_field, accel_only=accel_only)
             else:
                 # Advance the particles in this species with Python

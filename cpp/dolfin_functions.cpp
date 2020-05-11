@@ -10,6 +10,10 @@
 
   The Python bindings for these are in dolfin_functions_solib.cpp.
 
+  The statements at the bottom of this file cause the compilation of the specialized
+  versions needed in dolfin_functions_solib.cpp. Without these statements, those do not
+  get compiled.
+
   \namespace dnt
   \sa dolfin_functions.h, MeshEntityArrays.h, predicates.h, dolfin_functions_solib.cpp
 
@@ -734,8 +738,11 @@ namespace dnt
 // determined so that the compiler can generate an actual function (or class, from a class
 // template).
 
-// Instantiate the function with a particular type, to make the compiler compile the function.
-//template void dnt::interpolate_field_to_points<>(dolfin::Function&,
+
+// Since dolfin_functions_solib.cpp includes dolfin_function.h, but not dolfin_functions_cpp,
+// we to need the following statements instantiating the function
+// interpolate_field_to_points() with a particular type, to make the compiler compile the
+// function.
 
 // Use this one if given the points in a Numpy array
 template void dnt::interpolate_field_to_points<>(dolfin::Function*,

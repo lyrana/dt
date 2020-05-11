@@ -161,24 +161,27 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         ### Particle boundary-conditions
 
-        # Create a UserParticleBoundaryFunctions_C object, which contains the
+        # Make a dictionary associating the above-named boundaries of the particle mesh with
+        # user-supplied call-back functions.
+        
+        # First, create a UserParticleBoundaryFunctions_C object, which contains the
         # boundary-crossing callback functions.
         # userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # Now need an instantiation, not just a class name:
+        
+        spNames = self.particle_P.species_names
         if self.particle_P.use_cpp_integrators is True:
             userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_solib"
             # Import this module
             userParticleBoundaryFunctionsModule = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
             # Call the constructor to make a UserParticleBoundaryFunctions object
             userPBndFns = userParticleBoundaryFunctionsModule.UserParticleBoundaryFunctions_cartesian_xy(self.particle_P.position_coordinates)
+            pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh2D_M, userPBndFns, print_flag=False)
 #            userPBndFns = None
         else:
             userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(self.particle_P.position_coordinates, self.particle_P.dx)
+            pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh2D_M, userPBndFns, print_flag=False)
 
-        # Make a dictionary associating the above-named boundaries of the particle mesh with
-        # user-supplied call-back functions.
-        spNames = self.particle_P.species_names
-        pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh2D_M, userPBndFns, print_flag=False)
-        # Add this to the Particle_C object
+        # Add pmeshBCs to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs
         #tph
         self.particle_P.userPBndFns = userPBndFns

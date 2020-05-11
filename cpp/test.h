@@ -66,7 +66,7 @@ namespace dnt
     
     for (size_t i = 0; i < int_list3.size(); i++)
       {
-        std::cout << "int_list3[" << i << "] = " << int_list3[i].cast<int>() << std::endl;        
+        std::cout << "int_list3[" << i << "] = " << int_list3[i].cast<int>() << std::endl;
       }
 
     for (size_t i = 0; i < string_list3.size(); i++)

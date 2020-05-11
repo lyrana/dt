@@ -45,31 +45,35 @@ namespace dnt
       /*!
 
         \param position_coordinates: Example: ['x', 'y',]
-        \param dx: The particle move vector
         
         \sa Ptype
 
       */
       // Call example (sphere1D.py):
       //     userPBndFns = UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
-      // UserParticleBoundaryFunctions(py::list position_coordinates, dx):
-      //    UserParticleBoundaryFunctions(std::vector<std::string>& position_coordinates):
-    UserParticleBoundaryFunctions(py::list& position_coordinates_arg)
-      {
-        for (auto item : position_coordinates_arg)
-          {
-            // or item.cast<std::string>()?
-            position_coordinates.push_back(item.cast<std::string>());
-            // position_coordinates.push_back(std::string(py::str(item)));
-          }
-      };
+      UserParticleBoundaryFunctions(py::list& position_coordinates_arg)
+        {
+          for (auto item : position_coordinates_arg)
+            {
+              position_coordinates.push_back(item.cast<std::string>());
+              // or: position_coordinates.push_back(std::string(py::str(item)));
+            }
+          // Create an std::map of function-names to functions
+          // This has to be done manually for each callback function defined below.
+          bc_function_map.insert(std::pair("default_bc", &default_bc);
+ 
+        };
       // UserParticleBoundaryFunctions(position_coordinates, dx):ENDDEF
 
     private:
       std::vector<std::string> position_coordinates;
+      // This is a dictionary of functions, indexed by the functions names.
+      std::map<std::string, void (*)()> bc_function_map;
+      
+      // Scratch for manipulating the particle coordinates and velocities:
       double pcoord[3], pvel[3];
     
-      //! Default boundary condition for all particles on all boundaries.
+      //! Define the default boundary condition for all particles on all boundaries.
       /*!
 
         p, species_name, facet_index, dx, dx_fraction, facet_normal

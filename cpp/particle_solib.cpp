@@ -12,6 +12,7 @@
 
 */
 #include "particle.h"
+//#include "ParticleMeshBoundaryConditions.h"
 
 // To create a .so file for a particular particle type, set the macro
 // PARTICLE_MODULE_PREFIX in Makefile.part.
@@ -35,7 +36,7 @@ namespace dnt {
   
   PYBIND11_MODULE(MODULE_NAME, m) {
 
-    // C++ functions defined in particle.cpp
+    // C++ functions defined in particle.h
 
     //    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x>, x_, "x", x0_, "x0", ux_, "ux", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
 
@@ -62,7 +63,12 @@ namespace dnt {
     //    m.def("advance_neutral_species_4_facets", &advance_neutral_species<Ptype::PARTICLE_TYPE, 4>);
     
     m.def("advance_charged_species_in_E_field_3_facets", &advance_charged_species_in_E_field_cartesian_xy<3>, py::arg("particle_P"), py::arg("species_name"), py::arg("ctrl"), py::arg("neg_E_field") = nullptr, py::arg("external_E_field") = nullptr, py::arg("accel_only") = false);
-      
-  } // ENDDEF: PYBIND11_MODULE()
+
+    // Interface to the ParticleMeshBoundaryConditions class is in particle.h.
+    // These calls create needed specializations
+    makeParticleMeshBoundaryConditions<Ptype::cartesian_xy>(m, "cartesian_xy");
+    
+  } // ENDDEF: PYBIND11_MODULE(MODULE_NAME, m)
+
 
 } // namespace dnt

@@ -1664,14 +1664,68 @@ namespace dnt
 } // namespace dnt
 
 
-//  template <Ptype PT, size_t N_CELL_FACETS>
-//    void advance_neutral_species(py::object particle_P, py::str species_name, py::object ctrl)
+// Do these cause the compiler to make the specialized classes?
+// The .def bindings in particle_solib.cpp seem to be sufficient to get compilation.
+// That's probably because the definitions are included here in particle.h.
 
 //template void dnt::advance_neutral_species<dnt::Ptype::cartesian_xyz, 2>(py::object,
 //                                                                         py::str,
 //                                                                         py::object);
-
 //template void dnt::advance_neutral_species<dnt::Ptype::cartesian_xy, 3>(py::object,
 //                                                                        py::str,
 //                                                                        py::object);
+
+// Write a helper function to make specialized ParticleMeshBoundaryConditions
+// classes. This is in particle.h, reflecting the fact that the Python version is in
+// Particle_Module.py. This also avoids putting a long piece of code into
+// particle_solib.cpp, and avoids having to make a separate module for it.  Also,
+// particle.h already has the pybind11 headers.
+
+namespace dnt {
+
+  // The anonymous namespace limits the scope of the functions in it to this file.
+  namespace {
+
+    //! Make ParticleMeshBoundaryConditions classes to contain
+    //! UserParticleBoundaryFunctions of different Ptypes.
+    /*!
+
+      makeParticleMeshBoundaryConditions() is a 'helper' function. It creates the Python
+      bindings for a specialized ParticleMeshBoundaryConditions class and its member
+      functions based on the PT template parameter. Class instances can then be created
+      and used in Python.
+
+      \param PT is a template parameter for the function, specifying the class Ptype.
+      \param m is a py::module object created by PYBIND11_MODULE.
+      \param PT_str is a string used to create a unique Python class-name based on the Ptype.
+
+      \return void
+
+      \sa UserParticleBoundaryFunctions.h, UserParticleBoundaryFunctions.cpp
+
+     */
+    template <Ptype PT>
+    void makeParticleMeshBoundaryConditions(py::module &m, std::string const & PT_str)
+    {
+      using PMBC = ParticleMeshBoundaryConditions<PT>;
+      // Make a class name with the particle structure type (Ptype) string appended to the
+      // string "ParticleMeshBoundaryConditions_"
+      std::string pyclass_name = std::string("ParticleMeshBoundaryConditions_") + PT_str;
+      
+      // Create the Python binding for this class
+      py::class_<PMBC>(m, pyclass_name.c_str())
+        
+        // The C++ ctor args types are template parameters in py::init<>()
+        // Note that if a py::arg() specification is needed (e.g., to specify a
+        // default value), then every argument has to have a py::arg().
+        //        .def(py::init<py::list&, py::object&, UserParticleBoundaryFunctions<PT>&, bool>(), py::arg("species_names"), py::arg("pmesh_M"), py::arg("userParticleBoundaryFunctions"), py::arg("print_flag") = false);
+        // Use a std::vector<std::string> instead of a py::list for species_names
+        .def(py::init<std::vector<std::string>&, py::object&, UserParticleBoundaryFunctions<PT>&, bool>(), py::arg("species_names"), py::arg("pmesh_M"), py::arg("userParticleBoundaryFunctions"), py::arg("print_flag") = false);      
+      // cf. ~/workspace/dolfin/python/src/geometry.cpp for __getitem__, if needed.
+        
+    } // void makeParticleMeshBoundaryConditions
+    
+  } // namespace is anonymous
+
+}
 #endif
