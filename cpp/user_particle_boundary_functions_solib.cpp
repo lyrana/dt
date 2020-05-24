@@ -1,4 +1,4 @@
-/*! \file user_particles_boundary_functions_solib.cpp
+/*! \file user_particle_boundary_functions_solib.cpp
 
   \brief This file creates a shared library containing the Python bindings for particle call-back functions in UserParticleBoundaryFunctions.h.
 
@@ -10,7 +10,7 @@
 
   \namespace dnt
 
-  \sa particle.h
+  \sa particle.h ParticleMeshBoundaryConditions.h UserParticleBoundaryFunctions.h
 
 */
 #include "UserParticleBoundaryFunctions.h"

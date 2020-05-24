@@ -76,10 +76,11 @@ class TestParticleNonuniformE(unittest.TestCase):
         userParticlesModuleName = "UserParticles_2D_e"
         # Give the name of the C++ .so file
         # userParticlesSOlibName = "user_particles_2D_e_solib"
-        userParticlesSOlibName = "user_particle_boundary_functions_solib"
+        # userParticlesSOlibName = "user_particle_boundary_functions_solib"
         
-        # Import this module
+        # Import this module...
         userParticlesModule = im_m.import_module(userParticlesModuleName)
+        # ...and get the initial particle distribution-functions
         self.particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
         ### two_electrons are present at t=0
@@ -170,12 +171,20 @@ class TestParticleNonuniformE(unittest.TestCase):
         
         spNames = self.particle_P.species_names
         if self.particle_P.use_cpp_integrators is True:
+            # Import C++ particle module
+            particleSOlibName = "particle_cartesian_xy_solib"
+            particleCpp = im_m.import_module(particleSOlibName)
+            # Import C++ particle boundary-conditions
             userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_solib"
-            # Import this module
-            userParticleBoundaryFunctionsModule = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
+            userParticleBoundaryFunctionsCpp = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
             # Call the constructor to make a UserParticleBoundaryFunctions object
-            userPBndFns = userParticleBoundaryFunctionsModule.UserParticleBoundaryFunctions_cartesian_xy(self.particle_P.position_coordinates)
-            pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh2D_M, userPBndFns, print_flag=False)
+            userPBndFns = userParticleBoundaryFunctionsCpp.UserParticleBoundaryFunctions_cartesian_xy(self.particle_P.position_coordinates)
+
+            # Create the map from mesh facets to particle callback functions:
+
+#        .def(py::init<std::vector<std::string>&, py::object&, UserParticleBoundaryFunctions<PT>&, bool>(), py::arg("species_names"), py::arg("pmesh_M"), py::arg("userParticleBoundaryFunctions"), py::arg("print_flag") = false);
+        
+            pmeshBCs = particleCpp.ParticleMeshBoundaryConditions_cartesian_xy(spNames, pmesh2D_M, userPBndFns, print_flag=False)
 #            userPBndFns = None
         else:
             userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(self.particle_P.position_coordinates, self.particle_P.dx)
@@ -184,7 +193,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         # Add pmeshBCs to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs
         #tph
-        self.particle_P.userPBndFns = userPBndFns
+#        self.particle_P.userPBndFns = userPBndFns
         #endtph
 
         # The following value should correspond to the element degree
@@ -290,7 +299,7 @@ class TestParticleNonuniformE(unittest.TestCase):
                 # print('calculated = ', getparticle)
                 # print('expected = ', p_expected[ip])
                 for ic in range(ncoords):
-#                    print "result:", getparticle[ic]/p_expected[ip][ic]
+                    print("result:", getparticle[ic]/p_expected[ip][ic])
 # Note: for different field solver, may have to reduce the places:
                     self.assertAlmostEqual(getparticle[ic]/p_expected[ip][ic], 1.0, places=6, msg="Particle is not in correct position")
 #                    print "ic", ic, "is OK"

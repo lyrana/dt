@@ -10,7 +10,7 @@
   template <Ptype PT>
     void advance_charged_species_in_uniform_fields(py::object particle_P, py::str species_name, py::object ctrl)
 
-  \sa particle_solib.cpp, MeshEntityArrays.h, SegmentedArrayPair.h
+  \sa particle_solib.cpp, MeshEntityArrays.h, SegmentedArrayPair.h, ParticleMeshBoundaryConditions.h, UserParticleBoundaryFunctions.h, user_particle_boundary_functions_solib.cpp
 */
 
 #ifndef PARTICLE_H
@@ -43,6 +43,7 @@
 //#include "pstruct.h"
 #include "SegmentedArrayPair.h"
 #include "MeshEntityArrays.h"
+#include "ParticleMeshBoundaryConditions.h"
 #include "UserParticleBoundaryFunctions.h"
 
 #include "dolfin_functions.h"
@@ -155,9 +156,9 @@ namespace dnt
     neighbor cell is. This is repeated until the cell containing the final position
     is found.
 
-    \param particle_P is a Particle_C object.
+    \param particle_P is a Particle_C Python object.
     \param species_name is the py::str name of the species to be advanced.
-    \param ctrl is a DTcontrol_C object.
+    \param ctrl is a DTcontrol_C Python object.
 
     \var SegmentedArrayPair<PT>* sap
     This is a pointer-to-SegmentedArrayPair containing the particle data
@@ -209,10 +210,12 @@ namespace dnt
     //    auto Eext1 = particle_P.attr("Eext1").cast<py::array_t<double>>();
     auto E1 = particle_P.attr("E1_value").cast<py::array_t<double>>();
     auto Eext1 = particle_P.attr("Eext1_value").cast<py::array_t<double>>();
+
 //tph
     // auto userPBndFns = particle_P.attr("userPBndFns").cast<UserParticleBoundaryFunctions>();
-    auto userPBndFns = particle_P.attr("userPBndFns").cast<UserParticleBoundaryFunctions<Ptype::PARTICLE_TYPE>>();
+    // auto userPBndFns = particle_P.attr("userPBndFns").cast<UserParticleBoundaryFunctions<Ptype::PARTICLE_TYPE>>();
 //endtph
+
     // To use the buffer protocol instead of a proxy
     /* py::buffer_info negEinfo = negE.request(); // request() returns metadata about the array (ptr, ndim, size, shape) */
     /* negE_array = (double*) negEinfo.ptr; // A simple C++ array */
@@ -240,7 +243,15 @@ namespace dnt
     // ?? Test for is_none() first?
                         
     // Move this to the top of the function
-    auto bcFunctionDict = particle_P.attr("pmesh_bcs").attr("bc_function_dict").cast<std::map<int, py::dict>>();
+    // This was when we were using the Python callbacks
+    // auto bcFunctionDict = particle_P.attr("pmesh_bcs").attr("bc_function_dict").cast<std::map<int, py::dict>>();
+
+    // auto bcFunctionDict = particle_P.attr("pmesh_bcs").cast<ParticleMeshBoundaryConditions<Ptype::PARTICLE_TYPE>>();
+    auto pMBCs = particle_P.attr("pmesh_bcs").cast<ParticleMeshBoundaryConditions<Ptype::PARTICLE_TYPE>>();
+
+    auto userPBFs = pMBCs.user_particle_boundary_functions; // Need this to call the boundary functions.
+    auto bcFunctionDict = pMBCs.bc_function_dict;
+                                                                                              
     // auto sapMap = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz> *>>();
     
     // Get attributes from the DTcontrol_C argument
@@ -583,15 +594,16 @@ namespace dnt
                           std::cout << "key=" << std::string(py::str(item.first)) << ", "
                                     << "value=" << std::string(py::str(item.second)) << std::endl;
 */                        
-                        auto bcFunction = bcFunctionDict[facValue];
+                                                                                                                       auto bcFunction = bcFunctionDict[std::make_pair(facValue,species_name)];
                         //                        auto bcFunction = bcFunctionDict[py::str(std::to_string(facValue))].cast<py::dict>();
                         std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@7" << std::endl;
 
                         // old: bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);
                         
-                        //                        bcFunction[species_name](psegOut[ipOut], species_name, mFacet, dx, dxFraction, facetNormalVector);
+                        (userPBFs.*bcFunction)(psegOut[ipOut], species_name, mFacet, dx, dxFraction, facetNormalVector);
+
                         //tph Direct call to a C++ member function.
-                        userPBndFns.default_bc(psegOut[ipOut], species_name, mFacet, dx, dxFraction, facetNormalVector);
+                        // userPBndFns.default_bc(psegOut[ipOut], species_name, mFacet, dx, dxFraction, facetNormalVector);
                         //endtph
                         std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@8" << std::endl;                        
                       }

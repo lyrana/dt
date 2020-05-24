@@ -34,8 +34,8 @@ namespace dnt {
       instanced in C++ code. It can also be created from Python if the binding code
       is written below.
 
-      \param N_CELL_FACETS a template parameter specifying the number of facets that
-      a mesh-cell has.
+      \param N_CELL_FACETS is a template parameter specifying the number of facets that
+             a mesh-cell has.
       \param m is a py::module object created by PYBIND11_MODULE
       \param strFacets is a string used to create a unique Python class name.
 

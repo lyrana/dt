@@ -47,7 +47,7 @@ class ParticleInput_C(object):
 
         # The flag to use either Python (default) or C++ to store and move particles
         self.use_cpp_integrators = None
-        self.cpp_module = None
+        self.particle_cpp = None
         
         # Values: 'loop-on-particles', 'loop-on-cells'
         self.particle_integration_loop = None
@@ -340,15 +340,15 @@ class Particle_C(object):
                 # avoids having to call back to Python from C++ to manage the
                 # storage.
                 if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
-                    import particle_cartesian_x_solib as cppModule
+                    import particle_cartesian_x_solib as particleCpp
                     self.sap_dict[speciesName] = segmented_array_pair_solib.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xy':
-                    import particle_cartesian_xy_solib as cppModule
+                    import particle_cartesian_xy_solib as particleCpp
                     self.sap_dict[speciesName] = segmented_array_pair_solib.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xyz':
-                    import particle_cartesian_xyz_solib as cppModule
+                    import particle_cartesian_xyz_solib as particleCpp
                     self.sap_dict[speciesName] = segmented_array_pair_solib.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
-                self.cpp_module = cppModule
+                self.particle_cpp = particleCpp
             else:
             # If using Python-created SAPs:
                 import SegmentedArrayPair_Module as SA_M
@@ -521,7 +521,7 @@ class Particle_C(object):
                 self.negE = np_m.zeros((self.SEGMENT_LENGTH, nEcomps), dtype=force_precision)  # Does this and Eext need to be "zeros"?
                 self.Eext = np_m.zeros((self.SEGMENT_LENGTH, nEcomps), dtype=force_precision)
                 self.zeroE = np_m.zeros((self.SEGMENT_LENGTH, nEcomps), dtype=force_precision)
-#                self.cpp_module.initialize_particle_integration(self.negE, self.Eext, self.zeroE)
+#                self.particle_cpp.initialize_particle_integration(self.negE, self.Eext, self.zeroE)
 
             else:
                 # reusable array for the solved field:
@@ -559,12 +559,12 @@ class Particle_C(object):
             for sn in self.charged_species:
                 # Use the integrator specialized to the right number of cell-facets.
                 integratorName = "advance_charged_species_in_E_field_" + str(nFacets) + "_facets"
-                integrator = getattr(self.cpp_module, integratorName)
+                integrator = getattr(self.particle_cpp, integratorName)
                 self.integrators[sn] = integrator
             for sn in self.neutral_species:
                 # Use the integrator specialized to the right number of cell-facets.
                 integratorName = "advance_neutral_species_" + str(nFacets) + "_facets"
-                integrator = getattr(self.cpp_module, integratorName)
+                integrator = getattr(self.particle_cpp, integratorName)
                 self.integrators[sn] = integrator
         else:
             # Advance the particles in this species with Python functions.
@@ -1782,6 +1782,7 @@ class Particle_C(object):
 #                                self.record_trajectory_datum(sn, ipOut, fullIndex, step, tStart, neg_E_field=None, external_E_field=None, facet_crossing=True)
                                 self.record_trajectory_datum(sn, ipOut, fullIndex, step, tStart, E1Value, Eext1Value, facet_crossing=True)
 
+                            # Call the boundary function
                             self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
                             print("facValue=", facValue, "bc_function_dict[facValue]=",self.pmesh_bcs.bc_function_dict[facValue])
                         # Look up the cell index of the new cell.
@@ -1884,7 +1885,7 @@ class Particle_C(object):
 #                tDim = self.pmesh_M.mesh.topology().dim()
 #                nFacets = tDim + 1
 #                particleAdvancerName = "advance_neutral_species_" + str(nFacets) + "_facets"
-#                particleAdvancer = getattr(self.cpp_module, particleAdvancerName)
+#                particleAdvancer = getattr(self.particle_cpp, particleAdvancerName)
 #                print(fncName, "\tCalling", particleAdvancerName)
 #                particleAdvancer(self, sn, ctrl)
                 self.integrators[sn](self, sn, ctrl)

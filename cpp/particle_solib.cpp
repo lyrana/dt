@@ -64,7 +64,7 @@ namespace dnt {
     
     m.def("advance_charged_species_in_E_field_3_facets", &advance_charged_species_in_E_field_cartesian_xy<3>, py::arg("particle_P"), py::arg("species_name"), py::arg("ctrl"), py::arg("neg_E_field") = nullptr, py::arg("external_E_field") = nullptr, py::arg("accel_only") = false);
 
-    // Interface to the ParticleMeshBoundaryConditions class is in particle.h.
+    // Interface to the ParticleMeshBoundaryConditions class is defined in particle.h.
     // These calls create needed specializations
     makeParticleMeshBoundaryConditions<Ptype::cartesian_xy>(m, "cartesian_xy");
     
