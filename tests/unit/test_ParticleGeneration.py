@@ -274,7 +274,7 @@ class TestParticleGeneration(unittest.TestCase):
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
         p_P = particle_P
-        traj_T = Trajectory_C(self.trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, ctrl, p_P.charged_species, p_P.neutral_species)
         particle_P.traj_T = traj_T
 
         ## Invoke the source functions and write out the particles

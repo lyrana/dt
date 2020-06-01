@@ -74,10 +74,6 @@ class TestParticleNonuniformE(unittest.TestCase):
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary conditions, source regions, etc.)
         userParticlesModuleName = "UserParticles_2D_e"
-        # Give the name of the C++ .so file
-        # userParticlesSOlibName = "user_particles_2D_e_solib"
-        # userParticlesSOlibName = "user_particle_boundary_functions_solib"
-        
         # Import this module...
         userParticlesModule = im_m.import_module(userParticlesModuleName)
         # ...and get the initial particle distribution-functions
@@ -158,7 +154,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         # 3. Compute the cell-neighbors and facet-normals for the particle movers.
         self.particle_P.initialize_particle_mesh(pmesh2D_M)
         
-        self.particle_P.initialize_particle_integration()        
+        self.particle_P.initialize_particle_integration()
 
         ### Particle boundary-conditions
 
@@ -299,7 +295,7 @@ class TestParticleNonuniformE(unittest.TestCase):
                 # print('calculated = ', getparticle)
                 # print('expected = ', p_expected[ip])
                 for ic in range(ncoords):
-                    print("result:", getparticle[ic]/p_expected[ip][ic])
+                    #print("result:", getparticle[ic]/p_expected[ip][ic])
 # Note: for different field solver, may have to reduce the places:
                     self.assertAlmostEqual(getparticle[ic]/p_expected[ip][ic], 1.0, places=6, msg="Particle is not in correct position")
 #                    print "ic", ic, "is OK"

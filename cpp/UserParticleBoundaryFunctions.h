@@ -99,7 +99,7 @@ namespace dnt
 
     private:
       std::vector<std::string> position_coordinates;
-      // This is a dictionary of functions, indexed by the functions names.
+      // The following variable is a dictionary of functions, indexed by the functions names.
       std::map<std::string, CallbackFunctionPtr<PT>> bc_function_map;
       
       // Scratch for manipulating the particle coordinates and velocities:
@@ -121,14 +121,13 @@ namespace dnt
         \return: Nothing is returned.
       */
       // Call in particle.h:
-      // old: bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);        
-      //   bcFunction[species_name](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);
+      // auto bcFunction = bcFunctionDict[std::make_pair(facValue,species_name)];
 
     public:
       void default_bc(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal)
       {
 
-        std::cout << "Hello from the UserParticleBoundaryFunctions::default_bc" << std::endl;
+        //std::cout << "Hello from {UserParticleBoundaryFunctions.h}default_bc" << std::endl;
 
         // Set the delete flag on the particle
         p.bitflags_ = p.bitflags_ | Pstruct<PT>::DELETE_FLAG;
@@ -138,7 +137,7 @@ namespace dnt
 
         return;
       }
-      // void default_bc(p, species_name, facet_index, dx_fraction=None, facet_normal=None): ENDDEF
+      // void default_bc(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal): ENDDEF
 
     };
   // class UserParticleBoundaryFunctions: ENDCLASS

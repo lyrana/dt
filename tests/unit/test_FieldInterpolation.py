@@ -15,9 +15,7 @@ from Dolfin_Module import Mesh_C
 from Dolfin_Module import Field_C
 
 # Use the C++ functions in the dolfin_functions_cartesian_xyz_solib.so library
-#import dolfin_functions_cartesian_xyz_solib.so as df_so
-#import mesh_entity_arrays_solib as mea_so
-#import dolfin_functions_cartesian_xyz_solib as df_so
+import numpy_types_solib
 import dolfin_functions_solib as df_so
 
 class TestFieldInterpolation(unittest.TestCase):

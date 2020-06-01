@@ -10,6 +10,11 @@ import numpy as np_m
 import unittest
 
 # Use the C++ functions in the segmented_array_pair_solib.so library
+import sys
+
+modulename = 'numpy_types_solib'
+if modulename not in sys.modules:
+    import numpy_types_solib
 import segmented_array_pair_solib
 
 class TestSegmentedArrayPair(unittest.TestCase):

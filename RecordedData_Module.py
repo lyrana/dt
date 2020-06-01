@@ -295,8 +295,8 @@ class TrajectoryInput_C(object):
         # boundary, a larger value can be used.
         self.extra_points = None
 
-        self.explicit_dict = None
-        self.implicit_dict = None
+        self.charged_dict = None
+        #self.implicit_dict = None
         self.neutral_dict = None
 
         return
@@ -323,7 +323,8 @@ class Trajectory_C(object):
     # where it was deleted.
     NO_PINDEX = -1
 
-    def __init__(self, trajin, ctrl, explicit_species, implicit_species, neutral_species):
+    # def __init__(self, trajin, ctrl, explicit_species, implicit_species, neutral_species):
+    def __init__(self, trajin, ctrl, charged_species, neutral_species):
         """Set up the initial trajectory storage.  
 
            :var trajin.max_points: Maximum number of trajectory data points to be
@@ -341,7 +342,7 @@ class Trajectory_C(object):
            :var data_list: data_list[sp][itraj] is a numpy array of length npoints that
                            stores the trajectory data for trajectory itraj of species sp.
 
-           :var explicit_dict: a dictionary in numpy dtype format giving the string names
+           :var charged_dict: a dictionary in numpy dtype format giving the string names
                                of particle attributes that can be saved in a trajectory.
 
            The storage uses numpy arrays of length self.npoints           
@@ -371,14 +372,14 @@ class Trajectory_C(object):
         self.npoints = int(ctrl.n_timesteps/self.skip + 1 + trajin.extra_points)
 
         # Need these to get the right trajectory variables
-        self.explicit_species = explicit_species
-        self.implicit_species = implicit_species
+        self.charged_species = charged_species
+        #self.implicit_species = implicit_species
         self.neutral_species = neutral_species
 
         # The dictionary is in the form of a numpy dtype, giving names
         # and types of the trajectory values, as specified by the user's input.
-        self.explicit_dict = trajin.explicit_dict
-        self.implicit_dict = trajin.implicit_dict
+        self.charged_dict = trajin.charged_dict
+        #self.implicit_dict = trajin.implicit_dict
         self.neutral_dict = trajin.neutral_dict
 
         # For each species, there is
@@ -386,19 +387,20 @@ class Trajectory_C(object):
         #    2. a list of trajectory data arrays, one for each marked particle.
         #    3. a list of trajectory lengths, one for each marked particle.
         # These lists are indexed by species name, so they are dictionaries:
-        self.particle_index_list = {} # List of particle storage indices
-        self.particle_unique_id_list = {} # List of particle unique_IDs
+        self.particle_index_list = {} # Dictionary of particle storage indices, indexed by species name
+        self.particle_unique_id_list = {} # Dictionary of particle unique_IDs, indexed by species name
         self.data_list = {}
         self.trajectory_length = {}
 
-        for sp in self.explicit_species + self.implicit_species + self.neutral_species:
+        #for sp in self.charged_species + self.implicit_species + self.neutral_species:
+        for sp in self.charged_species + self.neutral_species:
             self.particle_index_list[sp] = []
             self.particle_unique_id_list[sp] = []
             self.data_list[sp] = []
             self.trajectory_length[sp] = []
 
         return
-#    def __init__(self, trajin, ctrl, explicit_species, implicit_species, neutral_species):ENDDEF
+#    def __init__(self, trajin, ctrl, charged_species, implicit_species, neutral_species):ENDDEF
 
     def create_trajectory(self, species_name, pindex, dynamics_type, unique_id_int=None):
         """Add storage for another particle trajectory.
@@ -424,9 +426,9 @@ class Trajectory_C(object):
 
         # Add a numpy array for this particles's trajectory data
         if dynamics_type == 'explicit':
-            self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.explicit_dict))
-        elif dynamics_type == 'implicit':
-            self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.implicit_dict))
+            self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.charged_dict))
+#        elif dynamics_type == 'implicit':
+#            self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.implicit_dict))
         elif dynamics_type == 'neutral':
             self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.neutral_dict))
         else:
@@ -453,7 +455,8 @@ class Trajectory_C(object):
         # Temporary array for plotting
 #        yvals = np_m.empty(self.npoints)
 
-        for sp in self.explicit_species + self.implicit_species + self.neutral_species:
+        #for sp in self.explicit_species + self.implicit_species + self.neutral_species:
+        for sp in self.charged_species + self.neutral_species:
             if len(self.data_list[sp]) == 0:
                 print(fncName, "\tDnT INFO: No trajectories recorded for species %s." % sp)
                 continue
@@ -530,7 +533,8 @@ class Trajectory_C(object):
 # interactive VTK plotter is obsolete, but this still works:
         plotter=df_m.plot(mesh, title=plot_title)
 
-        for sp in self.explicit_species + self.implicit_species + self.neutral_species:
+        #for sp in self.explicit_species + self.implicit_species + self.neutral_species:
+        for sp in self.charged_species + self.neutral_species:
             if len(self.data_list[sp]) == 0:
                 print(fncName, "\tDnT INFO: No trajectories recorded for species %s." % sp)
                 continue

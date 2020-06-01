@@ -204,7 +204,7 @@ class UserParticleDistributions_C(object):
         ynew = x0*np_m.sin(theta0)+y0*np_m.cos(theta0)
         (x0, y0, z0) = (xnew, ynew, z0)
 
-        print('x0, y0, z0 =', x0, y0, z0)
+        print("First particle: x0, y0, z0 =", x0, y0, z0)
 
 #        (ux0, uy0, uz0) = (3000.0, 2000.0, 1000.0)
         (ux0, uy0, uz0) = (0.0, 0.0, 1000.0)
@@ -228,7 +228,7 @@ class UserParticleDistributions_C(object):
         ynew = x1*np_m.sin(theta1)+y1*np_m.cos(theta1)
         (x1, y1, z1) = (xnew, ynew, z1)
 
-        print('x1, y1, z1 =', x1, y1, z1)
+        print("Second particle: x1, y1, z1 =", x1, y1, z1)
 
 #        (ux1, uy1, uz1) = (3000.0, 2000.0, 1000.0)
         (ux1, uy1, uz1) = (0.0, 0.0, 1000.0)

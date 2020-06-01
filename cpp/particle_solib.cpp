@@ -12,7 +12,6 @@
 
 */
 #include "particle.h"
-//#include "ParticleMeshBoundaryConditions.h"
 
 // To create a .so file for a particular particle type, set the macro
 // PARTICLE_MODULE_PREFIX in Makefile.part.

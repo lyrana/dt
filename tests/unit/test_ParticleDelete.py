@@ -36,7 +36,12 @@ class Vec_C(object):
 
 #STARTCLASS
 class TestParticleDeletion(unittest.TestCase):
-    """Test deletion of particles from the storage arrays"""
+    """Test deletion of particles from the storage arrays
+
+       There is no mesh in this calculation.
+       Only the 'one_electron' species has particles.
+
+    """
     
     def setUp(self):
 
@@ -178,13 +183,13 @@ class TestParticleDeletion(unittest.TestCase):
         format_list_base = [int, numpy.float32] # Start off the format list with types for
                                                 # 'step' and 't'
 
-        explicit_attributes = ['x', 'ux', 'y', 'uy', 'Ex', 'Ey']
-        format_list = format_list_base + [numpy.float32]*len(explicit_attributes)
-        self.trajin.explicit_dict = {'names': name_list_base+explicit_attributes, 'formats': format_list}
+        charged_attributes = ['x', 'ux', 'y', 'uy', 'Ex', 'Ey']
+        format_list = format_list_base + [numpy.float32]*len(charged_attributes)
+        self.trajin.charged_dict = {'names': name_list_base+charged_attributes, 'formats': format_list}
         
-        implicit_attributes = ['x', 'ux', 'phi']
-        format_list = format_list_base + [numpy.float32]*len(implicit_attributes)
-        self.trajin.implicit_dict = {'names': name_list_base+implicit_attributes, 'formats': format_list}
+        #implicit_attributes = ['x', 'ux', 'phi']
+        #format_list = format_list_base + [numpy.float32]*len(implicit_attributes)
+        #self.trajin.implicit_dict = {'names': name_list_base+implicit_attributes, 'formats': format_list}
 
         neutral_attributes = ['x', 'ux', 'y', 'uy']
         format_list = format_list_base + [numpy.float32]*len(neutral_attributes)
@@ -194,7 +199,7 @@ class TestParticleDeletion(unittest.TestCase):
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
         p_P = self.particle_P # abbreviation
-        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species)
         self.particle_P.traj_T = traj_T
 
         # Create the initial particles
@@ -211,7 +216,11 @@ class TestParticleDeletion(unittest.TestCase):
 #    def setUp(self): #ENDDEF
 
     def test_1_delete_particles(self):
-        """Delete some particles in the 'out' array"""
+        """
+           Delete 7 particles in the 'out' array of the one_electron species.
+           Start with 306 electrons in 4 segments.
+           End with 299 electrons in 3 segments.
+        """
 
         fncName = sys._getframe().f_code.co_name
         print('\ntest: ', fncName, '('+__file__+')')
@@ -227,7 +236,7 @@ class TestParticleDeletion(unittest.TestCase):
         self.ctrl.E0 = Vec_C(p_P.particle_dimension, E0)
 #        ctrl.B0 = Vec_C(p_P.particle_dimension, B0)
 
-        print("SEGMENT_LENGTH is %d" % p_P.SEGMENT_LENGTH)
+        #print("SEGMENT_LENGTH is %d" % p_P.SEGMENT_LENGTH)
 
         # Create more particles to test deletion. Copy the particle
         # that's already stored to make 3 full and one partially
@@ -239,10 +248,10 @@ class TestParticleDeletion(unittest.TestCase):
             if p_P.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
             (pseg, offset) = p_P.sap_dict[sp].get_segment_and_offset(0)
             getparticle = pseg[offset]
-            print ("getparticle = ", getparticle)
+            #print ("getparticle = ", getparticle)
             putparticle = getparticle
             x = putparticle[0]
-            print("Add %d more particles to %s species" % (num_particles, sp))
+            #print("Add %d more particles to %s species" % (num_particles, sp))
             for i in range(num_particles):
 #                print 'putparticle = ', putparticle
                 # Here's the layout of data in the putparticle tuple:
@@ -250,6 +259,7 @@ class TestParticleDeletion(unittest.TestCase):
                 putparticle[0] = x
                 # Turn on trajectory flag for a particle near the end:
                 if i == num_particles-10:
+                    # 'bitflags' is in position [10]
                     putparticle[10] = 0b00 | p_P.TRAJECTORY_FLAG # turn on trajectory flag
                 else:
                     putparticle[10] = 0b00 # initialize all bits to 0
@@ -264,7 +274,9 @@ class TestParticleDeletion(unittest.TestCase):
                 ## Add the new particles to the trajectory object.
                 if p['bitflags'] & p_P.TRAJECTORY_FLAG != 0:
                     if traj_T is not None:
-                        print('full_index for trajectory = ', full_index)
+                        #print('full_index for trajectory = ', full_index)
+                        full_index_expected = num_particles + 1 - 10
+                        self.assertEqual(full_index, full_index_expected, msg="full_index should be 296")
                         traj_T.particle_index_list[sp].append(full_index)
                         dynamicsType = 'explicit'
                         traj_T.create_trajectory(sp, full_index, dynamicsType)
@@ -276,11 +288,19 @@ class TestParticleDeletion(unittest.TestCase):
         # Query the particle arrays after initialization.
         for sp in p_P.species_names:
             (nseg_in, nseg_out) = p_P.sap_dict[sp].get_number_of_segments()
-            print(sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out))
+            #print(sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out))
+            if sp == 'one_electron':
+                nseg_in_expected = 1
+                self.assertEqual(nseg_in, nseg_in_expected, msg="nseg_in should be 1")            
+                nseg_out_expected = 4
+                self.assertEqual(nseg_out, nseg_out_expected, msg="nseg_out should be 4")
 #            npart_out = p_P.sap_dict[sp].get_number_of_items()
             npart_out = p_P.get_species_particle_count(sp)
-            print(sp, "species has %d particles in the 'out' array" % npart_out)
-
+            #print(sp, "species has %d particles in the 'out' array" % npart_out)
+            if sp == 'one_electron':
+                npart_out_expected = 306
+                self.assertEqual(npart_out, npart_out_expected, msg="npart_out should be 306")
+            
         # Delete some of the particles in each species.
 
         for sp in p_P.species_names:
@@ -292,7 +312,7 @@ class TestParticleDeletion(unittest.TestCase):
                                                                    # for np=1
 #            print("delparts at a =", delparts)
             delparts = (0, np-1, int(np/51), int(np/31), int(np/11), int(np/5), int(np/3))
-#            print("delparts at b =", delparts)
+            # print("delparts at b =", delparts)
             
             # Delete 6 particles, which fit into 3 segments
 #            delparts = (0, np-1, np/51, np/31, np/11, np/5)
@@ -300,7 +320,7 @@ class TestParticleDeletion(unittest.TestCase):
 #            delparts = (0, np-1, np/51, np/31, np/11)
             for ip in delparts:
                 # We need to change the stored data, so use get_segment_and_offset()
-                (parray, offset) = p_P.sap_dict[sp].get_segment_and_offset(full_index)
+                (parray, offset) = p_P.sap_dict[sp].get_segment_and_offset(ip)
                 getparticle = parray[offset]
 # This systax only works for the Python SAP:                
 #                getparticle = p_P.sap_dict[sp].get_item(ip)
@@ -317,21 +337,29 @@ class TestParticleDeletion(unittest.TestCase):
         # Don't care about the actual motion.
 
         ncoords = p_P.particle_dimension # number of particle coordinates to check
-#        isp = 0
+
+        p_P.initialize_particle_integration()
+        
         print("Moving", p_P.get_total_particle_count(), "particles for", self.ctrl.n_timesteps, "timesteps")
         for sp in p_P.species_names:
             if p_P.get_species_particle_count(sp) == 0: continue # Skip if there are no particles in this species
-            p_P.move_charged_species_in_uniform_fields(sp, self.ctrl)
 
+            p_P.advance_charged_species_in_uniform_fields(sp, self.ctrl)
+            
         # Now check on the arrays again
-        print("\nAfter a particle move step:\n")
+        #print("\nAfter a particle move step:\n")
         for sp in p_P.species_names:
             (nseg_in, nseg_out) = p_P.sap_dict[sp].get_number_of_segments()
-            print(sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out))
-            npart_out = p_P.get_species_particle_count(sp)
-            print(sp, "species has %d particles in the 'out' array" % npart_out)
-
-# Need an assert test here.
+            #print(sp, "species has %d segments in the 'in' array and %d segments in the 'out' array" % (nseg_in, nseg_out))
+            if sp == 'one_electron':
+                nseg_in_expected = 4
+                self.assertEqual(nseg_in, nseg_in_expected, msg="nseg_in should be 4")
+                nseg_out_expected = 3
+                self.assertEqual(nseg_out, nseg_out_expected, msg="nseg_out should be 3")
+                npart_out = p_P.get_species_particle_count(sp)
+                #print(sp, "species has %d particles in the 'out' array" % npart_out)
+                npart_out_expected = 299
+                self.assertEqual(npart_out, npart_out_expected, msg="nseg_out should be 4")
 
         return
 #    def test_1_delete_particles(self): ENDDEF

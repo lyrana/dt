@@ -263,9 +263,9 @@ class TestParticleTrajectory(unittest.TestCase):
         format_list_base = [int, numpy.float32] # Start off the format list with types for
                                                 # 'step' and 't'
 
-        explicit_attributes = ['x', 'ux', 'y', 'uy', 'crossings', 'Ex', 'Ey']
-        format_list = format_list_base + [numpy.float32 for i in range(len(explicit_attributes))]
-        self.trajin.explicit_dict = {'names': name_list_base+explicit_attributes, 'formats': format_list}
+        charged_attributes = ['x', 'ux', 'y', 'uy', 'crossings', 'Ex', 'Ey']
+        format_list = format_list_base + [numpy.float32 for i in range(len(charged_attributes))]
+        self.trajin.charged_dict = {'names': name_list_base+charged_attributes, 'formats': format_list}
         
         implicit_attributes = ['x', 'ux', 'phi']
         format_list = format_list_base + [numpy.float32 for i in range(len(implicit_attributes))]
@@ -295,7 +295,7 @@ class TestParticleTrajectory(unittest.TestCase):
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species)
         self.particle_P.traj_T = traj_T
 
         # Create particles that are selected for trajectories.
@@ -306,9 +306,9 @@ class TestParticleTrajectory(unittest.TestCase):
         # Check that the trajectory parameters are correct by
         # reading them back from the Particle_C object.
 
-        print("The explicit species with trajectory particles are", p_P.traj_T.explicit_species)
-        expectedList = self.trajin.explicit_dict['names']
-        for sp in p_P.traj_T.explicit_species:
+        print("The charged species with trajectory particles are", p_P.traj_T.charged_species)
+        expectedList = self.trajin.charged_dict['names']
+        for sp in p_P.traj_T.charged_species:
             print("  with particle indices", p_P.traj_T.particle_index_list[sp])
             if len(p_P.traj_T.particle_index_list[sp]) == 0: continue
             print("  and values", p_P.traj_T.data_list[sp][0].dtype.names)
@@ -317,13 +317,13 @@ class TestParticleTrajectory(unittest.TestCase):
                 self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an explicit particle")
 
 #        print "The implicit species are", p_P.traj_T.implicit_species
-        expectedList = self.trajin.implicit_dict['names']
-        for sp in p_P.traj_T.implicit_species:
+#        expectedList = self.trajin.implicit_dict['names']
+#        for sp in p_P.traj_T.implicit_species:
 #            print "  with indices", p_P.traj_T.particle_index_list[sp]
 #            print "  and values", p_P.traj_T.data_list[sp][0].dtype.names
             gotList = p_P.traj_T.data_list[sp][0].dtype.names
-            for i in range(len(expectedList)):
-                self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an implicit particle")
+#            for i in range(len(expectedList)):
+#                self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an implicit particle")
 #                self.assertAlmostEqual(getparticle[ix], p_expected[isp][ix], msg="Particle is not in correct position")
         return
 #    def test_1_trajectory_init(self):ENDDEF
@@ -347,7 +347,7 @@ class TestParticleTrajectory(unittest.TestCase):
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species)
         self.particle_P.traj_T = traj_T
 
         # Create particles that are selected for trajectories.
@@ -355,6 +355,8 @@ class TestParticleTrajectory(unittest.TestCase):
 
         # Get the initial cell index of each particle.
         p_P.compute_mesh_cell_indices()
+
+        p_P.initialize_particle_integration()
 
         # Record the first point on trajectories of marked particles
         if p_P.traj_T is not None:
@@ -376,9 +378,9 @@ class TestParticleTrajectory(unittest.TestCase):
                 self.iterate_implicit_electrostatic_particles(dt, p_P.implicit_species)
 
             # Then move the explicit species
-            if len(p_P.explicit_species) != 0:
-                p_P.move_particles_in_electrostatic_field(self.ctrl, neg_E_field=self.neg_electric_field)
-
+            if len(p_P.charged_species) != 0:
+                #p_P.move_particles_in_electrostatic_field(self.ctrl, neg_E_field=self.neg_electric_field)
+                p_P.advance_charged_particles_in_E_field(self.ctrl, neg_E_field=self.neg_electric_field)
             # XX needs dt; doesn't need n_timesteps
 
             # Record particle trajectory data
@@ -470,7 +472,7 @@ class TestParticleTrajectory(unittest.TestCase):
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species)
         self.particle_P.traj_T = traj_T
 
         # Create particles that are selected for trajectories.
@@ -479,6 +481,8 @@ class TestParticleTrajectory(unittest.TestCase):
         # Get the initial cell index of each particle.
         p_P.compute_mesh_cell_indices()
 
+        p_P.initialize_particle_integration()
+        
         # Record the first point on trajectories of marked particles
         if p_P.traj_T is not None:
             p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
@@ -499,8 +503,8 @@ class TestParticleTrajectory(unittest.TestCase):
                 self.iterate_implicit_electrostatic_particles(dt, p_P.implicit_species)
 
             # Then move the explicit species
-            if len(p_P.explicit_species) != 0:
-                p_P.move_particles_in_electrostatic_field(self.ctrl, neg_E_field=self.neg_electric_field)
+            if len(p_P.charged_species) != 0:
+                p_P.advance_charged_particles_in_E_field(self.ctrl, neg_E_field=self.neg_electric_field)
 
             # Gather particle trajectory data for marked particles
             if p_P.traj_T is not None:
@@ -596,7 +600,7 @@ class TestParticleTrajectory(unittest.TestCase):
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species)
         self.particle_P.traj_T = traj_T
 
         # Create particles that are selected for trajectories.
@@ -605,6 +609,8 @@ class TestParticleTrajectory(unittest.TestCase):
         # Get the initial cell index of each particle.
         p_P.compute_mesh_cell_indices()
 
+        p_P.initialize_particle_integration()
+        
         # Record the first point on trajectories of marked particles
         if p_P.traj_T is not None:
             p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
@@ -622,12 +628,13 @@ class TestParticleTrajectory(unittest.TestCase):
 #            print fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
 
             # Do the implicit species first
-            if len(p_P.implicit_species) != 0:
-                self.iterate_implicit_electrostatic_particles(dt, p_P.implicit_species)
+            #if len(p_P.implicit_species) != 0:
+            #    self.iterate_implicit_electrostatic_particles(dt, p_P.implicit_species)
 
             # Then move the explicit species
-            if len(p_P.explicit_species) != 0:
-                p_P.move_particles_in_electrostatic_field(self.ctrl, neg_E_field=self.neg_electric_field)
+            if len(p_P.charged_species) != 0:
+                #p_P.move_particles_in_electrostatic_field(self.ctrl, neg_E_field=self.neg_electric_field)
+                p_P.advance_charged_particles_in_E_field(self.ctrl, neg_E_field=self.neg_electric_field)
 
             # Gather particle trajectory data for marked particles
             if p_P.traj_T is not None:

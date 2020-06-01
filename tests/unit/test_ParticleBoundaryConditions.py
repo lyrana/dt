@@ -137,13 +137,13 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         format_list_base = [int, numpy.float32] # Start off the format list with types for
                                                 # 'step' and 't'
 
-        explicit_attributes = ['x', 'ux', 'y', 'uy', 'Ex', 'Ey']
-        format_list = format_list_base + [numpy.float32]*len(explicit_attributes)
-        trajin.explicit_dict = {'names': name_list_base+explicit_attributes, 'formats': format_list}
+        charged_attributes = ['x', 'ux', 'y', 'uy', 'Ex', 'Ey']
+        format_list = format_list_base + [numpy.float32]*len(charged_attributes)
+        trajin.charged_dict = {'names': name_list_base+charged_attributes, 'formats': format_list}
         
-        implicit_attributes = ['x', 'ux', 'phi']
-        format_list = format_list_base + [numpy.float32]*len(implicit_attributes)
-        trajin.implicit_dict = {'names': name_list_base+implicit_attributes, 'formats': format_list}
+        #implicit_attributes = ['x', 'ux', 'phi']
+        #format_list = format_list_base + [numpy.float32]*len(implicit_attributes)
+        # trajin.implicit_dict = {'names': name_list_base+implicit_attributes, 'formats': format_list}
 
         neutral_attributes = ['x', 'ux', 'y', 'uy']
         format_list = format_list_base + [numpy.float32]*len(neutral_attributes)
@@ -151,7 +151,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # Add a traj_T reference to the particle object
         p_P = particle_P # abbreviation
-        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        #p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species)
 
         ##  Mesh input for the particle mesh, including particle boundary conditions.
 
@@ -195,17 +196,21 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
         pmesh_M = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plot_mesh, plot_title=plotTitle)
+
         # Add this to the particle object:
-        particle_P.pmesh_M = pmesh_M
-
-
+        # p_P.pmesh_M = pmesh_M
+        # 1. Attach the particle mesh to p_P.
+        # 2. Attach the C++ particle movers.
+        # 3. Compute the cell-neighbors and facet-normals for the particle movers.
+        p_P.initialize_particle_mesh(pmesh_M)
+        
         ### Input for initial particles (i.e., particles present at t=0)
 
         # a. Name the species (it should be in species_names above)
         speciesName = 'neutral_H'
 
         # Check that this species has been defined above
-        if speciesName not in particle_P.species_names:
+        if speciesName not in p_P.species_names:
             print("The species", speciesName, "has not been defined")
             sys.exit()
 
@@ -231,7 +236,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
 
         # Add the initialized particles to the Particle_C object
-        particle_P.initial_particles_dict = initialParticlesDict
+        p_P.initial_particles_dict = initialParticlesDict
 
 # Particle boundary-conditions
 
@@ -245,32 +250,35 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # facet-crossing callback functions in the
         # UserParticleBoundaryFunctions_C object above.
 
-        spNames = particle_P.species_names
+        spNames = p_P.species_names
         pmeshBCS = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
-        particle_P.pmesh_bcs = pmeshBCS
+        p_P.pmesh_bcs = pmeshBCS
 
         # Create the initial particles
         printFlags = {}
-        for sp in particle_P.species_names: printFlags[sp] = True
-        particle_P.initialize_particles(printFlags)
+        for sp in p_P.species_names: printFlags[sp] = True
+        p_P.initialize_particles(printFlags)
 
 # Get the initial cell index of each particle.
 
 # Should this be something the pmesh computes?  No: pmesh computes the
 # index of a single particle.  It doesn't know the particle storage
 # infrastructure.
-        particle_P.compute_mesh_cell_indices()
+        p_P.compute_mesh_cell_indices()
+
+        p_P.initialize_particle_integration()
 
 # Advance the particles for n_timesteps
 
         print("Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
+
         for istep in range(ctrl.n_timesteps):
             
             if p_P.traj_T is not None:
                 if istep % p_P.traj_T.skip == 0:
                     p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
                     
-            particle_P.move_neutral_particles(ctrl)
+            p_P.advance_neutral_particles(ctrl)
 
             ctrl.timeloop_count += 1
             ctrl.time += ctrl.dt
@@ -303,6 +311,23 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         else:
             plotFlag=self.plot_results
 
+        ## Set control variables
+
+        ctrl = DTcontrol_C()
+
+        # Run identifier
+        ctrl.title = "test_ParticleBoundaryConditions.py:test_2_2D_r_theta_absorbing_boundary"
+        # Run author
+        ctrl.author = "tph"
+
+        ctrl.timeloop_count = 0
+        ctrl.time = 0.0
+
+        # These are fast electrons, so the timestep is small
+        ctrl.dt = 1.0e-6
+        ctrl.n_timesteps = 14
+        ctrl.MAX_FACET_CROSS_COUNT = 100
+        
         ### Particle species input
 
         # Create an instance of the DTparticleInput class
@@ -339,7 +364,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         pin.particle_species = (trajelectrons_S,
                                  )
         ## Make the particle storage array for all species.
-        particle_P = Particle_C(pin, print_flag=False)
+        particle_P = Particle_C(pin, print_flag=True)
 
         ## Give the name of the .py file containing special particle data (lists of
         # particles, boundary conditions, source regions, etc.)
@@ -366,15 +391,11 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         format_list_base = [int]
         format_list = format_list_base + [numpy.float32]*7
-        trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': format_list}
+        trajin.charged_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy', 'Ex', 'Ey'], 'formats': format_list}
         format_list = format_list_base + [numpy.float32]*4
         trajin.implicit_dict = {'names': ['step', 't', 'x', 'ux', 'phi'], 'formats': format_list}
         format_list = format_list_base + [numpy.float32]*5
         trajin.neutral_dict = {'names': ['step', 't', 'x', 'ux', 'y', 'uy'], 'formats': format_list}
-        # # Initialize the particles
-        # printFlags = {}
-        # for sp in particle_P.species_names: printFlags[sp] = False
-        # particle_P.initialize_particles(printFlags)
 
         ###  Mesh and Fields input for the particle mesh.
 
@@ -451,12 +472,15 @@ class TestParticleBoundaryConditions(unittest.TestCase):
             sys.exit(errorMsg)
 
         # Collect the parameters into a dictionary
-        # The 'listed' type will expect a function with the same name as the species.
+
+        # For a 'listed' type, there needs to be a function with the same name as the
+        # species in userParticlesClass
         trajElectronParams = {'species_name': speciesName,
                               'initial_distribution_type': initialDistributionType,
                               }
 
-        # The dictionary keys are mnemonics for the initialized particles
+        # The dictionary keys are mnemonics strings for identifying each set of
+        # initialized particles. They're not the names of particle species.
         initialParticlesDict = {'initial_trajelectrons': (trajElectronParams,),
                                }
 
@@ -476,27 +500,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         pmeshBCS = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
         particle_P.pmesh_bcs = pmeshBCS
 
-        ## Set control variables
-
-        ctrl = DTcontrol_C()
-
-        # Run identifier
-        ctrl.title = "test_ParticleBoundaryConditions.py:test_2_2D_r_theta_absorbing_boundary"
-        # Run author
-        ctrl.author = "tph"
-
-        ctrl.timeloop_count = 0
-        ctrl.time = 0.0
-
-        # These are fast electrons, so the timestep is small
-        ctrl.dt = 1.0e-6
-        ctrl.n_timesteps = 14
-        ctrl.MAX_FACET_CROSS_COUNT = 100
-        
         # The trajectory object can now be created and added to particle_P
         p_P = particle_P
-        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
-
+        # p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species)        
 
         # Initialize the particles
         printFlags = {}
@@ -506,6 +513,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Get the initial cell index of each particle.
         p_P.compute_mesh_cell_indices()
 
+        p_P.initialize_particle_integration()
+        
         ### Particle loop
 
         print("Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
@@ -519,7 +528,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
                 if istep % p_P.traj_T.skip == 0:
                     p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=negElectricField)
 
-            p_P.move_particles_in_electrostatic_field(ctrl, negElectricField)
+            p_P.advance_charged_particles_in_E_field(ctrl, neg_E_field=negElectricField)
 
             ctrl.timeloop_count += 1
             ctrl.time += ctrl.dt

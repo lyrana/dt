@@ -6,6 +6,8 @@
     divide_by_cell_volumes()
     find_facet()
     interpolate_field_to_points()
+      For py::array_t points arg
+      For Pstruct* points arg
     is_inside_vertices()
 
   The Python bindings for these are in dolfin_functions_solib.cpp.
@@ -497,7 +499,7 @@ namespace dnt
                                    py::ssize_t npoints,
                                    py::array_t<double> field_at_points)
   {
-    std::cout << "Hello from interpolate_field_to_points()@A1"  << std::endl;
+    //std::cout << "Hello from interpolate_field_to_points()@A1"  << std::endl;
     
     // Use the buffer protocol to access the data in points:
     /*
@@ -564,7 +566,7 @@ namespace dnt
                                    py::ssize_t npoints,
                                    py::array_t<double> field_at_points)
   {
-    std::cout << "Hello from interpolate_field_to_points()@B1"  << std::endl;
+    // std::cout << "Hello from interpolate_field_to_points()@B1"  << std::endl;
 
     std::shared_ptr< const dolfin::FunctionSpace > functionSpace = field->function_space();
 

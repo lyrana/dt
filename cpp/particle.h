@@ -40,18 +40,12 @@
 
 #include <iostream>
 #include <tuple>
-//#include "pstruct.h"
 #include "SegmentedArrayPair.h"
 #include "MeshEntityArrays.h"
 #include "ParticleMeshBoundaryConditions.h"
 #include "UserParticleBoundaryFunctions.h"
 
 #include "dolfin_functions.h"
-
-//using namespace std; 
-
-//template<typename PS>
-//using SegList = std::vector<py::array_t<PS,0>>;
 
 namespace py = pybind11;
 
@@ -65,16 +59,6 @@ static double dx[3];
 //double negE[SEGMENT_LENGTH]; // This could be allocated in a particle init() function.
 
 static dolfin::Cell* pcellPtr; // File scoped needed? Probably not.
-
-// double* negE_array, Eext_array, zeroE_array;
-// size_t E_array_len, E_array_ncomps;
-
-// These variables will point to storage allocated in Particle_Module.py
-//static py::array_t<double> *negE, *Eext, *zeroE;
-
-//static py::detail::unchecked_mutable_reference<double,2> negE, Eext, zeroE;
-//static py::detail::unchecked_reference<double,2> negE, Eext, zeroE;
-//static void *negE, *Eext, *zeroE;
 
 // From https://en.cppreference.com/w/cpp/language/function_template:
 // A function template by itself is not a type, or a function, or any other entity. No
@@ -93,13 +77,6 @@ namespace dnt
       \return void
 
     */
-  //  template <typename Ftype>
-    //  void initialize_particle_integration(py::array_t<Fstruct<FT>, 0> negE, py::array_t<Fstruct<FT>, 0> Eext, py::array_t<Fstruct<FT>, 0> zeroE)
-  //  void initialize_particle_integration(py::array_t<double> negE_in, py::array_t<double> Eext_in, py::array_t<double> zeroE_in)
-
-
-  //  void initialize_E_interpolation_arrays(py::array_t<double>& negE_in, py::array_t<double>& Eext_in, py::array_t<double>& zeroE_in)
-  // void initialize_particle_integration(py::array_t<double>& negE_in, py::array_t<double>& Eext_in, py::array_t<double>& zeroE_in)
   void initialize_particle_integration(py::array_t<double> negE_in, py::array_t<double> Eext_in, py::array_t<double> zeroE_in)
     {
       std::cout << "Hello from initialize_particle_integration@1" << std::endl;
@@ -184,37 +161,44 @@ namespace dnt
 //  template <>
 // Make N_CELL_FACETS the only template parameter:
   template <size_t N_CELL_FACETS>
-    void advance_charged_species_in_E_field_cartesian_xy(py::object particle_P, py::str species_name, py::object ctrl, dolfin::Function* neg_E_field, dolfin::Function* external_E_field, bool accel_only)
+    void advance_charged_species_in_E_field_cartesian_xy(py::object &particle_P, py::str species_name, py::object &ctrl, dolfin::Function *neg_E_field, dolfin::Function *external_E_field, bool accel_only)
   {
     using namespace pybind11::literals;
 
-    std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@1" << std::endl;
-    std::cout << "This is species " << std::string(species_name) << std::endl;
+    //std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@1" << std::endl;
+    //std::cout << "This is species " << std::string(species_name) << std::endl;
 
     // Maybe all of the stuff that doesn't change from call to call should be moved to "initialize", and used to initialize static variables?
+    // Marked these with (m) below
+    // For parallel runs, need to call "intialize" again after a rebalance.
     
     // Get attributes from the Particle_C argument
     
-    auto pmesh_M = particle_P.attr("pmesh_M");
-    auto pDim = particle_P.attr("particle_dimension").cast<int>();
+    auto pmesh_M = particle_P.attr("pmesh_M"); // (m)
+    auto pDim = particle_P.attr("particle_dimension").cast<int>(); // (m)
     auto sap = particle_P.attr("sap_dict")[species_name].cast<SegmentedArrayPair<Ptype::PARTICLE_TYPE> *>();
+    // Note that sap is a pointer.
+    // Could also get sap by first casting to an std::map:
+    //   auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
+    //   auto sap = sap_map[std::string(species_name)];
+    //   auto sapMap = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz> *>>();
     auto qom = particle_P.attr("qom")[species_name].cast<double>();
+    // Get call-back functions for boundary-crossing particles
+    // Move this to the top of the function
+    // This was when we were using the Python callbacks
+    // auto bcFunctionDict = particle_P.attr("pmesh_bcs").attr("bc_function_dict").cast<std::map<int, py::dict>>();
+    auto pMBCs = particle_P.attr("pmesh_bcs").cast<ParticleMeshBoundaryConditions<Ptype::PARTICLE_TYPE>>(); // (m)
+    auto userPBFs = pMBCs.user_particle_boundary_functions; // Need this to call the boundary functions. // (m)
+    auto bcFunctionDict = pMBCs.bc_function_dict; // (m)
     
     // These are scratch Numpy arrays for field interpolation to the particles. They have
     // "shapes" that depend on how they were declared.
-    auto negE = particle_P.attr("negE").cast<py::array_t<double>>();
-    auto Eext = particle_P.attr("Eext").cast<py::array_t<double>>();
-    auto zeroE = particle_P.attr("zeroE").cast<py::array_t<double>>();
+    auto negE = particle_P.attr("negE").cast<py::array_t<double>>(); // (m)
+    auto Eext = particle_P.attr("Eext").cast<py::array_t<double>>(); // (m)
+    auto zeroE = particle_P.attr("zeroE").cast<py::array_t<double>>(); // (m)
     // These are used for holding the fields of trajectory particles
-    //    auto E1 = particle_P.attr("E1").cast<py::array_t<double>>();
-    //    auto Eext1 = particle_P.attr("Eext1").cast<py::array_t<double>>();
-    auto E1 = particle_P.attr("E1_value").cast<py::array_t<double>>();
-    auto Eext1 = particle_P.attr("Eext1_value").cast<py::array_t<double>>();
-
-//tph
-    // auto userPBndFns = particle_P.attr("userPBndFns").cast<UserParticleBoundaryFunctions>();
-    // auto userPBndFns = particle_P.attr("userPBndFns").cast<UserParticleBoundaryFunctions<Ptype::PARTICLE_TYPE>>();
-//endtph
+    auto E1 = particle_P.attr("E1_comps").cast<py::array_t<double>>(); // (m)
+    auto Eext1 = particle_P.attr("Eext1_comps").cast<py::array_t<double>>(); // (m)
 
     // To use the buffer protocol instead of a proxy
     /* py::buffer_info negEinfo = negE.request(); // request() returns metadata about the array (ptr, ndim, size, shape) */
@@ -223,47 +207,28 @@ namespace dnt
     /* E_array_ncomps = negEinfo.shape[1]; */
     // Could make an Eigen matrix from this info.
     
-    // Note that sap is a pointer.
-    // Could also get sap by first casting to an std::map:
-    //   auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
-    //   auto sap = sap_map[std::string(species_name)];
     auto traj_T = particle_P.attr("traj_T"); // There's no cast<>() here as we only need to check if traj_T is None below.
 
     // Get particle-mesh data
-    auto mesh = pmesh_M.attr("mesh").cast<dolfin::Mesh>();
-    auto tDim = mesh.topology().dim();
-    auto meshEntityArrays = pmesh_M.attr("mea_object").cast<MeshEntityArrays<N_CELL_FACETS> *>();
-    auto particleBoundaryMarker = pmesh_M.attr("particle_boundary_marker").cast<dolfin::MeshFunction<size_t>>();
-    auto NO_CELL = pmesh_M.attr("NO_CELL").cast<int>();
-    auto NO_FACET = pmesh_M.attr("NO_FACET").cast<int>();
-    std::cout << "NO_FACET " << NO_FACET << std::endl;
-
-    // Get call-back functions for boundary-crossing particles
-    // A reference to dx[] is available in the BC function class.
-    // ?? Test for is_none() first?
-                        
-    // Move this to the top of the function
-    // This was when we were using the Python callbacks
-    // auto bcFunctionDict = particle_P.attr("pmesh_bcs").attr("bc_function_dict").cast<std::map<int, py::dict>>();
-
-    // auto bcFunctionDict = particle_P.attr("pmesh_bcs").cast<ParticleMeshBoundaryConditions<Ptype::PARTICLE_TYPE>>();
-    auto pMBCs = particle_P.attr("pmesh_bcs").cast<ParticleMeshBoundaryConditions<Ptype::PARTICLE_TYPE>>();
-
-    auto userPBFs = pMBCs.user_particle_boundary_functions; // Need this to call the boundary functions.
-    auto bcFunctionDict = pMBCs.bc_function_dict;
-                                                                                              
-    // auto sapMap = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz> *>>();
+    auto mesh = pmesh_M.attr("mesh").cast<dolfin::Mesh>(); // (m)
+    auto tDim = mesh.topology().dim(); // (m)
+    auto meshEntityArrays = pmesh_M.attr("mea_object").cast<MeshEntityArrays<N_CELL_FACETS> *>(); // (m)
+    auto particleBoundaryMarker = pmesh_M.attr("particle_boundary_marker").cast<dolfin::MeshFunction<size_t>>(); // (m)
+    auto NO_CELL = pmesh_M.attr("NO_CELL").cast<int>(); // (m)
+    auto NO_FACET = pmesh_M.attr("NO_FACET").cast<int>(); // (m)
+    // std::cout << "NO_FACET " << NO_FACET << std::endl;
     
     // Get attributes from the DTcontrol_C argument
     auto dt = ctrl.attr("dt").cast<double>(); // This does a COPY.
     auto step = ctrl.attr("timeloop_count").cast<int>();
     auto time = ctrl.attr("time").cast<double>();
-    auto MAX_FACET_CROSS_COUNT = ctrl.attr("MAX_FACET_CROSS_COUNT").cast<size_t>();
-    auto applySolvedElectricField = ctrl.attr("apply_solved_electric_field");
-    std::map<std::string, bool> applySolvedElectricFieldMap;
+    auto MAX_FACET_CROSS_COUNT = ctrl.attr("MAX_FACET_CROSS_COUNT").cast<size_t>(); // (m)
+    auto applySolvedElectricField = ctrl.attr("apply_solved_electric_field"); // (m)
+    
     
     // Check if self-electric field should be applied to this species
     bool applySolvedElectricFieldFlag;
+    std::map<std::string, bool> applySolvedElectricFieldMap;
     if (applySolvedElectricField.is_none())
       {
         applySolvedElectricFieldFlag = true;
@@ -271,10 +236,8 @@ namespace dnt
     else
       {
         applySolvedElectricFieldFlag = false;
-        // auto applySolvedElectricField = ctrl.attr("apply_solved_electric_field").cast<py::dict>(); // Is this the same?
-        //        py::dict applySolvedElectricField = ctrl.attr("apply_solved_electric_field");
         applySolvedElectricFieldMap = applySolvedElectricField.cast<std::map<std::string, bool>>();
-        std::cout << "advance_charged_species_in_E_field_cartesian_xy: applySolvedElectricFieldMap[species_name] = " << applySolvedElectricFieldMap[species_name] << std::endl;
+        //std::cout << "advance_charged_species_in_E_field_cartesian_xy: applySolvedElectricFieldMap[species_name] = " << applySolvedElectricFieldMap[species_name] << std::endl;
       }
 
     auto applyRandomExternalElectricField = ctrl.attr("apply_random_external_electric_field");
@@ -289,27 +252,27 @@ namespace dnt
       {
         applyRandomExternalElectricFieldFlag = false;
         applyRandomExternalElectricFieldMap = applyRandomExternalElectricField.cast<std::map<std::string, bool>>();
-        std::cout << "advance_charged_species_in_E_field_cartesian_xy: applyRandomExternalElectricFieldMap[species_name] = " << applyRandomExternalElectricFieldMap[species_name] << std::endl;
+        //std::cout << "advance_charged_species_in_E_field_cartesian_xy: applyRandomExternalElectricFieldMap[species_name] = " << applyRandomExternalElectricFieldMap[species_name] << std::endl;
       }
     
     // Invariant parameters used in the particle-advance loop
     auto qmdt = qom*dt;
 
     // Get the particles belonging to this species
-    const py::ssize_t segmentLength = sap->get_segment_length();
     
+    const py::ssize_t segmentLength = sap->get_segment_length();
     // Start a loop over the sap segments. segTuple contains (npSeg, psegIn, psegOut)
     py::tuple segTuple = sap->init_inout_loop(true); // 'true' returns the data pointers for
                                                      // the first segment pair, instead of the
                                                      // Numpy arrays.
     auto npSeg = segTuple[0].cast<py::ssize_t>(); // The number of active particles in the segment.
 
-    // Get the particle array pointers from the returned py::capsules.
+    // Get the particle array pointers from the py::capsules in segTuple
     // psegIn:
     auto psegInCap = segTuple[1].cast<py::capsule>();
     //    std::cout << "The name of the capsule is " << psegInCap.name() << std::endl;
     Pstruct<Ptype::PARTICLE_TYPE>* psegIn = psegInCap; // Declares the type of psegIn
-    std::cout << "psegIn[0].x_ = " << psegIn[0].x_ << std::endl;
+    // std::cout << "psegIn[0].x_ = " << psegIn[0].x_ << std::endl;
     // psegOut:
     auto psegOutCap = segTuple[2].cast<py::capsule>();
     // std::cout << "The name of the capsule is " << psegOutCap.name() << std::endl;
@@ -339,52 +302,43 @@ namespace dnt
                               // indices to identify particles chosen for trajectory
                               // plots.
 
-    std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@2" << std::endl;
+    //std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@2" << std::endl;
     
     py::array_t<double>* EsegPtr = nullptr;
     while (psegIn != nullptr) // Keep looping until we run out of "in" segments.
       {
 
-        std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@3" << std::endl;
+        //std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@3" << std::endl;
         // Compute the electric field at each particle
 
         // Eseg = None # This is for the case where no fields are to be applied to the particles,
         //        if (!neg_E_field.is_none())
         if (neg_E_field != nullptr)
           {
-            std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@3.1" << " applySolvedElectricFieldFlag = " << applySolvedElectricFieldFlag << std::endl;
+            //std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@3.1" << " applySolvedElectricFieldFlag = " << applySolvedElectricFieldFlag << std::endl;
             if ((applySolvedElectricFieldFlag == true) || (applySolvedElectricFieldMap[species_name] == true))
               //if (applySolvedElectricFieldFlag == true)
               {
-            // interpolate_field_to_points() is declared in dolfin_functions.h.
-            //    auto negE_proxy = negE->mutable_unchecked<2>();
-            //    interpolate_field_to_points<Ptype::PARTICLE_TYPE>(neg_E_field, psegIn, npSeg, negE_proxy);
-                // Using the proxy:
-                // interpolate_field_to_points<Ptype::PARTICLE_TYPE>(neg_E_field, psegIn, npSeg, negEproxy);
-                // Pass the numpy array instead:
-                std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@3.2" << " npSeg = " << npSeg << std::endl;
-                //                interpolate_field_to_points<Ptype::PARTICLE_TYPE>(neg_E_field, psegIn, npSeg, *negE);
-                interpolate_field_to_points<Ptype::PARTICLE_TYPE>(neg_E_field, psegIn, npSeg, negE);
-                std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@4" << std::endl;
+                //std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@3.2" << " npSeg = " << npSeg << std::endl;
+                interpolate_field_to_points<Ptype::PARTICLE_TYPE>(neg_E_field, psegIn, npSeg, negE); // From dolfin_functions.h
+                //std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@4" << std::endl;
                 EsegPtr = &negE;
                 auto EsegProxy = EsegPtr->mutable_unchecked<2>();
-                //auto negEproxy = negE->mutable_unchecked<2>(); // Segfault!
                 auto nComps = EsegProxy.shape(1);
-                // Flip the sign get the E-field (or do this in the acceleration loop below.
+                // Flip the sign get the E-field (or do this in the acceleration loop below.)
                 for (ssize_t i = 0; i < npSeg; i++)
                   {
                     for (ssize_t j = 0; j < nComps; j++)
                       {
                         EsegProxy(i,j) *= -1.0;
-                        //Eseg(i,j) *= -1.0;
-                        std::cout << "Eseg i, j " << i << " , " << j << " = " <<  EsegProxy(i,j) << std::endl;
+                        //std::cout << "Eseg i, j " << i << " , " << j << " = " <<  EsegProxy(i,j) << std::endl;
                       }
                   }
               }
           }
         else
           {
-            std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@5" << std::endl;
+            //std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@5" << std::endl;
             EsegPtr = &zeroE;
           }
         // Add an external E field, if present.
@@ -404,7 +358,7 @@ namespace dnt
                     for (ssize_t j = 0; j < nComps; j++)
                       {
                         EsegProxy(i,j) += EextProxy(i,j);
-                        std::cout << "Eseg particle, comp: " << i << " , " << j << " = " <<  EsegProxy(i,j) << std::endl;
+                        //std::cout << "Eseg particle, comp: " << i << " , " << j << " = " <<  EsegProxy(i,j) << std::endl;
                       }
                   }
               }
@@ -438,13 +392,10 @@ namespace dnt
             psegOut[ipOut] = psegIn[ipIn]; // Copy all of this particle's data from the
                                            // input slot to the output slot
 
-
             // Accelerate the charged particle with the field
             if (EsegPtr != nullptr)
               {
                 auto EsegProxy = EsegPtr->mutable_unchecked<2>();
-                //                py::detail::unchecked_mutable_reference<double,2> EsegProxy = EsegPtr->mutable_unchecked<2>();
-                  //py::array_t<double> EsegProxy = EsegPtr->mutable_unchecked<2>();
                 psegOut[ipOut].ux_ = psegIn[ipIn].ux_ + qmdt*EsegProxy(ipIn, 0);
                 psegOut[ipOut].uy_ = psegIn[ipIn].uy_ + qmdt*EsegProxy(ipIn, 1);
                 //psegOut[ipOut].uz_ = psegIn[ipIn].uz_ + qmdt*EsegProxy(ipIn, 2);
@@ -462,7 +413,7 @@ namespace dnt
 
             auto pCellIndex = psegOut[ipOut].cell_index_;
 
-            std::cout << "advance_charged_species_in_E_field. step: " << step << " ipOut: " << ipOut << " x_: " << psegOut[ipOut].x_ << " y_: " << psegOut[ipOut].y_ << std::endl;
+            //std::cout << "advance_charged_species_in_E_field. step: " << step << " ipOut: " << ipOut << " x_: " << psegOut[ipOut].x_ << " y_: " << psegOut[ipOut].y_ << std::endl;
             
             // Loop until the particle is in the current cell
             auto mLastFacet = NO_FACET;
@@ -520,7 +471,7 @@ namespace dnt
                 dx[1] = pCoord2[1] - pCoord2[pDim+1];
                 // dx[2] = pCoord2[2] - pCoord2[pDim+2];
 
-                std::cout << "advance_charged_species_in_E_field. pCoord2 x_: " << pCoord2[pDim] << " " << pCoord2[pDim+1] << " dx " << dx[0] << " " << dx[1] << std::endl;                
+                //std::cout << "advance_charged_species_in_E_field. pCoord2 x_: " << pCoord2[pDim] << " " << pCoord2[pDim+1] << " dx " << dx[0] << " " << dx[1] << std::endl;                
                 // bool returnDataPtr = true;
                 bool returnDataPtr = false;
                 py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnDataPtr);
@@ -582,30 +533,11 @@ namespace dnt
                             // Eext_arrProxy(0, 2) = EextProxy(ipIn, 2);
                             //end
                             // Record the data for the trajectory
-                            particle_P.attr("record_trajectory_datum")(std::string(species_name), ipOut, fullIndex, step, tStart, "E_field_value"_a=E1, "external_E_field_value"_a=Eext1, "facet_crossing"_a=true); // Does this work?
+                            particle_P.attr("record_trajectory_datum")(std::string(species_name), ipOut, fullIndex, step, tStart, "E_field_comps"_a=E1, "external_E_field_comps"_a=Eext1, "facet_crossing"_a=true); // Does this work?
                           }
-                        std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@6" << std::endl;
-
-                        // A py::dict needs a py::str key value. Convert facValue to a string first.
-                        // Print the facet function dictionary
-
-/*                        
-                        for (auto item : bcFunctionDict)
-                          std::cout << "key=" << std::string(py::str(item.first)) << ", "
-                                    << "value=" << std::string(py::str(item.second)) << std::endl;
-*/                        
+                        //std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@6" << std::endl;
                                                                                                                        auto bcFunction = bcFunctionDict[std::make_pair(facValue,species_name)];
-                        //                        auto bcFunction = bcFunctionDict[py::str(std::to_string(facValue))].cast<py::dict>();
-                        std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@7" << std::endl;
-
-                        // old: bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);
-                        
-                        (userPBFs.*bcFunction)(psegOut[ipOut], species_name, mFacet, dx, dxFraction, facetNormalVector);
-
-                        //tph Direct call to a C++ member function.
-                        // userPBndFns.default_bc(psegOut[ipOut], species_name, mFacet, dx, dxFraction, facetNormalVector);
-                        //endtph
-                        std::cout << "Hello from advance_charged_species_in_E_field_cartesian_xy@8" << std::endl;                        
+                                                                                                                       (userPBFs.*bcFunction)(psegOut[ipOut], species_name, mFacet, dx, dxFraction, facetNormalVector);
                       }
 
                     // Look up the cell index of the new cell.
@@ -1730,8 +1662,6 @@ namespace dnt {
         // The C++ ctor args types are template parameters in py::init<>()
         // Note that if a py::arg() specification is needed (e.g., to specify a
         // default value), then every argument has to have a py::arg().
-        //        .def(py::init<py::list&, py::object&, UserParticleBoundaryFunctions<PT>&, bool>(), py::arg("species_names"), py::arg("pmesh_M"), py::arg("userParticleBoundaryFunctions"), py::arg("print_flag") = false);
-        // Use a std::vector<std::string> instead of a py::list for species_names
         .def(py::init<std::vector<std::string>&, py::object&, UserParticleBoundaryFunctions<PT>&, bool>(), py::arg("species_names"), py::arg("pmesh_M"), py::arg("userParticleBoundaryFunctions"), py::arg("print_flag") = false);      
       // cf. ~/workspace/dolfin/python/src/geometry.cpp for __getitem__, if needed.
         
