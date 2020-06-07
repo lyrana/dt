@@ -323,10 +323,6 @@ class TestCppParticleMigration(unittest.TestCase):
         for istep in range(ctrl.n_timesteps):
 #            print(fncName, "istep:", istep)
             self.particle_P.advance_neutral_particles(ctrl)
-            # Advance each species for 1 timestep
-#            for sp in self.particle_P.species_names:
-#            for sp in self.particle_P.neutral_species:
-#                self.particle_P.integrators[sp](sp, ctrl)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -431,9 +427,6 @@ class TestCppParticleMigration(unittest.TestCase):
         print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 2D mesh")
         for istep in range(ctrl.n_timesteps):
             self.particle_P.advance_neutral_particles(ctrl)
-            # Advance each species for 1 timestep
-#            for sp in self.particle_P.species_names:
-#                self.particle_P.integrators[sp](sp, ctrl)
 
         # Create a mesh plotter to display the trajectory
         if self.plot_results is True:
@@ -549,9 +542,6 @@ class TestCppParticleMigration(unittest.TestCase):
         print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 3D mesh")
         for istep in range(ctrl.n_timesteps):
             self.particle_P.advance_neutral_particles(ctrl)
-            # Advance each species for 1 timestep
-#            for sp in self.particle_P.species_names:
-#                self.particle_P.integrators[sp](sp, ctrl)
 
         # Create a mesh plotter to display the trajectory (just the
         # first and last positions)

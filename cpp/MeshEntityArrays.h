@@ -37,23 +37,10 @@
 #include <dolfin/la/GenericMatrix.h>
 #include <dolfin/mesh/Mesh.h>
 #include <dolfin/mesh/Facet.h>
-//#include <pybind11/pybind11.h>
 
 #include <Eigen/Dense>
 
-/*
-#include <pybind11/pybind11.h>
-#include <pybind11/numpy.h>
-#include <pybind11/stl.h>
-// #include <pybind11/eigen.h>
-#include <pybind11/operators.h>
-//#include <pybind11/cast.h>
-
-namespace py = pybind11;
-*/
-
-
-// Put these in namespace dnt:
+// Put these classes in namespace dnt:
 
 namespace dnt
 {

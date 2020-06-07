@@ -293,9 +293,7 @@ class TestParticleMigration(unittest.TestCase):
         # Integrate for n_timesteps
         print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 1D mesh")
         for istep in range(ctrl.n_timesteps):
-#            self.particle_P.move_neutral_particles(ctrl)
             # Advance each species for 1 timestep
-#            for sp in self.particle_P.species_names:
             for sp in self.particle_P.neutral_species:
                 self.particle_P.integrators[sp](sp, ctrl)
 
@@ -388,7 +386,6 @@ class TestParticleMigration(unittest.TestCase):
 
         # Integrate for n_timesteps
         print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 2D mesh")
-        #self.particle_P.move_neutral_particles(ctrl)
         for istep in range(ctrl.n_timesteps):
             # Advance each species for 1 timestep
             for sp in self.particle_P.species_names:
@@ -489,7 +486,6 @@ class TestParticleMigration(unittest.TestCase):
 
         # Integrate for n_timesteps
         print("Advancing", self.particle_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps on a 3D mesh")
-        # self.particle_P.move_neutral_particles(ctrl)
         for istep in range(ctrl.n_timesteps):
             # Advance each species for 1 timestep
             for sp in self.particle_P.species_names:

@@ -49,7 +49,7 @@ namespace dnt {
       // "SegmentedArrayPair"
       std::string pyclass_name = std::string("SegmentedArrayPair_") + PStype;
       
-      // Create the Python binding for this class
+      // Create the Python binding for the class named pyclass_name
       py::class_<SAP>(m, pyclass_name.c_str())
 
         // The ctor
@@ -122,12 +122,6 @@ namespace dnt {
   PYBIND11_MODULE(segmented_array_pair_solib, m)
   {
     
-    // The following registrations are needed for the Pstruct<> structured types to work with py::array_t. See pybind11: 12.2.3 Structured types.
-    // The "_EX" variation allows the Python names of the variables in the structure to be different from the variable names in the C++ struct.
-    //    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x>, x_, "x", x0_, "x0", ux_, "ux", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
-    //    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_xy>, x_, "x", y_, "y", x0_, "x0", y0_, "y0", ux_, "ux", uy_, "uy", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
-    //    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_xyz>, x_, "x", y_, "y", z_, "z", x0_, "x0", y0_, "y0", z0_, "z0", ux_, "ux", uy_, "uy", uz_, "uz", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
-
     // Create the specific classes "SegmentedArrayPair_cartesian_x/_xy/_xyz"
     makeSegmentedArrayPair<Ptype::cartesian_x>(m, "cartesian_x");
     makeSegmentedArrayPair<Ptype::cartesian_xy>(m, "cartesian_xy");

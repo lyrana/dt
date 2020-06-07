@@ -76,8 +76,6 @@ class TestFieldInterpolation(unittest.TestCase):
         ux0 = 3000.0; uy0 = 2000.0; uz0 = 1000.0
         weight0 = 1.0 # number of electrons per macroparticle
 
-#        p0 = (x0,y0,z0, ux0,uy0,uz0, weight0)
-
 # Can these be named? Yes, with a different dtype.
         p0 = np_m.array([x0,y0,z0, ux0,uy0,uz0, weight0], dtype=float)
 
@@ -86,7 +84,6 @@ class TestFieldInterpolation(unittest.TestCase):
         ux1 = uy1 = 0.0; uz1 = -uz0
         weight1 = 2.0
 
-#        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1)
         p1 = np_m.array([x1,y1,z1, ux1,uy1,uz1, weight1], dtype=float)
 
         # 3nd point: same cell as 2nd point, so same E for DG0 a element.
@@ -94,7 +91,6 @@ class TestFieldInterpolation(unittest.TestCase):
         ux2 = uy2 = 0.0; uz2 = -uz0
         weight2 = 2.0
 
-#        p1 = (x1,y1,z1, ux1,uy1,uz1, weight1)
         p2 = np_m.array([x2,y2,z2, ux2,uy2,uz2, weight2], dtype=float)
 
         self.points = np_m.array([p0, p1, p2])
@@ -130,11 +126,6 @@ class TestFieldInterpolation(unittest.TestCase):
         Eexpected[1] = [-0.19694748, -0.00773809]
         Eexpected[2] = [-0.19694748, -0.00773809]
         self.E_expected = Eexpected
-        
-#        force_precision = np_m.float64
-#        nComps = len(self.Ecomps)
-#        self.E_points = np_m.empty((len(self.points),nComps), dtype=force_precision)
-        
         
         return
 

@@ -47,7 +47,7 @@ class ParticleInput_C(object):
 
         # The flag to use either Python (default) or C++ to store and move particles
         self.use_cpp_integrators = None
-        self.particle_cpp = None
+        self.particle_solib = None
         
         # Values: 'loop-on-particles', 'loop-on-cells'
         self.particle_integration_loop = None
@@ -156,7 +156,6 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        
         # Set local variables from passed parameters
         precision = particle_input.precision
         particleSpecies = particle_input.particle_species
@@ -238,8 +237,6 @@ class Particle_C(object):
 # initializer constant for a particular initialization
 
 #        self.number_per_cell = {}
-        self.explicit_species = []
-        self.implicit_species = []
         self.charged_species = []
         self.neutral_species = []
 
@@ -271,7 +268,7 @@ class Particle_C(object):
                                      # you can count.
                                      
         particleAttributes = {'names' : pvars, 'formats': pvartypes}
-        # For a particle with 3D Cartesian coordindates, the attributes stored in a
+        # For a particle with 3D Cartesian coordinates, the attributes stored in a
         # structure have the string names
         # ‘x’,’y’,’z’, ‘x0’,’y0’,’z0’, ‘ux’,’uy’,’uz’,
         #              ‘weight’, ‘bitflags’, ‘cell_index’, ‘unique_ID’, ‘crossings’
@@ -310,16 +307,6 @@ class Particle_C(object):
             # key: 'dynamics'
             self.dynamics[speciesName] = sp.dynamics
 
-            # if sp.dynamics == 'explicit':
-            #     self.explicit_species.append(speciesName)
-            # elif sp.dynamics == 'implicit':
-            #     self.implicit_species.append(speciesName)
-            # elif sp.dynamics == 'neutral':
-            #     self.neutral_species.append(speciesName)                
-            # else:
-            #     errorMsg = "Unknown type of dynamics " + sp.dynamics + ' for species ' + sp_name
-            #     raise RuntimeError(errorMsg) # sys.exit(errorMsg)
-
             # key: 'integrator_names'
 #            self.integrator_names[speciesName] = sp.integrator_name
             
@@ -329,30 +316,24 @@ class Particle_C(object):
             # species name.
             # If using C++ SAPs:
             if self.use_cpp_integrators is True:
-                # Create the SAPs in C++
-                #modulename = 'numpy_types_solib'
-                #if modulename not in sys.modules:
-                    #import numpy_types_solib
                 import numpy_types_solib
-                import segmented_array_pair_solib as sapCpp
+                # Create the SAPs in C++
+                import segmented_array_pair_solib as sapSOlib
                 # help(segmented_array_pair_solib)
-                # Create mesh-entity lookups needed for tracking particles
-                # import mesh_entity_arrays_solib as meaCpp
-                # help(mesh_entity_arrays_solib)                
 
                 # Use the C++ SegmentedArrayPair class for particle storage.  This
                 # avoids having to call back to Python from C++ to manage the
                 # storage.
                 if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
-                    import particle_cartesian_x_solib as particleCpp
-                    self.sap_dict[speciesName] = sapCpp.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
+                    import particle_cartesian_x_solib as particleSOlib
+                    self.sap_dict[speciesName] = sapSOlib.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xy':
-                    import particle_cartesian_xy_solib as particleCpp
-                    self.sap_dict[speciesName] = sapCpp.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
+                    import particle_cartesian_xy_solib as particleSOlib
+                    self.sap_dict[speciesName] = sapSOlib.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xyz':
-                    import particle_cartesian_xyz_solib as particleCpp
-                    self.sap_dict[speciesName] = sapCpp.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
-                self.particle_cpp = particleCpp
+                    import particle_cartesian_xyz_solib as particleSOlib
+                    self.sap_dict[speciesName] = sapSOlib.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
+                self.particle_solib = particleSOlib
             else:
             # If using Python-created SAPs:
                 import SegmentedArrayPair_Module as SA_M
@@ -512,7 +493,7 @@ class Particle_C(object):
         # If electric forces will be applied to particles, make reusable arrays for
         # computing the solved and external E at particle positions.
         # The arrays for Python are structured, to allow named components: E['x'].
-        # The arrays for C++ are simple arrays of doubles for easier interfacing to C++.
+        # The arrays for C++ are Numpy arrays.
         if self.force_components is not None:
             Ecomps = self.force_components
             force_precision = self.force_precision
@@ -520,13 +501,10 @@ class Particle_C(object):
             Eseg_dict = {'names': Ecomps, 'formats': Etypes}
             nEcomps = len(Ecomps)
             if self.use_cpp_integrators is True:
-# make these have a shape, with C-ordering py::array::c_stype. pybind11 12.2.2, 12.2.5
                 # "NumPy arrays are by default in row-major order".
                 self.negE = np_m.zeros((self.SEGMENT_LENGTH, nEcomps), dtype=force_precision)  # Does this and Eext need to be "zeros"?
                 self.Eext = np_m.zeros((self.SEGMENT_LENGTH, nEcomps), dtype=force_precision)
                 self.zeroE = np_m.zeros((self.SEGMENT_LENGTH, nEcomps), dtype=force_precision)
-#                self.particle_cpp.initialize_particle_integration(self.negE, self.Eext, self.zeroE)
-
             else:
                 # reusable array for the solved field:
                 self.negE = np_m.zeros(self.SEGMENT_LENGTH, dtype=Eseg_dict)
@@ -537,7 +515,7 @@ class Particle_C(object):
 
             # self.negE1 is a reusable array for one-particle field data for a
             # trajectory
-            # Make an explicit name like 'Ex', 'Ey', 'Ez'
+            # Construct an explicit name like 'Ex', 'Ey', 'Ez'
             E1comps = ['E'+comp for comp in Ecomps]
             E1seg_dict = {'names': E1comps, 'formats': Etypes}
             self.negE1 = np_m.empty(1, dtype=E1seg_dict) # This is called negE1 since it may be used in interpolation functions that contain -E.
@@ -546,9 +524,9 @@ class Particle_C(object):
             # Create a reusable E array with all components zero
             #            self.zeroE = np_m.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
 
-            # self.Eext is a reusable array for one-particle external field data for a
+            # self.Eext1 is a reusable array for one-particle external field data for a
             # trajectory.
-            # Make an explicit name like 'Ex_ext', 'Ey_ext', 'Ez_ext'
+            # Construct an explicit name like 'Ex_ext', 'Ey_ext', 'Ez_ext'
             E1comps = ['E'+comp+'_ext' for comp in Ecomps]
             E1seg_dict = {'names': E1comps, 'formats': Etypes}
             self.Eext1 = np_m.empty(1, dtype=E1seg_dict)
@@ -561,17 +539,17 @@ class Particle_C(object):
             tDim = self.pmesh_M.mesh.topology().dim()
             nFacets = tDim + 1
             for sn in self.charged_species:
-                # Use the integrator specialized to the right number of cell-facets.
+                # Use the integrator specialized to the correct number of cell-facets.
                 integratorName = "advance_charged_species_in_E_field_" + str(nFacets) + "_facets"
-                integrator = getattr(self.particle_cpp, integratorName)
+                integrator = getattr(self.particle_solib, integratorName)
                 self.integrators[sn] = integrator
             for sn in self.neutral_species:
-                # Use the integrator specialized to the right number of cell-facets.
+                # Use the integrator specialized to the correct number of cell-facets.
                 integratorName = "advance_neutral_species_" + str(nFacets) + "_facets"
-                integrator = getattr(self.particle_cpp, integratorName)
+                integrator = getattr(self.particle_solib, integratorName)
                 self.integrators[sn] = integrator
         else:
-            # Advance the particles in this species with Python functions.
+            # Advance the particles in this species using Python functions.
             for sn in self.charged_species:                
                 # Advance the particles in this species with the Python functions in this module
                 self.integrators[sn] = getattr(self, "advance_charged_species_in_E_field")
@@ -603,19 +581,6 @@ class Particle_C(object):
         # Create the particles
         number_of_macroparticles, particle_list = p_list_method(type='listed')
 
-        # Check the length of the particle data by looking at the
-        # datatype of the first segment of the segmented array.
-
-# FIX for C++ version of sap:
-
-##        if len(particle_list[0]) != len(sap[0].dtype):
-##            errorMsg = fncName + "\tDnT ERROR: Species %s. Expecting particle data tuple %s, but data for first particle is: %s, which does not match up. Check UserParticles" %  (species_name, sap[0].dtype.names, particle_list[0])
-
-            
-#            print fncName, "Expect particle data for", sap[0].dtype.names
-#            print "First particle is:", particle_list[0]
-##            sys.exit(errorMsg)
-
         # Add the particles to storage and set up trajectories
 
 #        print 'dtype = ', self.particle_dtype
@@ -628,15 +593,11 @@ class Particle_C(object):
             if printParticles: print("\tspecies_name, particle_list[i] = ", species_name, particle_list[i])
             segIndex, fullIndex = sap.push_back(particle_list[i])
             # Check if this particle has the trajectory flag turned on
-            # p = sap.get_item(fullIndex)
             # For compatibility with the C++ version of SegmentedArrays:
             (pseg, offset) = sap.get_segment_and_offset(fullIndex)
             p = pseg[offset]
             if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
-# or: p['bitflags'] should work?
                 if self.traj_T is not None:
-#                    print 'fullIndex for trajectory = ', fullIndex
-                    #dynamicsType = self.dynamics[species_name]
                     if self.charge[species_name] != 0.0:
                         particleType = 'explicit'
                     else:    
@@ -644,10 +605,7 @@ class Particle_C(object):
                     self.traj_T.create_trajectory(species_name, fullIndex, particleType, unique_id_int=p['unique_ID'])
                 else:
 # Instead of printing this message, a traj_T object could be created here.
-                    if printWarningNoTrajectory: print("\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet.")
-
-#        if (print_flag): print fncName, "weight for ", species_name, " is ", weight
-#        if (print_flag): print fncName, "bitflags for ", species_name, " is ", bitflags
+                    if printWarningNoTrajectory: print("\tDnT WARNING: A trajectory flag is on, but no Trajectory_C object has been created yet.")
 
         return
 #    def create_from_list(self, species_name, print_flag=False):ENDDEF
@@ -876,7 +834,7 @@ class Particle_C(object):
             if self.use_cpp_integrators is True:
                 # Create a MeshEntityArrays object, which has non-standard mesh entity
                 # lists needed by particle movers.
-                import mesh_entity_arrays_solib as meaCpp
+                import mesh_entity_arrays_solib as meaSOlib
 
                 pmesh_df = self.pmesh_M.mesh
                 # Create the name of the specialized MeshEntityArrays class with the right
@@ -884,15 +842,8 @@ class Particle_C(object):
                 tDim = pmesh_df.topology().dim()
                 nFacets = tDim + 1
                 meaClass = "MeshEntityArrays_" + str(nFacets) + "_facets"
-                meaCtor = getattr(meaCpp, meaClass)
+                meaCtor = getattr(meaSOlib, meaClass)
                 self.pmesh_M.mea_object = meaCtor(pmesh_df, compute_particle_mesh_maps=True)
-                # Check if the MEA object has a certain method:
-                # methodName = "get_cell_neighbors"
-                # if hasattr(self.pmesh_M.mea_object, methodName):
-                #     print(fncName, "mea_object has", methodName)
-                # else:
-                #     print(fncName, "mea_object does not have", methodName)
-                
             else:
                 self.pmesh_M.compute_cell_vertices_dict() # Tested, but not used anywhere!
                 self.pmesh_M.compute_cell_entity_indices_dict('facet') # Get facet indices from a cell index                
@@ -1405,8 +1356,6 @@ class Particle_C(object):
 #    def move_particles_in_electrostatic_field(self, ctrl, neg_E_field=None, external_E_field=None, accel_only=False):ENDDEF
 
 #class Particle_C(object):
-#    def advance_charged_particles_in_E_field(self, ctrl, neg_E_field=None, external_E_field=None, accel_only=False):
-#    def advance_charged_particles_in_E_field(self, ctrl, neg_E_field=None, external_E_field=None, B_field=None, external_B_field=None, accel_only=False):
     def advance_charged_particles_in_E_field(self, ctrl, neg_E_field=None, external_E_field=None, accel_only=False):
         """Advance all charged particles by one time increment on a mesh.
 
@@ -1421,19 +1370,15 @@ class Particle_C(object):
             if self.get_species_particle_count(sn) == 0: continue
             if self.use_cpp_integrators is True:
                 # Advance the particles in this species with C++
-                # Invoke the mover for the right number of cell-facets
                 # Pull out the field data needed for interpolation to the particles
-#            auto negEfieldFunction = neg_E_field.field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
                 negEfieldFunction = neg_E_field.function.cpp_object() # Received as a dolfin::Function*
                 self.integrators[sn](self, sn, ctrl, neg_E_field=negEfieldFunction, external_E_field=external_E_field, accel_only=accel_only)
             else:
                 # Advance the particles in this species with Python
-#                self.advance_charged_species(sn, ctrl)
                 self.integrators[sn](sn, ctrl, neg_E_field=neg_E_field, external_E_field=external_E_field, accel_only=accel_only)
 
         return
 #    def advance_charged_particles_in_E_field(self, ctrl, neg_E_field=None, external_E_field=None, accel_only=False):ENDDEF
-#    def advance_charged_particles_in_E_field(self, ctrl, neg_E_field=None, external_E_field=None, B_field=None, external_B_field=None, accel_only=False):ENDDEF
 
 #class Particle_C(object):
     def advance_charged_species_in_E_field(self, sn, ctrl, neg_E_field=None, external_E_field=None, accel_only=False):
@@ -1792,7 +1737,7 @@ class Particle_C(object):
 
                             # Call the boundary function
                             self.pmesh_bcs.bc_function_dict[facValue][sn](psegOut[ipOut], sn, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
-                            print("facValue=", facValue, "bc_function_dict[facValue]=",self.pmesh_bcs.bc_function_dict[facValue])
+                            #print("facValue=", facValue, "bc_function_dict[facValue]=",self.pmesh_bcs.bc_function_dict[facValue])
                         # Look up the cell index of the new cell.
                         pCellIndexNew = pmesh_M.cell_neighbors_dict[pCellIndex][cFacet]
 
@@ -1889,18 +1834,10 @@ class Particle_C(object):
             if self.get_species_particle_count(sn) == 0: continue
             if self.use_cpp_integrators is True:
                 # Advance the particles in this species with C++
-                # Invoke the mover for the right number of cell-facets
-#                tDim = self.pmesh_M.mesh.topology().dim()
-#                nFacets = tDim + 1
-#                particleAdvancerName = "advance_neutral_species_" + str(nFacets) + "_facets"
-#                particleAdvancer = getattr(self.particle_cpp, particleAdvancerName)
-#                print(fncName, "\tCalling", particleAdvancerName)
-#                particleAdvancer(self, sn, ctrl)
                 self.integrators[sn](self, sn, ctrl)
             else:
                 # Advance the particles in this species with Python
                 self.integrators[sn](sn, ctrl)
-#                self.advance_neutral_species(sn, ctrl)
 
         return
 #    def advance_neutral_particles(self, ctrl):ENDDEF
@@ -1908,7 +1845,6 @@ class Particle_C(object):
 
 #class Particle_C(object):
     def advance_neutral_species(self, species_name, ctrl):
-#    def integrate_neutral_species(self, species_name, ctrl, print_flag = False):
         """Advance a neutral species for one timestep using Python.
 
            Compute change in position in time dt. Use an explicit method to calculate the
@@ -1981,12 +1917,6 @@ class Particle_C(object):
                 # psegIn[ipIn] has the 'x', 'y', 'z', 'x0',..., 'ux', 'uy',... values of ith item
                 # So psegIn[ipIn][0:3] is 'x', 'y', 'z'.
                 # Can't use slice syntax here, because the array data are not of homogeneous type.
-
-                # Skip deleted particles
-#                if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0:
-#                    indexChange = True # Particle SA indices are stale past
-                                       # this point due to deletions.
-#                    continue # skip to the next particle
 
                 # If this "out" segment is full, get the next "out" segment,
                 # since there are still some "in" particles to advance.  If
@@ -2099,7 +2029,6 @@ class Particle_C(object):
 # Move this call inside record_trajectory_datum:                                
                                 fullIndex = sap.get_full_index(ipIn, "in")
                                 self.record_trajectory_datum(species_name, ipOut, fullIndex, step, tStart, facet_crossing=True)
-                                # self.record_trajectory_datum(species_name, ipOut, fullIndex, step, tStart, E1Comps, Eext1Comps, facet_crossing=True)
                             # A reference to dx[] is available in the BC function class.
                             self.pmesh_bcs.bc_function_dict[facValue][species_name](psegOut[ipOut], species_name, mFacet, dx_fraction=dxFraction, facet_normal=facetNormal)
                         # Look up the cell index of the new cell.
@@ -2180,7 +2109,7 @@ class Particle_C(object):
         # Loop over segmented array for this species ends
 
         return
- #     ENDDEF: def advance_neutral_species(self, species_name, ctrl)
+#    def advance_neutral_species(self, species_name, ctrl): ENDDEF
 
 
 #class Particle_C(object):
@@ -2263,7 +2192,6 @@ class Particle_C(object):
 #        (npSeg, psegIn) = sap.init_inout_loop()
         (npSeg, psegIn, psegOut) = sap.init_inout_loop()
 
-#        print "advance_charged_species_in_uniform_fields: npSeg, psegIn, psegOut:", npSeg, psegIn, psegOut
         # Get the first segment of particles to move
 #        pseg = sap.get_next_segment()
 
@@ -2280,8 +2208,8 @@ class Particle_C(object):
             # Loop on the particles in this "in" segment.
             # ipIn counts through the "in" segment
             for ipIn in range(npSeg): # Could use for p in pseg[0:npSeg] instead.
-                ## Skip deleted particles. This is used for testing particle deletion from
-                ## the storage arrays, e.g., test_ParticleDelete.py.
+                # Skip deleted particles. This is used for testing particle deletion from
+                # the storage arrays, e.g., test_ParticleDelete.py.
                 if psegIn[ipIn]['bitflags'] & self.DELETE_FLAG != 0:
                     #print("Deleting particle with ipIn =", ipIn)
                     continue # skip to the next particle
@@ -2326,28 +2254,6 @@ class Particle_C(object):
 
         return
 #    def advance_charged_species_in_uniform_fields(self, species_name, ctrl, print_flag = False):ENDDEF
-
-# Just push one segment:
-
-    def move_particle_segment_in_uniform_fields(self, dt, qmdt, pseg, E0):
-        """Push one segment of particles in fields that are uniform in space and
-           time.
-        """
-# Use numpy array syntax to do this, instead of loops; See HPL Sec 4.2.2.
-
-        # Accelerate this block of particles
-        pseg['ux'] += qmdt*E0.x
-        pseg['uy'] += qmdt*E0.y
-        pseg['uz'] += qmdt*E0.z
-        # Move the particles
-        # NON-RELATIVISTIC: v and u are the same
-        pseg['x'] += pseg['ux']*dt
-        pseg['y'] += pseg['uy']*dt
-        pseg['z'] += pseg['uz']*dt
-#            print pseg['z']
-
-        return
-#    def move_particles_in_uniform_fields(self, species_name, ctrl, print_flag = False):ENDDEF
 
 #class Particle_C(object):
     def update_trajectory_particleId(self, sn, ip_in, ip_out):
@@ -2456,11 +2362,8 @@ class Particle_C(object):
             self.traj_T.particle_index_list[sn][p_index] = self.traj_T.NO_PINDEX
             return full_index_in
 
-#        print "remove_traj: This particle is ", self.dynamics[sn]
         if self.charge[sn] != 0.0:
-        #if self.dynamics[sn] == 'explicit':
             for comp in traj_T.charged_dict['names']:
-#                print "remove_traj: comp = ", comp
                 if comp == 'step':
                     traj_T.data_list[sn][p_index][comp][newpoint] = finalStep
                 elif comp == 't':
@@ -2473,21 +2376,6 @@ class Particle_C(object):
                     traj_T.data_list[sn][p_index][comp][newpoint] = 0.0
                 elif comp in self.Eext1.dtype.names:
                     traj_T.data_list[sn][p_index][comp][newpoint] = 0.0
-        # elif self.dynamics[sn] == 'implicit':
-        #     for comp in traj_T.implicit_dict['names']:
-        #         print("remove_traj: comp = ", comp)
-        #         if comp == 'step':
-        #             traj_T.data_list[sn][p_index][comp][newpoint] = finalStep
-        #         elif comp == 't':
-        #             traj_T.data_list[sn][p_index][comp][newpoint] = finalTime
-        #         elif comp in p_arr.dtype.names:
-        #             traj_T.data_list[sn][p_index][comp][newpoint] = p_arr[0][comp]
-#TODO fix this for implicit species:
-                # The particle has been deleted and may be out-of-bounds, so set
-                # E to zero instead of interpolating.
-                # elif comp in self.negE1.dtype.names:
-                #     traj_T.data_list[sn][p_index][comp][newpoint] = 0.0
-#        elif self.dynamics[sn] == 'neutral':
         else:
             for comp in traj_T.neutral_dict['names']:
                 if comp == 'step':
@@ -2791,8 +2679,7 @@ class Particle_C(object):
 
 #        print fncName, 'step = ', step
 
-        # Record a trajectory data-point for particles with explicit dynamics
-        #for sp in traj_T.explicit_species:
+        # Record a trajectory data-point for charged particles
         for sp in traj_T.charged_species:
             sap = self.sap_dict[sp] # The SAP for this species
             for i in range(len(traj_T.particle_index_list[sp])): # i loops over the list of
@@ -2859,59 +2746,7 @@ class Particle_C(object):
                         
                 traj_T.trajectory_length[sp][i] += 1 # Increment the trajectory length
 
-        # Record a trajectory data-point for particles with implicit dynamics
-#         for sp in traj_T.implicit_species:
-#             sap = self.sap_dict[sp] # The SAP for this species
-#             for i in range(len(traj_T.particle_index_list[sp])): # i loops on
-#                                                              # particle-index array
-#                 ip = traj_T.particle_index_list[sp][i] # Look up the full particle index
-# #                print "Recording data for particle", ip, "of species", sp
-                
-#                 # If a particle no longer exists, skip
-#                 if ip == traj_T.NO_PINDEX: continue
-
-#                 # Retrieve particle using its full index
-#                 # p_arr[0] = sap.get_item(ip) # pulls value from the "out" array.
-#                 # For compatibility with the C++ version of SegmentedArrays:
-#                 (pseg, offset) = sap.get_segment_and_offset(ip)
-#                 p_arr[0] = pseg[offset]
-# #                print "record_trajectory_data: p_arr[0] = ", p_arr[0]
-
-#                 # Compute the force on this single particle
-                
-# # TODO: Fix for implicit species                
-# #                 if neg_E_field is None:
-# #                     self.negE1[0] = self.zeroE[0]
-# #                 else:
-# #                     neg_E_field.interpolate_field_to_points(p_arr, self.negE1)
-
-# #                 E_arr = self.negE1[0:p_arr.size] # Need this syntax, even though there's
-# #                                                  # just one particle, to make E_arr an array.
-
-# #                 # Flip the sign to get correct E. (This is a vector operation on each
-# #                 # component of E.)
-# #                 for n in E_arr.dtype.names:
-# #                     E_arr[n] *= -1.0
-
-# # #                print "E_arr.dtype.names =", E_arr.dtype.names
-
-#                 # Copy the particle values into the trajectory
-#                 newpoint = traj_T.trajectory_length[sp][i]
-#                 for comp in traj_T.implicit_dict['names']:
-# #                    print 'comp = ', comp
-#                     if comp == 'step':
-#                         traj_T.data_list[sp][i][comp][newpoint] = step
-#                     elif comp == 't':
-#                         traj_T.data_list[sp][i][comp][newpoint] = time
-#                     elif comp in p_arr.dtype.names:
-#                         traj_T.data_list[sp][i][comp][newpoint] = p_arr[0][comp]
-# # TODO: Fix for implicit species                        
-# #                    elif comp in E_arr.dtype.names:
-# #                        traj_T.data_list[sp][i][comp][newpoint] = E_arr[0][comp]
-
-#                 traj_T.trajectory_length[sp][i] += 1 # Increment the trajectory length
-
-        # Record a trajectory data-point for particles with neutral dynamics
+        # Record a trajectory data-point for neutral particles.
         for sp in traj_T.neutral_species:
             sap = self.sap_dict[sp] # The SAP for this species
             for i in range(len(traj_T.particle_index_list[sp])): # i loops on
@@ -3148,11 +2983,6 @@ class Particle_C(object):
                 particle[3*pDim+1] = bitflags
                 particle[3*pDim+2] = cellIndex
                 particle[3*pDim+3] = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
-#tph
-#                if particle[3*pDim+3] == 2448:
-#                    print "create_max: adding particle with ID", particle[3*pDim+3]
-#                    particle[3*pDim+1] = bitflags | Particle_C.TRAJECTORY_FLAG
-
                 particle[3*pDim+4] = crossings
                     
                 # Store the particle in the "out" segment.
@@ -3165,12 +2995,9 @@ class Particle_C(object):
                 if bitflags & self.TRAJECTORY_FLAG != 0:
                     if self.traj_T is not None:
                         print("A trajectory will be recorded for particle", fullIndex, "of species:", speciesName)
-                        # dynamicsType = self.dynamics[speciesName]
                         if self.charge[speciesName] != 0.0:
-                            #dynamicsType = 'charged'
                             particleType = 'charged'                            
                         else:    
-                            #dynamicsType = 'neutral'
                             particleType = 'neutral'
                         self.traj_T.create_trajectory(speciesName, fullIndex, particleType)
                         
@@ -3196,7 +3023,6 @@ class Particle_C(object):
                         if external_E_field is None:
                             # self.Eext1[0] = self.zeroE[0] # Works for Python-only arrays
                             for i in range(len(self.Eext1.dtype.names)):
-                                #self.Eext1[0][i] = self.zeroE[0][i]
                                 self.Eext1[0][i] = 0.0
                         else:
                             external_E_field.interpolate_field_to_points(p_arr, self.Eext1)
@@ -3206,9 +3032,6 @@ class Particle_C(object):
                     else:
 # Instead of printing this message, a traj_T object could be created here?
                         if printWarningNoTrajectory is True: print(fncName, "\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet.")
-
-#        if (print_flag): print fncName, "weight for ", speciesName, " is ", weight
-#        if (print_flag): print fncName, "bitflags for ", speciesName, " is ", bitflags
 
         return
 #    def create_maxwellian_particles(self, step, time, domain, paramDict, neg_E_field=None, external_E_field=None):ENDDEF
@@ -3420,9 +3243,9 @@ class ParticleMeshBoundaryConditions_C(object):
            :param pmesh_M: The Mesh_C object use by the particle advance.
 
            :param userParticleBoundaryFunctions: A UserParticlesBoundaryFunctions_C
-                                                  object that contains the callback
-                                                  functions for particle
-                                                  boundary-conditions.
+                                                 object that contains the callback
+                                                 functions for particle
+                                                 boundary-conditions.
 
         """
         # Set local names from passed parameters

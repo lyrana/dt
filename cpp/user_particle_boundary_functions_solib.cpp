@@ -22,8 +22,8 @@ namespace dnt {
   // Set the bit patterns for flags. These are static class members, so they're set
   // outside the ctor, in a C++ source file, so they're compiled only once. (If they're in
   // a header file that's included in more than one file, that generates an error)
-  int Pstruct<Ptype::cartesian_xy>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-  int Pstruct<Ptype::cartesian_xy>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit 
+  //  int Pstruct<Ptype::cartesian_xy>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+  //  int Pstruct<Ptype::cartesian_xy>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit 
   
   // The anonymous namespace limits the scope of the functions in it to this file.
   namespace {
@@ -62,8 +62,6 @@ namespace dnt {
         // The C++ ctor args types are template parameters in py::init<>()
         // Note that if a py::arg() specification is needed (e.g., to specify a
         // default value), then every argument has to have a py::arg().
-        // .def(py::init< const py::list&, const py::array_t<double>& >())
-        // .def(py::init< const py::list >())
         .def(py::init< py::list& >())
 
         // The following statements create the bindings to UserParticleBoundaryFunctions member

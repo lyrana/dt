@@ -36,14 +36,11 @@
 //#include <Eigen/Dense>
 
 #include "Pstruct.h"
-//#include "Fstruct.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
-// #include <pybind11/eigen.h>
 #include <pybind11/operators.h>
-//#include <pybind11/cast.h>
 
 namespace py = pybind11;
 
@@ -66,13 +63,6 @@ namespace dnt
                                    Pstruct<PT>* points, // array of Pstructs
                                    py::ssize_t npoints,
                                    py::array_t<double> field_at_points);
-
-  /*
-  void interpolate_field_to_points(dolfin::Function& field,
-                                   py::array_t<Pstruct<PT>, 0> points,
-                                   py::ssize_t npoints,
-                                   py::array_t<double> field_at_points);
-  */
   
 } // namespace dnt
 

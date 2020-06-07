@@ -35,11 +35,6 @@ namespace dnt {
   
   PYBIND11_MODULE(MODULE_NAME, m) {
 
-    // C++ functions defined in particle.h
-
-    //    PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_x>, x_, "x", x0_, "x0", ux_, "ux", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
-
-    
     // Interface to the C++ particle-advance functions
     // Note that PARTICLE_TYPE here is defined in Makefile.part
 

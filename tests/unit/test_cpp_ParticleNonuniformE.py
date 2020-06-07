@@ -48,17 +48,6 @@ class TestParticleNonuniformE(unittest.TestCase):
         pin.force_precision = numpy.float64
         pin.use_cpp_integrators = True # Use C++ version of particle movers.
         
-        # Specify the particle properties
-        # 1. electrons
-        # pin.particle_species = (('testelectrons',
-        #                      {'initial_distribution_type' : 'listed',
-        #                       'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
-        #                       'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
-        #                       'dynamics' : 'explicit',
-        #                       }
-        #                      ),
-        #                     )
-
         speciesName = 'two_electrons'
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
@@ -175,22 +164,14 @@ class TestParticleNonuniformE(unittest.TestCase):
             userParticleBoundaryFunctionsCpp = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
             # Call the constructor to make a UserParticleBoundaryFunctions object
             userPBndFns = userParticleBoundaryFunctionsCpp.UserParticleBoundaryFunctions_cartesian_xy(self.particle_P.position_coordinates)
-
             # Create the map from mesh facets to particle callback functions:
-
-#        .def(py::init<std::vector<std::string>&, py::object&, UserParticleBoundaryFunctions<PT>&, bool>(), py::arg("species_names"), py::arg("pmesh_M"), py::arg("userParticleBoundaryFunctions"), py::arg("print_flag") = false);
-        
             pmeshBCs = particleCpp.ParticleMeshBoundaryConditions_cartesian_xy(spNames, pmesh2D_M, userPBndFns, print_flag=False)
-#            userPBndFns = None
         else:
             userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(self.particle_P.position_coordinates, self.particle_P.dx)
             pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh2D_M, userPBndFns, print_flag=False)
 
         # Add pmeshBCs to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs
-        #tph
-#        self.particle_P.userPBndFns = userPBndFns
-        #endtph
 
         # The following value should correspond to the element degree
         # used in the potential from which negE was obtained

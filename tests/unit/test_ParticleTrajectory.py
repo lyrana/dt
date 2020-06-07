@@ -267,10 +267,6 @@ class TestParticleTrajectory(unittest.TestCase):
         format_list = format_list_base + [numpy.float32 for i in range(len(charged_attributes))]
         self.trajin.charged_dict = {'names': name_list_base+charged_attributes, 'formats': format_list}
         
-        implicit_attributes = ['x', 'ux', 'phi']
-        format_list = format_list_base + [numpy.float32 for i in range(len(implicit_attributes))]
-        self.trajin.implicit_dict = {'names': name_list_base+implicit_attributes, 'formats': format_list}
-
         neutral_attributes = ['x', 'ux', 'y', 'uy']
         format_list = format_list_base + [numpy.float32 for i in range(len(neutral_attributes))]
         self.trajin.neutral_dict = {'names': name_list_base+neutral_attributes, 'formats': format_list}
@@ -316,15 +312,6 @@ class TestParticleTrajectory(unittest.TestCase):
             for i in range(len(expectedList)):
                 self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an explicit particle")
 
-#        print "The implicit species are", p_P.traj_T.implicit_species
-#        expectedList = self.trajin.implicit_dict['names']
-#        for sp in p_P.traj_T.implicit_species:
-#            print "  with indices", p_P.traj_T.particle_index_list[sp]
-#            print "  and values", p_P.traj_T.data_list[sp][0].dtype.names
-            gotList = p_P.traj_T.data_list[sp][0].dtype.names
-#            for i in range(len(expectedList)):
-#                self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an implicit particle")
-#                self.assertAlmostEqual(getparticle[ix], p_expected[isp][ix], msg="Particle is not in correct position")
         return
 #    def test_1_trajectory_init(self):ENDDEF
 
@@ -373,15 +360,9 @@ class TestParticleTrajectory(unittest.TestCase):
 
             print(fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time)
 
-            # Do the implicit species first
-            if len(p_P.implicit_species) != 0:
-                self.iterate_implicit_electrostatic_particles(dt, p_P.implicit_species)
-
-            # Then move the explicit species
+            # Move the charged species
             if len(p_P.charged_species) != 0:
-                #p_P.move_particles_in_electrostatic_field(self.ctrl, neg_E_field=self.neg_electric_field)
                 p_P.advance_charged_particles_in_E_field(self.ctrl, neg_E_field=self.neg_electric_field)
-            # XX needs dt; doesn't need n_timesteps
 
             # Record particle trajectory data
             if p_P.traj_T is not None:
@@ -498,11 +479,7 @@ class TestParticleTrajectory(unittest.TestCase):
             if printInfoStarting is True:
                 print("\nDnT INFO: %s\t Starting iteration %d to reach time %.3g" % (fncName, self.ctrl.timeloop_count, self.ctrl.time))
 
-            # Do the implicit species first
-            if len(p_P.implicit_species) != 0:
-                self.iterate_implicit_electrostatic_particles(dt, p_P.implicit_species)
-
-            # Then move the explicit species
+            # Advance the charged species
             if len(p_P.charged_species) != 0:
                 p_P.advance_charged_particles_in_E_field(self.ctrl, neg_E_field=self.neg_electric_field)
 
@@ -627,13 +604,8 @@ class TestParticleTrajectory(unittest.TestCase):
                 print("\nDnT INFO: %s\t Starting iteration %d to reach time %.3g" % (fncName, self.ctrl.timeloop_count, self.ctrl.time))
 #            print fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
 
-            # Do the implicit species first
-            #if len(p_P.implicit_species) != 0:
-            #    self.iterate_implicit_electrostatic_particles(dt, p_P.implicit_species)
-
-            # Then move the explicit species
+            # Advance the charged species
             if len(p_P.charged_species) != 0:
-                #p_P.move_particles_in_electrostatic_field(self.ctrl, neg_E_field=self.neg_electric_field)
                 p_P.advance_charged_particles_in_E_field(self.ctrl, neg_E_field=self.neg_electric_field)
 
             # Gather particle trajectory data for marked particles

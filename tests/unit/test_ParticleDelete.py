@@ -259,7 +259,7 @@ class TestParticleDeletion(unittest.TestCase):
                 putparticle[0] = x
                 # Turn on trajectory flag for a particle near the end:
                 if i == num_particles-10:
-                    # 'bitflags' is in position [10]
+                    # 'bitflags' is in array position [10]
                     putparticle[10] = 0b00 | p_P.TRAJECTORY_FLAG # turn on trajectory flag
                 else:
                     putparticle[10] = 0b00 # initialize all bits to 0

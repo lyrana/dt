@@ -55,8 +55,6 @@ static double particlePosition[3];
 static double pCoord2[6];
 // A scratch array to hold: dx,dy,dz (or a subset)
 static double dx[3];
-//
-//double negE[SEGMENT_LENGTH]; // This could be allocated in a particle init() function.
 
 static dolfin::Cell* pcellPtr; // File scoped needed? Probably not.
 
@@ -82,37 +80,18 @@ namespace dnt
       std::cout << "Hello from initialize_particle_integration@1" << std::endl;
       // Initialize the static interpolation arrays
 
-      // Check if this does a data copy.
-      //      negE = negE_in;
-      //      Eext = Eext_in;
-      //      zeroE = zeroE_in;
-      // negE = negE_in.mutable_unchecked<2>();
-      //      static void* negE = &(negE_in.mutable_unchecked<2>());
-      //      negE = &(negE_in.mutable_unchecked<2>());
-      //static negE = negE_in.mutable_unchecked<2>());
-      //static py::array_t<double>& negE = negE_in;
-      //auto negEproxy = negE_in.mutable_unchecked<2>();
-      //std::cout << "Hello from initialize_particle_integration@2" << std::endl;
-      //negE = &negE_in;
-      //auto negEproxy2 = negE->mutable_unchecked<2>(); // This is OK
-      //std::cout << "Hello from initialize_particle_integration@3 negE = " << negE << std::endl;
-      //Eext = &Eext_in;
-      // zeroE = &zeroE_in;
-      //      Eext = Eext_in.mutable_unchecked<2>();
-      //      zeroE = zeroE_in.mutable_unchecked<2>();
-      /*
-      py::buffer_info negEinfo = negE.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
+      py::buffer_info negEinfo = negE_in.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
       negE_array = (double*) negEinfo.ptr;
       E_array_len = negEinfo.shape[0];
       E_array_ncomps = negEinfo.shape[1];
 
-      py::buffer_info EextInfo = Eext.request();
+      py::buffer_info EextInfo = Eext_in.request();
       Eext_array = (double*) EextInfo.ptr;
       // Check that the arrays have the same size
       if ((EextInfo.shape[0] != E_array_len) || (EextInfo.shape[1] != E_array_ncomps))
         throw std::runtime_error("particle.h:initialize_particle_integration@1: Array dimensions are not the same");
 
-      py::buffer_info zeroEinfo = zeroE.request();
+      py::buffer_info zeroEinfo = zeroE_in.request();
       zeroE_array = (double*) zeroEinfo.ptr;
       // Check that the arrays have the same size
       if ((zeroEinfo.shape[0] != E_array_len) || (zeroEinfo.shape[1] != E_array_ncomps))
@@ -688,18 +667,7 @@ namespace dnt
     The time at which a particle starts its move in the current cell.
 
   */
-  //  template<>
-  //    class Pstruct<Ptype::cartesian_xy>
-  //    {
-  
-      //  template <Ptype PT, size_t N_CELL_FACETS>
-      //    void advance_neutral_species(py::object particle_P, py::str species_name, py::object ctrl)
-  //  template <Ptype PT, size_t N_CELL_FACETS>
-  //    void advance_neutral_species(py::object particle_P, py::str species_name, py::object ctrl)
-  // This is the cartesian_xyz version
-  //  template <>
   template <size_t N_CELL_FACETS>    
-    //    void advance_neutral_species<Ptype::cartesian_xyz, 2>(py::object particle_P, py::str species_n)
     void advance_neutral_species_cartesian_xyz(py::object particle_P, py::str species_name, py::object ctrl)
     {
     using namespace pybind11::literals;
@@ -1630,8 +1598,7 @@ namespace dnt {
   // The anonymous namespace limits the scope of the functions in it to this file.
   namespace {
 
-    //! Make ParticleMeshBoundaryConditions classes to contain
-    //! UserParticleBoundaryFunctions of different Ptypes.
+    //! Make ParticleMeshBoundaryConditions classes to contain UserParticleBoundaryFunctions for different Ptypes.
     /*!
 
       makeParticleMeshBoundaryConditions() is a 'helper' function. It creates the Python

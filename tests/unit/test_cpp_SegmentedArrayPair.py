@@ -13,8 +13,9 @@ import unittest
 import sys
 
 modulename = 'numpy_types_solib'
-if modulename not in sys.modules:
-    import numpy_types_solib
+#if modulename not in sys.modules:
+#    import numpy_types_solib
+import numpy_types_solib
 import segmented_array_pair_solib
 
 class TestSegmentedArrayPair(unittest.TestCase):

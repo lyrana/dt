@@ -65,8 +65,7 @@ namespace dnt
         default_bc(): The default function for all species at all boundaries.
         default_bc_at_name(): The default called for all species at
         the boundary 'name'.
-        bc_at_name_for_species: The function called for 'species'
-        crossing 'name'.
+        bc_at_name_for_species: The function called for 'species' crossing 'name'.
 
         The most specific function found for a given boundary and species is used.
 

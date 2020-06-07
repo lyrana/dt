@@ -62,19 +62,13 @@ namespace dnt
     class Pstruct {
 
   public:
-    // These are static class members, so they're set outside the ctor. See below.
+    // These are static class members, so they're set outside the header file, in
+    // particle_solib.cpp
     static int DELETE_FLAG;
     static int TRAJECTORY_FLAG;
     
   };
   //  class Pstruct ENDCLASS
-
-  // Set the bit patterns for flags. These are static class members, so they're set
-  // outside the ctor.
-  template <Ptype PT>
-    int Pstruct<PT>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-  template <Ptype PT>
-    int Pstruct<PT>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
 
 
 /*! \struct Pstruct_cartesian_x
@@ -89,7 +83,8 @@ namespace dnt
     {
       // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
     public:
-    // These are static class members, so they're set outside the ctor. See below.
+    // These are static class members, so they're set outside the header file, in
+    // particle_solib.cpp
       static int DELETE_FLAG;
       static int TRAJECTORY_FLAG;
       
@@ -180,14 +175,6 @@ namespace dnt
     };
   // ENDCLASS: class Pstruct<Ptype::cartesian_x>
 
-  // Initialize static class members
-  
-  // Set the bit patterns for flags. These are static class members, so they're set
-  // outside the ctor.
-  //    int Pstruct<Ptype::cartesian_x>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-  //    int Pstruct<Ptype::cartesian_x>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
-
-    
 /*! \struct pstruct2D
   \brief struct for (x, y) particle coordinates
 */
@@ -196,7 +183,8 @@ namespace dnt
     {
       // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
     public:
-      // These are static class members, so they're set outside the ctor. See below.
+    // These are static class members, so they're set outside the header file, in
+    // particle_solib.cpp
       static int DELETE_FLAG;
       static int TRAJECTORY_FLAG;
       
@@ -292,13 +280,6 @@ namespace dnt
     };
   // class Pstruct<Ptype::cartesian_xy> ENDCLASS
 
-  // Initialize static class members
-  
-  // Set the bit patterns for flags. These are static class members, so they're set
-  // outside the ctor.
-  //    int Pstruct<Ptype::cartesian_xy>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-  //    int Pstruct<Ptype::cartesian_xy>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
-
 
 /*! \struct pstruct3D
   \brief struct for (x, y, z) particle coordinates
@@ -308,7 +289,8 @@ namespace dnt
   {
 // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
   public:
-    // These are static class members, so they're set outside the ctor. See below.
+    // These are static class members, so they're set outside the header file, in
+    // particle_solib.cpp
     static int DELETE_FLAG;
     static int TRAJECTORY_FLAG;
     
@@ -416,13 +398,6 @@ namespace dnt
   };
   // class Pstruct<Ptype::cartesian_xyz> ENDCLASS
 
-  // Initialize static class members
-  
-  // Set the bit patterns for flags. These are static class members, so they're set
-  // outside the ctor.
-  //    int Pstruct<Ptype::cartesian_xyz>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-  //    int Pstruct<Ptype::cartesian_xyz>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit is 1
-  
 
 // Declare the C++ function print_pstructarray(): it's templated on the type of the struct
 // that corresponds to the Numpy structured array. It takes the array of structs, writes

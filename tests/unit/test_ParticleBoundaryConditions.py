@@ -364,7 +364,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         pin.particle_species = (trajelectrons_S,
                                  )
         ## Make the particle storage array for all species.
-        particle_P = Particle_C(pin, print_flag=True)
+        particle_P = Particle_C(pin, print_flag=False)
 
         ## Give the name of the .py file containing special particle data (lists of
         # particles, boundary conditions, source regions, etc.)

@@ -1,6 +1,6 @@
 /*! \file numpy_types_solib.cpp
 
-  \brief This file creates a shared library the registers types with Numpy
+  \brief This file creates a shared library that registers types with Numpy
 
   In order to make Numpy arrays where the members are C structs, the struct and the
   variables it contains must be registered with Numpy.
@@ -22,7 +22,6 @@ namespace py = pybind11;
 // bindings. The method module::def() generates binding code that exposes the C++
 // functions to Python.
 
-
 namespace dnt {
 
   // Create a variable 'm' of type py::module
@@ -35,6 +34,5 @@ namespace dnt {
     PYBIND11_NUMPY_DTYPE_EX(Pstruct<Ptype::cartesian_xyz>, x_, "x", y_, "y", z_, "z", x0_, "x0", y0_, "y0", z0_, "z0", ux_, "ux", uy_, "uy", uz_, "uz", weight_, "weight", bitflags_, "bitflags", cell_index_, "cell_index", unique_ID_, "unique_ID", crossings_, "crossings");
 
   } // ENDDEF: PYBIND11_MODULE(numpy_types_solib, m)
-
   
 } // namespace dnt

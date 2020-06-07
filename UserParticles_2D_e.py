@@ -195,8 +195,6 @@ class UserParticleDistributions_C(object):
 
         # An electron at the y = 0 boundary
 
-#        (x0, y0, z0) = (1.1, 0.1, 0.0)
-#        (x0, y0, z0) = (1.0, 0.0, 0.0)
         (x0, y0, z0) = (4.75, 0.0, 0.0)
 # Rotate through theta in x-y plane
         theta0 = math.pi/4.0
@@ -206,7 +204,6 @@ class UserParticleDistributions_C(object):
 
         print("First particle: x0, y0, z0 =", x0, y0, z0)
 
-#        (ux0, uy0, uz0) = (3000.0, 2000.0, 1000.0)
         (ux0, uy0, uz0) = (0.0, 0.0, 1000.0)
         weight0 = 1.0 # number of electrons per macroparticle
         bitflags0 = 0b00 # bit flags variable is all zeroes
@@ -230,7 +227,6 @@ class UserParticleDistributions_C(object):
 
         print("Second particle: x1, y1, z1 =", x1, y1, z1)
 
-#        (ux1, uy1, uz1) = (3000.0, 2000.0, 1000.0)
         (ux1, uy1, uz1) = (0.0, 0.0, 1000.0)
         weight1 = 2.0
         bitflags1 = 0b00 # bit flags variable
@@ -311,7 +307,7 @@ class UserParticleBoundaryFunctions_C(object):
         """Default boundary condition for all particles incident on rmin.
         """
 
-        printInfoInvoked = True
+        printInfoInvoked = False
         
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
 
@@ -333,8 +329,8 @@ class UserParticleBoundaryFunctions_C(object):
 
            :param p: A full particle record
            :param str species_name: This is redundant since the function contains the
-                                   name of the species, but may be useful for
-                                   indexing.
+                                    name of the species, but may be useful for
+                                    indexing.
            :param int facet_index: The mesh index of the facet that generated the call
                                   to this function.
            :param double dx_fraction: The fraction of the move vector traveled before

@@ -119,8 +119,6 @@ namespace dnt
     void add_segment(unsigned theSA)
     {
       nseg[theSA] += 1;
-      //      py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment(segment_length);
-      //      py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment();
       // No pointer is passed, so Numpy will allocate the buffer
       py::array_t<Pstruct<PT>, 0> newSegment = py::array_t<Pstruct<PT>, 0>(segment_length);
       seg_list_pair[theSA].push_back(newSegment);
@@ -153,8 +151,6 @@ namespace dnt
         for (auto iSA : {0, 1})
           {
             // Add the Numpy arrays for the first segment pair
-            //            py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment(segment_length);
-            //            py::array_t<Pstruct<PT>, 0> newSegment = allocate_a_segment();
             py::array_t<Pstruct<PT>, 0> newSegment = py::array_t<Pstruct<PT>, 0>(segment_length);
             seg_list_pair[iSA].push_back(newSegment);
             // Count the number of segments:
@@ -613,10 +609,9 @@ namespace dnt
 
       \param return_data_ptrs: if true, return pointers to the data instead of Numpy
                                arrays. (See Gdrive notes on pybind11 capsules.)
-
       \return The tuple: (number of items in the first segment of "in" SA,
-      ref to first segment of "in" SA,
-      ref to first segment of "out" SA)
+                          ref to first segment of "in" SA,
+                          ref to first segment of "out" SA)
     */
     py::tuple init_inout_loop(bool return_data_ptrs = false)
       {
@@ -695,7 +690,7 @@ namespace dnt
 
 
     //! Return a tuple with a reference to the next segment of either the "in" or "out" array, and the number of active items.
-    /*      
+    /*!      
         \param in_out is a string, either "in" or "out".
         \param return_data_ptr: if true, return a pointer to the data instead of a Numpy array
         \return The tuple (number of active items in the next array segment, 

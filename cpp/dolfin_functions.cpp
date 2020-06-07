@@ -727,11 +727,6 @@ namespace dnt
   
 } // namespace dnt
 
-// template void dnt::interpolate_field_to_points<>(dolfin::Function& field,
-//                                                  py::array_t<Pstruct<Ptype::cartesian_xyz>, 0> points,
-//                                                  py::ssize_t npoints,
-//                                                  py::array_t<double> field_at_points);
-
 
 // From https://en.cppreference.com/w/cpp/language/function_template:
 // A function template by itself is not a type, or a function, or any other entity. No
@@ -739,7 +734,6 @@ namespace dnt
 // for any code to appear, a template must be instantiated: the template arguments must be
 // determined so that the compiler can generate an actual function (or class, from a class
 // template).
-
 
 // Since dolfin_functions_solib.cpp includes dolfin_function.h, but not dolfin_functions_cpp,
 // we to need the following statements instantiating the function

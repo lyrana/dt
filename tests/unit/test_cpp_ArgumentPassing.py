@@ -79,7 +79,7 @@ class TestPybind11(unittest.TestCase):
         pin.particle_species = (neutralH_S,
                                )
         # Make the particle object from pin
-        self.particle_P = Particle_C(pin, print_flag=True)
+        self.particle_P = Particle_C(pin, print_flag=False)
 
         # Give the name of the .py file containing additional particle data (lists of
         # particles, boundary-condition callbacks, source regions, etc.)
@@ -271,10 +271,6 @@ class TestPybind11(unittest.TestCase):
         # Get the initial cell index of each particle.
         self.particle_P.compute_mesh_cell_indices()
 
-
-#        speciesName = 'neutral_H'
-#        sap = self.particle_P.sap_dict[speciesName] # segmented array for this species
-        
         # Pass the Particle_C object to C++
         test_so.function_with_Particle_C_arg(self.particle_P)
 
