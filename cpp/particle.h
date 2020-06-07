@@ -79,24 +79,6 @@ namespace dnt
     {
       std::cout << "Hello from initialize_particle_integration@1" << std::endl;
       // Initialize the static interpolation arrays
-
-      py::buffer_info negEinfo = negE_in.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
-      negE_array = (double*) negEinfo.ptr;
-      E_array_len = negEinfo.shape[0];
-      E_array_ncomps = negEinfo.shape[1];
-
-      py::buffer_info EextInfo = Eext_in.request();
-      Eext_array = (double*) EextInfo.ptr;
-      // Check that the arrays have the same size
-      if ((EextInfo.shape[0] != E_array_len) || (EextInfo.shape[1] != E_array_ncomps))
-        throw std::runtime_error("particle.h:initialize_particle_integration@1: Array dimensions are not the same");
-
-      py::buffer_info zeroEinfo = zeroE_in.request();
-      zeroE_array = (double*) zeroEinfo.ptr;
-      // Check that the arrays have the same size
-      if ((zeroEinfo.shape[0] != E_array_len) || (zeroEinfo.shape[1] != E_array_ncomps))
-        throw std::runtime_error("particle.h:initialize_particle_integration@2: Array dimensions are not the same");
-      */
     }
   // ENDDEF: void initialize_particle_integration
   
