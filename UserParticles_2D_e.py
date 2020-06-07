@@ -10,6 +10,10 @@ __all__ = ['UserParticleDistributions_C.trajelectrons',
            'UserParticleDistributions_C.two_electrons',
            'UserParticleDistributions_C.few_initial_electrons',
            'UserParticleDistributions_C.few_initial_ions',
+
+           'UserParticleBoundaryFunctions_C.default_bc',
+           'UserParticleBoundaryFunctions_C.default_bc_at_rmin',
+           'UserParticleBoundaryFunctions_C.bc_at_rmin_for_test_electrons',
            ]
 
 import sys

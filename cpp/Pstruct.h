@@ -1,6 +1,6 @@
 // Copyright (C) 2018 L. D. Hughes
 
-// A Numpy structured array corresponds to a struct in C/C++. The struct
+// A Numpy structured array corresponds to a array of structs in C/C++. The structure
 // member-variable names have to be the same as the field names in the Python structured
 // array unless PYBIND11_NUMPY_DTYPE_EX is used.  The following structs corresponds to
 // single elements of 1, 2, and 3D structured Numpy arrays of particles in Python.
