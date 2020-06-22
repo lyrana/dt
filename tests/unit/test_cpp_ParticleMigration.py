@@ -268,12 +268,47 @@ class TestCppParticleMigration(unittest.TestCase):
         # Attach the particle integrators
         self.particle_P.initialize_particle_integration()
 
+        ### Particle boundary-conditions
+
+        # See the TODO of 4apr20 for redoing this.
+        
+        # Make a dictionary associating the above-named boundaries of the particle mesh with
+        # user-supplied call-back functions.
+        
+        # First, we need to make a UserParticleBoundaryFunctions_... object, which
+        # contains the boundary-crossing callback functions.
+        
+        spNames = self.particle_P.species_names
+        
+        # Import C++ particle module
+        # (This should be already imported by Particle_Module)
+        particleSOlibName = "particle_cartesian_xyz_solib"
+        if particleSOlibName not in sys.modules:
+            infoMsg = "%s\t\"Importing %s\"" % (fncName, particleSOlibName)
+            print(infoMsg)
+        particleSOlib = im_m.import_module(particleSOlibName)
+        
+        # Import C++ particle boundary-conditions
+        userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xyz_solib"
+        if userParticleBoundaryFunctionsSOlibName not in sys.modules:        
+            infoMsg = "%s\t\"Importing %s\"" % (fncName, userParticleBoundaryFunctionsSOlibName)
+            print(infoMsg)
+        userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
+        # Call the constructor to make a UserParticleBoundaryFunctions_... object
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xyz(self.particle_P.position_coordinates)
+        # Create the map from mesh facets to particle callback functions:
+        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xyz(spNames, self.particle_P.pmesh_M, userPBndFns, print_flag=False)
+
+        # Add pmeshBCs to the Particle_C object
+        self.particle_P.pmesh_bcs = pmeshBCs
+
+        # Get the initial cell index of each particle.
+        
+        # Note: this could be moved down closer to the beginning of the
+        # particle-advance loop.
         # cell_dict{} is needed by the Python version of is_inside_cell(), which is
         # used in compute_mesh_cell_indices() below.
         self.particle_P.pmesh_M.compute_cell_dict()
-        
-        # Get the initial cell index of each particle.
-        # Note: this could be moved down closer to the beginning of the particle-advance loop.
         self.particle_P.compute_mesh_cell_indices()
 
         ### Put the expected ending results for the two particles into the p_expected tuple ###
@@ -347,7 +382,6 @@ class TestCppParticleMigration(unittest.TestCase):
         """Test particle migration across cells on 2D mesh.
 
         """
-
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName)
 
@@ -374,6 +408,40 @@ class TestCppParticleMigration(unittest.TestCase):
 
         # Attach the particle integrators
         self.particle_P.initialize_particle_integration()
+
+        ### Particle boundary-conditions
+
+        # See the TODO of 4apr20 for redoing this.
+        
+        # Make a dictionary associating the above-named boundaries of the particle mesh with
+        # user-supplied call-back functions.
+        
+        # First, we need to make a UserParticleBoundaryFunctions_... object, which
+        # contains the boundary-crossing callback functions.
+        
+        spNames = self.particle_P.species_names
+        
+        # Import C++ particle module
+        # (This should be already imported by Particle_Module)
+        particleSOlibName = "particle_cartesian_xyz_solib"
+        if particleSOlibName not in sys.modules:
+            infoMsg = "%s\t\"Importing %s\"" % (fncName, particleSOlibName)
+            print(infoMsg)
+        particleSOlib = im_m.import_module(particleSOlibName)
+        
+        # Import C++ particle boundary-conditions
+        userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xyz_solib"
+        if userParticleBoundaryFunctionsSOlibName not in sys.modules:        
+            infoMsg = "%s\t\"Importing %s\"" % (fncName, userParticleBoundaryFunctionsSOlibName)
+            print(infoMsg)
+        userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
+        # Call the constructor to make a UserParticleBoundaryFunctions_... object
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xyz(self.particle_P.position_coordinates)
+        # Create the map from mesh facets to particle callback functions:
+        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xyz(spNames, self.particle_P.pmesh_M, userPBndFns, print_flag=False)
+
+        # Add pmeshBCs to the Particle_C object
+        self.particle_P.pmesh_bcs = pmeshBCs
         
         # cell_dict{} is needed by the Python version of is_inside_cell(), which is
         # used in compute_mesh_cell_indices() below.
@@ -465,7 +533,6 @@ class TestCppParticleMigration(unittest.TestCase):
         """Test particle migration across cells on a 3D mesh.
 
         """
-
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName)
 
@@ -492,6 +559,40 @@ class TestCppParticleMigration(unittest.TestCase):
         
         # Attach the particle integrators
         self.particle_P.initialize_particle_integration()
+
+        ### Particle boundary-conditions
+
+        # See the TODO of 4apr20 for redoing this.
+        
+        # Make a dictionary associating the above-named boundaries of the particle mesh with
+        # user-supplied call-back functions.
+        
+        # First, we need to make a UserParticleBoundaryFunctions_... object, which
+        # contains the boundary-crossing callback functions.
+        
+        spNames = self.particle_P.species_names
+        
+        # Import C++ particle module
+        # (This should be already imported by Particle_Module)
+        particleSOlibName = "particle_cartesian_xyz_solib"
+        if particleSOlibName not in sys.modules:
+            infoMsg = "%s\t\"Importing %s\"" % (fncName, particleSOlibName)
+            print(infoMsg)
+        particleSOlib = im_m.import_module(particleSOlibName)
+        
+        # Import C++ particle boundary-conditions
+        userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xyz_solib"
+        if userParticleBoundaryFunctionsSOlibName not in sys.modules:
+            infoMsg = "%s\t\"Importing %s\"" % (fncName, userParticleBoundaryFunctionsSOlibName)
+            print(infoMsg)
+        userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
+        # Call the constructor to make a UserParticleBoundaryFunctions_... object
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xyz(self.particle_P.position_coordinates)
+        # Create the map from mesh facets to particle callback functions:
+        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xyz(spNames, self.particle_P.pmesh_M, userPBndFns, print_flag=False)
+
+        # Add pmeshBCs to the Particle_C object
+        self.particle_P.pmesh_bcs = pmeshBCs
 
         # cell_dict{} is needed by the Python version of is_inside_cell(), which is
         # used in compute_mesh_cell_indices() below.

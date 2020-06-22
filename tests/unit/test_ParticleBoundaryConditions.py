@@ -48,6 +48,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
     def test_1_2D_x_y_absorbing_boundary(self):
         """ Check that particles are deleted correctly when they
             cross an absorbing boundary on a 2D Cartesian mesh.
+
+            The particles are neutral H.
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -69,7 +71,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.time = 0.0
 
         ctrl.dt = 0.5
-        ctrl.n_timesteps = 100
+        ctrl.n_timesteps = 100 # 100
         ctrl.MAX_FACET_CROSS_COUNT = 100
 
         # Create an instance of the DTparticleInput class
@@ -78,22 +80,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xyz'
-#        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_precision = numpy.float64
+        pin.use_cpp_integrators = False # Use C++ code to advance particles.
 
         # Specify the particle species properties
-
-        # Specify the particle-species
-        # 1. electrons
-#         pin.particle_species = (('neutral_H',
-#                              {'initial_distribution_type' : 'listed',
-#                               'charge' : 0.0,
-#                               'mass' : 1.0*MyPlasmaUnits_C.AMU,
-#                               'dynamics' : 'explicit',
-# #                              'number_per_cell' : 12,
-#                               }
-#                              ),
-#                             )
 
         speciesName = 'neutral_H' # Use this name later to initialize this
                                   # species or to create a source of this
@@ -105,7 +95,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # Add the neutral hydrogen to particle input
         pin.particle_species = (neutralH_S,
-                                 )
+                               )
 
         ## Make the particle storage array for all species.
         particle_P = Particle_C(pin, print_flag=False)
@@ -117,6 +107,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         userParticlesModuleName = 'UserParticles_3D'
 
         # Import this module
+        infoMsg = "%s\tImporting %s" % (fncName, userParticlesModuleName)
+        print(infoMsg)
         userParticlesModule = im_m.import_module(userParticlesModuleName)
 
         # particle_P.user_particles_module_name = userParticlesModuleName
@@ -159,8 +151,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Create a 2D Cartesian mesh to use for advancing the particles.  The particles
         # themselves are given 3D coordinates.
 
+        infoMsg = "%s\tImporting UserMeshInput_C from UserMesh_y_Fields_FE_XYZ_Module" % (fncName)
+        print(infoMsg)
         from UserMesh_y_Fields_FE_XYZ_Module import UserMeshInput_C
-
+        
         # 2D mesh input
 
         umi2D = UserMeshInput_C()
@@ -171,12 +165,6 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         umi2D.cells_on_side = (4, 2)
 #        umi2D.diagonal = 'crossed'
 
-        # These are the (int boundary-name) pairs used to mark mesh
-        # facets. The string value of the int is used as the index.
-        # xmin_indx = '1'
-        # xmax_indx = '2'
-        # ymin_indx = '4'
-        # ymax_indx = '8'
 # This could be automated, given a list of the boundary names: ['xmin', 'xmax', ...]
         xminIndx = 1
         xmaxIndx = 2
@@ -191,7 +179,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         umi2D.particle_boundary_dict = particleBoundaryDict
 
         ## Create the 2D Cartesian mesh
-
+        infoMsg = "%s\tImporting UserMesh_C from UserMesh_y_Fields_FE_XYZ_Module" % (fncName)
+        print(infoMsg)
         from UserMesh_y_Fields_FE_XYZ_Module import UserMesh_C
 
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
@@ -228,7 +217,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # The 'listed' type will expect a function with the same name as the species.
         neutralHParams = {'species_name': speciesName,
                           'initial_distribution_type': initialDistributionType,
-                          }
+                         }
 
         # The dictionary keys are mnemonics for initialized particle distributions
         initialParticlesDict = {'initial_neutral_H': (neutralHParams,),
@@ -241,18 +230,17 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 # Particle boundary-conditions
 
         # UserParticleBoundaryFunctions_C is where the facet-crossing callback
-        # functions are defined.
-#        user_particles_bcs_class = userParticlesModule.UserParticleMeshBoundaryConditions_C
-        userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # abbreviation
+        # functions are defined by the user.
+        # Make an instance of UserParticleBoundaryFunctions_C
+        userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C # abbreviation
 
-        # Make the particle-mesh boundary-conditions object and add it
-        # to the particle object.  The user has to supply the
-        # facet-crossing callback functions in the
-        # UserParticleBoundaryFunctions_C object above.
+        # Make the particle-mesh boundary-conditions object and add it to the
+        # particle object.  The user has to supply the facet-crossing callback
+        # functions in the UserParticleBoundaryFunctions_C object above.
 
         spNames = p_P.species_names
-        pmeshBCS = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
-        p_P.pmesh_bcs = pmeshBCS
+        pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFns, print_flag=False)
+        p_P.pmesh_bcs = pmeshBCs
 
         # Create the initial particles
         printFlags = {}
@@ -298,9 +286,268 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 #    def test_1_2D_x_y_absorbing_boundary(self):ENDDEF
 
 #class TestParticleBoundaryConditions(unittest.TestCase):
+    def test_1_cpp_2D_x_y_absorbing_boundary(self):
+        """ Check that particles are deleted correctly when they
+            cross an absorbing boundary on a 2D Cartesian mesh.
+
+            The particles are neutral H.
+            C++ code is used to advance the particles.
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        print('\ntest: ', fncName)
+
+        if os.environ.get('DISPLAY') is None:
+            plotFlag=False
+        else:
+            plotFlag=self.plot_mesh
+
+        ctrl = DTcontrol_C()
+
+        # Run identifier
+        ctrl.title = "test_ParticleBoundaryConditions.py:test_1_cpp_2D_x_y_absorbing_boundary"
+        # Run author
+        ctrl.author = "tph"
+
+        # Set the start time
+        ctrl.timeloop_count = 0
+        ctrl.time = 0.0
+
+        # Set the timestep and running time
+        ctrl.dt = 0.5
+        ctrl.n_timesteps = 100 # 100
+        ctrl.MAX_FACET_CROSS_COUNT = 100
+
+        # Create an instance of the DTparticleInput class
+        pin = ParticleInput_C()
+        # Settings common to all species
+        pin.precision = numpy.float64
+        pin.particle_integration_loop = 'loop-on-particles'
+
+        # Set the particle coordinate system. This determines the particle-storage
+        # dimensions
+        pin.coordinate_system = 'cartesian_xyz'
+        pin.force_precision = numpy.float64
+        pin.use_cpp_integrators = True # Use C++ code to advance particles.
+
+        # Specify the particle species properties
+
+        speciesName = 'neutral_H' # Use this name later to initialize this
+                                  # species and/or to create a source of this
+                                  # species.
+        charge = 0.0
+        mass = 1.0*MyPlasmaUnits_C.AMU
+        dynamics = 'neutral'
+        neutralH_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
+
+        # Add the neutral hydrogen to particle input
+        pin.particle_species = (neutralH_S,
+                               )
+
+        ## Make the particle storage array for all species.
+        particle_P = Particle_C(pin, print_flag=False)
+
+        # Provide particle distributions for the above species
+        # This could be done more like how the mesh is specified:
+        # import UserParticles_3D as userParticlesModule
+        
+        # Particles have a 3D/3D phase-space even though mesh is just 2D
+        userParticlesModuleName = 'UserParticles_3D'
+
+        # Import this module
+        userParticlesModule = im_m.import_module(userParticlesModuleName)
+
+        # particle_P.user_particles_module_name = userParticlesModuleName
+        particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
+
+        ### Create a trajectory object and add it to particle_P
+        # This will contain all the trajectory data recorded during the simulation.
+
+        # Create input object for trajectories
+        trajin = TrajectoryInput_C()
+
+        trajin.maxpoints = None # Set to None to get every point
+        trajin.extra_points = 1 # Set to 1 to make sure one boundary-crossing can be
+                                # accommodated.
+
+        # Specify which particle variables to save.  This has the form of a numpy
+        # dtype specification.
+        name_list_base = ['step', 't'] # These variables are always recorded
+        format_list_base = [int, numpy.float32] # Start off the format-spec list with
+                                                # types for 'step' and 't'
+
+        charged_attributes = ['x', 'ux', 'y', 'uy', 'Ex', 'Ey']
+        format_list = format_list_base + [numpy.float32]*len(charged_attributes)
+        trajin.charged_dict = {'names': name_list_base+charged_attributes, 'formats': format_list}
+        
+        #implicit_attributes = ['x', 'ux', 'phi']
+        #format_list = format_list_base + [numpy.float32]*len(implicit_attributes)
+        # trajin.implicit_dict = {'names': name_list_base+implicit_attributes, 'formats': format_list}
+
+        neutral_attributes = ['x', 'ux', 'y', 'uy']
+        format_list = format_list_base + [numpy.float32]*len(neutral_attributes)
+        trajin.neutral_dict = {'names': name_list_base+neutral_attributes, 'formats': format_list}
+
+        # Add a traj_T reference to the particle object
+        p_P = particle_P # abbreviation
+        #p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species)
+
+        ##  Mesh input for the particle mesh, including particle boundary conditions.
+
+        # Create a 2D Cartesian mesh to use for advancing the particles.  The particles
+        # themselves are given 3D coordinates.
+
+        from UserMesh_y_Fields_FE_XYZ_Module import UserMeshInput_C
+
+        # Make input for a square 2D mesh
+
+        umi2D = UserMeshInput_C()
+        (xmin, ymin) = (-10.0, -10.0)
+        (xmax, ymax) = ( 10.0,  10.0)
+        umi2D.pmin = df_m.Point(xmin, ymin)
+        umi2D.pmax = df_m.Point(xmax, ymax)
+        umi2D.cells_on_side = (4, 2)
+#        umi2D.diagonal = 'crossed'
+
+# This could be automated, given a list of the boundary names: ['xmin', 'xmax', ...]
+        xminIndx = 1
+        xmaxIndx = 2
+        yminIndx = 4
+        ymaxIndx = 8
+        particleBoundaryDict = {'xmin': xminIndx,
+                                'xmax': xmaxIndx,
+                                'ymin': yminIndx,
+                                'ymax': ymaxIndx,
+                                }
+
+        umi2D.particle_boundary_dict = particleBoundaryDict
+
+        ## Create the 2D Cartesian mesh
+
+        from UserMesh_y_Fields_FE_XYZ_Module import UserMesh_C
+
+        plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
+        pmesh_M = UserMesh_C(umi2D, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plot_mesh, plot_title=plotTitle)
+
+        # Add this to the particle object:
+        # p_P.pmesh_M = pmesh_M
+        # 1. Attach the particle mesh to p_P.
+        # 2. Attach the C++ particle movers.
+        # 3. Compute the cell-neighbors and facet-normals for the particle movers.
+        p_P.initialize_particle_mesh(pmesh_M)
+        
+        ### Input for initial particles (i.e., particles present at t=0)
+
+        # a. Name the species (it has to be one of the species_names above)
+        speciesName = 'neutral_H'
+        # Check that this species has been defined above
+        if speciesName not in p_P.species_names:
+            print("The species", speciesName, "has not been defined")
+            sys.exit() # change to raiseError
+
+        initialDistributionType = 'listed'
+        # Check that there's a function listing the particles particles
+        printFlag = True
+        if hasattr(userParticlesClass, speciesName):
+            if printFlag: print(fncName + "(DnT INFO) Initial distribution for", speciesName, "is the function of that name in", userParticlesClass)
+        # Write error message and exit if no distribution function exists
+        else:
+            errorMsg = fncName + "(DnT ERROR) Need to define a particle distribution function %s in UserParticle.py for species %s " % (speciesName, speciesName)
+            raise RuntimeError(errorMsg) # sys.exit(errorMsg)
+
+        # Collect the parameters into a dictionary:
+        # A 'listed' type will expect a function with the same name as the species.
+        neutralHParams = {'species_name': speciesName,
+                          'initial_distribution_type': initialDistributionType,
+                         }
+
+        # Collect the initialized species into a dictionary:
+        # The dictionary keys are mnemonics for initialized particle distributions
+        initialParticlesDict = {'initial_neutral_H': (neutralHParams,),
+                               }
+
+        # Add the initialized particles to the Particle_C object
+        p_P.initial_particles_dict = initialParticlesDict
+
+        # Add particle boundary-conditions
+
+        # See the TODO of 4apr20 for redoing this.
+        
+        # Make the particle-mesh boundary-conditions object and add it to the
+        # particle object.  The user has to supply the facet-crossing callback
+        # functions in the UserParticleBoundaryFunctions_C object above.
+
+        spNames = p_P.species_names
+        # Import C++ particle module, which has the ParticleMeshBoundaryConditions
+        # Hasn't this been already imported when the Particle_C object was constructed?
+        particleSOlibName = "particle_cartesian_xyz_solib"
+        infoMsg = "%s\tImporting %s" % (fncName, particleSOlibName)
+        print(infoMsg)
+        particleSOlib = im_m.import_module(particleSOlibName)
+
+        # Import C++ particle boundary-conditions
+        userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xyz_solib"
+        infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
+        print(infoMsg)
+        userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
+        # Call the constructor to make a UserParticleBoundaryFunctions object
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xyz(p_P.position_coordinates)
+        # Create the map from mesh facets to particle callback functions:
+        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xyz(spNames, pmesh_M, userPBndFns, print_flag=False)
+
+        # Add pmeshBCs to the Particle_C object
+        p_P.pmesh_bcs = pmeshBCs
+        
+        # Create the initial particles
+        printFlags = {}
+        for sp in p_P.species_names: printFlags[sp] = True
+        p_P.initialize_particles(printFlags)
+
+# Get the initial cell index of each particle.
+
+# Should this be something the pmesh computes?  No: pmesh computes the
+# index of a single particle.  It doesn't know the particle storage
+# infrastructure.
+        p_P.compute_mesh_cell_indices()
+
+        p_P.initialize_particle_integration()
+
+# Advance the particles for n_timesteps
+
+        print("Moving", p_P.get_total_particle_count(), "particles for", ctrl.n_timesteps, "timesteps")
+
+        for istep in range(ctrl.n_timesteps):
+            
+            if p_P.traj_T is not None:
+                if istep % p_P.traj_T.skip == 0:
+                    p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
+                    
+            p_P.advance_neutral_particles(ctrl)
+
+            ctrl.timeloop_count += 1
+            ctrl.time += ctrl.dt
+
+        # Record the LAST point on the particle trajectory
+        if p_P.traj_T is not None:
+                p_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time)
+
+        # Plot the trajectory onto the particle mesh
+        if self.plot_results is True:
+            mesh = p_P.pmesh_M.mesh
+            plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": XY mesh"
+            holdPlot = True # Set to True to stop the plot from disappearing.
+            p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
+            
+        return
+#    def test_1_cpp_2D_x_y_absorbing_boundary(self):ENDDEF
+
+#class TestParticleBoundaryConditions(unittest.TestCase):
     def test_2_2D_r_theta_absorbing_boundary(self):
         """ Check that particles are deleted correctly when they
-            cross an absorbing boundary.
+            cross a 2D absorbing boundary.
+
+            The particles are electrons and there's an applied Electric field
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -325,7 +572,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # These are fast electrons, so the timestep is small
         ctrl.dt = 1.0e-6
-        ctrl.n_timesteps = 14
+        ctrl.n_timesteps = 14 # 14
         ctrl.MAX_FACET_CROSS_COUNT = 100
         
         ### Particle species input
@@ -339,18 +586,9 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
-
+        pin.use_cpp_integrators = False # Use C++ code to advance particles.
+        
         # Specify the particle-species properties
-        # 1. electrons
-#         pin.particle_species = (('trajelectrons',
-#                              {'initial_distribution_type' : 'listed',
-#                               'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
-#                               'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
-#                               'dynamics' : 'explicit',
-# #                              'dynamics' : 'implicit',
-#                               }
-#                              ),
-#                             )
 
         # Define an electron species. Use this name later to initialize this species
         # or to create a source of this species.
@@ -362,7 +600,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # Add the electrons to particle input
         pin.particle_species = (trajelectrons_S,
-                                 )
+                               )
         ## Make the particle storage array for all species.
         particle_P = Particle_C(pin, print_flag=False)
 
@@ -497,8 +735,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Make the particle-mesh boundary-conditions object and add it
         # to the particle object.
         spNames = particle_P.species_names
-        pmeshBCS = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
-        particle_P.pmesh_bcs = pmeshBCS
+        pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
+        particle_P.pmesh_bcs = pmeshBCs
 
         # The trajectory object can now be created and added to particle_P
         p_P = particle_P

@@ -15,6 +15,9 @@
 */
 #include "UserParticleBoundaryFunctions.h"
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
 namespace py = pybind11;
 
 namespace dnt {
@@ -22,8 +25,8 @@ namespace dnt {
   // Set the bit patterns for flags. These are static class members, so they're set
   // outside the ctor, in a C++ source file, so they're compiled only once. (If they're in
   // a header file that's included in more than one file, that generates an error)
-  int Pstruct<Ptype::cartesian_xy>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-  int Pstruct<Ptype::cartesian_xy>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit 
+  // This variable is used in UserParticleBoundaryFunctions.h:
+  int Pstruct<Ptype::PARTICLE_TYPE>::DELETE_FLAG = 0b1;  // the lowest bit is 1
   
   // The anonymous namespace limits the scope of the functions in it to this file.
   namespace {
@@ -98,7 +101,13 @@ namespace dnt {
 
     // Q: Could we use THE_PARTICLE_TYPE here, instead of "cartesian_xy"?
     // A: Yes, if we were making a .so library for a specific Ptype only.
-    makeUserParticleBoundaryFunctions<Ptype::cartesian_xy>(m, "cartesian_xy");
+    
+    // xyz version of .so
+    // general version of .so
+    makeUserParticleBoundaryFunctions<Ptype::PARTICLE_TYPE>(m, TOSTRING(PARTICLE_TYPE));
+    
+    // xy version of .so
+    // makeUserParticleBoundaryFunctions<Ptype::PARTICLE_TYPE>(m, "cartesian_xy");
     
   } // ENDDEF: PYBIND11_MODULE()
 

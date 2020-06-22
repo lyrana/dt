@@ -40,7 +40,7 @@ class TestParticleInitialization(unittest.TestCase):
         pin.coordinate_system = 'cartesian_xyz'
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
-
+        pin.use_cpp_integrators = False
 
         ### Particle species input
 

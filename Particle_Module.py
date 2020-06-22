@@ -309,15 +309,26 @@ class Particle_C(object):
 
             # key: 'integrator_names'
 #            self.integrator_names[speciesName] = sp.integrator_name
-            
+
             # Process user input giving the particle-variable names and types
             # for each plasma species.  Allocate initial storage
             # for particles using segmented vectors indexed by the
             # species name.
+
             # If using C++ SAPs:
+            if self.use_cpp_integrators is None:
+                errorMsg = "%s\tExiting because you did not specify a value (True/False) for use_cpp_integrators!" % (fncName)
+                raise RuntimeError(errorMsg) # sys.exit(errorMsg)
+                
             if self.use_cpp_integrators is True:
-                import numpy_types_solib
+                if "numpy_types_solib" not in sys.modules:
+                    infoMsg = "%s\t\"Importing numpy_types_solib\"" % (fncName)
+                    print(infoMsg)
+                    import numpy_types_solib
                 # Create the SAPs in C++
+                if "segmented_array_pair_solib" not in sys.modules:                
+                    infoMsg = "%s\t\"Importing segmented_array_pair_solib\"" % (fncName)
+                    print(infoMsg)
                 import segmented_array_pair_solib as sapSOlib
                 # help(segmented_array_pair_solib)
 
@@ -325,13 +336,23 @@ class Particle_C(object):
                 # avoids having to call back to Python from C++ to manage the
                 # storage.
                 if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
+                    if "particle_cartesian_x_solib" not in sys.modules:
+                        infoMsg = "%s\t\"Importing particle_cartesian_x_solib\"" % (fncName)
+                        print(infoMsg)
                     import particle_cartesian_x_solib as particleSOlib
                     self.sap_dict[speciesName] = sapSOlib.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xy':
+                    if "particle_cartesian_xy_solib" not in sys.modules:                    
+                        infoMsg = "%s\t\"Importing particle_cartesian_xy_solib\"" % (fncName)
+                        print(infoMsg)
                     import particle_cartesian_xy_solib as particleSOlib
                     self.sap_dict[speciesName] = sapSOlib.SegmentedArrayPair_cartesian_xy(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xyz':
+                    if "particle_cartesian_xyz_solib" not in sys.modules:                    
+                        infoMsg = "%s\t\"Importing particle_cartesian_xyz_solib\"" % (fncName)
+                        print(infoMsg)
                     import particle_cartesian_xyz_solib as particleSOlib
+                    #help(particleSOlib)
                     self.sap_dict[speciesName] = sapSOlib.SegmentedArrayPair_cartesian_xyz(self.SEGMENT_LENGTH)
                 self.particle_solib = particleSOlib
             else:
@@ -548,6 +569,7 @@ class Particle_C(object):
                 integratorName = "advance_neutral_species_" + str(nFacets) + "_facets"
                 integrator = getattr(self.particle_solib, integratorName)
                 self.integrators[sn] = integrator
+                # print("sn is", sn, "integrator is", integrator)
         else:
             # Advance the particles in this species using Python functions.
             for sn in self.charged_species:                
@@ -1834,6 +1856,7 @@ class Particle_C(object):
             if self.get_species_particle_count(sn) == 0: continue
             if self.use_cpp_integrators is True:
                 # Advance the particles in this species with C++
+                # print("calling", self.integrators[sn])
                 self.integrators[sn](self, sn, ctrl)
             else:
                 # Advance the particles in this species with Python

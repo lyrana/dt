@@ -278,7 +278,7 @@ class UserParticleBoundaryFunctions_C(object):
         # Make aliases for quantities contained in particle_P that are needed to
         # implement various boundary conditions.
         self.position_coordinates = position_coordinates
-        self.particle_dimension = len(self.position_coordinates)        
+        self.particle_dimension = len(self.position_coordinates)
         self.dx = dx
 
         # Create scratch

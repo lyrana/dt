@@ -26,7 +26,7 @@ from UserUnits_Module import MyPlasmaUnits_C
 
 #STARTCLASS
 class TestParticleNonuniformE(unittest.TestCase):
-    """Test classes in Particle_Module that push particles in a
+    """Test classes in Particle_Module that advance particles in a
        non-uniform E field
     """
     
@@ -147,6 +147,8 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         ### Particle boundary-conditions
 
+        # See the TODO of 4apr20 for redoing this.
+        
         # Make a dictionary associating the above-named boundaries of the particle mesh with
         # user-supplied call-back functions.
         
@@ -155,24 +157,23 @@ class TestParticleNonuniformE(unittest.TestCase):
         # userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # Now need an instantiation, not just a class name:
         
         spNames = self.particle_P.species_names
-        if self.particle_P.use_cpp_integrators is True:
-            # Import C++ particle module
-            particleSOlibName = "particle_cartesian_xy_solib"
-            particleCpp = im_m.import_module(particleSOlibName)
-            # Import C++ particle boundary-conditions
-            userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_solib"
-            userParticleBoundaryFunctionsCpp = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
-            # Call the constructor to make a UserParticleBoundaryFunctions object
-            userPBndFns = userParticleBoundaryFunctionsCpp.UserParticleBoundaryFunctions_cartesian_xy(self.particle_P.position_coordinates)
-            # Create the map from mesh facets to particle callback functions:
-            pmeshBCs = particleCpp.ParticleMeshBoundaryConditions_cartesian_xy(spNames, pmesh2D_M, userPBndFns, print_flag=False)
-        else:
-            userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(self.particle_P.position_coordinates, self.particle_P.dx)
-            pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh2D_M, userPBndFns, print_flag=False)
+        # Import C++ particle module
+        # (This was already imported by Particle_Module)
+        particleSOlibName = "particle_cartesian_xy_solib"
+        particleSOlib = im_m.import_module(particleSOlibName)
+        # Import C++ particle boundary-conditions
+        userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xy_solib"
+        userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
+        # Call the constructor to make a UserParticleBoundaryFunctions object
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xy(self.particle_P.position_coordinates)
+        # Create the map from mesh facets to particle callback functions:
+        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xy(spNames, pmesh2D_M, userPBndFns, print_flag=False)
 
         # Add pmeshBCs to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs
 
+        ### Put an electric field on the mesh
+        
         # The following value should correspond to the element degree
         # used in the potential from which negE was obtained
         phi_element_degree = 1
@@ -203,10 +204,10 @@ class TestParticleNonuniformE(unittest.TestCase):
         return
 #    def setUp(self):ENDDEF
 
-    def test_1_cpp_electric_field_push_1step(self):
-        """ Check that the electric field push is correct.  
+    def test_1_cpp_electric_field_advance_1step(self):
+        """ Check that the electric field advance is correct.  
 
-            Push test particles for 1 step on a 2D 1/4-circle mesh.
+            Advance test particles for 1 step on a 2D 1/4-circle mesh.
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'

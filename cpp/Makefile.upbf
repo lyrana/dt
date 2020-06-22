@@ -1,11 +1,21 @@
 # Make the Python module called user_particle_boundary_functions_solib
 
-THE_MODULE_NAME = user_particle_boundary_functions_solib
+#THE_MODULE_NAME = user_particle_boundary_functions_solib
+#DFLAGS = -DMODULE_NAME=$(THE_MODULE_NAME)
 
-DFLAGS = -DMODULE_NAME=$(THE_MODULE_NAME)
+#
+# Specify the particle spatial coordinate system:
+#THE_PARTICLE_TYPE = cartesian_xyz
+THE_PARTICLE_TYPE = cartesian_xy
 
-$(THE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: $(THE_MODULE_NAME).cpp UserParticleBoundaryFunctions.h
-	c++ $(DFLAGS) -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden `python3 -m pybind11 --includes` $(THE_MODULE_NAME).cpp -o $@
+THE_MODULE_PREFIX = user_particle_boundary_functions_
+
+THE_MODULE_NAME = $(THE_MODULE_PREFIX)$(THE_PARTICLE_TYPE)_solib
+
+DFLAGS = -DPARTICLE_TYPE=$(THE_PARTICLE_TYPE) -DMODULE_NAME=$(THE_MODULE_NAME)
+
+$(THE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: user_particle_boundary_functions_solib.cpp UserParticleBoundaryFunctions.h
+	c++ $(DFLAGS) -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden `python3 -m pybind11 --includes` user_particle_boundary_functions_solib.cpp -o $@
 
 clean:
 	/bin/rm $(THE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so

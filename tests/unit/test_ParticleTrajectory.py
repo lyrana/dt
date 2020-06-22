@@ -68,7 +68,8 @@ class TestParticleTrajectory(unittest.TestCase):
         pin.coordinate_system = 'cartesian_xy'
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
-
+        pin.use_cpp_integrators = False
+        
         # Define an electron species called 'trajelectrons'.
         speciesName = 'trajelectrons'
         charge = -1.0*MyPlasmaUnits_C.elem_charge

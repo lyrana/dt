@@ -3,6 +3,15 @@
   \brief This file creates a shared library with the Python bindings for
   the C++ dolfin-based functions in dolfin_functions.cpp.
 
+  These functions are
+      find_facet()
+
+      (For a Numpy array of points and for a Pstruct<PT>* with points:)
+      interpolate_field_to_points_cartesian_xyz()
+      interpolate_field_to_points_cartesian_xy()
+
+      is_inside_vertices()
+
   \namespace dnt
   \sa dolfin_functions.h, dolfin_functions.cpp, segmented_array_pair_solib.cpp
 

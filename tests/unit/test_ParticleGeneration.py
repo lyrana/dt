@@ -38,7 +38,8 @@ class TestParticleGeneration(unittest.TestCase):
         self.pin.precision = np_m.float64
         self.pin.particle_integration_loop = 'loop-on-particles'
         self.pin.force_precision = np_m.float64
-
+        self.pin.use_cpp_integrators = False
+        
         return
 
 #class TestParticleGeneration:

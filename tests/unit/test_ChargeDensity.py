@@ -445,6 +445,7 @@ class TestChargeDensity(unittest.TestCase):
 #        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
+        pin.use_cpp_integrators = False        
 
         ### Particle species input
 
@@ -689,6 +690,7 @@ class TestChargeDensity(unittest.TestCase):
         pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
+        pin.use_cpp_integrators = False        
 
         ### Particle species input
 
@@ -885,6 +887,7 @@ class TestChargeDensity(unittest.TestCase):
                                           # is doubled to get the phase-space coordinates
         pin.force_components = ['x',]
         pin.force_precision = np_m.float64
+        pin.use_cpp_integrators = False        
 
         ### Particle species input
 
@@ -1089,6 +1092,7 @@ class TestChargeDensity(unittest.TestCase):
                                           # is doubled to get the phase-space coordinates
         pin.force_components = ['x',]
         pin.force_precision = np_m.float64
+        pin.use_cpp_integrators = False        
 
         ### Particle species input
 

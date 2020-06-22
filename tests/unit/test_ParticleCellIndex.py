@@ -38,6 +38,7 @@ class TestParticleCellIndex(unittest.TestCase):
 #        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = np_m.float64
+        pin.use_cpp_integrators = False        
 
         # Give the properties of the particle species.  The charges
         # and masses are normally those of the physical particles, and
