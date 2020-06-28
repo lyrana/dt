@@ -74,7 +74,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.time = 0.0
 
         ctrl.dt = 0.5
-        ctrl.n_timesteps = 100 # 100
+        ctrl.n_timesteps = 100
         ctrl.MAX_FACET_CROSS_COUNT = 100
 
         # Create an instance of the DTparticleInput class
@@ -575,7 +575,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 
         # These are fast electrons, so the timestep is small
         ctrl.dt = 1.0e-6
-        ctrl.n_timesteps = 14 # 14
+        ctrl.n_timesteps = 14
         ctrl.MAX_FACET_CROSS_COUNT = 100
         
         ### Particle species input

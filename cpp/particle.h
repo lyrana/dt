@@ -1248,6 +1248,8 @@ namespace dnt
                             auto fullIndex = sap->get_full_index(ipIn, "in");
                             particle_P.attr("record_trajectory_datum")(std::string(species_name), ipOut, fullIndex, step, tStart, "facet_crossing"_a=true); // Does this work?
                           }
+                        auto bcFunction = bcFunctionDict[std::make_pair(facValue,species_name)];
+                        (userPBFs.*bcFunction)(psegOut[ipOut], species_name, mFacet, dx, dxFraction, facetNormalVector);
                       }
 
                     // Look up the cell index of the new cell.
