@@ -2,7 +2,11 @@
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-#__all__ = []
+__all__ = ['TestParticleTrajectory.test_1_trajectory_init',
+           'TestParticleTrajectory.test_2_record_trajectory',
+           'TestParticleTrajectory.test_3_out_of_bounds',
+           'TestParticleTrajectory.test_4_reflect_at_boundaries',
+          ]
 
 import sys
 import os
@@ -36,6 +40,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         self.plot_mesh = False
         self.plot_results = False
+        self.plot_phase_space = False
 
         # Turn plots off if there's no display.
         if os.environ.get('DISPLAY') is None:
@@ -324,6 +329,8 @@ class TestParticleTrajectory(unittest.TestCase):
             The mesh is a 2D quarter circle.
         """
 
+        printInfoStarting = False
+
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName)
 
@@ -359,7 +366,8 @@ class TestParticleTrajectory(unittest.TestCase):
             # Set the time we're integrating to:
             self.ctrl.time += self.ctrl.dt
 
-            print(fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time)
+            if printInfoStarting is True:
+                print(fncName, "Starting iteration", self.ctrl.timeloop_count, "to reach time", self.ctrl.time)
 
             # Move the charged species
             if len(p_P.charged_species) != 0:
@@ -427,6 +435,7 @@ class TestParticleTrajectory(unittest.TestCase):
             # Plot the trajectory in phase-space
 #        plotPhaseSpace = False
 #        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
+        if self.plot_phase_space is True:
             p_P.traj_T.plot() # Phase-space plot of trajectory
 
         return
@@ -438,10 +447,10 @@ class TestParticleTrajectory(unittest.TestCase):
             Make the particles leave the mesh.
         """
 
-        printInfoAdvance = True
-        printInfoStarting = True
-        printInfoExited = True
-        printWarningAtEnd = True
+        printInfoAdvance = False
+        printInfoStarting = False
+        printInfoExited = False
+        printWarningAtEnd = False
         
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName)
@@ -552,6 +561,7 @@ class TestParticleTrajectory(unittest.TestCase):
             # Plot the trajectory in phase-space
 #        plotPhaseSpace = False
 #        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
+        if self.plot_phase_space is True:
             p_P.traj_T.plot()
 
         return
@@ -563,9 +573,9 @@ class TestParticleTrajectory(unittest.TestCase):
             Make the particles reflect off the inner boundary.
         """
 
-        printInfoAdvance = True
+        printInfoAdvance = False
         printInfoStarting = False
-        printWarningAtEnd = True
+        printWarningAtEnd = False
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName)
@@ -672,6 +682,7 @@ class TestParticleTrajectory(unittest.TestCase):
         # Plot the trajectory in phase-space
 #        plotPhaseSpace = False
 #        if os.environ.get('DISPLAY') is not None and plotPhaseSpace is True:
+        if self.plot_phase_space is True:
             p_P.traj_T.plot()
 
         return

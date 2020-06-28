@@ -2,7 +2,10 @@
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
-#__all__ = []
+__all__ = ['TestParticleBoundaryConditions.test_1_2D_x_y_absorbing_boundary',
+           'TestParticleBoundaryConditions.test_1_cpp_2D_x_y_absorbing_boundary',
+           'TestParticleBoundaryConditions.test_2_2D_r_theta_absorbing_boundary',
+          ]
 
 import sys
 import os

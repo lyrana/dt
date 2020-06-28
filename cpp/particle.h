@@ -625,8 +625,8 @@ namespace dnt
   }
   // ENDDEF: void advance_charged_species_in_E_field(py::object particle_P, py::str species_name, py::object ctrl)
 
-  //! Advance a neutral particle species by one time-increment on a mesh.
-  /*!          
+  //! Advance a neutral cartesian_xyz particle species by one time-increment on a mesh.
+  /*!
 
     Compute change in position in time dt. Use an explicit method to calculate the
     final position.  If a particle leaves its initial cell, the cell that the
@@ -665,15 +665,15 @@ namespace dnt
     //   auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xyz> *>>();
     //   auto sap = sap_map[std::string(species_name)];
 
-    //tph    
     // Get call-back functions for boundary-crossing particles
     // The following lines were used when we were using the Python callbacks:
+    // ?? Test for is_none() first?
     // auto bcFunctionDict = particle_P.attr("pmesh_bcs").attr("bc_function_dict").cast<std::map<int, py::dict>>();
-    // auto bcFunction = bcFunctionDict[py::str(std::to_string(facValue))].cast<py::dict>();    
+    // auto bcFunction = bcFunctionDict[py::str(std::to_string(facValue))].cast<py::dict>();
+    // bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);    
     auto pMBCs = particle_P.attr("pmesh_bcs").cast<ParticleMeshBoundaryConditions<Ptype::cartesian_xyz>>(); // (m)
     auto userPBFs = pMBCs.user_particle_boundary_functions; // Need this to call the boundary functions. // (m)
     auto bcFunctionDict = pMBCs.bc_function_dict; // (m)
-    //endtph
     
     auto traj_T = particle_P.attr("traj_T"); // There's no cast<>() here as we only need to check if traj_T is None below.
 
@@ -736,8 +736,6 @@ namespace dnt
                               // indices to identify particles chosen for trajectory
                               // plots.
 
-    // std::cout << "Hello from advance_neutral_species@2" << std::endl;
-    
     while (psegIn != nullptr) // Keep looping until we run out of "in" segments.
       {
         for (auto ipIn = 0; ipIn < npSeg; ipIn++)
@@ -886,14 +884,8 @@ namespace dnt
                             auto fullIndex = sap->get_full_index(ipIn, "in");
                             particle_P.attr("record_trajectory_datum")(std::string(species_name), ipOut, fullIndex, step, tStart, "facet_crossing"_a=true); // Does this work?
                           }
-                        // ?? Test for is_none() first?
-                        // std::cout << "Hello from advance_neutral_species@3: species_name " << species_name << std::endl;
-                        // std::cout << "facValue " << facValue << species_name << std::endl;
-                        // std::cout << "Hello from advance_neutral_species@3.1: species_name " << species_name << std::endl;
                         auto bcFunction = bcFunctionDict[std::make_pair(facValue,species_name)];
                         (userPBFs.*bcFunction)(psegOut[ipOut], species_name, mFacet, dx, dxFraction, facetNormalVector);
-                        // bcFunction[species_name](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);
-                        // std::cout << "Hello from advance_neutral_species@4: species_name " << species_name << std::endl;
                       }
 
                     // Look up the cell index of the new cell.
@@ -1019,8 +1011,9 @@ namespace dnt
     sap->set_number_of_items("out", particleCount);
   }
   // ENDDEF: void advance_neutral_species(py::object particle_P, py::str species_name, py::object ctrl)
-  
-  //  template <size_t N_CELL_FACETS>
+
+
+  //! Advance a neutral cartesian_xy particle species by one time-increment on a mesh.   //  template <size_t N_CELL_FACETS>
   //    void advance_neutral_species<Ptype::cartesian_xy>(py::object particle_P, py::str species_name, py::object ctrl)
   //  template <Ptype cartesian_xy, size_t N_CELL_FACETS>
   //  template <>
@@ -1041,6 +1034,18 @@ namespace dnt
     // Could also get sap by first casting to an std::map:
     //   auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_xy> *>>();
     //   auto sap = sap_map[std::string(species_name)];
+
+    // Get call-back functions for boundary-crossing particles
+    // The following lines were used when we were using the Python callbacks:
+    // ?? Test for is_none() first?
+    // auto bcFunctionDict = particle_P.attr("pmesh_bcs").attr("bc_function_dict").cast<py::dict>();
+    // A py::dict needs a py::str key value. Convert facValue to a string first.
+    // auto bcFunction = bcFunctionDict[py::str(std::to_string(facValue))].cast<py::dict>();
+    // bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);
+    auto pMBCs = particle_P.attr("pmesh_bcs").cast<ParticleMeshBoundaryConditions<Ptype::cartesian_xy>>(); // (m)
+    auto userPBFs = pMBCs.user_particle_boundary_functions; // Need this to call the boundary functions. // (m)
+    auto bcFunctionDict = pMBCs.bc_function_dict; // (m)
+    
     auto traj_T = particle_P.attr("traj_T"); // There's no cast<>() here as we only need to check if traj_T is None below.
 
     // Get attributes from the DTcontrol_C argument
@@ -1102,8 +1107,6 @@ namespace dnt
                               // indices to identify particles chosen for trajectory
                               // plots.
 
-    // std::cout << "Hello from advance_neutral_species@2" << std::endl;
-    
     while (psegIn != nullptr) // Keep looping until we run out of "in" segments.
       {
         for (auto ipIn = 0; ipIn < npSeg; ipIn++)
@@ -1245,15 +1248,6 @@ namespace dnt
                             auto fullIndex = sap->get_full_index(ipIn, "in");
                             particle_P.attr("record_trajectory_datum")(std::string(species_name), ipOut, fullIndex, step, tStart, "facet_crossing"_a=true); // Does this work?
                           }
-                        // A reference to dx[] is available in the BC function class.
-                        // ?? Test for is_none() first?
-                        auto bcFunctionDict = particle_P.attr("pmesh_bcs").attr("bc_function_dict").cast<py::dict>();
-                        // A py::dict needs a py::str key value. Convert facValue to a string first.
-                        auto bcFunction = bcFunctionDict[py::str(std::to_string(facValue))].cast<py::dict>();
-                        // bcFunction[py::str(species_name)](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);
-                        // std::cout << "Hello from advance_neutral_species@3: species_name " << species_name << std::endl;
-                        
-                        bcFunction[species_name](ipOut, species_name, mFacet, "dx_fraction"_a=dxFraction, "facet_normal"_a=facetNormalVector);
                       }
 
                     // Look up the cell index of the new cell.

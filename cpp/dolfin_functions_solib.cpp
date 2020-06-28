@@ -6,9 +6,9 @@
   These functions are
       find_facet()
 
-      (For a Numpy array of points and for a Pstruct<PT>* with points:)
-      interpolate_field_to_points_cartesian_xyz()
-      interpolate_field_to_points_cartesian_xy()
+      These have two versions: (i) For a Numpy array of points and (ii) for a Pstruct<PT>* with points:
+        interpolate_field_to_points_cartesian_xyz()
+        interpolate_field_to_points_cartesian_xy()
 
       is_inside_vertices()
 

@@ -102,12 +102,8 @@ namespace dnt {
     // Q: Could we use THE_PARTICLE_TYPE here, instead of "cartesian_xy"?
     // A: Yes, if we were making a .so library for a specific Ptype only.
     
-    // xyz version of .so
     // general version of .so
     makeUserParticleBoundaryFunctions<Ptype::PARTICLE_TYPE>(m, TOSTRING(PARTICLE_TYPE));
-    
-    // xy version of .so
-    // makeUserParticleBoundaryFunctions<Ptype::PARTICLE_TYPE>(m, "cartesian_xy");
     
   } // ENDDEF: PYBIND11_MODULE()
 
