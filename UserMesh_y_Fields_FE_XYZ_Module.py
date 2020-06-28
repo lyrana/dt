@@ -7,7 +7,8 @@ __all__ = ['UserMesh_C',
            'UserPoissonSolve1D_C',
            ]
 
-"""UserMesh defines the mesh.
+"""
+    Create a 1D, 2D, or 3D Cartesian mesh.
 """
 
 import sys

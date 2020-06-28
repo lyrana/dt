@@ -60,9 +60,9 @@ namespace dnt
       // well as friending it. This provides access to the private bc_function_map.
       template<Ptype PTX>
         friend class ParticleMeshBoundaryConditions;
-
+      // This is an abbreviation for a type:
       template <Ptype PTY>
-      using CallbackFunctionPtr =  void (dnt::UserParticleBoundaryFunctions<PTY>::*)(Pstruct<PTY>&, py::str&, const int, const double *dx, const double, py::array_t<double>&);      
+        using CallbackFunctionPtr =  void (dnt::UserParticleBoundaryFunctions<PTY>::*)(Pstruct<PTY>&, py::str&, const int, const double *dx, const double, py::array_t<double>&);      
     public:
       //! The one and only user-defined UserParticleBoundaryFunctions ctor.
       /*!

@@ -66,38 +66,9 @@ class TestParticleDeletion(unittest.TestCase):
         pin.coordinate_system = 'cartesian_xyz'
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = numpy.float64
-
+        pin.use_cpp_integrators = False
+        
         ### Specify the particle species for this calculation
-
-        # 1. electrons
-#         pin.particle_species = (('one_electron',
-#                              {'initial_distribution_type' : 'listed',
-#                               'charge' : -1.0*MyPlasmaUnits_C.elem_charge,
-#                               'mass' : 1.0*MyPlasmaUnits_C.electron_mass,
-#                               'dynamics' : 'explicit',
-# #                              'number_per_cell' : 12,
-#                               }
-#                              ),
-#         # 2. Hplus (proton)
-#                             ('Hplus', 
-#                              {'initial_distribution_type' : None,
-#                               'charge' : 1.0*MyPlasmaUnits_C.elem_charge,
-#                               'mass' : 1.0*MyPlasmaUnits_C.proton_mass,
-#                               'dynamics' : 'explicit',
-# #                              'number_per_cell' : 6,
-#                               }
-#                              ),
-#         # 3. Neutral: test when there are no particles
-#                             ('He', 
-#                              {'initial_distribution_type' : None,
-#                               'charge' : 0.0,
-#                               'mass' : 4.0*MyPlasmaUnits_C.AMU,
-#                               'dynamics' : 'explicit',
-# #                              'number_per_cell' : 1,
-#                               }
-#                              ),
-
-#                             )
 
         speciesName = 'one_electron'
         charge = -1.0*MyPlasmaUnits_C.elem_charge

@@ -394,7 +394,8 @@ class TestParticleMigration(unittest.TestCase):
 
         # Create a mesh plotter to display the trajectory
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": First & last positions"
-        plotter=df_m.plot(self.particle_P.pmesh_M.mesh, title=plotTitle)
+        if self.plot_results is True:
+            plotter=df_m.plot(self.particle_P.pmesh_M.mesh, title=plotTitle)
 
         # Check the results
         ncoords = self.particle_P.particle_dimension # number of particle coordinates to check
@@ -494,7 +495,7 @@ class TestParticleMigration(unittest.TestCase):
         # Create a mesh plotter to display the trajectory (just the
         # first and last positions)
         plotTitle = os.path.basename(__file__) + ": " + sys._getframe().f_code.co_name + ": First & last positions"
-        if self.plot_results is True:        
+        if self.plot_results is True:
             plotter=df_m.plot(self.particle_P.pmesh_M.mesh, title=plotTitle)
         
         # Check the results
