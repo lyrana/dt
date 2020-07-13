@@ -51,6 +51,8 @@ class SegmentedArrayPair_C(object):
         self.seg_list_pair = [ [], [] ]
 
         # Segment number and offset for the first available opening
+        #     self.first_not_full_segment() marks the last existing segment that has
+        #     active particles. It's used by push_back() to add more particles.
         self.first_not_full_segment = [0, 0]
         self.first_available_offset = [0, 0]
 
@@ -81,14 +83,16 @@ class SegmentedArrayPair_C(object):
 
 #class SegmentedArrayPair_C(object):
     def push_back(self, item_input):
-        """Adds an item to the end of the "out" SegmentedArray.
+        """Adds one item to the end of the "out" SegmentedArray.
 
-           The item is either a tuple containing a complete structure, or a 1-element
-           Numpy array. If the last segment is full, create a new segment.  This
-           assumes that all the segments, except maybe the last one, are full.
+           The item is either a tuple containing a complete item structure, or a 1-element
+           Numpy array that contains a complete item structure.
+
+           If the last segment is full, create a new segment.  This assumes that all the
+           segments, except maybe the last one, are full.
 
            :param item_input: A tuple containing a complete item structure, or a
-                              1-element Numpy array containing an item.
+                              1-element Numpy array containing a complete item.
            :type input_item: tuple(float,...) or ndarray with 1 element.
            :var int fullIndex: The full index into the SA.
            :return: (offset into the "out" segment, full SA index of item)
@@ -99,22 +103,22 @@ class SegmentedArrayPair_C(object):
         # Abbreviations
         outSA = self.out_segmented_array
 
-        # If we've reached the end of the current segment, we need to
-        # switch to the next segment, if there is one, or else add a
-        # new segment.
+        # If we've reached the end of the current segment, we need to switch to the next
+        # segment, if there is one, or else add a new segment.
         if self.first_available_offset[outSA] == self.segment_length:
-            # If another segment is already available, use
-            # it. Otherwise, allocate a new segment.
+            # If another segment is already available, use it. Otherwise, allocate a new
+            # segment.
             self.current_segment[outSA] += 1
             if self.current_segment[outSA] < self.nseg[outSA]:
                 self.first_not_full_segment[outSA] += 1
                 self.first_available_offset[outSA] = 0
             else:
-                # The following call increments
-                # firstNotFullSegment[] and nSeg[], and sets
+                # The following call increments firstNotFullSegment[] and nSeg[], and sets
                 # firstAvailableOffset[] = 0
                 self.add_segment(outSA)
-
+            # These two counters should be the same:                
+            assert (self.first_not_full_segment[outSA] == self.current_segment[outSA]), "first_not_full_segment = %d, current_segment = %d" % (self.first_not_full_segment[outSA], self.current_segment[outSA])
+                
 # Untested:
         if type(item_input) is np_m.ndarray:
             item = item_input[0]
@@ -218,10 +222,16 @@ class SegmentedArrayPair_C(object):
         """Adds another Segment to the selected Segmented Array to store more items.
         """
         # Abbreviations
+        # none
 
+        # Add a new segment to the Segmented Array
         self.nseg[theSA] += 1
         self.seg_list_pair[theSA].append(np_m.empty(self.segment_length, dtype=self.item_dtype))
 #        self.seg_list_pair[theSA].append(np_m.zeros(self.segment_length, dtype=self.item_dtype))
+
+        # Update the capacity of the Segmented Array
+        self.npmax[theSA] = self.nseg[theSA]*self.segment_length
+
         self.first_not_full_segment[theSA] += 1
         self.first_available_offset[theSA] = 0
 
@@ -231,12 +241,12 @@ class SegmentedArrayPair_C(object):
     def init_out_loop(self):
         """Initialize a loop over the segments of the "out" array.
 
-           This is used to start a loop that doesn't change the
-           positions of the items, so using the "in" array isn't
-           needed.
+           This is used to start a loop over the "out" array that doesn't change the "out"
+           array.
 
            :return: (number of items in the first segment of "out" SA,
                      ref to first segment of "out" SA)
+
         """
 
         # Abbreviations
@@ -268,13 +278,18 @@ class SegmentedArrayPair_C(object):
 
 #class SegmentedArrayPair_C(object):
     def init_inout_loop(self):
-        """Initialize a loop over the segments.  The loop should call
-           get_next_segment("in") and get_next_out_segment() in the
+        """Initialize a loop that reads from the "in" segments and writes to the "out" segments.
+
+           The loop should call get_next_segment("in") and get_next_out_segment() in the
            iteration loop.
+
+           The loop resets self.first_not_full_segment[outSA] to zero for the "out"
+           segment.
 
            :return: (number of items in the first segment of "in" SA,
                      ref to first segment of "in" SA,
                      ref to first segment of "out" SA)
+
         """
 
         # Abbreviations
@@ -301,6 +316,10 @@ class SegmentedArrayPair_C(object):
         self.current_segment[0] = 0
         self.current_segment[1] = 0
 
+        # These give next available storage location in the "out" array.
+        self.first_not_full_segment[outSA] = 0
+        self.first_available_offset[outSA] = 0
+        
         # Return the first segment of the "in" array
 
 #        print 'init_segment_loop: self.first_not_full_segment[inSA]=', self.first_not_full_segment[inSA]
@@ -329,8 +348,15 @@ class SegmentedArrayPair_C(object):
 
 #class SegmentedArrayPair_C(object):
     def get_next_segment(self, InOut):
-        """Returns a reference to the next segment of either the "in"
-           or "out" array, and the number of active items.
+        """Returns the number of active items in the next segment of either the "in" or "out"
+           array, and a reference to the items.
+
+           The variable self.first_not_full_segment[theSA] is the zero-based index of the
+           last segment that has active particles. This variable is not changed.
+
+           Unlike get_next_out_segment(), this function does not allocate new segments. If
+           there's no next segment, it returns a zero for the number of items.
+
         """
 
         if InOut == "in":
@@ -363,12 +389,16 @@ class SegmentedArrayPair_C(object):
 #class SegmentedArrayPair_C(object):
     def get_next_out_segment(self):
         """Returns a reference to the next segment of the "out" array.
-           This method looks similar to the push_back() method above, since the
-           "out" array is effectively scratch space.
 
-           If this function is called, it assumes that you need space
-           to write on, so it will allocate a new segment if we're out
-           of "out" segments.
+           If this function is called, it assumes that you need space to write on, so it
+           will allocate a new segment if we're out of "out" segments.
+
+           The variable self.first_not_full_segment[outSA] is incremented to give the
+           zero-based index of the returned segment. This allows push_back() to be called
+           to add new particles.
+
+           This method looks similar to the push_back() method above, since the "out"
+           array is effectively scratch space that can be written to.
 
            :return: reference to next segment of the "out" array.
 
@@ -379,16 +409,20 @@ class SegmentedArrayPair_C(object):
         self.current_segment[outSA] += 1
         segIndex = self.current_segment[outSA]
 
-        # If another segment is already available, use
-        # it. Otherwise, allocate a new segment.
+        # If another segment is already available, use it. Otherwise, allocate a new
+        # segment.
         if segIndex < self.nseg[outSA]:
-            self.first_not_full_segment[outSA] += 1
-            self.first_available_offset[outSA] = 0
+            # Increment self.first_not_full_segment[outSA] if the new value is the index
+            # of an existing segment.
+            if self.first_not_full_segment[outSA] + 1 < self.nseg[outSA]:
+                self.first_not_full_segment[outSA] += 1
+                self.first_available_offset[outSA] = 0
         else:
-            # The following call increments the variables
-            # firstNotFullSegment[] and nSeg[], and sets
-            # firstAvailableOffset[] = 0
+            # The following call increments the variables firstNotFullSegment[] and
+            # nSeg[], and sets firstAvailableOffset[] = 0
             self.add_segment(outSA)
+        # These two counters should be the same:
+        assert (self.first_not_full_segment[outSA] == segIndex), "first_not_full_segment = %d, segIndex = %d" % (self.first_not_full_segment[outSA], segIndex)
 
         return self.seg_list_pair[outSA][segIndex]
 #    def get_next_out_segment(self): ENDDEF

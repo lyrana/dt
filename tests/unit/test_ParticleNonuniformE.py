@@ -146,7 +146,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         pmesh2D_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=False)
 
         self.particle_P.pmesh_M = pmesh2D_M
-        self.particle_P.initialize_particle_integration()        
+        self.particle_P.initialize_particle_integration()
 
         ### Particle boundary-conditions
 
@@ -202,7 +202,7 @@ class TestParticleNonuniformE(unittest.TestCase):
 
         ctrl.dt = 1.0e-5
         ctrl.n_timesteps = 1
-        ctrl.MAX_FACET_CROSS_COUNT = 100        
+        ctrl.MAX_FACET_CROSS_COUNT = 100
                 
         dt = ctrl.dt
 

@@ -13,7 +13,7 @@ __all__ = ['Example_C',]
    field. The electrons pull the ions radially outward.
 
 """
-#### Commentary
+#### Notes on simulation setup
 
 #  The radial extent of the simulation is from 'scr.rmin' to 'scr.rmax' (see SCR.1.)
 
@@ -72,23 +72,29 @@ __all__ = ['Example_C',]
 ### number below, e.g., PS.<space>, or PS.1.3.<space>
 
 ## IM. Imported Modules
+
 ## TO. Terminal Output flags
+
 ## PC. Physical Constants
+
 ## SCR. SCRatch-pad for calculating parameter values.
 ##     SCR.1. Calculate spatial parameters
 ##     SCR.2. Calculate electron parameters
 ##     SCR.3. Calculate ion parameters
 ##     SCR.4. Calculate field parameters
+
 ## CTRL. Simulation Control
 ##     CTRL.1. Titles
 ##     CTRL.2. Set timestep value and number of timesteps.
 ##     CTRL.3. Electric field control
 ##     CTRL.4. Output: Specify field and particle output files and output frequency.
+
 ## FM. Field Mesh
+
 ## PS. Particle Species
 ##     PS.1. Define the species, set the "apply-field" switches, and provide storage.
 ##           PS.1.2. Allocate particle storage.
-##           PS.1.3. Specify the name of the UserParticlesModule (Deprecate)
+##           PS.1.3. Specify the name of the UserParticlesModule (Deprecate; move to top?)
 ##     PS.2. Particle boundary conditions, particle mesh
 ##           PS.2.1. Mark boundaries to apply BCs on particles
 ##           PS.2.2. Make the particle mesh and add it to the particle object
@@ -97,13 +103,17 @@ __all__ = ['Example_C',]
 ##           PS.3.1. Hplus source near r=0
 ##           PS.3.2. Electron source near r=0
 ##           PS.3.3. Put all the particle source data into a dictionary
+
 ## TRJ. Particle Trajectories
+
 ## DEN. Particle Densities
 ##      DEN.1. Create DoF number-density arrays on the particle mesh for each kinetic species
 ##      DEN.2. Create cell number-density arrays on the particle mesh for each kinetic species
+
 ## SRC. Source terms for the electric potential
 ##      SRC.1. Charge-density obtained from kinetic particles
 ##      SRC.2. Charge-density from functions
+
 ## FS. Field Solver
 ##     FS.1. The scalar electric potential
 ##           FS.1.1. Set boundary values of the potential
@@ -114,8 +124,10 @@ __all__ = ['Example_C',]
 ##           FS.3.1. Compute dynamic electron permittivity (if implicit)
 ##           FS.3.2. Set the potential field solver algorithm parameters
 ##           FS.3.3. Create the potential field solver object
+
 ## EXT. External Fields
 ##      EXT.1. Create storage for an external electric field
+
 ## HST. Time-Histories
 ##      HST.1. History input
 ##             HST.1.1. Particle histories
@@ -123,11 +135,11 @@ __all__ = ['Example_C',]
 ##             HST.1.3. Point-probe field histories
 ##             HST.1.4. Numerical parameter histories
 ##      HST.2. Create the history objects
+
 ## CHK. Check the input
+
 ## INIT. Initialization
-
 ## Initialize Python-to-C++
-
 ##       INIT.1. Do an initial field solve without particles
 ##       INIT.2. Recompute initial fields including initial particle spacecharge
 ##               and random electric field
@@ -136,6 +148,8 @@ __all__ = ['Example_C',]
 ##                                     with particle spacecharge
 ##                         INIT.2.1.2. Add in a random electric field
 ##               INIT.2.2. Record initial history data
+##       INIT.3. Initialize particle integration
+
 ## RUN. Integrate forward in time
 ##      RUN.0. Increment the time counters
 ##      RUN.1. Advance the particles one timestep
@@ -148,6 +162,7 @@ __all__ = ['Example_C',]
 ##             RUN.5.3. Add an external electric random field
 ##             RUN.5.4. Write a snapshot of the fields
 ##      RUN.6. Record history data for this timestep
+
 ## FIN. Finish the simulation
 ##      FIN.1. Write the last particle data and close the output file.
 ##      FIN.2. Record the LAST point on the particle trajectories.
@@ -353,6 +368,9 @@ ctrl.time = 0.0
 ctrl.random_seed = 1
 np_m.random.seed(ctrl.random_seed)
 
+# Upper bound on the number of cell facets that can be crossed in one timestep.
+ctrl.MAX_FACET_CROSS_COUNT = 100
+
 ##### CTRL.3. Electric field control
 
 # Electric field control
@@ -458,6 +476,7 @@ pin.position_coordinates = ['x',] # determines the particle-storage dimensions. 
                                   # is doubled to get the phase-space coordinates
 pin.force_components = ['x',]
 pin.force_precision = np_m.float64
+pin.use_cpp_integrators = False
 
 ############### PS.1. Define the species, set "apply-field" switches, and provide particle storage ###############
 
@@ -710,7 +729,7 @@ if ionSpreadCellsPerTimestep >= 1.0:
 numberDensityRate = numberDensityIncrementHplus/(timeStepInterval*ctrl.dt)
 if emitInput is True:
     expectedDensity = (1.0/3.0)*numberDensityRate*rmaxHplus/driftVelocityHplus[0]
-    print("Expected Hplus density at %.3g is %.3g" % (rmaxHplus, expectedDensity))
+    print("Expected Hplus density at edge of creation region, %.3g, is %.3g" % (rmaxHplus, expectedDensity))
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)    
                                                    
 # Set desired particles-per-cell
@@ -879,7 +898,7 @@ trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'crossings', 'Ex'], 'f
 
 # Note: no trajectory storage is created until particles marked with TRAJECTORY_FLAG
 # are encountered.
-traj_T = Trajectory_C(trajin, ctrl, particle_P.explicit_species, particle_P.implicit_species, particle_P.neutral_species)
+traj_T = Trajectory_C(trajin, ctrl, particle_P.charged_species, particle_P.neutral_species)
 
 ## Attach this to the particle object.
 particle_P.traj_T = traj_T
@@ -1187,8 +1206,8 @@ if particle_P.initial_particles_dict is not None:
     ## Accumulate number-density from kinetic particles
     ## and sum into the total charge-density.
     for s in particle_P.species_names:
-#        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
-        particle_P.accumulate_number_density_CPP(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+#        particle_P.accumulate_number_density_CPP(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
         q = particle_P.charge[s]
         assembledCharge_F.multiply_add(dofNumberDensityDict_F[s], multiplier=q)        
 # This duplicates the above loop!
@@ -1229,7 +1248,10 @@ else:
 ##### INIT.2.2. Record initial history data
 if particle_P.histories is not None:
     particle_P.record_history_data(ctrl.timeloop_count, ctrl.time)
-    
+
+########## INIT.3. Initialize particle integration
+# (non-default particle integrators should be part of input above)
+particle_P.initialize_particle_integration()
 
 ############################## RUN. Integrate forward in time ##############################
 
@@ -1247,7 +1269,8 @@ for istep in range(ctrl.n_timesteps):
     ########## RUN.1. Advance the particles one timestep
     print("")
     print("***** Advance %d particles to step %d, time %.3g *****" % (particle_P.get_total_particle_count(), ctrl.timeloop_count, ctrl.time))
-    particle_P.move_particles_in_electrostatic_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
+#    particle_P.move_particles_in_electrostatic_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
+    particle_P.advance_charged_particles_in_E_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)    
 
     ## Record trajectory data for all marked particles
     if particle_P.traj_T is not None:
@@ -1273,8 +1296,8 @@ for istep in range(ctrl.n_timesteps):
         cellNumberDensityDict_F[s].set_values(0.0)
 
     for s in particle_P.species_names:
-#        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
-        particle_P.accumulate_number_density_CPP(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+        particle_P.accumulate_number_density(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
+#        particle_P.accumulate_number_density_CPP(s, dofNumberDensityDict_F[s], cellNumberDensityDict_F[s])
         # Write a snapshot of the cell number densities
         if ctrl.cell_number_density_output_interval is not None:
             if ctrl.timeloop_count % ctrl.cell_number_density_output_interval == 0:
