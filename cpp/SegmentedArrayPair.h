@@ -306,7 +306,8 @@ namespace dnt
                 // nseg[], and sets first_available_offset[] = 0
                 add_segment(outSA);
               };
-        
+            // These two counters should be the same:                
+            assert(first_not_full_segment[outSA] == current_segment[outSA]);
           };
 
         // Use the buffer protocol to get to the contiguous data in the Numpy arrays
@@ -619,8 +620,14 @@ namespace dnt
         auto inSA = in_segmented_array;
         auto outSA = out_segmented_array;
 
+        // These counters are used to count through the segments.
+        // Segment indexing is zero-based.
         current_segment[0] = 0;
         current_segment[1] = 0;
+
+        // These give next available storage location in the "out" array.
+        first_not_full_segment[outSA] = 0
+        first_available_offset[outSA] = 0
 
         /* Swap the two SegmentedArrays in the pair, so that the current "out" array
            becomes the "in" array.
@@ -778,8 +785,12 @@ namespace dnt
         // segment.
         if (segIndex < nseg[outSA])
           {
-            first_not_full_segment[outSA] += 1;
-            first_available_offset[outSA] = 0;
+            //            if self.first_not_full_segment[outSA] + 1 < self.nseg[outSA]:
+            if (first_not_full_segment[outSA] + 1 < nseg[outSA])
+              {
+                first_not_full_segment[outSA] += 1;
+                first_available_offset[outSA] = 0;
+              }
           }
         else
           {
@@ -787,6 +798,8 @@ namespace dnt
             // nseg[], and sets first_available_offset[] = 0
             add_segment(outSA);
           }
+        // These two counters should be the same:        
+        assert(first_not_full_segment[outSA] == segIndex);
 
         auto seg = seg_list_pair[outSA][segIndex];
         // bool return_data_ptr = false;

@@ -1,8 +1,8 @@
 # Make the Python module called particle_cartesian_..._solib
 
 # Specify the particle spatial coordinate system:
-#THE_PARTICLE_TYPE = cartesian_xyz
-THE_PARTICLE_TYPE = cartesian_xy
+THE_PARTICLE_TYPE = cartesian_xyz
+#THE_PARTICLE_TYPE = cartesian_xy
 
 THE_MODULE_PREFIX = particle
 

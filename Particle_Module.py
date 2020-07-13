@@ -1834,7 +1834,7 @@ class Particle_C(object):
                                            # Otherwise, we would add SEGMENT_LENGTH
                                            # to particleCount twice.
             particleCount += ipOut
-            sap.set_number_of_items("out", particleCount)
+        sap.set_number_of_items("out", particleCount)
         # End of loop over segmented array
 
         # Compute new density here?

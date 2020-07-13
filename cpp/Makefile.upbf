@@ -1,8 +1,8 @@
 # Make the Python module called user_particle_boundary_functions_solib for a specified PARTICLE_TYPE
 
 # Specify the particle spatial coordinate system:
-#THE_PARTICLE_TYPE = cartesian_xyz
-THE_PARTICLE_TYPE = cartesian_xy
+THE_PARTICLE_TYPE = cartesian_xyz
+#THE_PARTICLE_TYPE = cartesian_xy
 
 THE_MODULE_PREFIX = user_particle_boundary_functions
 
