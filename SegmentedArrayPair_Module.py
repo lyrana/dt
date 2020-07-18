@@ -296,8 +296,6 @@ class SegmentedArrayPair_C(object):
         inSA = self.in_segmented_array
         outSA = self.out_segmented_array
 
-#        print 'init_segment_loop A: inSA =', inSA
-
         # Swap the two particle storage arrays, so that the current
         # "out" array becomes the "in" array.
         # The "in" array appears on the RHS of expressions, i.e., is
@@ -309,8 +307,6 @@ class SegmentedArrayPair_C(object):
         inSA = (inSA+1) % 2
         outSA = (outSA+1) % 2
 
-#        print 'init_segment_loop B: inSA =', inSA, 'outSA =', outSA
-
         # These counters are used to count through the segments.
         # Segment indexing is zero-based.
         self.current_segment[0] = 0
@@ -321,8 +317,6 @@ class SegmentedArrayPair_C(object):
         self.first_available_offset[outSA] = 0
         
         # Return the first segment of the "in" array
-
-#        print 'init_segment_loop: self.first_not_full_segment[inSA]=', self.first_not_full_segment[inSA]
 
         # If the first segment is also the last segment, the number of
         # items in it may be less than the length of the segment
@@ -342,7 +336,6 @@ class SegmentedArrayPair_C(object):
         self.out_segmented_array = outSA
 
         segIndex = 0
-
         return (lastItem, self.seg_list_pair[inSA][segIndex][0:lastItem], self.seg_list_pair[outSA][segIndex])
 #    def init_inout_loop(self): ENDDEF
 
