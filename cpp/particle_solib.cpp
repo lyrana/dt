@@ -70,11 +70,15 @@ namespace dnt {
 
     // General version
     
-    // Comment this out for xy version:    
-    m.def("advance_charged_species_in_uniform_fields", &ADVANCE_CHARGED_SPECIES_IN_UNIFORM_FIELDS_(PARTICLE_TYPE));
-    
-    // Comment this out for xyz version:
-    //    m.def("advance_charged_species_in_E_field_3_facets", &ADVANCE_CHARGED_SPECIES_IN_E_FIELD_(PARTICLE_TYPE)<3>, py::arg("particle_P"), py::arg("species_name"), py::arg("ctrl"), py::arg("neg_E_field") = nullptr, py::arg("external_E_field") = nullptr, py::arg("accel_only") = false);
+    //if (strcmp(TOSTRING(PARTICLE_TYPE), "cartesian_xyz") == 0)
+#ifdef CARTESIAN_XYZ
+        m.def("advance_charged_species_in_uniform_fields", &ADVANCE_CHARGED_SPECIES_IN_UNIFORM_FIELDS_(PARTICLE_TYPE));
+#endif
+
+    //if (strcmp(TOSTRING(PARTICLE_TYPE), "cartesian_xy") == 0)
+#ifdef CARTESIAN_XY
+        m.def("advance_charged_species_in_E_field_3_facets", &ADVANCE_CHARGED_SPECIES_IN_E_FIELD_(PARTICLE_TYPE)<3>, py::arg("particle_P"), py::arg("species_name"), py::arg("ctrl"), py::arg("neg_E_field") = nullptr, py::arg("external_E_field") = nullptr, py::arg("accel_only") = false);
+#endif
     m.def("advance_neutral_species_2_facets", &ADVANCE_NEUTRAL_SPECIES_(PARTICLE_TYPE)<2>);
     m.def("advance_neutral_species_3_facets", &ADVANCE_NEUTRAL_SPECIES_(PARTICLE_TYPE)<3>);
     m.def("advance_neutral_species_4_facets", &ADVANCE_NEUTRAL_SPECIES_(PARTICLE_TYPE)<4>);

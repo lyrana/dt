@@ -226,8 +226,6 @@ class SegmentedArrayPair_C(object):
         """
         # Abbreviations
         # none
-        
-        #print("add_segment(enter): nseg=", self.nseg[theSA], "first_not_full_segment=", self.first_not_full_segment[theSA])
 
         # Add a new segment to the Segmented Array
         self.nseg[theSA] += 1
@@ -305,8 +303,6 @@ class SegmentedArrayPair_C(object):
         inSA = self.in_segmented_array
         outSA = self.out_segmented_array
 
-#        print 'init_segment_loop A: inSA =', inSA
-
         # Swap the two particle storage arrays, so that the current
         # "out" array becomes the "in" array.
         # The "in" array appears on the RHS of expressions, i.e., is
@@ -318,8 +314,6 @@ class SegmentedArrayPair_C(object):
         inSA = (inSA+1) % 2
         outSA = (outSA+1) % 2
 
-#        print 'init_segment_loop B: inSA =', inSA, 'outSA =', outSA
-
         # These counters are used to count through the segments.
         # Segment indexing is zero-based.
         self.current_segment[0] = 0
@@ -330,8 +324,6 @@ class SegmentedArrayPair_C(object):
         self.first_available_offset[outSA] = 0
         
         # Return the first segment of the "in" array
-
-#        print 'init_segment_loop: self.first_not_full_segment[inSA]=', self.first_not_full_segment[inSA]
 
         # If the first segment is also the last segment, the number of
         # items in it may be less than the length of the segment
@@ -351,7 +343,6 @@ class SegmentedArrayPair_C(object):
         self.out_segmented_array = outSA
 
         segIndex = 0
-
         return (lastItem, self.seg_list_pair[inSA][segIndex][0:lastItem], self.seg_list_pair[outSA][segIndex])
 #    def init_inout_loop(self): ENDDEF
 
@@ -426,13 +417,9 @@ class SegmentedArrayPair_C(object):
             if self.first_not_full_segment[outSA] + 1 < self.nseg[outSA]:
                 self.first_not_full_segment[outSA] += 1
                 self.first_available_offset[outSA] = 0
-            #print("get_next_out_segmentB: segIndex=", segIndex, "nseg=", self.nseg[outSA], "first_not_full_segment=", self.first_not_full_segment[outSA])            
-            # if self.first_not_full_segment[outSA] > 34:
-            #print("#3 self.first_not_full_segment[outSA]=", self.first_not_full_segment[outSA])
         else:
             # The following call increments the variables firstNotFullSegment[] and
             # nSeg[], and sets firstAvailableOffset[] = 0
-            # print("get_next_out_segment: calling add_segment")
             self.add_segment(outSA)
         # These two counters should be the same:
         assert (self.first_not_full_segment[outSA] == segIndex), "first_not_full_segment = %d, segIndex = %d" % (self.first_not_full_segment[outSA], segIndex)

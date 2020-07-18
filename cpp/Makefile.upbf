@@ -2,6 +2,7 @@
 
 # Specify the particle spatial coordinate system:
 THE_PARTICLE_TYPE = cartesian_xyz
+# or:
 #THE_PARTICLE_TYPE = cartesian_xy
 
 THE_MODULE_PREFIX = user_particle_boundary_functions

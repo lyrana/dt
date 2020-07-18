@@ -200,7 +200,7 @@ namespace dnt
     // ENDDEF: py::tuple get_number_of_segments()
 
 
-    //! Return the number of items stored in the "out" array
+    //! Return the number of active items stored in the "out" array
       py::ssize_t get_number_of_items()
       {
         // Abbreviations
@@ -604,8 +604,8 @@ namespace dnt
     //! Initialize a loop over the all the array segments.
     /*!
 
-      This function can be used when we want to read from an "in" segment and write to an
-      "out" segment. The loop should call get_next_segment("in") and
+      This function is used when we want to start a loop to read from the "in" SA and
+      write to the "out" SA. The loop should call get_next_segment("in") and
       get_next_out_segment() in the iteration loop.
 
       \param return_data_ptrs: if true, return pointers to the data instead of Numpy
@@ -619,15 +619,6 @@ namespace dnt
         // Abbreviations
         auto inSA = in_segmented_array;
         auto outSA = out_segmented_array;
-
-        // These counters are used to count through the segments.
-        // Segment indexing is zero-based.
-        current_segment[0] = 0;
-        current_segment[1] = 0;
-
-        // These give next available storage location in the "out" array.
-        first_not_full_segment[outSA] = 0
-        first_available_offset[outSA] = 0
 
         /* Swap the two SegmentedArrays in the pair, so that the current "out" array
            becomes the "in" array.
@@ -643,7 +634,7 @@ namespace dnt
             inSA = (inSA+1) % 2;
             outSA = (outSA+1) % 2;
           }
-
+        
         /*
           Uncomment the following for testing only. E.g., suppose we call this function,
           but the subsequent code don't actually copy the "in" to the "out" segment, and
@@ -652,7 +643,20 @@ namespace dnt
           swapped on the second call.
         */
         // swapPair = !swapPair;
+
+        // These counters are used to count through the segments.
+        // Segment indexing is zero-based.
+        current_segment[0] = 0;
+        current_segment[1] = 0;
+
+        // These give next available storage location in the "out" array.
+        first_not_full_segment[outSA] = 0;
+        first_available_offset[outSA] = 0;
         
+        // Return the first segment of the "in" array
+
+        // If the first segment is also the last segment, the number of
+        // items in it may be less than the length of the segment
         py::ssize_t lastItem = 0;
         if (first_not_full_segment[inSA] == 0)
           {
@@ -664,14 +668,13 @@ namespace dnt
             lastItem = segment_length;
           }
 
+        // Store the member values
         in_segmented_array = inSA;
         out_segmented_array = outSA;
 
         py::ssize_t segIndex = 0;
         auto inSeg = seg_list_pair[inSA][segIndex];
         auto outSeg = seg_list_pair[outSA][segIndex];
-
-        // std::cout << "init_inout_loop(): out segment is using pair index " << outSA << std::endl;
 
         // Return either the Numpy arrays, or the pointers to the data
         // bool return_data_ptrs = false;
@@ -785,7 +788,6 @@ namespace dnt
         // segment.
         if (segIndex < nseg[outSA])
           {
-            //            if self.first_not_full_segment[outSA] + 1 < self.nseg[outSA]:
             if (first_not_full_segment[outSA] + 1 < nseg[outSA])
               {
                 first_not_full_segment[outSA] += 1;
