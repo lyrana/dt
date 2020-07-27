@@ -569,7 +569,7 @@ namespace dnt
         if (first_not_full_segment[outSA] == 0)
           {
             lastItem = first_available_offset[outSA];
-            if (lastItem == 0) return py::make_tuple(0, nullptr);  // WILL THIS WORK FOR RETURNING BOTH NUMPY ARRAY AND DATA POINTERS?
+            if (lastItem == 0) return py::make_tuple(0, nullptr);
           }
         else
           {
@@ -585,8 +585,8 @@ namespace dnt
           {
             // Pointers to the data:
             py::buffer_info outSegInfo = outSeg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
-            const auto outSegData = static_cast<Pstruct<PT>*>(outSegInfo.ptr); // Pointer to a structured Numpy array
-            return py::make_tuple(lastItem, outSegData);
+            const auto outSegData = static_cast<Pstruct<PT>*>(outSegInfo.ptr); // Pointer to the Pstruct array.
+            return py::make_tuple(lastItem, py::capsule(outSegData));
           }
         else
           {
@@ -661,7 +661,7 @@ namespace dnt
         if (first_not_full_segment[inSA] == 0)
           {
             lastItem = first_available_offset[inSA];
-            if (lastItem == 0) return py::make_tuple(0, nullptr, nullptr);  // WILL THIS WORK FOR RETURNING BOTH NUMPY ARRAY AND DATA POINTERS?
+            if (lastItem == 0) return py::make_tuple(0, nullptr, nullptr);
           }
         else
           {
@@ -747,8 +747,8 @@ namespace dnt
           {
             // Pointer to the data:
             py::buffer_info segInfo = seg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
-            const auto segData = static_cast<Pstruct<PT>*>(segInfo.ptr); // Pointer to a structured Numpy array
-            //            return py::make_tuple(lastItem, segData);
+            const auto segData = static_cast<Pstruct<PT>*>(segInfo.ptr); // Pointer to the Pstruct array
+            // return py::make_tuple(lastItem, segData); // Doesn't work: need a capsule for the pointer.
             return py::make_tuple(lastItem, py::capsule(segData));
           }
         else
@@ -809,8 +809,8 @@ namespace dnt
           {
             // Pointer to the data:
             py::buffer_info segInfo = seg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
-            const auto segData = static_cast<Pstruct<PT>*>(segInfo.ptr); // Pointer to a structured Numpy array
-            return py::make_tuple(segData);
+            const auto segData = static_cast<Pstruct<PT>*>(segInfo.ptr); // Pointer to the Pstruct array
+            return py::make_tuple(py::capsule(segData)); // The pointer needs to be put inside some type of a Python object.
           }
         else
           {

@@ -9,6 +9,7 @@
       These have two versions: (i) For a Numpy array of points and (ii) for a Pstruct<PT>* with points:
         interpolate_field_to_points_cartesian_xyz()
         interpolate_field_to_points_cartesian_xy()
+        interpolate_field_to_points_cartesian_x()
 
       is_inside_vertices()
 
@@ -37,6 +38,7 @@ namespace py = pybind11;
 namespace dnt {
 
   // Create a variable 'm' of type py::module
+  // MODULE_NAME can be specified using -DMODULE_NAME= in the makefile.
   PYBIND11_MODULE(MODULE_NAME, m) {
 
     // m.def makes the Python binding for each C++ function defined in
@@ -66,47 +68,61 @@ namespace dnt {
           });
     */
 
-    // For py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, i.e., points is a Numpy array.
+    //
+    // Versions for py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, i.e., points is a Numpy array.
+    //
     m.def("interpolate_field_to_points_cartesian_xyz", [](py::object field_F, py::array_t<Pstruct<Ptype::cartesian_xyz>, 0> points, py::ssize_t npoints, py::array_t<double> field_at_points)
           {
             auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
-            
-            //            auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
-            //            std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
-            
+            // auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
+            // std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
             interpolate_field_to_points<Ptype::cartesian_xyz>(fieldFunction, points, npoints, field_at_points);
             
           });
+
     m.def("interpolate_field_to_points_cartesian_xy", [](py::object field_F, py::array_t<Pstruct<Ptype::cartesian_xy>, 0> points, py::ssize_t npoints, py::array_t<double> field_at_points)
           {
             auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
-            
-            //            auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
-            //            std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
-            
+            // auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
+            // std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
             interpolate_field_to_points<Ptype::cartesian_xy>(fieldFunction, points, npoints, field_at_points);
             
           });
-    
-    // For Pstruct<PT>* points, i.e., points is a pointer to the particle-structs array.
+
+    m.def("interpolate_field_to_points_cartesian_x", [](py::object field_F, py::array_t<Pstruct<Ptype::cartesian_x>, 0> points, py::ssize_t npoints, py::array_t<double> field_at_points)
+          {
+            auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
+            // auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
+            // std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
+            interpolate_field_to_points<Ptype::cartesian_x>(fieldFunction, points, npoints, field_at_points);
+
+          });
+    //
+    // Versions for Pstruct<PT>* points, i.e., points is a pointer to the particle-structs array.
+    //
     m.def("interpolate_field_to_points_cartesian_xyz", [](py::object field_F, Pstruct<Ptype::cartesian_xyz>* points, py::ssize_t npoints, py::array_t<double> field_at_points)
           {
             auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
-            
-            //            auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
-            //            std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
-            
+            // auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
+            // std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
             interpolate_field_to_points<Ptype::cartesian_xyz>(fieldFunction, points, npoints, field_at_points);
             
           });
     m.def("interpolate_field_to_points_cartesian_xy", [](py::object field_F, Pstruct<Ptype::cartesian_xy>* points, py::ssize_t npoints, py::array_t<double> field_at_points)
           {
             auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
-            
-            //            auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
-            //            std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
-            
+            // auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
+            // std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
             interpolate_field_to_points<Ptype::cartesian_xy>(fieldFunction, points, npoints, field_at_points);
+            
+          });
+
+    m.def("interpolate_field_to_points_cartesian_x", [](py::object field_F, Pstruct<Ptype::cartesian_x>* points, py::ssize_t npoints, py::array_t<double> field_at_points)
+          {
+            auto fieldFunction = field_F.attr("function").attr("_cpp_object").cast<dolfin::Function*>();
+            // auto fieldFunction = field_F.cast<std::shared_ptr<dolfin::GenericVector>>();
+            // std::cout << "fieldFunction->size() = " << fieldFunction->size() << std::endl;
+            interpolate_field_to_points<Ptype::cartesian_x>(fieldFunction, points, npoints, field_at_points);
             
           });
     

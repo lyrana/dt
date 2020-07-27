@@ -49,8 +49,10 @@ namespace dnt {
   int Pstruct<Ptype::cartesian_xy>::DELETE_FLAG = 0b1;  // the lowest bit is 1
   int Pstruct<Ptype::cartesian_xy>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit 
   int Pstruct<Ptype::cartesian_x>::DELETE_FLAG = 0b1;  // the lowest bit is 1
-  int Pstruct<Ptype::cartesian_x>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit 
+  int Pstruct<Ptype::cartesian_x>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit
   
+  // Create a variable 'm' of type py::module
+  // MODULE_NAME can be specified using -DMODULE_NAME= in the makefile.
   PYBIND11_MODULE(MODULE_NAME, m) {
 
     // Interface to the C++ particle-advance functions
@@ -72,17 +74,23 @@ namespace dnt {
     
     //if (strcmp(TOSTRING(PARTICLE_TYPE), "cartesian_xyz") == 0)
 #ifdef CARTESIAN_XYZ
-        m.def("advance_charged_species_in_uniform_fields", &ADVANCE_CHARGED_SPECIES_IN_UNIFORM_FIELDS_(PARTICLE_TYPE));
+    m.def("advance_charged_species_in_uniform_fields", &ADVANCE_CHARGED_SPECIES_IN_UNIFORM_FIELDS_(PARTICLE_TYPE));
+    m.def("advance_neutral_species_2_facets", &ADVANCE_NEUTRAL_SPECIES_(PARTICLE_TYPE)<2>);
+    m.def("advance_neutral_species_3_facets", &ADVANCE_NEUTRAL_SPECIES_(PARTICLE_TYPE)<3>);
+    m.def("advance_neutral_species_4_facets", &ADVANCE_NEUTRAL_SPECIES_(PARTICLE_TYPE)<4>);
 #endif
 
     //if (strcmp(TOSTRING(PARTICLE_TYPE), "cartesian_xy") == 0)
 #ifdef CARTESIAN_XY
-        m.def("advance_charged_species_in_E_field_3_facets", &ADVANCE_CHARGED_SPECIES_IN_E_FIELD_(PARTICLE_TYPE)<3>, py::arg("particle_P"), py::arg("species_name"), py::arg("ctrl"), py::arg("neg_E_field") = nullptr, py::arg("external_E_field") = nullptr, py::arg("accel_only") = false);
-#endif
+    m.def("advance_charged_species_in_E_field_3_facets", &ADVANCE_CHARGED_SPECIES_IN_E_FIELD_(PARTICLE_TYPE)<3>, py::arg("particle_P"), py::arg("species_name"), py::arg("ctrl"), py::arg("neg_E_field") = nullptr, py::arg("external_E_field") = nullptr, py::arg("accel_only") = false);
     m.def("advance_neutral_species_2_facets", &ADVANCE_NEUTRAL_SPECIES_(PARTICLE_TYPE)<2>);
     m.def("advance_neutral_species_3_facets", &ADVANCE_NEUTRAL_SPECIES_(PARTICLE_TYPE)<3>);
-    m.def("advance_neutral_species_4_facets", &ADVANCE_NEUTRAL_SPECIES_(PARTICLE_TYPE)<4>);
+#endif
 
+#ifdef CARTESIAN_X
+    m.def("advance_charged_species_in_E_field_2_facets", &ADVANCE_CHARGED_SPECIES_IN_E_FIELD_(PARTICLE_TYPE)<2>, py::arg("particle_P"), py::arg("species_name"), py::arg("ctrl"), py::arg("neg_E_field") = nullptr, py::arg("external_E_field") = nullptr, py::arg("accel_only") = false);
+#endif
+    
   } // ENDDEF: PYBIND11_MODULE(MODULE_NAME, m)
 
 

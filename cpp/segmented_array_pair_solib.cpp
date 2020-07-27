@@ -118,7 +118,8 @@ namespace dnt {
   
   // Interface to the C++ class SegmentedArrayPair
 
-  // Create a variable 'm' of type py::module
+  // Create a variable 'm' of type py::module.
+  // MODULE_NAME can be specified using -DMODULE_NAME= in the makefile.
   PYBIND11_MODULE(segmented_array_pair_solib, m)
   {
     

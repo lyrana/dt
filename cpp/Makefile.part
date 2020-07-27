@@ -6,6 +6,9 @@ PT = -DCARTESIAN_XYZ
 # or:
 #THE_PARTICLE_TYPE = cartesian_xy
 #PT = -DCARTESIAN_XY
+# or:
+#THE_PARTICLE_TYPE = cartesian_x
+#PT = -DCARTESIAN_X
 
 THE_MODULE_PREFIX = particle
 

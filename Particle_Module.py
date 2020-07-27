@@ -1379,7 +1379,7 @@ class Particle_C(object):
 
 #class Particle_C(object):
     def advance_charged_particles_in_E_field(self, ctrl, neg_E_field=None, external_E_field=None, accel_only=False):
-        """Advance all charged particles by one time increment on a mesh.
+        """Advance all charged-particle species by one time increment on a mesh.
 
            Either Python or C++ particle movers can be used.
 
@@ -1407,8 +1407,8 @@ class Particle_C(object):
         """Advance the particles of one charged species by one time increment in an electric field
            interpolated from a mesh.
         
-           Apply interpolated electric force to particles.  Compute the
-           change in velocity and position in time dt. Use an explicit
+           Apply the interpolated electric force to the particles of one species.
+           Compute the change in velocity and position in time dt. Use an explicit
            method to integrate the orbit.
 
            If a particle leaves its initial cell, the cell that the particle
@@ -1844,7 +1844,7 @@ class Particle_C(object):
 
 #class Particle_C(object):
     def advance_neutral_particles(self, ctrl):
-        """Advance all neutral particles by one time increment on a mesh.
+        """Advance all neutral-particle species by one time increment on a mesh.
 
            Either Python or C++ particle movers can be used.
 
@@ -3125,7 +3125,8 @@ class Particle_C(object):
            loop through all the particles once for each attribute.
 
            :cvar h5Buf: Local name of the buffer used to hold the particle attributes
-                        before they're written to a file
+                        before they're written to a file. The buffer is long enough
+                        to hold one attribute for all the particles.
 
         """
 
@@ -3184,7 +3185,7 @@ class Particle_C(object):
                 if self.get_species_particle_count(s) == 0: continue
 
                 if pA == 'species_index':
-                    # The 'species_index' is the same for every particle in this
+                    # The 'species_index' attribute is the same for every particle in a
                     # species, so load the value into the buffer in one go.
                     speciesIndex = self.species_index[s]
                     npSpecies = self.get_species_particle_count(s, print_flag = False)
@@ -3194,13 +3195,14 @@ class Particle_C(object):
                     aOff += npSpecies
                 else:
                     ## Loop over the segments of the "out" array to get the attribute pA
-                    sap = self.sap_dict[s] # segmented array pair for this species
-                    (npSeg, pseg) = sap.init_out_loop()
-#                    particleCount = 0
+                    sap = self.sap_dict[s] # The segmented array pair for this species
+                    (npSeg, pseg) = sap.init_out_loop() # Returns a Numpy array so Python
+                                                        # can handle pseg.
                     while isinstance(pseg, np_m.ndarray):
 #                        print "Array for", pA, "is: ", pseg[pA], "shape = ", pseg.shape
 #                        print "Range of h5Buf is:", aOff, aOff+npSeg, "shape =", h5Buf.shape
-                        h5Buf[aOff:aOff+npSeg] = pseg[pA] # Copy all the values of attribute pA to
+                        # print("pA=", pA, "pseg[pA][0:npSeg]=", pseg[pA][0:npSeg])
+                        h5Buf[aOff:aOff+npSeg] = pseg[pA][0:npSeg] # Copy all the values of attribute pA to
                                                           # contiguous locations in the buffer.
                         aOff += npSeg # Advance the offset by the number of values just copied.
                         (npSeg, pseg) = sap.get_next_segment("out")

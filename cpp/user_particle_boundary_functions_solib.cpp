@@ -54,7 +54,10 @@ namespace dnt {
       using UPBF = UserParticleBoundaryFunctions<PT>;
       // Make a class name with the particle structure type (Ptype) string appended to the
       // string "UserParticleBoundaryFunctions_"
-      std::string pyclass_name = std::string("UserParticleBoundaryFunctions_") + PT_str;
+      
+      // std::string pyclass_name = std::string("UserParticleBoundaryFunctions_") + PT_str;
+      // Don't need the PT_str in the name since the MODULE_NAME has it:
+      std::string pyclass_name = std::string("UserParticleBoundaryFunctions");
       
       // Create the Python binding for this class
       py::class_<UPBF>(m, pyclass_name.c_str())
@@ -85,6 +88,8 @@ namespace dnt {
 // method module::def() generates binding code that exposes the C++ functions to
 // Python.
 
+// Create a variable 'm' of type py::module  
+// MODULE_NAME can be specified using -DMODULE_NAME= in the makefile.
   PYBIND11_MODULE(MODULE_NAME, m) {
 
     // Interface to the C++ particle call-back functions.

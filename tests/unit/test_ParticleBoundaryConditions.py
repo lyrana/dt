@@ -192,7 +192,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Add this to the particle object:
         # p_P.pmesh_M = pmesh_M
         # 1. Attach the particle mesh to p_P.
-        # 2. Attach the C++ particle movers.
+        # 2. Attach the Python particle movers.
         # 3. Compute the cell-neighbors and facet-normals for the particle movers.
         p_P.initialize_particle_mesh(pmesh_M)
         
@@ -484,10 +484,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         spNames = p_P.species_names
         # Import C++ particle module, which has the ParticleMeshBoundaryConditions
         # Hasn't this been already imported when the Particle_C object was constructed?
-        particleSOlibName = "particle_cartesian_xyz_solib"
-        infoMsg = "%s\tImporting %s" % (fncName, particleSOlibName)
-        print(infoMsg)
-        particleSOlib = im_m.import_module(particleSOlibName)
+#        particleSOlibName = "particle_cartesian_xyz_solib"
+#        infoMsg = "%s\tImporting %s" % (fncName, particleSOlibName)
+#        print(infoMsg)
+#        particleSOlib = im_m.import_module(particleSOlibName)
 
         # Import C++ particle boundary-conditions
         userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xyz_solib"
@@ -495,9 +495,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         print(infoMsg)
         userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
         # Call the constructor to make a UserParticleBoundaryFunctions object
-        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xyz(p_P.position_coordinates)
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(p_P.position_coordinates)
         # Create the map from mesh facets to particle callback functions:
-        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xyz(spNames, pmesh_M, userPBndFns, print_flag=False)
+        # pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions(spNames, pmesh_M, userPBndFns, print_flag=False)
+        pmeshBCs = p_P.particle_solib.ParticleMeshBoundaryConditions(spNames, pmesh_M, userPBndFns, print_flag=False)        
 
         # Add pmeshBCs to the Particle_C object
         p_P.pmesh_bcs = pmeshBCs

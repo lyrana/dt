@@ -164,7 +164,7 @@ namespace dnt
                   {
                     bcFunctionPtr = bcBoundaryDefaultFunctionPtr;
                   }
-                // Complain if not callback at all has been found.
+                // Complain if no callback at all has been found.
                 if (bcFunctionPtr == nullptr)
                   {
                     // There's no boundary-condition for this species at this boundary.

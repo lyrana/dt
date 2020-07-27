@@ -86,14 +86,21 @@ namespace dnt
           std::string bcFunctionStr;
           CallbackFunctionPtr<PT> bcFunctionPtr;
 
-          // Manually add each callback function defined below to the map.
+          // Manually add each callback function defined in the "public" section
+          // below to the map (bc_function_map).
+          
           // Add the "default_bc" callback function using these three lines:
           bcFunctionStr = "default_bc";
           bcFunctionPtr = &dnt::UserParticleBoundaryFunctions<PT>::default_bc; // We have to fully qualify the member function name.
           bc_function_map.insert(std::make_pair(bcFunctionStr, bcFunctionPtr));
           // works too:
           // bc_function_map.insert(std::make_pair("default_bc", &dnt::UserParticleBoundaryFunctions<PT>::default_bc));
- 
+
+          // Reflect particles at rmin
+          bcFunctionStr = "default_bc_at_rmin";
+          bcFunctionPtr = &dnt::UserParticleBoundaryFunctions<PT>::default_bc_at_rmin; // We have to fully qualify the member function name.
+          bc_function_map.insert(std::make_pair(bcFunctionStr, bcFunctionPtr));
+          
         };
       // UserParticleBoundaryFunctions(position_coordinates, dx):ENDDEF
 
@@ -139,6 +146,21 @@ namespace dnt
       }
       // void default_bc(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal): ENDDEF
 
+      void default_bc_at_rmin(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal)
+      {
+
+        //std::cout << "Hello from {UserParticleBoundaryFunctions.h}default_bc_at_rmin" << std::endl;
+
+        // Set the delete flag on the particle
+        p.bitflags_ = p.bitflags_ | Pstruct<PT>::DELETE_FLAG;
+
+        // We might want to count the number/charge/energy of deleted particles here
+        // before returning.
+
+        return;
+      }
+      // void default_bc_at_rmin(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal): ENDDEF
+      
     };
   // class UserParticleBoundaryFunctions: ENDCLASS
 

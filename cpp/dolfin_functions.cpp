@@ -590,6 +590,7 @@ namespace dnt
       // use the name 'fieldValue' instead of 'fieldValues':
       auto fieldValue = dofMap->cell_dofs(cellIndex);
       // std::cout << "particle " << ip << " nComps= " << fieldValue.size() << std::endl;
+      // Copy the field value in this cell into field_at_points[ip].
       field->vector()->get_local(&fieldAtPointsProxy(ip, 0), fieldValue.size(), fieldValue.data());
       
       // Copy the field vector values to the field struct
@@ -749,6 +750,10 @@ template void dnt::interpolate_field_to_points<>(dolfin::Function*,
                                                  py::array_t<Pstruct<Ptype::cartesian_xy>, 0>,
                                                  py::ssize_t,
                                                  py::array_t<double>);
+template void dnt::interpolate_field_to_points<>(dolfin::Function*,
+                                                 py::array_t<Pstruct<Ptype::cartesian_x>, 0>,
+                                                 py::ssize_t,
+                                                 py::array_t<double>);
 
 // Use this one if given a pointer to the particle-struct array
 template void dnt::interpolate_field_to_points<>(dolfin::Function*,
@@ -757,5 +762,9 @@ template void dnt::interpolate_field_to_points<>(dolfin::Function*,
                                                  py::array_t<double>);
 template void dnt::interpolate_field_to_points<>(dolfin::Function*,
                                                  Pstruct<Ptype::cartesian_xy>* points,
+                                                 py::ssize_t,
+                                                 py::array_t<double>);
+template void dnt::interpolate_field_to_points<>(dolfin::Function*,
+                                                 Pstruct<Ptype::cartesian_x>* points,
                                                  py::ssize_t,
                                                  py::array_t<double>);

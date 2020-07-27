@@ -24,7 +24,8 @@ namespace py = pybind11;
 
 namespace dnt {
 
-  // Create a variable 'm' of type py::module
+  // Create a variable 'm' of type py::module.
+  // MODULE_NAME can be specified using -DMODULE_NAME= in the makefile.  
   PYBIND11_MODULE(numpy_types_solib, m)
   {
     // The following registrations are needed for the Pstruct<> structured types to work with py::array_t. See pybind11: 12.2.3 Structured types.

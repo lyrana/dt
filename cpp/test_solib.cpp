@@ -36,7 +36,8 @@ namespace dnt {
 
   // Interface to C++ functions and types
 
-  // Create a variable 'm' of type py::module
+  // Create a variable 'm' of type py::module.
+  // MODULE_NAME can be specified using -DMODULE_NAME= in the makefile.  
   PYBIND11_MODULE(MODULE_NAME, m)
   {
 

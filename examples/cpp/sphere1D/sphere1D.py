@@ -2,6 +2,7 @@
 
 # 1D spherically-symmetric expansion of ions and electrons
 # See sphere1D.ods for setting up parameters
+# This version uses C++ for the particle-advance.
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2017-2018 L. D. Hughes'
@@ -95,9 +96,9 @@ __all__ = ['Example_C',]
 ##     PS.1. Define the species, set the "apply-field" switches, and provide storage.
 ##           PS.1.2. Allocate particle storage.
 ##           PS.1.3. Specify the name of the UserParticlesModule (Deprecate; move to top?)
-##     PS.2. Particle boundary conditions, particle mesh
+##     PS.2. Particle mesh and particle boundary conditions
 ##           PS.2.1. Mark boundaries to apply BCs on particles
-##           PS.2.2. Make the particle mesh and add it to the particle object
+##           PS.2.2. Make the particle mesh and initialize it for particles
 ##           PS.2.3. Connect the boundary-condition callback functions
 ##     PS.3. Particle source regions
 ##           PS.3.1. Hplus source near r=0
@@ -173,24 +174,36 @@ __all__ = ['Example_C',]
 
 
 ############################## IM. Imported Modules ##############################
+
+########## IM.1. Python modules
 import sys
 import os
 import numpy as np_m
-import importlib as im_M
+import importlib as im_m
 import unittest
 
+########## IM.2. Dolfin modules
 import dolfin as df_m
 
+########## IM.3. DnT modules
 from DT_Module import DTcontrol_C, DTscratch_C
 from Dolfin_Module import *
-from UserMesh_y_Fields_Spherical1D_Module import * # User input for mesh and fields
 
-from UserParticles_1D import * # This has the call-back functions for boundary-crossing
-                               # particles.
 from Particle_Module import *
 from RecordedData_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
+
+########## IM.4. User-supplied modules
+
+from UserMesh_y_Fields_Spherical1D_Module import * # Provide input for mesh and fields
+
+# Provide the call-back functions for boundary-crossing particles:
+userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_x_solib"
+#infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
+#print(infoMsg)
+userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
+
 
 fileName = __file__+':'
 
@@ -477,7 +490,7 @@ pin.position_coordinates = ['x',] # determines the particle-storage dimensions. 
                                   # is doubled to get the phase-space coordinates
 pin.force_components = ['x',]
 pin.force_precision = np_m.float64
-pin.use_cpp_integrators = False
+pin.use_cpp_integrators =  True # Use C++ for particle-advance
 
 ############### PS.1. Define the species, set "apply-field" switches, and provide particle storage ###############
 
@@ -545,13 +558,13 @@ particle_P = Particle_C(pin, print_flag=True)
 # See Imported Modules above
 
 # Import the module
-#userParticlesModule = im_M.import_module(userParticlesModuleName)
+#userParticlesModule = im_m.import_module(userParticlesModuleName)
 
 # Add it to the particle object
 #?needed? particle_P.user_particles_module = userParticlesModuleName
 ##particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
-############### PS.2. Particle boundary conditions and mesh ###############
+############### PS.2. Particle mesh and boundary conditions ###############
 
 ##### PS.2.1. Mark boundaries to apply BCs on particles
 # In some cases, it's easier to mark boundaries before the final mesh is created.
@@ -585,7 +598,7 @@ if emitInput is True:
 #    print umi.__dict__
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-##### PS.2.2. Make the mesh and add it to the particle object
+##### PS.2.2. Make the particle mesh and initialize it for particles
 
 # First complete the mesh setup now that particle boundary-conditions have been
 # set (see #FM1 above).
@@ -599,20 +612,32 @@ mesh_M = UserMesh1DS_C(umi, compute_dictionaries=True, compute_tree=False, plot_
 meshFile = df_m.File('sphere1D-mesh.xml')
 meshFile << mesh_M.mesh
 
-# In this simulation, the particle mesh is the same object as the field mesh
-particle_P.pmesh_M = mesh_M
+# (a) Attach the mesh to the particle object. In this simulation, the particle mesh
+#     is the same object as the field mesh.
+# (b) Compute the cell-neighbors and facet-normals needed to track particles on the
+#     mesh.
+# (c) Attach the C++ particle-advance functions for the mesh type.
+if emitInput is True:
+    print("")
+    print("********** Initialize the particle mesh **********")
+particle_P.initialize_particle_mesh(mesh_M)
 
 ##### PS.2.3. Connect the boundary-condition callback functions
 
 # See UserParticleBoundaryFunctions_C in userParticlesModule (defined above) for the
 # definitions of the facet-crossing callback functions.
 #userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
-userPBndFns = UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
+# Call the constructor to make a UserParticleBoundaryFunctions object
+userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(particle_P.position_coordinates)
+#userPBndFns = UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
 
 # Make the particle-mesh boundary-conditions object and add it to the particle
 # object.
 spNames = particle_P.species_names
-pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, mesh_M, userPBndFns, print_flag=False)
+#pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, mesh_M, userPBndFns, print_flag=False)
+# Create the map from mesh facets to particle callback functions:
+pmeshBCs = particle_P.particle_solib.ParticleMeshBoundaryConditions(spNames, particle_P.pmesh_M, userPBndFns, print_flag=False)
+
 particle_P.pmesh_bcs = pmeshBCs
 
 

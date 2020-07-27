@@ -319,10 +319,13 @@ class TestPybind11(unittest.TestCase):
         speciesName = 'neutral_H'
         sap = self.particle_P.sap_dict[speciesName] # segmented array for this species
 
-        (np_seg, pseg) = sap.init_out_loop()
-            
+        (npSeg, pseg) = sap.init_out_loop()
+
+        print("pseg[0]=", pseg[0])
+        print("pseg['x'][0:npSeg]=", pseg['x'][0:npSeg])
+        
         # Pass the pseg object to C++
-        test_so.function_with_pseg_arg(np_seg, pseg)
+        test_so.function_with_pseg_arg(npSeg, pseg)
 
         return
 #    def test_3_pass_sap:ENDDEF
