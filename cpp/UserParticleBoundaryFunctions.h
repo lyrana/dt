@@ -35,6 +35,31 @@
 
 namespace dnt
 {
+
+//! Compute inner (dot) product of vectors a and b of length LEN.
+/*  
+template <size_t LEN>
+inline double vec_inner_product(double const *const a, double const *const b)
+{
+  double sum {0};
+  for (size_t i = 0; i < LEN; ++i)
+    sum += a[i] * b[i];
+  return sum;
+}
+*/
+  //! Compute inner (dot) product of py::array_t<double> a and double[] b of length LEN.
+  template <size_t LEN>
+    inline double vec_inner_product(py::array_t<double> &a, const double *b)
+    {
+      auto aproxy = a.unchecked<1>();  
+      double sum {0};
+
+      for (size_t i = 0; i < LEN; ++i)
+        sum += aproxy(i) * b[i];
+      return sum;
+    }
+
+  
   /*! \class UserParticleBoundaryFunctions
     \brief This class defines callback functions that treat boundary-crossing particles.
 
@@ -76,6 +101,9 @@ namespace dnt
       //     userPBndFns = UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
       UserParticleBoundaryFunctions(py::list& position_coordinates_arg)
         {
+          // Get the spatial dimension of the particles
+          particle_dimension = position_coordinates_arg.size();
+          // Store the string names of the position coordinates.
           for (auto item : position_coordinates_arg)
             {
               position_coordinates.push_back(item.cast<std::string>());
@@ -105,32 +133,35 @@ namespace dnt
       // UserParticleBoundaryFunctions(position_coordinates, dx):ENDDEF
 
     private:
-      std::vector<std::string> position_coordinates;
+      size_t particle_dimension; // The number of spatial coordinates of a particle.
+      std::vector<std::string> position_coordinates; // The string names of the spatial coordinates.
+      
       // The following variable is a dictionary of functions, indexed by the functions names.
       std::map<std::string, CallbackFunctionPtr<PT>> bc_function_map;
       
       // Scratch for manipulating the particle coordinates and velocities:
-      double pcoord[3], pvel[3];
+      double pcoord[PDIM], pvel[PDIM];
     
+    public:
+      
       //! Define the default boundary condition for all particles on all boundaries.
       /*!
 
-        \param p: A full particle record
-        \param species_name (string): This is redundant since the function contains the
+        \param[in,out] p: A full particle record
+        \param[in] species_name (string): This is redundant since the function contains the
                             name of the species, but may be useful for
                             indexing.
-        \param facet_index (int): The mesh index of the facet that generated the call
+        \param[in] facet_index (int): The mesh index of the facet that generated the call
                            to this function.
-        \param dx_fraction (double): The fraction of the move vector traveled before
+        \param[in] dx_fraction (double): The fraction of the move vector traveled before
                            the facet was crossed.
-        \param facet_normal (double[]): The unit vector normal to the facet crossed.
+        \param[in] facet_normal (py::array_t<double>&): The unit vector normal to the 
+                            facet crossed.
 
         \return: Nothing is returned.
       */
       // Call in particle.h:
       // auto bcFunction = bcFunctionDict[std::make_pair(facValue,species_name)];
-
-    public:
       void default_bc(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal)
       {
 
@@ -146,17 +177,33 @@ namespace dnt
       }
       // void default_bc(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal): ENDDEF
 
-      void default_bc_at_rmin(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal)
+
+      //! Default boundary condition for a particle incident on rmin is to reflect the particle after accounting for it.
+      /*!
+
+        The class provides scratch space for this function.
+
+        \param[in] double[] dxOutside: The part of the move-vector past the
+                                       reflecting surface.
+
+      */
+      void default_bc_at_rmin(Pstruct<PT> &p, py::str &species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double> &facet_normal)
       {
 
         //std::cout << "Hello from {UserParticleBoundaryFunctions.h}default_bc_at_rmin" << std::endl;
 
-        // Set the delete flag on the particle
-        p.bitflags_ = p.bitflags_ | Pstruct<PT>::DELETE_FLAG;
+        // Scratch space
+        // pcoord can hold: x,y,z, (or subset)
+        auto dxOutside = pcoord;
+ 
+        // Compute the move-vector past the reflecting surface
+        for (size_t i = 0; i < PDIM; i++)
+          {
+            dxOutside[i] = (1.0 - dx_fraction)*dx[i];
+          }
 
-        // We might want to count the number/charge/energy of deleted particles here
-        // before returning.
-
+        p.reflect_from_surface(facet_normal, dxOutside);
+        
         return;
       }
       // void default_bc_at_rmin(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal): ENDDEF

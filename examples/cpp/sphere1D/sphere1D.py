@@ -627,6 +627,7 @@ particle_P.initialize_particle_mesh(mesh_M)
 # See UserParticleBoundaryFunctions_C in userParticlesModule (defined above) for the
 # definitions of the facet-crossing callback functions.
 #userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
+
 # Call the constructor to make a UserParticleBoundaryFunctions object
 userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(particle_P.position_coordinates)
 #userPBndFns = UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)

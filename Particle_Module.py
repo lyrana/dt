@@ -541,10 +541,6 @@ class Particle_C(object):
             E1seg_dict = {'names': E1comps, 'formats': Etypes}
             self.negE1 = np_m.empty(1, dtype=E1seg_dict) # This is called negE1 since it may be used in interpolation functions that contain -E.
             self.E1_comps = np_m.empty((1,nEcomps), dtype=force_precision) # This is needed for transferring negE1 to C++ functions.
-            
-            # Create a reusable E array with all components zero
-            #            self.zeroE = np_m.zeros(len(self.negE1.dtype.fields), dtype=self.negE1.dtype[0])
-
             # self.Eext1 is a reusable array for one-particle external field data for a
             # trajectory.
             # Construct an explicit name like 'Ex_ext', 'Ey_ext', 'Ez_ext'
@@ -552,6 +548,8 @@ class Particle_C(object):
             E1seg_dict = {'names': E1comps, 'formats': Etypes}
             self.Eext1 = np_m.empty(1, dtype=E1seg_dict)
             self.Eext1_comps = np_m.empty((1,nEcomps), dtype=force_precision) # This is needed for transferring Eext1 to C++ functions.
+            # self.zeroE1 is a reusable array for setting a trajectory E-field vector to zero.
+            self.zeroE1 = np_m.zeros(1, dtype=Eseg_dict)            
 
         # Make a dictionary of the functions that will advance the particle species.
         self.integrators = {}
@@ -1669,7 +1667,7 @@ class Particle_C(object):
                         for coord in self.position_coordinates:
                             coord0 = coord+'0'
                             psegOut[ipOut][coord0] = psegOut[ipOut][coord0] + dxFraction*dx[i]
-                            # Note: the crossing velocity could be computed here from psegIn[ipIn], and passed to record_trajectory_datum() below.                                
+                            # Note: the crossing velocity could be computed here from psegIn[ipIn], and passed to record_trajectory_datum() below.
                             i+=1
                             # print "After truncation p =", psegOut[ipOut]
                         # ...look up the mesh-level index of this facet...
@@ -2429,8 +2427,9 @@ class Particle_C(object):
 
            :param int full_index: The full storage index of the particle, which is used to identify the particle in the trajectory storage.
 
-           :param E_field_comps: A homogeneous Numpy array containing the solved E-field
-                                 interpolated to the particle position
+           :param E_field_comps: A homogeneous Numpy array containing the solved
+                                 E-field interpolated to the particle position. (The
+                                 sign of negE has been flipped already.)
 
            :param external_E_field_comps: A homogeneous Numpy array containing the
                                           external electric field interpolated to the
@@ -2706,8 +2705,8 @@ class Particle_C(object):
         for sp in traj_T.charged_species:
             sap = self.sap_dict[sp] # The SAP for this species
             for i in range(len(traj_T.particle_index_list[sp])): # i loops over the list of
-                                                             # trajectory-particles for
-                                                             # this species
+                                                                 # trajectory-particles for
+                                                                 # this species
                 ip = traj_T.particle_index_list[sp][i] # Look up the full particle index
 #                print "Recording data for particle", ip, "of species", sp
                 
@@ -2724,7 +2723,7 @@ class Particle_C(object):
 
                 # Compute the force on this single particle
                 if neg_E_field is None:
-                    self.negE1[0] = self.zeroE[0]
+                    self.negE1[0] = self.zeroE1[0]
                 else:
                     neg_E_field.interpolate_field_to_points(p_arr, self.negE1)
 
@@ -2740,13 +2739,13 @@ class Particle_C(object):
 
                 # Compute the EXTERNAL field at this single particle
                 if external_E_field is None:
-                    self.Eext1[0] = self.zeroE[0]
+                    self.Eext1[0] = self.zeroE1[0]
                 else:
                     external_E_field.interpolate_field_to_points(p_arr, self.Eext1)
 
                 Eext_arr = self.Eext1[0:p_arr.size] # Need this syntax, even though there's
-                                                   # just one particle, to make Eext_arr an array!
-                                               
+                                                    # just one particle, to make Eext_arr an array!
+
                 # Copy the particle values into the trajectory
                 newpoint = traj_T.trajectory_length[sp][i]
                 if newpoint > traj_T.npoints - 1:

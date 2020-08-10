@@ -224,7 +224,7 @@ class UserParticleBoundaryFunctions_C(object):
 
 #class UserParticleBoundaryFunctions_C(object):
     def default_bc_at_rmin(self, p, speciesName, facetIndex, dx_fraction=None, facet_normal=None):
-        """Default boundary condition for particles incident on rmin is to
+        """Default boundary condition for a particle incident on rmin is to
            reflect the particle after accounting for it.
 
            :param p: the data-structure for the particle that crossed rmin.

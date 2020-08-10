@@ -101,9 +101,9 @@ namespace dnt
     neighbor cell is. This is repeated until the cell containing the final position
     is found.
 
-    \param particle_P is a Particle_C Python object.
-    \param species_name is the py::str name of the species to be advanced.
-    \param ctrl is a DTcontrol_C Python object.
+    \param[in,out] particle_P is a ref to a Particle_C Python object.
+    \param[in] species_name is the py::str name of the species to be advanced.
+    \param[in] ctrl is a ref to a DTcontrol_C Python object.
 
     \var SegmentedArrayPair<PT>* sap
     This is a pointer-to-SegmentedArrayPair containing the particle data
@@ -143,7 +143,7 @@ namespace dnt
     auto pDim = particle_P.attr("particle_dimension").cast<int>(); // (m)
     auto sap = particle_P.attr("sap_dict")[species_name].cast<SegmentedArrayPair<Ptype::cartesian_x> *>();
     // Note that sap is a pointer.
-    // Could also get sap by first casting to an std::map:
+    // Could also get sap by first casting to a std::map:
     //   auto sap_map = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<PT> *>>();
     //   auto sap = sap_map[std::string(species_name)];
     //   auto sapMap = particle_P.attr("sap_dict").cast<std::map<std::string, SegmentedArrayPair<Ptype::cartesian_x> *>>();
@@ -305,7 +305,7 @@ namespace dnt
             //std::cout << "Hello from advance_charged_species_in_E_field_cartesian_x@5" << std::endl;
             EsegPtr = &zeroE;
           }
-        // Add an external E field, if present.
+        // Add an external E field, if present, to E.
         if (external_E_field != nullptr)
           {
             if ((applyRandomExternalElectricFieldFlag == true) || (applyRandomExternalElectricFieldMap[species_name] == true))
@@ -443,10 +443,10 @@ namespace dnt
                 // dx[2] = pCoord2[2] - pCoord2[pDim+2];
 
                 //std::cout << "advance_charged_species_in_E_field. pCoord2 x_: " << pCoord2[pDim] << " " << pCoord2[pDim+1] << " dx " << dx[0] << " " << dx[1] << std::endl;                
-                // bool returnDataPtr = true;
-                bool returnDataPtr = false;
+                // bool returnStdArray = true;
+                bool returnStdArray = false;
                 // # std::cout << "facetTupl" << std::endl;                
-                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnDataPtr);
+                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnStdArray);
                 // This returns the tuple (facet, dxFraction, facet_normal_vectors[facet])
                 // Extract the values from the tuple:
                 auto cFacet = facetTupl[0].cast<int>();
@@ -964,9 +964,9 @@ namespace dnt
                 // dx[2] = pCoord2[2] - pCoord2[pDim+2];
 
                 //std::cout << "advance_charged_species_in_E_field. pCoord2 x_: " << pCoord2[pDim] << " " << pCoord2[pDim+1] << " dx " << dx[0] << " " << dx[1] << std::endl;                
-                // bool returnDataPtr = true;
-                bool returnDataPtr = false;
-                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnDataPtr);
+                // bool returnStdArray = true;
+                bool returnStdArray = false;
+                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnStdArray);
                 // This returns the tuple (facet, dxFraction, facet_normal_vectors[facet])
                 // Extract the values from the tuple:
                 auto cFacet = facetTupl[0].cast<int>();
@@ -1368,9 +1368,9 @@ namespace dnt
                 dx[1] = pCoord2[1] - pCoord2[4];
                 dx[2] = pCoord2[2] - pCoord2[5];
 
-                // bool returnDataPtr = true;
-                bool returnDataPtr = false;
-                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnDataPtr);
+                // bool returnStdArray = true;
+                bool returnStdArray = false;
+                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnStdArray);
                 // This returns the tuple (facet, dxFraction, facet_normal_vectors[facet])
                 // Extract the values from the tuple:
                 auto cFacet = facetTupl[0].cast<int>();
@@ -1734,9 +1734,9 @@ namespace dnt
                 dx[0] = pCoord2[0] - pCoord2[3];
                 dx[1] = pCoord2[1] - pCoord2[4];
 
-                // bool returnDataPtr = true;
-                bool returnDataPtr = false;
-                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnDataPtr);
+                // bool returnStdArray = true;
+                bool returnStdArray = false;
+                py::tuple facetTupl = find_facet(pmesh_M, &pCoord2[pDim], dx, pCellIndex, returnStdArray);
                 // This returns the tuple (facet, dxFraction, facet_normal_vectors[facet])
                 // Extract the values from the tuple:
                 auto cFacet = facetTupl[0].cast<int>();

@@ -38,9 +38,9 @@ class TestParticleTrajectory(unittest.TestCase):
     
     def setUp(self):
 
-        self.plot_mesh = False
-        self.plot_results = False
-        self.plot_phase_space = False
+        self.plot_mesh = True
+        self.plot_results = True
+        self.plot_phase_space = True
 
         # Turn plots off if there's no display.
         if os.environ.get('DISPLAY') is None:
@@ -73,7 +73,7 @@ class TestParticleTrajectory(unittest.TestCase):
         pin.coordinate_system = 'cartesian_xy'
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
-        pin.use_cpp_integrators = False
+        pin.use_cpp_integrators = True
         
         # Define an electron species called 'trajelectrons'.
         speciesName = 'trajelectrons'
@@ -209,6 +209,11 @@ class TestParticleTrajectory(unittest.TestCase):
 # Can this be attached to Particle_C after Particle_C construction? YES
         pmesh_M = UserMesh2DCirc_C(umi, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plot_mesh)
 
+        # 1. Attach the particle mesh to p_P.
+        # 2. Attach the Python particle movers.
+        # 3. Compute the cell-neighbors and facet-normals for the particle movers.
+        self.particle_P.initialize_particle_mesh(pmesh_M)
+        
         self.particle_P.pmesh_M = pmesh_M
 
         ### Field creation
@@ -238,19 +243,21 @@ class TestParticleTrajectory(unittest.TestCase):
 
         ## Particle boundary-conditions
 
-        # UserParticleBoundaryFunctions_C is where the facet-crossing callback
-        # functions are defined.
-#        userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # LHS is an abbreviation
-        userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(self.particle_P.position_coordinates, self.particle_P.dx)
-
-
-        # Make the particle-mesh boundary-conditions object and add it
-        # to the particle object.
+        # Import C++ particle boundary-condition functions
+        userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xy_solib"
+        infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
+        print(infoMsg)
+        userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
+        # Call the constructor to make a UserParticleBoundaryFunctions object
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(self.particle_P.position_coordinates)
+        # Create the map from mesh facets to particle callback functions:
         spNames = self.particle_P.species_names
-#        pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFnsClass, print_flag=False)
-        pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, pmesh_M, userPBndFns, print_flag=False)
+        pmeshBCs = self.particle_P.particle_solib.ParticleMeshBoundaryConditions(spNames, pmesh_M, userPBndFns, print_flag=False)        
+
+        # Add pmeshBCs to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs
 
+        
         ### Create input for a particle trajectory object
 
         # Use an input object to collect initialization data for the trajectory object
@@ -283,8 +290,6 @@ class TestParticleTrajectory(unittest.TestCase):
     def test_1_trajectory_init(self):
         """ Check that the trajectory variable names are saved correctly in
             the trajectory data_list.
-
-            Only trajelectrons are created.
 
         """
 
@@ -331,8 +336,6 @@ class TestParticleTrajectory(unittest.TestCase):
             Check the final particle position.
 
             The mesh is a 2D quarter circle.
-
-            Only trajelectrons are created.
         """
 
         printInfoStarting = False
@@ -451,9 +454,6 @@ class TestParticleTrajectory(unittest.TestCase):
     def test_3_out_of_bounds(self):
         """ Record and plot the requested trajectory data.
             Make the particles leave the mesh.
-
-            Only trajelectrons are created.
-
         """
 
         printInfoAdvance = False
@@ -580,9 +580,6 @@ class TestParticleTrajectory(unittest.TestCase):
     def test_4_reflect_at_boundaries(self):
         """ Record and plot the requested trajectory data.
             Make the particles reflect off the inner boundary.
-
-            Only test_electrons are created.
-
         """
 
         printInfoAdvance = False

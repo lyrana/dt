@@ -98,6 +98,27 @@ namespace dnt
       int crossings_;             // 8 i4   48
 
     public:
+
+      //! Specularly reflect a particle from a surface.
+      /*!
+
+        The surface is specified by the unit normal surface_normal.
+
+        \param[in] surface_normal   Unit normal to the reflecting surface.
+        \param[in] dx               Displacement of particle through the surface.
+
+       */
+      inline void reflect_from_surface(py::array_t<double> &surface_normal, const double dx[])
+      {
+        auto sn = surface_normal.unchecked<1>();
+
+        auto n_dot_dx = sn[0] * dx[0];
+        auto n_dot_u = sn[0] * ux_;
+
+        x_ -= 2.0 * n_dot_dx * sn[0];
+        ux_ -= 2.0 * n_dot_u * sn[0];
+      }
+
       // Overload 2 versions of set_from_list_or_tuple()
       
       //! Set the member values from a py::tuple

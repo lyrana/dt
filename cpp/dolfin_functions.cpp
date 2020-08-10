@@ -80,11 +80,11 @@ namespace dnt
     // Get attributes needed from Mesh_C arg
     auto mesh = mesh_M.attr("mesh").cast<dolfin::Mesh>();
 
-    // The facet-normals are in mesh_M.attr("mea_object"). The array
-    // containing them is templated on the number of facets in the cell, so they are
-    // accessed below, depending on the cell type. The vectors are laid out as n0,
-    // n1, ... to the number of facets, where the n's are the normals. The normals
-    // are 3-vectors, regardless of the geometric dimension.
+    // The facet-normals are in mesh_M.attr("mea_object"). The array containing them
+    // is templated on the number of facets in the cell, so they are accessed below,
+    // depending on the cell type. The vectors are laid out as n0, n1, ..., up to the
+    // number of facets, where the ni's are the normals. The normals are 3-vectors,
+    // regardless of the geometric dimension.
     size_t cellFNVdim = 3; // Number of doubles per facet-normal vector (FNV).
     
     auto NO_FACET = mesh_M.attr("NO_FACET").cast<int>(); // NO_FACET is a static class constant
