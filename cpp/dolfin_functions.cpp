@@ -293,7 +293,7 @@ namespace dnt
 //                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
-                std::cout << "dolfin_functions.cpp::find_facet 0: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+                std::cout << "dolfin_functions.cpp::find_facet 4: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
               distanceToFacet = -distanceToFacet;
               }
             if (distanceToFacet < dxFraction*n0DotDx)
@@ -318,7 +318,7 @@ namespace dnt
 //                print "f1 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
-                std::cout << "dolfin_functions.cpp::find_facet 1: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+                std::cout << "dolfin_functions.cpp::find_facet 5: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
               distanceToFacet = -distanceToFacet;
               }
             if (distanceToFacet < dxFraction*n1DotDx)
@@ -343,7 +343,7 @@ namespace dnt
 //                print "f2 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
-                std::cout << "dolfin_functions.cpp::find_facet 2: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+                std::cout << "dolfin_functions.cpp::find_facet 6: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
               distanceToFacet = -distanceToFacet;
               }
             if (distanceToFacet < dxFraction*n2DotDx)
@@ -400,7 +400,7 @@ namespace dnt
             //            std::cout << "f0 find_facet(): vecToFacet= " << vecToFacet[0] <<  " distanceToFacet= " << distanceToFacet << std::endl;
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
-                std::cout << "dolfin_functions.cpp::find_facet 0: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+                std::cout << "dolfin_functions.cpp::find_facet 7: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
               distanceToFacet = -distanceToFacet;
               }
             if (distanceToFacet < dxFraction*n0DotDx)
@@ -436,7 +436,7 @@ namespace dnt
             //            std::cout << "f1 find_facet(): vecToFacet= " << vecToFacet[0] << " distanceToFacet= " << distanceToFacet << std::endl;
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
-                std::cout << "dolfin_functions.cpp::find_facet 1: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+                std::cout << "dolfin_functions.cpp::find_facet 8: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
               distanceToFacet = -distanceToFacet;
               }
             if (distanceToFacet < dxFraction*n1DotDx)

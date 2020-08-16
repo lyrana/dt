@@ -451,6 +451,7 @@ class TestParticleTrajectory(unittest.TestCase):
     def test_3_out_of_bounds(self):
         """ Record and plot the requested trajectory data.
             Make the particles leave the mesh.
+            The particles are absorbed at the inner boundary.
 
             Only trajelectrons are created.
 

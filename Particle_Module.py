@@ -1609,7 +1609,7 @@ class Particle_C(object):
                 dtRemaining = dt
                 # TODO: fix the CPP version to allow DnT_pstruct args of any dimension.
                 while not pmesh_M.is_inside_cell(psegOut[ipOut], pCellIndex):
-                    # The particle has left this cell.  We
+                    # The particle is not in this cell.  We
                     # need to track it across each facet in case
                     # there's a boundary-condition on that facet.
                     #                        print fncName, "particle has migrated"

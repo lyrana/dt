@@ -471,6 +471,7 @@ namespace dnt
                     if (mFacet == (size_t)mLastFacet) // If the particle has crossed the same facet twice in succession, there's an error:
                       {
                         std::string errorMsg = "In advance_charged_species_in_E_field(): The mesh index of the facet crossed is "  + std::to_string(mFacet) + ", the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!";
+                        std::cout << errorMsg << std::endl;                        
                         exit(EXIT_FAILURE);
                       }
                     else // The particle has crossed a new facet.
@@ -544,6 +545,7 @@ namespace dnt
                 else // The crossed facet is NO_FACET, which shouldn't happen.
                   {
                     std::string errorMsg = "In advance_charged_species_in_E_field_cartesian_x(): The cell index of the facet crossed is NO_FACET (" + std::to_string(cFacet) + "). This should not happen since the particle has left its initial cell!";
+                    std::cout << errorMsg << std::endl;                    
                     exit(EXIT_FAILURE);
                   } // END: if (cFacet != NO_FACET)
 
@@ -928,7 +930,7 @@ namespace dnt
             
             while (! is_inside_vertices(mesh, vertices, particlePosition))
               {
-                //                std::cout << "Hello from call to is_inside_vertices" << std::endl;
+                // std::cout << "Hello from call to is_inside_vertices" << std::endl;
                 /*
                   The particle has left this cell.  We need to track it across each
                   facet in case there's a boundary-condition on that facet.
@@ -991,6 +993,7 @@ namespace dnt
                     if (mFacet == (size_t)mLastFacet) // If the particle has crossed the same facet twice in succession, there's an error:
                       {
                         std::string errorMsg = "In advance_charged_species_in_E_field(): The mesh index of the facet crossed is "  + std::to_string(mFacet) + ", the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!";
+                        std::cout << errorMsg << std::endl;                        
                         exit(EXIT_FAILURE);
                       }
                     else // The particle has crossed a new facet.
@@ -1059,6 +1062,7 @@ namespace dnt
                 else // The crossed facet is NO_FACET, which shouldn't happen.
                   {
                     std::string errorMsg = "In advance_charged_species_in_E_field_cartesian_xy(): The cell index of the facet crossed is NO_FACET (" + std::to_string(cFacet) + "). This should not happen since the particle has left its initial cell!";
+                    std::cout << errorMsg << std::endl;
                     exit(EXIT_FAILURE);
                   } // END: if (cFacet != NO_FACET)
 
@@ -1069,7 +1073,7 @@ namespace dnt
                 vertices = pcellPtr->entities(0);
                 
                 particlePosition[0] = psegOut[ipOut].x_;
-                //particlePosition[1] = psegOut[ipOut].y_;
+                particlePosition[1] = psegOut[ipOut].y_;
                 //particlePosition[2] = psegOut[ipOut].z_;
               } // END: while (! is_inside_vertices(mesh, vertices, particlePosition))
             delete pcellPtr; // Not needed past this point.
@@ -1395,6 +1399,7 @@ namespace dnt
                     if (mFacet == (size_t)mLastFacet) // If the particle has crossed the same facet twice in succession, there's an error:
                       {
                         std::string errorMsg = "In advance_neutral_species(): The mesh index of the facet crossed is "  + std::to_string(mFacet) + ", the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!";
+                        std::cout << errorMsg << std::endl;                        
                         exit(EXIT_FAILURE);
                       }
                     else // The particle has crossed a new facet.
@@ -1447,6 +1452,7 @@ namespace dnt
                 else // The crossed facet is NO_FACET, which shouldn't happen.
                   {
                     std::string errorMsg = "In move_neutral_particle_species(): The cell index of the facet crossed is NO_FACET (" + std::to_string(cFacet) + "). This should not happen since the particle has left its initial cell!";
+                    std::cout << errorMsg << std::endl;                    
                     exit(EXIT_FAILURE);
                   } // END: if (cFacet != NO_FACET)
 
@@ -1760,6 +1766,7 @@ namespace dnt
                     if (mFacet == (size_t)mLastFacet) // If the particle has crossed the same facet twice in succession, there's an error:
                       {
                         std::string errorMsg = "In advance_neutral_species(): The mesh index of the facet crossed is "  + std::to_string(mFacet) + ", the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!";
+                        std::cout << errorMsg << std::endl;                        
                         exit(EXIT_FAILURE);
                       }
                     else // The particle has crossed a new facet.
@@ -1812,6 +1819,7 @@ namespace dnt
                 else // The crossed facet is NO_FACET, which shouldn't happen.
                   {
                     std::string errorMsg = "In move_neutral_particle_species(): The cell index of the facet crossed is NO_FACET (" + std::to_string(cFacet) + "). This should not happen since the particle has left its initial cell!";
+                    std::cout << errorMsg << std::endl;
                     exit(EXIT_FAILURE);
                   } // END: if (cFacet != NO_FACET)
 

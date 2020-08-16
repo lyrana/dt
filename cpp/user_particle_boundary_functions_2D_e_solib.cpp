@@ -1,19 +1,19 @@
 /*! \file user_particle_boundary_functions_solib.cpp
 
-  \brief This file creates a shared library containing the Python bindings for particle call-back functions in UserParticleBoundaryFunctions.h.
+  \brief This file creates a shared library containing the Python bindings for particle call-back functions in UserParticleBoundaryFunctions_2D_e.h.
 
   This file contains the Python-to-C++ bindings allowing Python to access the C++
-  call-back functions in UserParticleBoundaryFunctions.h. These functions are usually
+  call-back functions in UserParticleBoundaryFunctions_2D_e.h. These functions are usually
   called directly from C++, but they are referenced in a Python dictionary in a
   ParticleMeshBoundaryConditions_C instance, which associates boundaries with
   call-back functions.
 
   \namespace dnt
 
-  \sa particle.h ParticleMeshBoundaryConditions.h UserParticleBoundaryFunctions.h
+  \sa particle.h ParticleMeshBoundaryConditions.h UserParticleBoundaryFunctions_2D_e.h
 
 */
-#include "UserParticleBoundaryFunctions.h"
+#include "UserParticleBoundaryFunctions_2D_e.h"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -25,7 +25,7 @@ namespace dnt {
   // Set the bit patterns for flags. These are static class members, so they're set
   // outside the ctor, in a C++ source file, so they're compiled only once. (If they're in
   // a header file that's included in more than one file, that generates an error)
-  // This variable is used in UserParticleBoundaryFunctions.h:
+  // This variable is used in UserParticleBoundaryFunctions_2D_e.h:
   int Pstruct<Ptype::PARTICLE_TYPE>::DELETE_FLAG = 0b1;  // the lowest bit is 1
   
   // The anonymous namespace limits the scope of the functions in it to this file.
@@ -45,7 +45,7 @@ namespace dnt {
 
       \return void
 
-      \sa UserParticleBoundaryFunctions.h, UserParticleBoundaryFunctions.cpp
+      \sa UserParticleBoundaryFunctions_2D_e.h, UserParticleBoundaryFunctions_2D_e.cpp
 
      */
     template <Ptype PT>

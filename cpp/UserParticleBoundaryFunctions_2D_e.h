@@ -124,9 +124,14 @@ inline double vec_inner_product(double const *const a, double const *const b)
           // works too:
           // bc_function_map.insert(std::make_pair("default_bc", &dnt::UserParticleBoundaryFunctions<PT>::default_bc));
 
-          // Reflect particles at rmin
+          // Absorb particles at rmin
           bcFunctionStr = "default_bc_at_rmin";
           bcFunctionPtr = &dnt::UserParticleBoundaryFunctions<PT>::default_bc_at_rmin; // We have to fully qualify the member function name.
+          bc_function_map.insert(std::make_pair(bcFunctionStr, bcFunctionPtr));
+
+          // Reflect test_electrons at rmin
+          bcFunctionStr = "bc_at_rmin_for_test_electrons";
+          bcFunctionPtr = &dnt::UserParticleBoundaryFunctions<PT>::bc_at_rmin_for_test_electrons; // We have to fully qualify the member function name.
           bc_function_map.insert(std::make_pair(bcFunctionStr, bcFunctionPtr));
           
         };

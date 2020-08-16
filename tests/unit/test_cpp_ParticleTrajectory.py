@@ -40,7 +40,7 @@ class TestParticleTrajectory(unittest.TestCase):
 
         self.plot_mesh = True
         self.plot_results = True
-        self.plot_phase_space = True
+        self.plot_phase_space = False
 
         # Turn plots off if there's no display.
         if os.environ.get('DISPLAY') is None:
@@ -244,7 +244,7 @@ class TestParticleTrajectory(unittest.TestCase):
         ## Particle boundary-conditions
 
         # Import C++ particle boundary-condition functions
-        userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xy_solib"
+        userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_2D_e_cartesian_xy_solib"
         infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
         print(infoMsg)
         userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)

@@ -222,6 +222,29 @@ namespace dnt
       int crossings_;             // 11 i4   72
 
     public:
+
+      //! Specularly reflect a particle from a surface.
+      /*!
+
+        The surface is specified by the unit normal surface_normal.
+
+        \param[in] surface_normal   Unit normal to the reflecting surface.
+        \param[in] dx               Displacement of particle through the surface.
+
+       */
+      inline void reflect_from_surface(py::array_t<double> &surface_normal, const double dx[])
+      {
+        auto sn = surface_normal.unchecked<1>();
+
+        auto n_dot_dx = sn[0]*dx[0] + sn[1]*dx[1];
+        auto n_dot_u = sn[0]*ux_ + sn[1]*uy_;
+
+        x_ -= 2.0 * n_dot_dx * sn[0];
+        y_ -= 2.0 * n_dot_dx * sn[1];
+        ux_ -= 2.0 * n_dot_u * sn[0];
+        uy_ -= 2.0 * n_dot_u * sn[1];
+      }
+      
       //! Set the member values from a tuple
       void set_from_tuple(py::tuple p)
       {
@@ -294,8 +317,17 @@ namespace dnt
       // Declare the << operator for the Ptype::cartesian_xy data type. This is used in print_pstructarray()
       friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_xy>& p)
       {
-        os << "Printing a Ptype::cartesian_xy. fixme";
-        return os;
+        return os <<   "x=" << p.x_
+                  << ", y=" << p.y_
+                  << ", x0=" << p.x0_
+                  << ", y0=" << p.y0_
+                  << ", ux=" << p.ux_
+                  << ", uy=" << p.uy_
+                  << ", weight=" << p.weight_
+                  << ", bitflags=" << p.bitflags_
+                  << ", cell_index=" << p.cell_index_
+                  << ", unique_ID=" << p.unique_ID_
+                  << ", crossings=" << p.crossings_;
       }
       
     };
@@ -331,6 +363,31 @@ namespace dnt
     int crossings_;             // 14 i4   96
 
   public:
+
+      //! Specularly reflect a particle from a surface.
+      /*!
+
+        The surface is specified by the unit normal surface_normal.
+
+        \param[in] surface_normal   Unit normal to the reflecting surface.
+        \param[in] dx               Displacement of particle through the surface.
+
+       */
+      inline void reflect_from_surface(py::array_t<double> &surface_normal, const double dx[])
+      {
+        auto sn = surface_normal.unchecked<1>();
+
+        auto n_dot_dx = sn[0]*dx[0] + sn[1]*dx[1] + sn[2]*dx[2];
+        auto n_dot_u = sn[0]*ux_ + sn[1]*uy_ + sn[2]*uz_;
+
+        x_ -= 2.0 * n_dot_dx * sn[0];
+        y_ -= 2.0 * n_dot_dx * sn[1];
+        z_ -= 2.0 * n_dot_dx * sn[2];
+        ux_ -= 2.0 * n_dot_u * sn[0];
+        uy_ -= 2.0 * n_dot_u * sn[1];
+        uz_ -= 2.0 * n_dot_u * sn[2];
+      }
+    
       //! Set the member values from a tuple
       void set_from_tuple(py::tuple p)
       {
