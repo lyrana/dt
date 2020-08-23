@@ -114,21 +114,42 @@ inline double vec_inner_product(double const *const a, double const *const b)
           std::string bcFunctionStr;
           CallbackFunctionPtr<PT> bcFunctionPtr;
 
+          std::string tab2{"\t\t"};
+          std::string tab3{"\t\t\t"};
+
           // Manually add each callback function defined in the "public" section
           // below to the map (bc_function_map).
+          std::string infoMsg;
+          infoMsg = tab2 + "{UserParticleBoundaryFunctions.h}UserParticleBoundaryFunctions(): Making the particle BC callback function map";
+          std::cout << infoMsg << std::endl;
           
+          // Absorb particles by default
           // Add the "default_bc" callback function using these three lines:
           bcFunctionStr = "default_bc";
           bcFunctionPtr = &dnt::UserParticleBoundaryFunctions<PT>::default_bc; // We have to fully qualify the member function name.
           bc_function_map.insert(std::make_pair(bcFunctionStr, bcFunctionPtr));
           // works too:
           // bc_function_map.insert(std::make_pair("default_bc", &dnt::UserParticleBoundaryFunctions<PT>::default_bc));
+          // Report this BC to stdout (check function definition below):
+          infoMsg = tab3 + "default_bc() is absorbing";
+          std::cout << infoMsg << std::endl;
 
-          // Reflect particles at rmin
+          // Absorb particles at rmin by default
           bcFunctionStr = "default_bc_at_rmin";
           bcFunctionPtr = &dnt::UserParticleBoundaryFunctions<PT>::default_bc_at_rmin; // We have to fully qualify the member function name.
           bc_function_map.insert(std::make_pair(bcFunctionStr, bcFunctionPtr));
-          
+          // Report this BC to stdout (check function definition below):
+          infoMsg = tab3 + "default_bc_at_rmin() is absorbing";
+          std::cout << infoMsg << std::endl;
+
+          // Reflect test_electrons at rmin
+          bcFunctionStr = "bc_at_rmin_for_test_electrons";
+          bcFunctionPtr = &dnt::UserParticleBoundaryFunctions<PT>::bc_at_rmin_for_test_electrons; // We have to fully qualify the member function name.
+          bc_function_map.insert(std::make_pair(bcFunctionStr, bcFunctionPtr));
+          // Report this BC to stdout (check function definition below):
+          infoMsg = tab3 + "bc_at_rmin_for_test_electrons() is reflecting";
+          std::cout << infoMsg << std::endl;
+
         };
       // UserParticleBoundaryFunctions(position_coordinates, dx):ENDDEF
 

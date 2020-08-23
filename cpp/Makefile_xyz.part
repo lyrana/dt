@@ -1,0 +1,73 @@
+# Make the Python module called particle_cartesian_..._solib
+
+# Specify the particle spatial coordinate system:
+
+coord_sys = cartesian_xyz
+
+# Shouldn't need to modify anything below.
+
+ifeq ($(coord_sys), cartesian_xyz)
+  THE_PARTICLE_TYPE = cartesian_xyz
+  PCOORDS_FLAG = -DPARTICLE_CARTESIAN_XYZ
+  PDIM_FLAG = -DPDIM=3
+endif
+
+ifeq ($(coord_sys), cartesian_xyz)
+  THE_PARTICLE_TYPE = cartesian_xyz
+  PCOORDS_FLAG = -DPARTICLE_CARTESIAN_XYZ
+  PDIM_FLAG = -DPDIM=3
+else ifeq ($(coord_sys), cartesian_xy)
+  THE_PARTICLE_TYPE = cartesian_xy
+  PCOORDS_FLAG = -DPARTICLE_CARTESIAN_XY
+  PDIM_FLAG = -DPDIM=2
+else ifeq ($(coord_sys), cartesian_x)
+  THE_PARTICLE_TYPE = cartesian_x
+  PCOORDS_FLAG = -DPARTICLE_CARTESIAN_X
+  PDIM_FLAG = -DPDIM=1
+endif
+
+# or:
+#THE_PARTICLE_TYPE = cartesian_xy
+#PCOORDS = -DCARTESIAN_XY
+# or:
+#THE_PARTICLE_TYPE = cartesian_x
+#PCOORDS = -DCARTESIAN_X
+
+THE_MODULE_PREFIX = particle
+THE_MODULE_SOURCE = $(THE_MODULE_PREFIX)_solib.cpp
+THE_MODULE_NAME = $(THE_MODULE_PREFIX)_$(THE_PARTICLE_TYPE)_solib
+
+DFLAGS = -DPARTICLE_TYPE=$(THE_PARTICLE_TYPE) -DMODULE_NAME=$(THE_MODULE_NAME) $(PCOORDS_FLAG) $(PDIM_FLAG)
+
+$(THE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: $(THE_MODULE_SOURCE) Pstruct.h SegmentedArrayPair.h particle.h ParticleMeshBoundaryConditions.h UserParticleBoundaryFunctions.h MeshEntityArrays.o dolfin_functions.o predicates.o
+	c++ $(DFLAGS) -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` $(THE_MODULE_SOURCE) MeshEntityArrays.o dolfin_functions.o predicates.o -o $@
+
+# Particle_Module.py imports the segmented_array_pair_solib.so library, as well as particle_xxx_solib.so
+SegmentedArrayPair.h:
+	@echo "*Run Makefile.sap first*"
+	@/bin/false
+
+dolfin_functions.o: dolfin_functions.cpp dolfin_functions.h
+	@echo "*Run Makefile.df first*"
+	@/bin/false
+
+predicates.o: predicates.cpp predicates.h
+	@echo "*Run Makefile.df first*"
+	@/bin/false
+
+MeshEntityArrays.o: MeshEntityArrays.h MeshEntityArrays.cpp
+	@echo "*Run Makefile.mea first*"
+	@/bin/false
+
+# p_pyb.cpython-36m-x86_64-linux-gnu.so: p_pyb.cpp particle.h
+# 	c++ -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden -I/usr/include/eigen3 `python3 -m pybind11 --includes` p_pyb.cpp -o p_pyb`python3-config --extension-suffix`
+
+
+#particle.o: particle.cpp particle.h SegmentedArrayPair.h Pstruct.h
+#	c++ -c -O3 -Wall -std=c++11 -fPIC -fvisibility=hidden `python3 -m pybind11 --includes` particle.cpp -o particle.o
+
+#test_segmented_arrays: test_segmented_arrays.cpp SegmentedArrayPair_Cpp.cpp
+#	c++ -O0 -g -Wall -std=c++11 -fPIC -fvisibility=hidden `python3-config --cflags` test_segmented_arrays.cpp -o test_segmented_arrays `python3-config --ldflags`
+
+clean:
+	/bin/rm $(THE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so

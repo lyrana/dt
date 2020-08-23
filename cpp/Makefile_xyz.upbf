@@ -22,13 +22,13 @@ endif
 # or:
 # THE_PARTICLE_TYPE = cartesian_x
 
-THE_MODULE_PREFIX = user_particle_boundary_functions_2D_e
+THE_MODULE_PREFIX = user_particle_boundary_functions
 THE_MODULE_SOURCE = $(THE_MODULE_PREFIX)_solib.cpp
 THE_MODULE_NAME = $(THE_MODULE_PREFIX)_$(THE_PARTICLE_TYPE)_solib
 
 DFLAGS = -DPARTICLE_TYPE=$(THE_PARTICLE_TYPE) -DMODULE_NAME=$(THE_MODULE_NAME) $(PDIM_FLAG)
 
-$(THE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: $(THE_MODULE_SOURCE) UserParticleBoundaryFunctions_2D_e.h
+$(THE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: $(THE_MODULE_SOURCE) UserParticleBoundaryFunctions.h
 	c++ $(DFLAGS) -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden `python3 -m pybind11 --includes` $(THE_MODULE_SOURCE) -o $@
 
 clean:

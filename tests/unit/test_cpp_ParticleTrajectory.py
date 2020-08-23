@@ -38,8 +38,8 @@ class TestParticleTrajectory(unittest.TestCase):
     
     def setUp(self):
 
-        self.plot_mesh = True
-        self.plot_results = True
+        self.plot_mesh = False
+        self.plot_results = False
         self.plot_phase_space = False
 
         # Turn plots off if there's no display.

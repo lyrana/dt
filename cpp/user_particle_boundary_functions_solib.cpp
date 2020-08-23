@@ -56,11 +56,14 @@ namespace dnt {
       // string "UserParticleBoundaryFunctions_"
       
       // std::string pyclass_name = std::string("UserParticleBoundaryFunctions_") + PT_str;
-      // Don't need the PT_str in the name since the MODULE_NAME has it:
+      // Don't need the PT_str in the name since the MODULE_NAME has it.
       std::string pyclass_name = std::string("UserParticleBoundaryFunctions");
       
-      // Create the Python binding for this class
-      py::class_<UPBF>(m, pyclass_name.c_str())
+      // Create the Python binding for the UserParticleBoundaryFunctions class.
+      // Use py:module_local() to make the class local to this module, i.e., a
+      // UserParticleBoundaryFunctions object made by this module has a different
+      // type than one made by a different module.
+      py::class_<UPBF>(m, pyclass_name.c_str(), py::module_local())
         
         // The ctor is UserParticleBoundaryFunctions(position_coordinates, dx)
         //    :param position_coordinates: Example: ['x', 'y',]
