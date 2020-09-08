@@ -199,7 +199,8 @@ from UserUnits_Module import MyPlasmaUnits_C
 from UserMesh_y_Fields_Spherical1D_Module import * # Provide input for mesh and fields
 
 # Provide the call-back functions for boundary-crossing particles:
-userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_x_solib"
+#userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_x_solib"
+userParticleBoundaryFunctionsSOlibName = "upbfs_spherical_r_solib"
 #infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
 #print(infoMsg)
 userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
@@ -224,8 +225,8 @@ plotInitialFields = False
 plotFieldsEveryTimestep = False # Plot phi and -E each timestep.
 plotFinalFields = False
 
-plotTrajectoriesOnMesh = False # Plot the trajectory particles on top of the mesh.
-plotTrajectoriesInPhaseSpace = False # Plot the 2D phase-space of trajectory particles.
+plotTrajectoriesOnMesh = True # Plot the trajectory particles on top of the mesh.
+plotTrajectoriesInPhaseSpace = True # Plot the 2D phase-space of trajectory particles.
 
 plotTimeHistories = False # Plot the recorded values vs. time.
 
@@ -357,7 +358,7 @@ ctrl.author = "tph"
 
 ##### CTRL.2. Timestepping
 
-ctrl.n_timesteps = 100 # 1000
+ctrl.n_timesteps = 28 # 1000 # 100
 
 ctrl.dt = 1.0e-6 # sec
 if ctrl.dt > scr.stable_dt_max:
@@ -419,7 +420,9 @@ ctrl.particle_output_file = ctrl.title + ".h5part"
 ctrl.particle_output_interval = 1
 # Available attributes: 'species_index' and any particle-record name
 # e.g., 'weight', 'bit-flags', 'cell-index', 'unique_ID', 'crossings'
-ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'weight', 'unique_ID', 'crossings')
+ctrl.particle_output_attributes = ('species_index', 'r', 'ur', 'weight', 'unique_ID', 'crossings')
+### Set parameters for writing trajectory output to an h5part file
+# Not here: ctrl.trajectory_output_file = ctrl.title + "_traj_" + ".h5part"
 
 if emitInput is True:
     print("")
@@ -485,10 +488,10 @@ pin = ParticleInput_C()
 # Initialize particles
 pin.precision = np_m.float64
 pin.particle_integration_loop = 'loop-on-particles'
-pin.coordinate_system = '1D-spherical-radius'
-pin.position_coordinates = ['x',] # determines the particle-storage dimensions. This
+pin.coordinate_system = 'spherical_r'
+pin.position_coordinates = ['r',] # determines the particle-storage dimensions. This
                                   # is doubled to get the phase-space coordinates
-pin.force_components = ['x',]
+pin.force_components = ['r',]
 pin.force_precision = np_m.float64
 pin.use_cpp_integrators =  True # Use C++ for particle-advance
 
@@ -918,14 +921,13 @@ trajin.extra_points = 1 # Set to 1 to make sure one boundary-crossing can be acc
 
 # Specify which particle variables to save.  This has the
 # form of a numpy dtype specification.
-# TODO. Use real 1D spherical coordinates(?).
-trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'crossings', 'Ex'], 'formats': [int, np_m.float32, np_m.float32, np_m.float32, int, np_m.float32]}
+trajin.charged_dict = {'names': ['step', 't', 'r', 'ur', 'crossings', 'Er'], 'formats': [int, np_m.float32, np_m.float32, np_m.float32, int, np_m.float32]}
 
 ########## TRJ.2. Create the trajectory object and attach it to the particle object.
 
 # Note: no trajectory storage is created until particles marked with TRAJECTORY_FLAG
 # are encountered.
-traj_T = Trajectory_C(trajin, ctrl, particle_P.charged_species, particle_P.neutral_species)
+traj_T = Trajectory_C(trajin, ctrl, particle_P.charged_species, particle_P.neutral_species, particle_P.species_index, particle_P.mass, particle_P.charge)
 
 ## Attach this to the particle object.
 particle_P.traj_T = traj_T
@@ -1203,7 +1205,7 @@ if ctrl.cell_number_density_output_interval is not None:
         cellNumberDensityDict_F[s].function.rename(s+"-n", s + "_label")
     
 # Open the particle output file and write the header
-if ctrl.particle_output_interval is not None:
+if ctrl.particle_output_file is not None:
     particle_P.initialize_particle_output_file(ctrl)
 
 ##### INIT.2.1. Recalculate the initial electric field

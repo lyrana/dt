@@ -768,3 +768,7 @@ template void dnt::interpolate_field_to_points<>(dolfin::Function*,
                                                  Pstruct<Ptype::cartesian_x>* points,
                                                  py::ssize_t,
                                                  py::array_t<double>);
+template void dnt::interpolate_field_to_points<>(dolfin::Function*,
+                                                 Pstruct<Ptype::spherical_r>* points,
+                                                 py::ssize_t,
+                                                 py::array_t<double>);

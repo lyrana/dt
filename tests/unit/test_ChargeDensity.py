@@ -856,7 +856,7 @@ class TestChargeDensity(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName, '('+__file__+')')
         
-        coordinateSystem = '1D-spherical-radius'
+        coordinateSystem = 'spherical_r'
 
         ########## Numerical Mesh ##########
 
@@ -1061,7 +1061,7 @@ class TestChargeDensity(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName, '('+__file__+')')
         
-        coordinateSystem = '1D-spherical-radius'
+        coordinateSystem = 'spherical_r'
 
         ########## Numerical Mesh ##########
 

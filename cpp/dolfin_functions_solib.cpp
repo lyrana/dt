@@ -68,6 +68,8 @@ namespace dnt {
           });
     */
 
+    // Note: We don't need these bindings unless calling the interpolators from Python.
+    
     //
     // Versions for py::array_t<Pstruct<Ptype::PARTICLE_TYPE>, 0> points, i.e., points is a Numpy array.
     //

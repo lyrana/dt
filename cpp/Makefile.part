@@ -10,12 +10,6 @@ ifeq ($(coord_sys), cartesian_xyz)
   THE_PARTICLE_TYPE = cartesian_xyz
   PCOORDS_FLAG = -DPARTICLE_CARTESIAN_XYZ
   PDIM_FLAG = -DPDIM=3
-endif
-
-ifeq ($(coord_sys), cartesian_xyz)
-  THE_PARTICLE_TYPE = cartesian_xyz
-  PCOORDS_FLAG = -DPARTICLE_CARTESIAN_XYZ
-  PDIM_FLAG = -DPDIM=3
 else ifeq ($(coord_sys), cartesian_xy)
   THE_PARTICLE_TYPE = cartesian_xy
   PCOORDS_FLAG = -DPARTICLE_CARTESIAN_XY

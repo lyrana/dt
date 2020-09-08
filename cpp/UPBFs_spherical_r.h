@@ -1,9 +1,9 @@
-/*! \file UserParticleBoundaryFunctions_2D_e.h
+/*! \file UPBFs_spherical_r.h
 
   \brief This file has C++ callback functions to treat boundary-crossing particles.
 
   This is the source code for a C++ implementation of the Python class
-  UserParticleBoundaryFunctions_C in UserParticles_2D_e.py.
+  UserParticleBoundaryFunctions_C in UserParticles_1D.py.
 
   Below, the user can define, in order of increasing specificity:
     1. A global default callback function "default_bc()"
@@ -19,19 +19,18 @@
   user_particle_boundary_functions_solib.so.
 
   \namespace dnt
-  \sa ParticleMeshBoundaryConditions.h user_particle_boundary_functions.solib.cpp
+  \sa ParticleMeshBoundaryConditions.h upbfs_spherical_r.solib.cpp
 
 */
 
-#ifndef USERPARTICLEBOUNDARYFUNCTIONS_2D_E_H
-#define USERPARTICLEBOUNDARYFUNCTIONS_2D_E_H
+#ifndef UPBFSSPHERICALR_H
+#define UPBFSSPHERICALR_H
 
 #include <iostream>
 // uncomment to disable assert()
 // #define NDEBUG
 #include <cassert>
 #include "Pstruct.h"
-//#include "ParticleMeshBoundaryConditions.h"
 
 namespace dnt
 {
@@ -131,23 +130,15 @@ inline double vec_inner_product(double const *const a, double const *const b)
           // works too:
           // bc_function_map.insert(std::make_pair("default_bc", &dnt::UserParticleBoundaryFunctions<PT>::default_bc));
           // Report this BC to stdout (check function definition below):
-          infoMsg = tab3 + "default_bc() is absorbing";
+          infoMsg = tab3 + "\"default_bc() is absorbing\"";
           std::cout << infoMsg << std::endl;
 
-          // Absorb particles at rmin by default
+          // Reflect particles at rmin by default
           bcFunctionStr = "default_bc_at_rmin";
           bcFunctionPtr = &dnt::UserParticleBoundaryFunctions<PT>::default_bc_at_rmin; // We have to fully qualify the member function name.
           bc_function_map.insert(std::make_pair(bcFunctionStr, bcFunctionPtr));
           // Report this BC to stdout (check function definition below):
-          infoMsg = tab3 + "default_bc_at_rmin() is absorbing";
-          std::cout << infoMsg << std::endl;
-
-          // Reflect test_electrons at rmin
-          bcFunctionStr = "bc_at_rmin_for_test_electrons";
-          bcFunctionPtr = &dnt::UserParticleBoundaryFunctions<PT>::bc_at_rmin_for_test_electrons; // We have to fully qualify the member function name.
-          bc_function_map.insert(std::make_pair(bcFunctionStr, bcFunctionPtr));
-          // Report this BC to stdout (check function definition below):
-          infoMsg = tab3 + "bc_at_rmin_for_test_electrons() is reflecting";
+          infoMsg = tab3 + "\"default_bc_at_rmin() is reflecting\"";
           std::cout << infoMsg << std::endl;
 
         };
@@ -186,7 +177,7 @@ inline double vec_inner_product(double const *const a, double const *const b)
       void default_bc(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal)
       {
 
-        //std::cout << "Hello from {UserParticleBoundaryFunctions_2D_e.h}default_bc" << std::endl;
+        //std::cout << "Hello from {UserParticleBoundaryFunctions.h}default_bc" << std::endl;
 
         // Set the delete flag on the particle
         p.bitflags_ = p.bitflags_ | Pstruct<PT>::DELETE_FLAG;
@@ -211,31 +202,11 @@ inline double vec_inner_product(double const *const a, double const *const b)
       void default_bc_at_rmin(Pstruct<PT> &p, py::str &species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double> &facet_normal)
       {
 
-        //std::cout << "Hello from {UserParticleBoundaryFunctions_2D_e.h}default_bc_at_rmin" << std::endl;
-
-        // Set the delete flag on the particle
-        p.bitflags_ = p.bitflags_ | Pstruct<PT>::DELETE_FLAG;
-
-        // We might want to count the number/charge/energy of deleted particles here
-        // before returning.
-        
-        return;
-      }
-      // void default_bc_at_rmin(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal): ENDDEF
-
-      //! Boundary condition for a test_electron incident on rmin is to reflect the particle after accounting for it.
-      /*!
-
-        The class provides scratch space for this function.
-
-        \param[in] double[] dxOutside: The part of the move-vector past the
-                                       reflecting surface.
-
-      */
-      void bc_at_rmin_for_test_electrons(Pstruct<PT> &p, py::str &species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double> &facet_normal)
-      {
-
-        //std::cout << "Hello from {UserParticleBoundaryFunctions_2D_e.h}bc_at_rmin_for_test_electrons" << std::endl;
+        //std::cout << "Hello from {UserParticleBoundaryFunctions.h}bc_at_rmin_for_test_electrons" << std::endl;
+        if (p.unique_ID_ == 500)
+          {
+            std::cout << "500: " << p << std::endl;        
+          }
 
         // Scratch space
         // pcoord can hold: x,y,z, (or subset)
@@ -251,7 +222,7 @@ inline double vec_inner_product(double const *const a, double const *const b)
         
         return;
       }
-      // void bc_at_rmin_for_test_electrons(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal): ENDDEF
+      // void default_bc_at_rmin(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal): ENDDEF
       
     };
   // class UserParticleBoundaryFunctions: ENDCLASS

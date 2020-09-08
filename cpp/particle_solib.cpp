@@ -50,6 +50,8 @@ namespace dnt {
   int Pstruct<Ptype::cartesian_xy>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit 
   int Pstruct<Ptype::cartesian_x>::DELETE_FLAG = 0b1;  // the lowest bit is 1
   int Pstruct<Ptype::cartesian_x>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit
+  int Pstruct<Ptype::spherical_r>::DELETE_FLAG = 0b1;  // the lowest bit is 1
+  int Pstruct<Ptype::spherical_r>::TRAJECTORY_FLAG = 0b1 << 1; // the second lowest bit
   
   // Create a variable 'm' of type py::module
   // MODULE_NAME can be specified using -DMODULE_NAME= in the makefile.
@@ -71,6 +73,7 @@ namespace dnt {
     makeParticleMeshBoundaryConditions<Ptype::PARTICLE_TYPE>(m,  TOSTRING(PARTICLE_TYPE));
 
     // General version
+    // The number in <> brackets is the number of facets that a mesh-cell has.
     
     //if (strcmp(TOSTRING(PARTICLE_TYPE), "cartesian_xyz") == 0)
 #ifdef PARTICLE_CARTESIAN_XYZ
@@ -88,6 +91,10 @@ namespace dnt {
 #endif
 
 #ifdef PARTICLE_CARTESIAN_X
+    m.def("advance_charged_species_in_E_field_2_facets", &ADVANCE_CHARGED_SPECIES_IN_E_FIELD_(PARTICLE_TYPE)<2>, py::arg("particle_P"), py::arg("species_name"), py::arg("ctrl"), py::arg("neg_E_field") = nullptr, py::arg("external_E_field") = nullptr, py::arg("accel_only") = false);
+#endif
+
+#ifdef PARTICLE_SPHERICAL_R
     m.def("advance_charged_species_in_E_field_2_facets", &ADVANCE_CHARGED_SPECIES_IN_E_FIELD_(PARTICLE_TYPE)<2>, py::arg("particle_P"), py::arg("species_name"), py::arg("ctrl"), py::arg("neg_E_field") = nullptr, py::arg("external_E_field") = nullptr, py::arg("accel_only") = false);
 #endif
     

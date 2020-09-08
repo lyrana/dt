@@ -53,6 +53,9 @@ class TestParticleTrajectory(unittest.TestCase):
 
         self.ctrl = DTcontrol_C()
 
+        self.ctrl.title = "test_ParticleTrajectory"
+        self.ctrl.author = "tph"
+        
         self.ctrl.dt = 1.0e-6
         self.ctrl.MAX_FACET_CROSS_COUNT = 100
         
@@ -60,8 +63,11 @@ class TestParticleTrajectory(unittest.TestCase):
         self.ctrl.timeloop_count = 0
         self.ctrl.time = 0.0
 
-        # A 'None' value means that the field IS APPLIED
+        # This gives a list of species to apply E to.
+        # 'None' value means that the field is applied to ALL species
         self.ctrl.apply_solved_electric_field = None
+
+        self.ctrl.write_trajectory_files = True
         
         ### Particle species input
 
@@ -79,14 +85,14 @@ class TestParticleTrajectory(unittest.TestCase):
         speciesName = 'trajelectrons'
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
-        dynamics = 'explicit'
+        dynamics = 'charged'
         trajelectrons_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Define an electron species called 'test_electrons'.
         speciesName = 'test_electrons'
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
-        dynamics = 'explicit'
+        dynamics = 'charged'
         test_electrons_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add the electrons to particle input
@@ -238,7 +244,7 @@ class TestParticleTrajectory(unittest.TestCase):
                                           element_degree=phi_element_degree-1,
                                           field_type='vector')
 
-        file = df_m.File("negE2D_crossed-2016.xml") # Use a frozen version.
+        file = df_m.File("negE2D_crossed-2016.xml") # Use a frozen version instead of the one created each time test_FieldSolve.py runs.
         file >> self.neg_electric_field.function
 
         ## Particle boundary-conditions
@@ -257,7 +263,6 @@ class TestParticleTrajectory(unittest.TestCase):
         # Add pmeshBCs to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs
 
-        
         ### Create input for a particle trajectory object
 
         # Use an input object to collect initialization data for the trajectory object
@@ -291,6 +296,8 @@ class TestParticleTrajectory(unittest.TestCase):
         """ Check that the trajectory variable names are saved correctly in
             the trajectory data_list.
 
+            Only trajelectrons are created.
+
         """
 
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
@@ -304,7 +311,7 @@ class TestParticleTrajectory(unittest.TestCase):
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)
         self.particle_P.traj_T = traj_T
 
         # Create particles that are selected for trajectories.
@@ -325,7 +332,7 @@ class TestParticleTrajectory(unittest.TestCase):
             print("  to record values of", p_P.traj_T.data_list[sp][0].dtype.names)
             gotList = p_P.traj_T.data_list[sp][0].dtype.names
             for i in range(len(expectedList)):
-                self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for an explicit particle")
+                self.assertEqual(gotList[i], expectedList[i], msg = "Trajectory variable is not correct for a charged particle")
 
         return
 #    def test_1_trajectory_init(self):ENDDEF
@@ -336,6 +343,8 @@ class TestParticleTrajectory(unittest.TestCase):
             Check the final particle position.
 
             The mesh is a 2D quarter circle.
+
+            Only trajelectrons are created.
         """
 
         printInfoStarting = False
@@ -351,7 +360,8 @@ class TestParticleTrajectory(unittest.TestCase):
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)
+
         self.particle_P.traj_T = traj_T
 
         # Create particles that are selected for trajectories.
@@ -454,6 +464,10 @@ class TestParticleTrajectory(unittest.TestCase):
     def test_3_out_of_bounds(self):
         """ Record and plot the requested trajectory data.
             Make the particles leave the mesh.
+            The particles are absorbed at the inner boundary.
+
+            Only trajelectrons are created.
+
         """
 
         printInfoAdvance = False
@@ -472,7 +486,8 @@ class TestParticleTrajectory(unittest.TestCase):
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)
+
         self.particle_P.traj_T = traj_T
 
         # Create particles that are selected for trajectories.
@@ -580,6 +595,9 @@ class TestParticleTrajectory(unittest.TestCase):
     def test_4_reflect_at_boundaries(self):
         """ Record and plot the requested trajectory data.
             Make the particles reflect off the inner boundary.
+
+            Only test_electrons are created.
+
         """
 
         printInfoAdvance = False
@@ -597,7 +615,8 @@ class TestParticleTrajectory(unittest.TestCase):
         ## Create the trajectory object and attach it to the particle object.
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
-        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)
+
         self.particle_P.traj_T = traj_T
 
         # Create particles that are selected for trajectories.
@@ -645,6 +664,10 @@ class TestParticleTrajectory(unittest.TestCase):
         if p_P.traj_T is not None:
             p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
+        # Write the particle trajectories to H5Part files
+        if self.ctrl.write_trajectory_files is True:
+            p_P.traj_T.write_trajectories_to_files()
+            
         # Check the results
 
         # The expected results from ParticleNonuniformE.ods

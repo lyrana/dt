@@ -1,9 +1,14 @@
 # timestep, n_timesteps, 
 # things you need for debugging, like procid
 
-#__version__ = 0.1
-#__author__ = 'Copyright (C) 2016 L. D. Hughes'
-#__all__ = []
+__version__ = 0.1
+__author__ = 'Copyright (C) 2016 L. D. Hughes'
+__all__ = ['DTcontrol_C',
+           'DToutput_C',
+           'DTscratch_C',
+           ]
+
+# class DTscratch_C(object):
 
 import sys
 import numpy as np_m
@@ -72,6 +77,8 @@ class DTcontrol_C(object):
         self.particle_output_interval = None
         self.particle_output_attributes = None
 #        self.particle_output_attribute_dtypes = None
+
+        self.trajectory_output_file = None
 
         # Run information
 

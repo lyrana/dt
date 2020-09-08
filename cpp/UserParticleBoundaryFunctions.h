@@ -223,7 +223,7 @@ inline double vec_inner_product(double const *const a, double const *const b)
       }
       // void default_bc_at_rmin(Pstruct<PT>& p, py::str& species_name, const int facet_index, const double dx[], const double dx_fraction, py::array_t<double>& facet_normal): ENDDEF
 
-      //! Default boundary condition for a particle incident on rmin is to reflect the particle after accounting for it.
+      //! Boundary condition for test_electrons incident on rmin is to reflect the particle after accounting for it.
       /*!
 
         The class provides scratch space for this function.

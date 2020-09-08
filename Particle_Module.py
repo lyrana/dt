@@ -84,7 +84,7 @@ class ParticleSpecies_C(object):
            :cvar double charge: The electric charge of a single physical particle.
            :cvar double mass: The mass of a single physical particle.
            :cvar str dynamics: A string identifying how particles are pushed.  Valid
-                               values are 'explicit' and 'implicit'.
+                               values are XX 'explicit' and 'implicit'.XX correct this.
 
            XX:cvar str integrator_name: A string identifying the particle-advance algorithm
                                       for this species. Valid values are
@@ -169,17 +169,19 @@ class Particle_C(object):
         
         # The spatial coordinates of a particle
 #        self.position_coordinates = particle_input.position_coordinates
-        if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
+        if self.coordinate_system == 'cartesian_x':
             self.position_coordinates = ['x',]
+        elif self.coordinate_system == 'spherical_r':
+            self.position_coordinates = ['r',]
         elif self.coordinate_system == 'cartesian_xy':
             self.position_coordinates = ['x', 'y',]
         elif self.coordinate_system == 'cartesian_xyz':
             self.position_coordinates = ['x', 'y', 'z']
         elif self.coordinate_system is None:
-            errorMsg = "Specify a coordinate system for the particles!"
+            errorMsg = "\t\"Specify a coordinate system for the particles!\""
             raise RuntimeError(errorMsg) # sys.exit(errorMsg)
         else:
-            errorMsg = "Unknown particle coordinate system " + self.coordinate_system
+            errorMsg = "\t\"Unknown particle coordinate system " + self.coordinate_system + "!\""
             raise RuntimeError(errorMsg) # sys.exit(errorMsg)
 
         self.particle_dimension = len(self.position_coordinates)
@@ -317,7 +319,7 @@ class Particle_C(object):
 
             # If using C++ SAPs:
             if self.use_cpp_integrators is None:
-                errorMsg = "%s\tExiting because you did not specify a value (True/False) for use_cpp_integrators!" % (fncName)
+                errorMsg = "%s\t\"Specify a value (True/False) for use_cpp_integrators!\"" % (fncName)
                 raise RuntimeError(errorMsg) # sys.exit(errorMsg)
                 
             if self.use_cpp_integrators is True:
@@ -335,12 +337,18 @@ class Particle_C(object):
                 # Use the C++ SegmentedArrayPair class for particle storage.  This
                 # avoids having to call back to Python from C++ to manage the
                 # storage.
-                if self.coordinate_system == 'cartesian_x' or self.coordinate_system == '1D-spherical-radius':
+                if self.coordinate_system == 'cartesian_x':
                     if "particle_cartesian_x_solib" not in sys.modules:
                         infoMsg = "%s\t\"Importing particle_cartesian_x_solib\"" % (fncName)
                         print(infoMsg)
                     import particle_cartesian_x_solib as particleSOlib
                     self.sap_dict[speciesName] = sapSOlib.SegmentedArrayPair_cartesian_x(self.SEGMENT_LENGTH)
+                elif self.coordinate_system == 'spherical_r':
+                    if "particle_spherical_r_solib" not in sys.modules:
+                        infoMsg = "%s\t\"Importing particle_spherical_r_solib\"" % (fncName)
+                        print(infoMsg)
+                    import particle_spherical_r_solib as particleSOlib
+                    self.sap_dict[speciesName] = sapSOlib.SegmentedArrayPair_spherical_r(self.SEGMENT_LENGTH)
                 elif self.coordinate_system == 'cartesian_xy':
                     if "particle_cartesian_xy_solib" not in sys.modules:                    
                         infoMsg = "%s\t\"Importing particle_cartesian_xy_solib\"" % (fncName)
@@ -423,7 +431,10 @@ class Particle_C(object):
         self.h5_step_counter = 0
         # This is used to avoid a second write on the same timestep
         self.h5_last_write_step = -1
-        # A scratch buffer for H5Part. It's length may need to increase later
+        # Allocate a buffer for writing a H5Part file. It has to be long enough to hold
+        # one particle attribute (e.g., 'x') for all the particles on the local processor.
+        # At first, it's long enough to hold 1 attribute for 1 particle segment for each
+        # species. It's length is increased as needed.
         self.h5_buffer_length = self.number_of_species*self.SEGMENT_LENGTH
         self.h5_buffer = np_m.empty(self.h5_buffer_length, dtype=np_m.float64)
 
@@ -474,7 +485,7 @@ class Particle_C(object):
                 time = 0.0
                 ipFunc(time, ipRegion, ipParams, neg_E_field)
             else:
-                errorMsg = fncName + "\tDnT ERROR: Unknown initial_distribution_type %s for species %s" % (initial_distribution_type, s)
+                errorMsg = fncName + "\t\"Unknown initial_distribution_type %s for species %s!\"" % (initial_distribution_type, s)
                 raise RuntimeError(errorMsg) # sys.exit(errorMsg)
 
         # for sp in self.species_names:
@@ -619,7 +630,7 @@ class Particle_C(object):
             if p['bitflags'] & self.TRAJECTORY_FLAG != 0:
                 if self.traj_T is not None:
                     if self.charge[species_name] != 0.0:
-                        particleType = 'explicit'
+                        particleType = 'charged'
                     else:    
                         particleType = 'neutral'
                     self.traj_T.create_trajectory(species_name, fullIndex, particleType, unique_id_int=p['unique_ID'])
@@ -826,7 +837,7 @@ class Particle_C(object):
 #                        print('pseg[ip] =', pseg[ip])
                         if not self.pmesh_M.is_inside_cell(pseg[ip], pseg[ip]['cell_index']):
 #                        if not self.pmesh_M.is_inside_CPP(pseg[ip], pseg[ip]['cell_index']):
-                            errorMsg = "%s\tDnT ERROR: is_inside_cell() check failed for particle %d" % (fncName, ip)
+                            errorMsg = "%s\t\"is_inside_cell() check failed for particle %d. This should not happen!\"" % (fncName, ip)
                             raise RuntimeError(errorMsg) # sys.exit(errorMsg)
 #                        else:
 #                            print fncName, "*** is_inside_cell check passes for particle", pseg[ip], "***"
@@ -871,7 +882,7 @@ class Particle_C(object):
                 self.pmesh_M.compute_cell_neighbors_dict()
                 self.pmesh_M.compute_cell_volume_dict() # Compute cell volumes indexed by cell index
         else:
-            errorMsg = "%s\tDnT: No particle mesh has been provided. Cannot continue." % (fncName)
+            errorMsg = "%s\t\"No particle mesh has been provided. Cannot continue!\"" % (fncName)
             raise RuntimeError(errorMsg)
         return
 #    def initialize_particle_mesh(self, mesh_M):ENDDEF
@@ -1206,7 +1217,7 @@ class Particle_C(object):
                         facetCrossCount += 1
                         # Check for an abnormal number of facet crossings:
                         if facetCrossCount > MAX_FACET_CROSS_COUNT:
-                            errorMsg = "%s\tExiting because MAX_FACET_CROSS_COUNT = %d was exceeded!" % (fncName, MAX_FACET_CROSS_COUNT)
+                            errorMsg = "%s\t\"Exiting because MAX_FACET_CROSS_COUNT = %d was exceeded!\"" % (fncName, MAX_FACET_CROSS_COUNT)
                             raise RuntimeError(errorMsg) # sys.exit(errorMsg)
 
                         # Compute dx[], the move vector that starts in
@@ -1265,7 +1276,7 @@ class Particle_C(object):
                             mFacet = pmesh_M.cell_entity_indices_dict['facet'][pCellIndex][cFacet]
 # mFacet should never be the same as the last facet crossed: check this
                             if mFacet == mLastFacet: # If the particle has crossed the same facet twice in succession...
-                                errorMsg = "%s The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!" % (fncName, mFacet)
+                                errorMsg = "%s\t\"The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!\"" % (fncName, mFacet)
                                 raise RuntimeError(errorMsg) # sys.exit(errorMsg)
                             else: # The particle has crossed a new facet.
                                 mLastFacet = mFacet
@@ -1310,7 +1321,7 @@ class Particle_C(object):
                                 psegOut[ipOut]['cell_index'] = pCellIndexNew
                                 pCellIndex = pCellIndexNew # Needed for the next iteration of the while loop.
                         else: # The crossed faced is NO_FACET, which shouldn't happen.
-                            errorMsg = "%s The cell index of the facet crossed is NO_FACET (%d). This should not happen since the particle has left its initial cell!" % (fncName, cFacet)
+                            errorMsg = "%s\t\"The cell index of the facet crossed is NO_FACET (%d). This should not happen since the particle has left its initial cell!\"" % (fncName, cFacet)
                             raise RuntimeError(errorMsg) # sys.exit(errorMsg)
 #                       END:if cFacet != Mesh_C.NO_FACET:
 #                   END:while not pmesh_M.is_inside_cell(psegOut[ipOut], pCellIndex)
@@ -1617,7 +1628,7 @@ class Particle_C(object):
                     facetCrossCount += 1
                     # Check for an abnormal number of facet crossings:
                     if facetCrossCount > MAX_FACET_CROSS_COUNT:
-                        errorMsg = "%s\tExiting because MAX_FACET_CROSS_COUNT = %d was exceeded!" % (fncName, MAX_FACET_CROSS_COUNT)
+                        errorMsg = "%s\t\"Exiting because MAX_FACET_CROSS_COUNT = %d was exceeded!\"" % (fncName, MAX_FACET_CROSS_COUNT)
                         raise RuntimeError(errorMsg) # sys.exit(errorMsg)
 
                     # Compute dx[], the move vector that starts in
@@ -1674,7 +1685,7 @@ class Particle_C(object):
                         mFacet = pmesh_M.cell_entity_indices_dict['facet'][pCellIndex][cFacet]
                         # mFacet should never be the same as the last facet crossed: check this
                         if mFacet == mLastFacet: # If the particle has crossed the same facet twice in succession...
-                            errorMsg = "%s The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!" % (fncName, mFacet)
+                            errorMsg = "%s\t\"The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!\"" % (fncName, mFacet)
                             raise RuntimeError(errorMsg) # sys.exit(errorMsg)
                         else: # The particle has crossed a new facet.
                             mLastFacet = mFacet
@@ -1775,7 +1786,7 @@ class Particle_C(object):
                             psegOut[ipOut]['cell_index'] = pCellIndexNew
                             pCellIndex = pCellIndexNew # Needed for the next iteration of the while loop.
                     else: # The crossed faced is NO_FACET, which shouldn't happen.
-                        errorMsg = "%s The cell index of the facet crossed is NO_FACET (%d). This should not happen since the particle has left its initial cell!" % (fncName, cFacet)
+                        errorMsg = "%s\t\"The cell index of the facet crossed is NO_FACET (%d). This should not happen since the particle has left its initial cell!\"" % (fncName, cFacet)
                         raise RuntimeError(errorMsg) # sys.exit(errorMsg)
                     #                       END:if cFacet != Mesh_C.NO_FACET:
                     #                   END:while not pmesh_M.is_inside_cell(psegOut[ipOut], pCellIndex)
@@ -1995,7 +2006,7 @@ class Particle_C(object):
                     facetCrossCount += 1
                     # Check for an abnormal number of facet crossings:
                     if facetCrossCount > MAX_FACET_CROSS_COUNT:
-                        errorMsg = "%s !!! MAX_FACET_CROSS_COUNT exceeded!!!" % (fncName)
+                        errorMsg = "%s\t\"!!! MAX_FACET_CROSS_COUNT exceeded!!!\"" % (fncName)
                         raise RuntimeError(errorMsg) # sys.exit(errorMsg)
 
                     # Compute dx[], the move vector that starts in
@@ -2028,7 +2039,7 @@ class Particle_C(object):
                         mFacet = pmesh_M.cell_entity_indices_dict['facet'][pCellIndex][cFacet]
                         # mFacet should never be the same as the last facet crossed: check this
                         if mFacet == mLastFacet: # If the particle has crossed the same facet twice in succession...
-                            errorMsg = "%s The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!" % (fncName, mFacet)
+                            errorMsg = "%s\t\"The mesh index of the facet crossed is %d, the same as the last facet crossed. This should not happen since the particle cannot cross the same facet twice in one move!\"" % (fncName, mFacet)
                             raise RuntimeError(errorMsg) # sys.exit(errorMsg)
                         else: # The particle has crossed a new facet.
                             mLastFacet = mFacet
@@ -2070,7 +2081,7 @@ class Particle_C(object):
                             pCellIndex = pCellIndexNew # Needed for the next iteration of the while loop.
 
                     else: # The crossed faced is NO_FACET, which shouldn't happen.
-                        errorMsg = "%s The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!" % (fncName, cFacet)
+                        errorMsg = "%s\t\"The cell index of the facet crossed is %d. This should not happen since the particle has left its initial cell cell!\"" % (fncName, cFacet)
                         raise RuntimeError(errorMsg) # sys.exit(errorMsg)
                     # END:if cFacet != Mesh_C.NO_FACET:
                 # END:while not pmesh_M.is_inside_cell(psegOut[ipOut], pCellIndex)
@@ -2817,6 +2828,9 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
+        # Scratch space
+        #p_arr = self.one_particle_arr
+        
 #        self.histories.data_array.dtype.names:
 
         counter = self.histories.counter
@@ -2869,7 +2883,7 @@ class Particle_C(object):
                 # Loop over the number-density arrays
                 charge_density_F.multiply_add(dof_number_density_dict_F[s], charge)
         else:
-            errorMsg = "%s\tDnT: No particle mesh has been provided. Cannot continue." % (fncName)
+            errorMsg = "%s\t\"No particle mesh has been provided. Cannot continue!\"" % (fncName)
             raise RuntimeError(errorMsg)
 
         return
@@ -2922,6 +2936,8 @@ class Particle_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
+        # Abbreviations
+        pArr = self.one_particle_arr
         cellList = domain.cell_list
         nCell = domain.ncell
 
@@ -2937,7 +2953,7 @@ class Particle_C(object):
         pDim = self.particle_dimension
 
         # References to scratch space
-        particle = self.one_particle_arr[0] # Checked that this really is a ref.
+        particle = pArr[0] # Checked that this really is a ref.
         pCoord = self.pcoord # x, y, z (or subset)
         pVel = self.pvel # ux, uy, uz (or subset)
         random_vals = self.random_vals
@@ -2950,7 +2966,7 @@ class Particle_C(object):
 
         # Multiplier for particle weight
         weightMult = numberDensity/numberPerCell
-        if self.coordinate_system == '1D-spherical-radius':
+        if self.coordinate_system == 'spherical_r':
             weightMult /= 4.0*np_m.pi # 4 \pi radians in a sphere
 
         crossings = 0 # The cell-crossing counter has to be initialized
@@ -2973,7 +2989,6 @@ class Particle_C(object):
                     for i in range(gDim):
                         pCoord[i] = cellMid[i]
                         # Turn trajectory flag ON for the first particle in the cell:
-#tph                        
 #                        bitflags = bitflags | Particle_C.TRAJECTORY_FLAG
                 else:
                     while True:
@@ -3002,13 +3017,20 @@ class Particle_C(object):
 
                 # Fill in the rest of the data for this particle
                 particle[3*pDim] = weight
-                particle[3*pDim+1] = bitflags
                 particle[3*pDim+2] = cellIndex
-                particle[3*pDim+3] = Particle_C.UNIQUE_ID_COUNTER; Particle_C.UNIQUE_ID_COUNTER += 1
+                particle[3*pDim+3] = Particle_C.UNIQUE_ID_COUNTER
+                # For debugging: Turn trajectory flag ON based on the value of
+                # UNIQUE_ID_COUNTER
+                if Particle_C.UNIQUE_ID_COUNTER == 500:
+                    bitflags = bitflags | Particle_C.TRAJECTORY_FLAG
+                # Continue
+                particle[3*pDim+1] = bitflags
+                Particle_C.UNIQUE_ID_COUNTER += 1                
                 particle[3*pDim+4] = crossings
-                    
+                
                 # Store the particle in the "out" segment.
-                segIndex, fullIndex = sap.push_back(self.one_particle_arr)
+#                segIndex, fullIndex = sap.push_back(self.one_particle_arr)
+                segIndex, fullIndex = sap.push_back(pArr)
 
                 # If the particle is tagged as a trajectory particle, initialize its
                 # trajectory information. Note: if this is being called by
@@ -3021,36 +3043,36 @@ class Particle_C(object):
                             particleType = 'charged'                            
                         else:    
                             particleType = 'neutral'
-                        self.traj_T.create_trajectory(speciesName, fullIndex, particleType)
+                        self.traj_T.create_trajectory(speciesName, fullIndex, particleType, unique_id_int=particle[3*pDim+3])
                         
                         # Record the initial datum for this new trajectory
 
+                        E1Comps = self.E1_comps # A convenience reference
                         # Compute the solved E-field at the particle
                         if neg_E_field is None:
                             # Set the recorded field value to zero
-                            for i in range(len(self.negE1.dtype.names)):
-                                self.negE1[0][i] = 0.0
+                            #for i in range(len(self.negE1.dtype.names)):
+                                E1Comps[0][:] = 0.0
                         else:
-                            # print("p_arr=", p_arr)
-                            neg_E_field.interpolate_field_to_points(p_arr, self.negE1)
-                        E_arr = self.negE1[0:p_arr.size] # Need this syntax, even though there's
-                                                         # just one particle, to make E_arr an array!
-                        # Flip the sign to get correct E. (This is a vector operation on each
-                        # component of E.)
-                        for n in E_arr.dtype.names:
-                            E_arr[n] *= -1.0
-                        # print "E_arr.dtype.names =", E_arr.dtype.names
+                            # print("pArr=", pArr)
+#                            neg_E_field.interpolate_field_to_points(p_arr, self.negE1)
+                            neg_E_field.interpolate_field_to_points(pArr, self.negE1)
+                            for i in range(len(self.negE1.dtype.names)):
+                                E1Comps[0][i] = -self.negE1[0][i]
 
                         # Compute the EXTERNAL field at this single particle
+                        Eext1Comps = self.Eext1_comps # A convenience reference
                         if external_E_field is None:
                             # self.Eext1[0] = self.zeroE[0] # Works for Python-only arrays
-                            for i in range(len(self.Eext1.dtype.names)):
-                                self.Eext1[0][i] = 0.0
+                            #for i in range(len(self.Eext1.dtype.names)):
+                            Eext1Comps[0][:] = 0.0
                         else:
-                            external_E_field.interpolate_field_to_points(p_arr, self.Eext1)
-                        Eext_arr = self.Eext1[0:p_arr.size] # Need this syntax, even though there's
-                                                            # just one particle, to make Eext_arr an array!
-                        self.record_trajectory_datum(speciesName, segIndex, fullIndex, step, time, E_field=E_arr, external_E_field=Eext_arr)
+                            external_E_field.interpolate_field_to_points(pArr, self.Eext1)
+                            for i in range(len(self.Eext1.dtype.names)):
+                                Eext1Comps[0][i] = self.Eext1[0][i]
+                            
+#                        self.record_trajectory_datum(speciesName, segIndex, fullIndex, step, time, E_field=E_arr, external_E_field=Eext_arr)
+                        self.record_trajectory_datum(speciesName, segIndex, fullIndex, step, time, E_field_comps=E1Comps, external_E_field_comps=Eext1Comps)
                     else:
 # Instead of printing this message, a traj_T object could be created here?
                         if printWarningNoTrajectory is True: print(fncName, "\tDnT WARNING: A trajectory flag is on, but no trajectory object has been created yet.")
@@ -3072,7 +3094,7 @@ class Particle_C(object):
 
         for pA in ctrl.particle_output_attributes:
             if pA != 'species_index' and pA not in self.particle_dtype.names:
-                errorMsg = fncName + "Particle attribute '" + pA + "' is not available. Available attributes are: " + str(self.particle_dtype.names)
+                errorMsg = fncName + "\t\"Particle attribute '" + pA + "' is not available. Available attributes are: " + str(self.particle_dtype.names) + "!\""
                 raise RuntimeError(errorMsg) # sys.exit(errorMsg)
 
         return
@@ -3082,15 +3104,24 @@ class Particle_C(object):
     def initialize_particle_output_file(self, ctrl):
         """Open a H5Part files and write the header.
 
+           This should not be called if particle_output_file is None
+
            :param ctrl: A DTcontrol_C object
 
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
 
-        self.particle_output_handle = h5File = h5py.File(ctrl.particle_output_file,"w")
+        # Abbrev
+        particleOutputFile = ctrl.particle_output_file
+        
+        if particleOutputFile is None:
+            errorMsg = fncName + "\t\"ctrl.particle_output_file is None. Set it to a file name!\""
+            raise RuntimeError(errorMsg)
+        
+        self.particle_output_handle = h5File = h5py.File(particleOutputFile, "w")
 
-        # A file is also a group: attach the following attributes
+        # A file is also a Group: attach the following attributes
         h5File.attrs["Title:"] = ctrl.title
         h5File.attrs["Author:"] = ctrl.author
 
@@ -3137,7 +3168,7 @@ class Particle_C(object):
         # (e.g., on exiting the time loop)
         step = ctrl.timeloop_count
         if step == self.h5_last_write_step:
-            if printInfoSecondCall is True: print(fncName, "\tDnT INFO: Second call on timestep %d: return without writing the data." % step)
+            if printInfoSecondCall is True: print(fncName, "\t\"Second call on timestep %d: return without rewriting the data!\"" % step)
             return
 
         # Create a new group for this timestep
@@ -3153,8 +3184,8 @@ class Particle_C(object):
 #        print fncName, "totalParticleCount =", totalParticleCount, "h5_buffer_length =", self.h5_buffer_length
         if totalParticleCount > self.h5_buffer_length:
             newNumSegs = int(1 + totalParticleCount/self.SEGMENT_LENGTH)
-#            print "newNumSegs =", newNumSegs
-            # Allocate a new buffer
+#            print "newNumSegs =", newNumSegs Allocate a new buffer that's large enough to
+            # hold 1 64-bit attribute for ALL the particles
             self.h5_buffer_length = newNumSegs*self.SEGMENT_LENGTH
             self.h5_buffer = np_m.empty(self.h5_buffer_length, dtype=np_m.float64)
         h5Buf = self.h5_buffer
@@ -3169,12 +3200,12 @@ class Particle_C(object):
             else:
 # Changed because of FutureWarning:                
 #                if np_m.issubdtype(self.particle_dtype[pA], np_m.float):
-                if np_m.issubdtype(self.particle_dtype[pA], np_m.float64):
+                if np_m.issubdtype(self.particle_dtype[pA], np_m.floating):
                     h5Buf.dtype = np_m.float64
                 elif np_m.issubdtype(self.particle_dtype[pA], np_m.integer):
                     h5Buf.dtype = np_m.int64
                 else:
-                    errorMsg = fncName + "The type of particle attribute " + pA + " is not float or integer. It is " + str(self.particle_dtype[pA])
+                    errorMsg = fncName + "\t\"The type of particle attribute " + pA + " is not float or integer. It is " + str(self.particle_dtype[pA]) + "!\""
                     raise RuntimeError(errorMsg) # sys.exit(errorMsg)                    
 
             aOff = 0 # offset into h5Buf
@@ -3213,10 +3244,10 @@ class Particle_C(object):
 
         self.h5_step_counter += 1
 
-        # Update "last_write_step" before returning
+        # Record the current simulation step before returning
         self.h5_last_write_step = step
 
-        # Flush the buffer
+        # Flush the output buffer
         self.particle_output_handle.flush()
 
         if close_flag is True:

@@ -1,4 +1,4 @@
-# Particle trajectories
+# Recorded data module
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2016 L. D. Hughes'
@@ -14,6 +14,7 @@ __all__ = ['HistoryInput_C',
 
 import sys
 import numpy as np_m
+import h5py
 
 # !!! Direct invocation of dolfin for trajectory plots!!!
 import dolfin as df_m
@@ -217,7 +218,7 @@ class ParticleHistory_C(History_C):
 
 #class History_C(object):
     def plot(self):
-        """Plot the histories owned by this instance of 
+        """Plot the histories owned by this instance of History_C.
 
         """
         import matplotlib.pyplot as mplot_m
@@ -318,13 +319,13 @@ class Trajectory_C(object):
 
     ### Static class variables
 
-    # Value signaling that the particle no longer exists.  E.g., the particle hit a
-    # wall and was deleted.  Trajectory data for the particle exist up to the point
-    # where it was deleted.
+    # Create a flag signaling that the particle no longer exists.
+    # E.g., the particle hit a wall and was deleted.  Trajectory data
+    # for the particle exist up to the point where it was deleted.
     NO_PINDEX = -1
 
     # def __init__(self, trajin, ctrl, explicit_species, implicit_species, neutral_species):
-    def __init__(self, trajin, ctrl, charged_species, neutral_species):
+    def __init__(self, trajin, ctrl, charged_species, neutral_species, species_index, species_mass, species_charge):
         """Set up the initial trajectory storage.  
 
            :var trajin.max_points: Maximum number of trajectory data points to be
@@ -353,12 +354,20 @@ class Trajectory_C(object):
 
         """
 
+        fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():\n'
+        
         self.last_step = None # This variable can be used to check if the simulation
                               # step in the current call is the same as the step in
                               # the last call, and avoid storing the same data twice.
                               # If the particle is deleted just after being pushed,
                               # there's special handling to allow its last data to be
                               # recorded.
+
+        # These dictionaries are numpy dtypes, giving names and types of the trajectory
+        # values, as specified by the user's input.
+        self.charged_dict = trajin.charged_dict
+        #self.implicit_dict = trajin.implicit_dict
+        self.neutral_dict = trajin.neutral_dict
 
         # Compute a skip interval to stay within the maximum number of
         # datapoints (if specified).
@@ -371,16 +380,17 @@ class Trajectory_C(object):
         # If the location of boundary-crossings is recorded, then you can run out of space
         self.npoints = int(ctrl.n_timesteps/self.skip + 1 + trajin.extra_points)
 
-        # Need these to get the right trajectory variables
+        # Need these to get the right particle attributes for a trajectory variables
         self.charged_species = charged_species
         #self.implicit_species = implicit_species
         self.neutral_species = neutral_species
 
-        # The dictionary is in the form of a numpy dtype, giving names
-        # and types of the trajectory values, as specified by the user's input.
-        self.charged_dict = trajin.charged_dict
-        #self.implicit_dict = trajin.implicit_dict
-        self.neutral_dict = trajin.neutral_dict
+        # Need these to put particle attributes in trajectory output files.
+        self.ctrl_title = ctrl.title
+        self.ctrl_author = ctrl.author
+        self.species_index = species_index
+        self.species_mass = species_mass
+        self.species_charge = species_charge
 
         # For each species, there is
         #    1. a list of trajectory-particle IDs
@@ -393,11 +403,18 @@ class Trajectory_C(object):
         self.trajectory_length = {}
 
         #for sp in self.charged_species + self.implicit_species + self.neutral_species:
-        for sp in self.charged_species + self.neutral_species:
-            self.particle_index_list[sp] = []
-            self.particle_unique_id_list[sp] = []
-            self.data_list[sp] = []
-            self.trajectory_length[sp] = []
+        for sn in self.charged_species + self.neutral_species:
+            self.particle_index_list[sn] = []
+            self.particle_unique_id_list[sn] = []
+            self.data_list[sn] = []
+            self.trajectory_length[sn] = []
+
+        # Control the trajectory output file.
+        if ctrl.write_trajectory_files is True:
+            pass
+        else:
+            errorMsg = fncName + "\t\"ctrl.write_trajectory_files is None. Set it to True or False!\""
+            raise RuntimeError(errorMsg)
 
         return
 #    def __init__(self, trajin, ctrl, charged_species, implicit_species, neutral_species):ENDDEF
@@ -425,14 +442,14 @@ class Trajectory_C(object):
                                                       # particle to 0
 
         # Add a numpy array for this particles's trajectory data
-        if dynamics_type == 'explicit':
+        if dynamics_type == 'charged':
             self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.charged_dict))
 #        elif dynamics_type == 'implicit':
 #            self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.implicit_dict))
         elif dynamics_type == 'neutral':
             self.data_list[species_name].append(np_m.empty(self.npoints, dtype=self.neutral_dict))
         else:
-            errorMsg = "(DnT ERROR) %s\tdynamics_type %s is unknown for species %s" % (fncName, dynamics_type, species_name)
+            errorMsg = "%s\t\"dynamics_type %s is unknown for species %s. Set it to 'charged' or 'neutral'!\"" % (fncName, dynamics_type, species_name)
             raise RuntimeError(errorMsg)
 
         return
@@ -441,6 +458,8 @@ class Trajectory_C(object):
 #class Trajectory_C(object):
     def plot(self, plot_vs_t_only=False):
         """Plot the accumulated particle trajectories.
+
+           See __init__() above for class variable definitions.
 
         """
         import matplotlib.pyplot as mplot_m
@@ -565,6 +584,105 @@ class Trajectory_C(object):
 
         return
 #    def plot_trajectories_on_mesh(self):ENDDEF
+
+#class Trajectory_C(object):
+    def write_trajectories_to_files(self):
+        """Write out the accumulated particle trajectories.
+
+           Each trajectory has it's own h5part file.
+           
+           See __init__() above for class variable definitions.
+
+        """
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        
+        # Make a 64-bit buffer for writing to the h5 file. We write
+        # one attribute at a time. h5 is 64-bit.
+        h5Buf = np_m.empty(1, dtype=np_m.float64)        
+
+        # Write a separate file for each trajectory
+
+        for sp in self.charged_species + self.neutral_species:
+
+            if len(self.data_list[sp]) == 0:
+                # print(fncName, "\t\"No trajectories recorded for species %s\!\"" % sp)
+                continue
+
+            # Make list of the names and types of the attributes
+            # (self.data_list[sp][itraj] is a structured Numpy array containing the
+            #  recorded particle attributes of trajectory *itraj*)
+            particleDtypes = self.data_list[sp][0].dtype
+            particleAttTypes = [particleDtypes[i] for i in range(len(particleDtypes))]
+            particleAttNames = self.data_list[sp][0].dtype.names
+
+
+            # Make a dictionary of the particle-attribute types.  Convert to 64-bit
+            # types for h5.
+            h5BufTypes = {}
+            i = 0 # Counts through the attribute list
+            for name in particleAttNames: # list order is preserved
+                attType = particleAttTypes[i]
+                if np_m.issubdtype(attType, np_m.floating):
+                    h5BufTypes[name] = np_m.float64
+                elif np_m.issubdtype(attType, np_m.integer):
+                    h5BufTypes[name] =  np_m.int64
+                else:
+                    errorMsg = fncName + "\t\"The type of particle attribute " + name + " is not float or integer. It is " + str(attType) + "!\""
+                    raise RuntimeError(errorMsg)
+                i += 1
+                
+            # Loop on trajectories for this species (*it* counts the trajectories)
+            for it in range(len(self.particle_index_list[sp])):
+
+                # Counter for incrementing along the recorded data for this trajectory.
+                # stepCounter = 1
+
+                trajectoryData = self.data_list[sp][it]
+                
+                # This trajectory is for the particle 'uid'
+                uid = self.particle_unique_id_list[sp][it]
+                # Open a file for this trajectory                
+                # h5FileName = "traj_%s_%d.%d.h5part" % (sp, uid, it)
+                # h5FileName = "traj_%s.%d.h5part" % (sp, it)
+                h5FileName = "traj_%s.%d.h5part" % (sp, uid)
+                h5FileHandle = h5py.File(h5FileName, "w")
+
+                # A file is also a Group: attach the following attributes
+                h5FileHandle.attrs["Title:"] = self.ctrl_title
+                h5FileHandle.attrs["Author:"] = self.ctrl_author
+
+                # Write the particle's attributes: name, mass, and charge
+                species_index_str = str(self.species_index[sp])
+                # Create a string key for this species
+                key = "particle_type_" + species_index_str
+                h5FileHandle.attrs[key] = sp
+                key = "mass_" + species_index_str
+                h5FileHandle.attrs[key] = self.species_mass[sp]
+                key = "charge_" + species_index_str
+                h5FileHandle.attrs[key] = self.species_charge[sp]
+
+                # Loop over the times recorded for this particle
+                nTimes = self.trajectory_length[sp][it]
+                for i in range(nTimes):
+                    # Write the data at this time
+                    # Create a new group for this time
+                    groupName = "Step#" + str(i)
+                    group = h5FileHandle.create_group(groupName)
+                    group.attrs["TimeValue"] = trajectoryData['t'][i]
+
+                    # Put the particle attributes for this time into the h5 write buffer,
+                    # one at a time
+                    for name in particleAttNames:
+                        h5Buf.dtype = h5BufTypes[name]
+                        h5Buf[0] = trajectoryData[name][i]
+                        # print "h5Buf is:", h5Buf[0]
+                        dset = group.create_dataset(name, data=h5Buf[0])
+                # Close this file        
+                h5FileHandle.close()
+        
+        return
+# def write_trajectories_to_files(self):ENDDEF
 
 #class Trajectory_C(object):ENDCLASS
 
