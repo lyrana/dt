@@ -77,6 +77,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.n_timesteps = 100
         ctrl.MAX_FACET_CROSS_COUNT = 100
 
+        ctrl.write_trajectory_files = False
+
         # Create an instance of the DTparticleInput class
         pin = ParticleInput_C()
         # Settings common to all species
@@ -147,7 +149,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Add a traj_T reference to the particle object
         p_P = particle_P # abbreviation
         #p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
-        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species)
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)        
+
 
         ##  Mesh input for the particle mesh, including particle boundary conditions.
 
@@ -321,6 +324,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.n_timesteps = 100 # 100
         ctrl.MAX_FACET_CROSS_COUNT = 100
 
+        ctrl.write_trajectory_files = False
+
         # Create an instance of the DTparticleInput class
         pin = ParticleInput_C()
         # Settings common to all species
@@ -394,7 +399,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Add a traj_T reference to the particle object
         p_P = particle_P # abbreviation
         #p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
-        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species)
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)
 
         ##  Mesh input for the particle mesh, including particle boundary conditions.
 
@@ -570,7 +575,9 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.dt = 1.0e-6
         ctrl.n_timesteps = 14
         ctrl.MAX_FACET_CROSS_COUNT = 100
-        
+
+        ctrl.write_trajectory_files = False
+
         ### Particle species input
 
         # Create an instance of the DTparticleInput class
@@ -579,7 +586,6 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xy'        
-        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
         pin.use_cpp_integrators = False # Use C++ code to advance particles.
@@ -737,7 +743,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # The trajectory object can now be created and added to particle_P
         p_P = particle_P
         # p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
-        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species)        
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)        
 
         # Initialize the particles
         printFlags = {}

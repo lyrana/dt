@@ -489,8 +489,9 @@ pin = ParticleInput_C()
 pin.precision = np_m.float64
 pin.particle_integration_loop = 'loop-on-particles'
 pin.coordinate_system = 'spherical_r'
-pin.position_coordinates = ['r',] # determines the particle-storage dimensions. This
-                                  # is doubled to get the phase-space coordinates
+# Now determined by coordinate_system:
+#pin.position_coordinates = ['r',] # determines the particle-storage dimensions. This
+                                   # is doubled to get the phase-space coordinates
 pin.force_components = ['r',]
 pin.force_precision = np_m.float64
 pin.use_cpp_integrators =  True # Use C++ for particle-advance

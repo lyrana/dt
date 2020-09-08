@@ -62,9 +62,9 @@ class TestChargeDensity(unittest.TestCase):
         
         # Create a 1D mesh from -0.5 to 0.5
         mesh = df_m.IntervalMesh(2, -0.5, 0.5)
-        coordinateSystem = 'Cartesian'
+        meshCoordinateSystem = 'Cartesian'
 
-        mesh1d_M = Mesh_C(Mesh=mesh, coordinate_system=coordinateSystem, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
+        mesh1d_M = Mesh_C(Mesh=mesh, coordinate_system=meshCoordinateSystem, compute_dictionaries=True, compute_cpp_arrays=False, compute_tree=True, plot_flag=self.plotMesh)
 
         # Put 3 DT particles in the meshed region.
 
@@ -441,8 +441,7 @@ class TestChargeDensity(unittest.TestCase):
         pin.precision = np_m.float64
 
         pin.particle_integration_loop = 'loop-on-particles'
-        pin.coordinate_system = 'cartesian_xyz'
-#        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.coordinate_system = 'cartesian_xyz' # determines the particle-storage dimensions, and the coordinate names.
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
         pin.use_cpp_integrators = False        
@@ -686,8 +685,7 @@ class TestChargeDensity(unittest.TestCase):
         pin.precision = np_m.float64
 
         pin.particle_integration_loop = 'loop-on-particles'
-        pin.coordinate_system = 'cartesian_xyz'
-        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
+        pin.coordinate_system = 'cartesian_xyz' # determines the particle-storage dimensions
         pin.force_components = ['x', 'y', 'z']
         pin.force_precision = np_m.float64
         pin.use_cpp_integrators = False        
@@ -856,7 +854,7 @@ class TestChargeDensity(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName, '('+__file__+')')
         
-        coordinateSystem = 'spherical_r'
+        particleCoordinateSystem = 'spherical_r' # determines the particle-storage dimensions and the coordinate names
 
         ########## Numerical Mesh ##########
 
@@ -882,10 +880,8 @@ class TestChargeDensity(unittest.TestCase):
 
         pin.precision = np_m.float64
         pin.particle_integration_loop = 'loop-on-particles'
-        pin.coordinate_system = coordinateSystem
-        pin.position_coordinates = ['x',] # determines the particle-storage dimensions. This
-                                          # is doubled to get the phase-space coordinates
-        pin.force_components = ['x',]
+        pin.coordinate_system = particleCoordinateSystem
+        pin.force_components = ['r',]
         pin.force_precision = np_m.float64
         pin.use_cpp_integrators = False        
 
@@ -1061,7 +1057,7 @@ class TestChargeDensity(unittest.TestCase):
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
         print('\ntest: ', fncName, '('+__file__+')')
         
-        coordinateSystem = 'spherical_r'
+        particleCoordinateSystem = 'spherical_r'
 
         ########## Numerical Mesh ##########
 
@@ -1087,10 +1083,9 @@ class TestChargeDensity(unittest.TestCase):
 
         pin.precision = np_m.float64
         pin.particle_integration_loop = 'loop-on-particles'
-        pin.coordinate_system = coordinateSystem
-        pin.position_coordinates = ['x',] # determines the particle-storage dimensions. This
-                                          # is doubled to get the phase-space coordinates
-        pin.force_components = ['x',]
+        pin.coordinate_system = particleCoordinateSystem
+
+        pin.force_components = ['r',]
         pin.force_precision = np_m.float64
         pin.use_cpp_integrators = False        
 

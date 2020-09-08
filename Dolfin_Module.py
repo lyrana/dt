@@ -444,13 +444,18 @@ class Mesh_C(object):
         """
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
+
+        # Coordinate systems are the same for the mesh and the point
         
         if self.gdim == 3:
-            p = df_m.Point(point['x'], point['y'], point['z'])
+            p = df_m.Point(point[0], point[1], point[2])
+#            p = df_m.Point(point['x'], point['y'], point['z'])
         elif self.gdim == 2:
-            p = df_m.Point(point['x'], point['y'])
+            p = df_m.Point(point[0], point[1])
+#            p = df_m.Point(point['x'], point['y'])
         else:
-            p = df_m.Point(point['x'])
+            p = df_m.Point(point[0])
+#            p = df_m.Point(point['x'])
 
 #        first = self.bbtree.compute_first_entity_collision(df_m.Point(p)) # not compute_first_collision()
         first = self.bbtree.compute_first_entity_collision(p) # not compute_first_collision()
@@ -571,16 +576,19 @@ class Mesh_C(object):
         cell = self.cell_dict[cell_index]
 
         if self.gdim == 3:
-            p = df_m.Point(point['x'], point['y'], point['z'])
+            p = df_m.Point(point[0], point[1], point[2])
+#            p = df_m.Point(point['x'], point['y'], point['z'])
         elif self.gdim == 2:
-            p = df_m.Point(point['x'], point['y'])
+            p = df_m.Point(point[0], point[1])
+#            p = df_m.Point(point['x'], point['y'])
 #            print("is_inside_cell: p is:", p.x(), p.y())
 #            vertex_coords = np_m.array(cell.get_vertex_coordinates()).reshape((-1, self.gdim))
 #            print("is_inside_cell: cell index is:", cell_index)
 #            print("is_inside_cell: vertices are:", self.cell_vertices_dict[cell_index])
 #            print("is_inside_cell: cell vertex coordinates are:", vertex_coords)
         else:
-            p = df_m.Point(point['x']) # or Point(point['x'], 0., 0.)
+            p = df_m.Point(point[0])
+#            p = df_m.Point(point['x']) # or Point(point['x'], 0., 0.)
 
         return cell.contains(p)
 #    def is_inside_cell(self, point, cell_index):ENDDEF
@@ -1221,11 +1229,14 @@ class Field_C(object):
         # Should be able to use p['cell_index'] here instead of having
         # to search for the cell that contains the point.
         if self.mesh_gdim == 3:
-            point = df_m.Point(p['x'], p['y'], p['z'])
+            point = df_m.Point(p[0], p[1], p[2])
+#            point = df_m.Point(p['x'], p['y'], p['z'])
         elif self.mesh_gdim == 2:
-            point = df_m.Point(p['x'], p['y'])
+            point = df_m.Point(p[0], p[1])
+#            point = df_m.Point(p['x'], p['y'])
         else:
-            point = df_m.Point(p['x'])
+            point = df_m.Point(p[0])
+#            point = df_m.Point(p['x'])
 
         df_m.PointSource(self.function_space, point, p['weight']).apply(self.function_values)
 
@@ -1255,7 +1266,7 @@ class Field_C(object):
            This implementation loops on particles, not on cells.
 
            :param p: A point inside the domain of the function.
-           :type p: An object with data fields 'x', ('y', 'z'),
+           :type p: An object with data fields 'x', ('y', 'z'), or 'r',
                     'weight', e.g., a particle.
 
            :cvar Jhat: XX A factor that comes from integrating the delta function times

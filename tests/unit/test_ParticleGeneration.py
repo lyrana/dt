@@ -55,8 +55,16 @@ class TestParticleGeneration(unittest.TestCase):
 
         ctrl = DTcontrol_C()
 
+        ctrl.title = "test_ParticleGeneration.py:test_1D_particle_source_region"
+        ctrl.author = "tph"
+
+        ctrl.timeloop_count = 0
+        ctrl.time = 0.0
+
         ctrl.dt = 1.0e-6
         ctrl.n_timesteps = 1
+
+        ctrl.write_trajectory_files = False
 
         pin = self.pin
 
@@ -275,19 +283,12 @@ class TestParticleGeneration(unittest.TestCase):
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
         p_P = particle_P
-        traj_T = Trajectory_C(self.trajin, ctrl, p_P.charged_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)
+        
         particle_P.traj_T = traj_T
 
         ## Invoke the source functions and write out the particles
         
-        ctrl.timeloop_count = 0
-        ctrl.time = 0.0
-
-        # Run identifier
-        ctrl.title = "test_ParticleGeneration.py:test_1D_particle_source_region"
-        # Run author
-        ctrl.author = "tph"
-
         ### Select output for particles
         ctrl.particle_output_file = "particleGeneration.h5part"
         ctrl.particle_output_interval = 1

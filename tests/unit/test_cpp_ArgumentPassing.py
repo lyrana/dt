@@ -46,13 +46,6 @@ class TestPybind11(unittest.TestCase):
 
         # The particle coordinate system is 3D Cartesian
         pin.coordinate_system = 'cartesian_xyz'
-
-        # Use the 3 position coordinates, since we're doing 1, 2, and 3D particle motion
-        # This could be derived from the coordinate system:
-
-# Moved this to Particle_C.init, based on coordinate system        
-#        pin.position_coordinates = ['x', 'y', 'z'] # Determines particle storage dimension
-
         
         # Neutral particles: No forces.
         """

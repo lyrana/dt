@@ -54,7 +54,8 @@ class ParticleInput_C(object):
 
         # Determines the particle-storage dimensions
         # Example: ['x', 'y',]
-        self.position_coordinates = None
+        # Now determined by coordinate_system
+        # self.position_coordinates = None
 
 # May want things like this in order to call DnT from a loop?
 # or spawn off many runs?

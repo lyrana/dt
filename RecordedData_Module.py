@@ -410,9 +410,7 @@ class Trajectory_C(object):
             self.trajectory_length[sn] = []
 
         # Control the trajectory output file.
-        if ctrl.write_trajectory_files is True:
-            pass
-        else:
+        if ctrl.write_trajectory_files is None:
             errorMsg = fncName + "\t\"ctrl.write_trajectory_files is None. Set it to True or False!\""
             raise RuntimeError(errorMsg)
 

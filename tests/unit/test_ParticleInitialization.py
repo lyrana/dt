@@ -383,7 +383,7 @@ class TestParticleInitialization(unittest.TestCase):
         ctrl.time = 0.0
 
         # Run identifier
-        ctrl.title = "test_ParticleGeneration"
+        ctrl.title = "test_ParticleInitialization"
         # Run author
         ctrl.author = "tph"
 
