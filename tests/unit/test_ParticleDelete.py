@@ -51,10 +51,15 @@ class TestParticleDeletion(unittest.TestCase):
 
         self.ctrl = DT_m.DTcontrol_C()
 
+        self.ctrl.title = "test_ParticleDelete"
+        self.ctrl.author = "tph"
+
         self.ctrl.time = 0.0
         self.ctrl.dt = 1.0e-5
         self.ctrl.n_timesteps = 1
 
+        self.ctrl.write_trajectory_files = False
+        
         ### Create an instance of the DTparticleInput class
 
         pin = ParticleInput_C()
@@ -73,19 +78,19 @@ class TestParticleDeletion(unittest.TestCase):
         speciesName = 'one_electron'
         charge = -1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.electron_mass
-        dynamics = 'explicit'
+        dynamics = 'charged'
         oneElectron_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         speciesName = 'H_plus'
         charge = 1.0*MyPlasmaUnits_C.elem_charge
         mass = 1.0*MyPlasmaUnits_C.proton_mass
-        dynamics = 'explicit'
+        dynamics = 'charged'
         HPlus_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         speciesName = 'He'
         charge = 0.0
         mass = 4.0*MyPlasmaUnits_C.AMU
-        dynamics = 'explicit'
+        dynamics = 'charged'
         He_S = ParticleSpecies_C(speciesName, charge, mass, dynamics)
 
         # Add these species to particle input
@@ -170,7 +175,7 @@ class TestParticleDeletion(unittest.TestCase):
         # No trajectory storage is created until particles
         # with TRAJECTORY_FLAG on are encountered.
         p_P = self.particle_P # abbreviation
-        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species)
+        traj_T = Trajectory_C(self.trajin, self.ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)
         self.particle_P.traj_T = traj_T
 
         # Create the initial particles
@@ -249,7 +254,7 @@ class TestParticleDeletion(unittest.TestCase):
                         full_index_expected = num_particles + 1 - 10
                         self.assertEqual(full_index, full_index_expected, msg="full_index should be 296")
                         traj_T.particle_index_list[sp].append(full_index)
-                        dynamicsType = 'explicit'
+                        dynamicsType = 'charged'
                         traj_T.create_trajectory(sp, full_index, dynamicsType)
                     else:
     # Instead of printing this message, a traj_T object could be created here.

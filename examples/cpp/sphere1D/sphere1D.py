@@ -2,6 +2,7 @@
 
 # 1D spherically-symmetric expansion of ions and electrons
 # See sphere1D.ods for setting up parameters
+# This version uses C++ for the particle-advance.
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2017-2018 L. D. Hughes'
@@ -95,9 +96,9 @@ __all__ = ['Example_C',]
 ##     PS.1. Define the species, set the "apply-field" switches, and provide storage.
 ##           PS.1.2. Allocate particle storage.
 ##           PS.1.3. Specify the name of the UserParticlesModule (Deprecate; move to top?)
-##     PS.2. Particle boundary conditions, particle mesh
+##     PS.2. Particle mesh and particle boundary conditions
 ##           PS.2.1. Mark boundaries to apply BCs on particles
-##           PS.2.2. Make the particle mesh and add it to the particle object
+##           PS.2.2. Make the particle mesh and initialize it for particles
 ##           PS.2.3. Connect the boundary-condition callback functions
 ##     PS.3. Particle source regions
 ##           PS.3.1. Hplus source near r=0
@@ -173,24 +174,37 @@ __all__ = ['Example_C',]
 
 
 ############################## IM. Imported Modules ##############################
+
+########## IM.1. Python modules
 import sys
 import os
 import numpy as np_m
-import importlib as im_M
+import importlib as im_m
 import unittest
 
+########## IM.2. Dolfin modules
 import dolfin as df_m
 
+########## IM.3. DnT modules
 from DT_Module import DTcontrol_C, DTscratch_C
 from Dolfin_Module import *
-from UserMesh_y_Fields_Spherical1D_Module import * # User input for mesh and fields
 
-from UserParticles_1D import * # This has the call-back functions for boundary-crossing
-                               # particles.
 from Particle_Module import *
 from RecordedData_Module import *
 
 from UserUnits_Module import MyPlasmaUnits_C
+
+########## IM.4. User-supplied modules
+
+from UserMesh_y_Fields_Spherical1D_Module import * # Provide input for mesh and fields
+
+# Provide the call-back functions for boundary-crossing particles:
+#userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_x_solib"
+userParticleBoundaryFunctionsSOlibName = "upbfs_spherical_r_solib"
+#infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
+#print(infoMsg)
+userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
+
 
 fileName = __file__+':'
 
@@ -211,8 +225,8 @@ plotInitialFields = False
 plotFieldsEveryTimestep = False # Plot phi and -E each timestep.
 plotFinalFields = False
 
-plotTrajectoriesOnMesh = False # Plot the trajectory particles on top of the mesh.
-plotTrajectoriesInPhaseSpace = False # Plot the 2D phase-space of trajectory particles.
+plotTrajectoriesOnMesh = True # Plot the trajectory particles on top of the mesh.
+plotTrajectoriesInPhaseSpace = True # Plot the 2D phase-space of trajectory particles.
 
 plotTimeHistories = False # Plot the recorded values vs. time.
 
@@ -344,7 +358,7 @@ ctrl.author = "tph"
 
 ##### CTRL.2. Timestepping
 
-ctrl.n_timesteps = 100 # 1000
+ctrl.n_timesteps = 28 # 1000 # 100
 
 ctrl.dt = 1.0e-6 # sec
 if ctrl.dt > scr.stable_dt_max:
@@ -406,7 +420,9 @@ ctrl.particle_output_file = ctrl.title + ".h5part"
 ctrl.particle_output_interval = 1
 # Available attributes: 'species_index' and any particle-record name
 # e.g., 'weight', 'bit-flags', 'cell-index', 'unique_ID', 'crossings'
-ctrl.particle_output_attributes = ('species_index', 'x', 'ux', 'weight', 'unique_ID', 'crossings')
+ctrl.particle_output_attributes = ('species_index', 'r', 'ur', 'weight', 'unique_ID', 'crossings')
+### Set parameters for writing trajectory output to an h5part file
+# Not here: ctrl.trajectory_output_file = ctrl.title + "_traj_" + ".h5part"
 
 if emitInput is True:
     print("")
@@ -472,12 +488,13 @@ pin = ParticleInput_C()
 # Initialize particles
 pin.precision = np_m.float64
 pin.particle_integration_loop = 'loop-on-particles'
-pin.coordinate_system = '1D-spherical-radius'
-pin.position_coordinates = ['x',] # determines the particle-storage dimensions. This
-                                  # is doubled to get the phase-space coordinates
-pin.force_components = ['x',]
+pin.coordinate_system = 'spherical_r'
+# Now determined by coordinate_system:
+#pin.position_coordinates = ['r',] # determines the particle-storage dimensions. This
+                                   # is doubled to get the phase-space coordinates
+pin.force_components = ['r',]
 pin.force_precision = np_m.float64
-pin.use_cpp_integrators = False
+pin.use_cpp_integrators =  True # Use C++ for particle-advance
 
 ############### PS.1. Define the species, set "apply-field" switches, and provide particle storage ###############
 
@@ -545,13 +562,13 @@ particle_P = Particle_C(pin, print_flag=True)
 # See Imported Modules above
 
 # Import the module
-#userParticlesModule = im_M.import_module(userParticlesModuleName)
+#userParticlesModule = im_m.import_module(userParticlesModuleName)
 
 # Add it to the particle object
 #?needed? particle_P.user_particles_module = userParticlesModuleName
 ##particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
 
-############### PS.2. Particle boundary conditions and mesh ###############
+############### PS.2. Particle mesh and boundary conditions ###############
 
 ##### PS.2.1. Mark boundaries to apply BCs on particles
 # In some cases, it's easier to mark boundaries before the final mesh is created.
@@ -585,7 +602,7 @@ if emitInput is True:
 #    print umi.__dict__
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
-##### PS.2.2. Make the mesh and add it to the particle object
+##### PS.2.2. Make the particle mesh and initialize it for particles
 
 # First complete the mesh setup now that particle boundary-conditions have been
 # set (see #FM1 above).
@@ -599,20 +616,33 @@ mesh_M = UserMesh1DS_C(umi, compute_dictionaries=True, compute_tree=False, plot_
 meshFile = df_m.File('sphere1D-mesh.xml')
 meshFile << mesh_M.mesh
 
-# In this simulation, the particle mesh is the same object as the field mesh
-particle_P.pmesh_M = mesh_M
+# (a) Attach the mesh to the particle object. In this simulation, the particle mesh
+#     is the same object as the field mesh.
+# (b) Compute the cell-neighbors and facet-normals needed to track particles on the
+#     mesh.
+# (c) Attach the C++ particle-advance functions for the mesh type.
+if emitInput is True:
+    print("")
+    print("********** Initialize the particle mesh **********")
+particle_P.initialize_particle_mesh(mesh_M)
 
 ##### PS.2.3. Connect the boundary-condition callback functions
 
 # See UserParticleBoundaryFunctions_C in userParticlesModule (defined above) for the
 # definitions of the facet-crossing callback functions.
 #userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
-userPBndFns = UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
+
+# Call the constructor to make a UserParticleBoundaryFunctions object
+userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(particle_P.position_coordinates)
+#userPBndFns = UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
 
 # Make the particle-mesh boundary-conditions object and add it to the particle
 # object.
 spNames = particle_P.species_names
-pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, mesh_M, userPBndFns, print_flag=False)
+#pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, mesh_M, userPBndFns, print_flag=False)
+# Create the map from mesh facets to particle callback functions:
+pmeshBCs = particle_P.particle_solib.ParticleMeshBoundaryConditions(spNames, particle_P.pmesh_M, userPBndFns, print_flag=False)
+
 particle_P.pmesh_bcs = pmeshBCs
 
 
@@ -892,14 +922,13 @@ trajin.extra_points = 1 # Set to 1 to make sure one boundary-crossing can be acc
 
 # Specify which particle variables to save.  This has the
 # form of a numpy dtype specification.
-# TODO. Use real 1D spherical coordinates(?).
-trajin.explicit_dict = {'names': ['step', 't', 'x', 'ux', 'crossings', 'Ex'], 'formats': [int, np_m.float32, np_m.float32, np_m.float32, int, np_m.float32]}
+trajin.charged_dict = {'names': ['step', 't', 'r', 'ur', 'crossings', 'Er'], 'formats': [int, np_m.float32, np_m.float32, np_m.float32, int, np_m.float32]}
 
 ########## TRJ.2. Create the trajectory object and attach it to the particle object.
 
 # Note: no trajectory storage is created until particles marked with TRAJECTORY_FLAG
 # are encountered.
-traj_T = Trajectory_C(trajin, ctrl, particle_P.charged_species, particle_P.neutral_species)
+traj_T = Trajectory_C(trajin, ctrl, particle_P.charged_species, particle_P.neutral_species, particle_P.species_index, particle_P.mass, particle_P.charge)
 
 ## Attach this to the particle object.
 particle_P.traj_T = traj_T
@@ -1177,7 +1206,7 @@ if ctrl.cell_number_density_output_interval is not None:
         cellNumberDensityDict_F[s].function.rename(s+"-n", s + "_label")
     
 # Open the particle output file and write the header
-if ctrl.particle_output_interval is not None:
+if ctrl.particle_output_file is not None:
     particle_P.initialize_particle_output_file(ctrl)
 
 ##### INIT.2.1. Recalculate the initial electric field

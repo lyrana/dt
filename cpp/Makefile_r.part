@@ -1,8 +1,8 @@
-# Make the Python module called particle_cartesian_..._solib
+# Make the Python module called particle_coord_sys..._solib
 
 # Specify the particle spatial coordinate system:
 
-coord_sys = cartesian_x
+coord_sys = spherical_r
 
 # Shouldn't need to modify anything below.
 
@@ -17,6 +17,10 @@ else ifeq ($(coord_sys), cartesian_xy)
 else ifeq ($(coord_sys), cartesian_x)
   THE_PARTICLE_TYPE = cartesian_x
   PCOORDS_FLAG = -DPARTICLE_CARTESIAN_X
+  PDIM_FLAG = -DPDIM=1
+else ifeq ($(coord_sys), spherical_r)
+  THE_PARTICLE_TYPE = spherical_r
+  PCOORDS_FLAG = -DPARTICLE_SPHERICAL_R
   PDIM_FLAG = -DPDIM=1
 endif
 

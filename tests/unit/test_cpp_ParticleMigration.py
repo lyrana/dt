@@ -280,14 +280,6 @@ class TestCppParticleMigration(unittest.TestCase):
         
         spNames = self.particle_P.species_names
         
-        # Import C++ particle module
-        # (This should be already imported by Particle_Module)
-        particleSOlibName = "particle_cartesian_xyz_solib"
-        if particleSOlibName not in sys.modules:
-            infoMsg = "%s\t\"Importing %s\"" % (fncName, particleSOlibName)
-            print(infoMsg)
-        particleSOlib = im_m.import_module(particleSOlibName)
-        
         # Import C++ particle boundary-conditions
         userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xyz_solib"
         if userParticleBoundaryFunctionsSOlibName not in sys.modules:        
@@ -295,9 +287,9 @@ class TestCppParticleMigration(unittest.TestCase):
             print(infoMsg)
         userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
         # Call the constructor to make a UserParticleBoundaryFunctions_... object
-        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xyz(self.particle_P.position_coordinates)
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(self.particle_P.position_coordinates)
         # Create the map from mesh facets to particle callback functions:
-        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xyz(spNames, self.particle_P.pmesh_M, userPBndFns, print_flag=False)
+        pmeshBCs = self.particle_P.particle_solib.ParticleMeshBoundaryConditions(spNames, self.particle_P.pmesh_M, userPBndFns, print_flag=False)
 
         # Add pmeshBCs to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs
@@ -421,14 +413,6 @@ class TestCppParticleMigration(unittest.TestCase):
         
         spNames = self.particle_P.species_names
         
-        # Import C++ particle module
-        # (This should be already imported by Particle_Module)
-        particleSOlibName = "particle_cartesian_xyz_solib"
-        if particleSOlibName not in sys.modules:
-            infoMsg = "%s\t\"Importing %s\"" % (fncName, particleSOlibName)
-            print(infoMsg)
-        particleSOlib = im_m.import_module(particleSOlibName)
-        
         # Import C++ particle boundary-conditions
         userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xyz_solib"
         if userParticleBoundaryFunctionsSOlibName not in sys.modules:        
@@ -436,9 +420,9 @@ class TestCppParticleMigration(unittest.TestCase):
             print(infoMsg)
         userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
         # Call the constructor to make a UserParticleBoundaryFunctions_... object
-        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xyz(self.particle_P.position_coordinates)
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(self.particle_P.position_coordinates)
         # Create the map from mesh facets to particle callback functions:
-        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xyz(spNames, self.particle_P.pmesh_M, userPBndFns, print_flag=False)
+        pmeshBCs = self.particle_P.particle_solib.ParticleMeshBoundaryConditions(spNames, self.particle_P.pmesh_M, userPBndFns, print_flag=False)
 
         # Add pmeshBCs to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs
@@ -572,14 +556,6 @@ class TestCppParticleMigration(unittest.TestCase):
         
         spNames = self.particle_P.species_names
         
-        # Import C++ particle module
-        # (This should be already imported by Particle_Module)
-        particleSOlibName = "particle_cartesian_xyz_solib"
-        if particleSOlibName not in sys.modules:
-            infoMsg = "%s\t\"Importing %s\"" % (fncName, particleSOlibName)
-            print(infoMsg)
-        particleSOlib = im_m.import_module(particleSOlibName)
-        
         # Import C++ particle boundary-conditions
         userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xyz_solib"
         if userParticleBoundaryFunctionsSOlibName not in sys.modules:
@@ -587,9 +563,9 @@ class TestCppParticleMigration(unittest.TestCase):
             print(infoMsg)
         userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
         # Call the constructor to make a UserParticleBoundaryFunctions_... object
-        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xyz(self.particle_P.position_coordinates)
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(self.particle_P.position_coordinates)
         # Create the map from mesh facets to particle callback functions:
-        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xyz(spNames, self.particle_P.pmesh_M, userPBndFns, print_flag=False)
+        pmeshBCs = self.particle_P.particle_solib.ParticleMeshBoundaryConditions(spNames, self.particle_P.pmesh_M, userPBndFns, print_flag=False)        
 
         # Add pmeshBCs to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs

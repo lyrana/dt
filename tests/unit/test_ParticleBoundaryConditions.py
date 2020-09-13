@@ -77,6 +77,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.n_timesteps = 100
         ctrl.MAX_FACET_CROSS_COUNT = 100
 
+        ctrl.write_trajectory_files = False
+
         # Create an instance of the DTparticleInput class
         pin = ParticleInput_C()
         # Settings common to all species
@@ -147,7 +149,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Add a traj_T reference to the particle object
         p_P = particle_P # abbreviation
         #p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
-        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species)
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)        
+
 
         ##  Mesh input for the particle mesh, including particle boundary conditions.
 
@@ -192,7 +195,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Add this to the particle object:
         # p_P.pmesh_M = pmesh_M
         # 1. Attach the particle mesh to p_P.
-        # 2. Attach the C++ particle movers.
+        # 2. Attach the Python particle movers.
         # 3. Compute the cell-neighbors and facet-normals for the particle movers.
         p_P.initialize_particle_mesh(pmesh_M)
         
@@ -289,7 +292,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
 #    def test_1_2D_x_y_absorbing_boundary(self):ENDDEF
 
 #class TestParticleBoundaryConditions(unittest.TestCase):
-    def test_1_cpp_2D_x_y_absorbing_boundary(self):
+    def test_2_cpp_2D_x_y_absorbing_boundary(self):
         """ Check that particles are deleted correctly when they
             cross an absorbing boundary on a 2D Cartesian mesh.
 
@@ -308,7 +311,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl = DTcontrol_C()
 
         # Run identifier
-        ctrl.title = "test_ParticleBoundaryConditions.py:test_1_cpp_2D_x_y_absorbing_boundary"
+        ctrl.title = "test_ParticleBoundaryConditions.py:test_2_cpp_2D_x_y_absorbing_boundary"
         # Run author
         ctrl.author = "tph"
 
@@ -320,6 +323,8 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.dt = 0.5
         ctrl.n_timesteps = 100 # 100
         ctrl.MAX_FACET_CROSS_COUNT = 100
+
+        ctrl.write_trajectory_files = False
 
         # Create an instance of the DTparticleInput class
         pin = ParticleInput_C()
@@ -394,7 +399,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # Add a traj_T reference to the particle object
         p_P = particle_P # abbreviation
         #p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
-        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species)
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)
 
         ##  Mesh input for the particle mesh, including particle boundary conditions.
 
@@ -481,23 +486,16 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # particle object.  The user has to supply the facet-crossing callback
         # functions in the UserParticleBoundaryFunctions_C object above.
 
-        spNames = p_P.species_names
-        # Import C++ particle module, which has the ParticleMeshBoundaryConditions
-        # Hasn't this been already imported when the Particle_C object was constructed?
-        particleSOlibName = "particle_cartesian_xyz_solib"
-        infoMsg = "%s\tImporting %s" % (fncName, particleSOlibName)
-        print(infoMsg)
-        particleSOlib = im_m.import_module(particleSOlibName)
-
-        # Import C++ particle boundary-conditions
+        # Import C++ particle boundary-condition functions
         userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xyz_solib"
         infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
         print(infoMsg)
         userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
         # Call the constructor to make a UserParticleBoundaryFunctions object
-        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xyz(p_P.position_coordinates)
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(p_P.position_coordinates)
         # Create the map from mesh facets to particle callback functions:
-        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xyz(spNames, pmesh_M, userPBndFns, print_flag=False)
+        spNames = p_P.species_names
+        pmeshBCs = p_P.particle_solib.ParticleMeshBoundaryConditions(spNames, pmesh_M, userPBndFns, print_flag=False)        
 
         # Add pmeshBCs to the Particle_C object
         p_P.pmesh_bcs = pmeshBCs
@@ -543,10 +541,10 @@ class TestParticleBoundaryConditions(unittest.TestCase):
             p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
             
         return
-#    def test_1_cpp_2D_x_y_absorbing_boundary(self):ENDDEF
+#    def test_2_cpp_2D_x_y_absorbing_boundary(self):ENDDEF
 
 #class TestParticleBoundaryConditions(unittest.TestCase):
-    def test_2_2D_r_theta_absorbing_boundary(self):
+    def test_3_2D_r_theta_absorbing_boundary(self):
         """ Check that particles are deleted correctly when they
             cross a 2D absorbing boundary.
 
@@ -566,7 +564,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl = DTcontrol_C()
 
         # Run identifier
-        ctrl.title = "test_ParticleBoundaryConditions.py:test_2_2D_r_theta_absorbing_boundary"
+        ctrl.title = "test_ParticleBoundaryConditions.py:test_3_2D_r_theta_absorbing_boundary"
         # Run author
         ctrl.author = "tph"
 
@@ -577,7 +575,9 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         ctrl.dt = 1.0e-6
         ctrl.n_timesteps = 14
         ctrl.MAX_FACET_CROSS_COUNT = 100
-        
+
+        ctrl.write_trajectory_files = False
+
         ### Particle species input
 
         # Create an instance of the DTparticleInput class
@@ -586,7 +586,6 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         pin.precision = numpy.float64
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xy'        
-        pin.position_coordinates = ['x', 'y',] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
         pin.use_cpp_integrators = False # Use C++ code to advance particles.
@@ -744,7 +743,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
         # The trajectory object can now be created and added to particle_P
         p_P = particle_P
         # p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.explicit_species, p_P.implicit_species, p_P.neutral_species)
-        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species)        
+        p_P.traj_T = Trajectory_C(trajin, ctrl, p_P.charged_species, p_P.neutral_species, p_P.species_index, p_P.mass, p_P.charge)        
 
         # Initialize the particles
         printFlags = {}
@@ -786,7 +785,7 @@ class TestParticleBoundaryConditions(unittest.TestCase):
             p_P.traj_T.plot_trajectories_on_mesh(mesh, plotTitle, hold_plot=holdPlot) # Plots trajectory spatial coordinates on top of the particle mesh
 
         return
-#    def test_2D_r_theta_absorbing_boundary(self):
+#     def test_3_2D_r_theta_absorbing_boundary(self):ENDDEF
 
 #class TestParticleBoundaryConditions(unittest.TestCase):ENDCLASS
 

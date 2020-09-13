@@ -46,7 +46,7 @@ class TestParticleNonuniformE(unittest.TestCase):
         pin.coordinate_system = 'cartesian_xy'
         pin.force_components = ['x', 'y',]
         pin.force_precision = numpy.float64
-        pin.use_cpp_integrators = True # Use C++ version of particle movers.
+        pin.use_cpp_integrators = True # Use C++ for particle-advance
         
         speciesName = 'two_electrons'
         charge = -1.0*MyPlasmaUnits_C.elem_charge
@@ -157,17 +157,13 @@ class TestParticleNonuniformE(unittest.TestCase):
         # userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # Now need an instantiation, not just a class name:
         
         spNames = self.particle_P.species_names
-        # Import C++ particle module
-        # (This was already imported by Particle_Module)
-        particleSOlibName = "particle_cartesian_xy_solib"
-        particleSOlib = im_m.import_module(particleSOlibName)
         # Import C++ particle boundary-conditions
         userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xy_solib"
         userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
         # Call the constructor to make a UserParticleBoundaryFunctions object
-        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions_cartesian_xy(self.particle_P.position_coordinates)
+        userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(self.particle_P.position_coordinates)
         # Create the map from mesh facets to particle callback functions:
-        pmeshBCs = particleSOlib.ParticleMeshBoundaryConditions_cartesian_xy(spNames, pmesh2D_M, userPBndFns, print_flag=False)
+        pmeshBCs = self.particle_P.particle_solib.ParticleMeshBoundaryConditions(spNames, pmesh2D_M, userPBndFns, print_flag=False)
 
         # Add pmeshBCs to the Particle_C object
         self.particle_P.pmesh_bcs = pmeshBCs

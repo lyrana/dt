@@ -46,8 +46,9 @@ namespace dnt
   {
     cartesian_x,
     cartesian_xy,
-    cartesian_xyz
-  };
+    cartesian_xyz,
+    spherical_r
+   };
 
   
 /*! \struct Pstruct
@@ -98,6 +99,27 @@ namespace dnt
       int crossings_;             // 8 i4   48
 
     public:
+
+      //! Specularly reflect a particle from a surface.
+      /*!
+
+        The surface is specified by the unit normal surface_normal.
+
+        \param[in] surface_normal   Unit normal to the reflecting surface.
+        \param[in] dx               Displacement of particle through the surface.
+
+       */
+      inline void reflect_from_surface(py::array_t<double> &surface_normal, const double dx[])
+      {
+        auto sn = surface_normal.unchecked<1>();
+
+        auto n_dot_dx = sn[0] * dx[0];
+        auto n_dot_u = sn[0] * ux_;
+
+        x_ -= 2.0 * n_dot_dx * sn[0];
+        ux_ -= 2.0 * n_dot_u * sn[0];
+      }
+
       // Overload 2 versions of set_from_list_or_tuple()
       
       //! Set the member values from a py::tuple
@@ -201,6 +223,29 @@ namespace dnt
       int crossings_;             // 11 i4   72
 
     public:
+
+      //! Specularly reflect a particle from a surface.
+      /*!
+
+        The surface is specified by the unit normal surface_normal.
+
+        \param[in] surface_normal   Unit normal to the reflecting surface.
+        \param[in] dx               Displacement of particle through the surface.
+
+       */
+      inline void reflect_from_surface(py::array_t<double> &surface_normal, const double dx[])
+      {
+        auto sn = surface_normal.unchecked<1>();
+
+        auto n_dot_dx = sn[0]*dx[0] + sn[1]*dx[1];
+        auto n_dot_u = sn[0]*ux_ + sn[1]*uy_;
+
+        x_ -= 2.0 * n_dot_dx * sn[0];
+        y_ -= 2.0 * n_dot_dx * sn[1];
+        ux_ -= 2.0 * n_dot_u * sn[0];
+        uy_ -= 2.0 * n_dot_u * sn[1];
+      }
+      
       //! Set the member values from a tuple
       void set_from_tuple(py::tuple p)
       {
@@ -273,8 +318,17 @@ namespace dnt
       // Declare the << operator for the Ptype::cartesian_xy data type. This is used in print_pstructarray()
       friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::cartesian_xy>& p)
       {
-        os << "Printing a Ptype::cartesian_xy. fixme";
-        return os;
+        return os <<   "x=" << p.x_
+                  << ", y=" << p.y_
+                  << ", x0=" << p.x0_
+                  << ", y0=" << p.y0_
+                  << ", ux=" << p.ux_
+                  << ", uy=" << p.uy_
+                  << ", weight=" << p.weight_
+                  << ", bitflags=" << p.bitflags_
+                  << ", cell_index=" << p.cell_index_
+                  << ", unique_ID=" << p.unique_ID_
+                  << ", crossings=" << p.crossings_;
       }
       
     };
@@ -310,6 +364,31 @@ namespace dnt
     int crossings_;             // 14 i4   96
 
   public:
+
+      //! Specularly reflect a particle from a surface.
+      /*!
+
+        The surface is specified by the unit normal surface_normal.
+
+        \param[in] surface_normal   Unit normal to the reflecting surface.
+        \param[in] dx               Displacement of particle through the surface.
+
+       */
+      inline void reflect_from_surface(py::array_t<double> &surface_normal, const double dx[])
+      {
+        auto sn = surface_normal.unchecked<1>();
+
+        auto n_dot_dx = sn[0]*dx[0] + sn[1]*dx[1] + sn[2]*dx[2];
+        auto n_dot_u = sn[0]*ux_ + sn[1]*uy_ + sn[2]*uz_;
+
+        x_ -= 2.0 * n_dot_dx * sn[0];
+        y_ -= 2.0 * n_dot_dx * sn[1];
+        z_ -= 2.0 * n_dot_dx * sn[2];
+        ux_ -= 2.0 * n_dot_u * sn[0];
+        uy_ -= 2.0 * n_dot_u * sn[1];
+        uz_ -= 2.0 * n_dot_u * sn[2];
+      }
+    
       //! Set the member values from a tuple
       void set_from_tuple(py::tuple p)
       {
@@ -398,7 +477,139 @@ namespace dnt
   };
   // class Pstruct<Ptype::cartesian_xyz> ENDCLASS
 
+/*! \struct Pstruct_spherical_r
 
+  \brief struct for (r,) particle coordinates.
+
+  \sa Ptype, Pstruct,
+
+*/
+  template<>
+    class Pstruct<Ptype::spherical_r>
+    {
+      // Using PYBIND11_NUMPY_DTYPE_EX, the C++ variable names can be different from the Python names
+    public:
+    // These are static class members, so they're set outside the header file, in
+    // particle_solib.cpp
+      static int DELETE_FLAG;
+      static int TRAJECTORY_FLAG;
+      
+      double r_;                  // 1 f8    8 bytes
+      double r0_;                 // 2 f8   16 
+      double ur_;                 // 3 f8   24
+      double weight_;             // 4 f8   32
+      int bitflags_;              // 5 i4   36
+      int cell_index_;            // 6 i4   40
+      int unique_ID_;             // 7 i4   44
+      int crossings_;             // 8 i4   48
+
+    public:
+
+      //! Specularly reflect a particle from a surface.
+      /*!
+
+        The surface is specified by the unit normal surface_normal.
+
+        \param[in] surface_normal   Unit normal to the reflecting surface.
+        \param[in] dx               Displacement of particle through the surface.
+
+       */
+      inline void reflect_from_surface(py::array_t<double> &surface_normal, const double dx[])
+      {
+        auto sn = surface_normal.unchecked<1>();
+
+        auto n_dot_dx = sn[0] * dx[0];
+        auto n_dot_u = sn[0] * ur_;
+
+        r_ -= 2.0 * n_dot_dx * sn[0];
+        ur_ -= 2.0 * n_dot_u * sn[0];
+      }
+
+      // Overload 2 versions of set_from_list_or_tuple()
+      
+      //! Set the member values from a py::tuple
+      void set_from_list_or_tuple(py::tuple p)
+      {
+        r_ = p[0].cast<double>();
+        r0_ = p[1].cast<double>();
+        ur_ = p[2].cast<double>();
+        weight_ = p[3].cast<double>();
+        bitflags_ = p[4].cast<int>();
+        cell_index_ = p[5].cast<int>();
+        unique_ID_ = p[6].cast<int>();
+        crossings_ = p[7].cast<int>();
+      }
+      // ENDDEF: void set_from_tuple(py::tuple p)
+
+      //! Set the member values from a py::list
+      void set_from_list_or_tuple(py::list p)
+      {
+        r_ = p[0].cast<double>();
+        r0_ = p[1].cast<double>();
+        ur_ = p[2].cast<double>();
+        weight_ = p[3].cast<double>();
+        bitflags_ = p[4].cast<int>();
+        cell_index_ = p[5].cast<int>();
+        unique_ID_ = p[6].cast<int>();
+        crossings_ = p[7].cast<int>();
+      }
+      // ENDDEF: void set_from_list(py::list p)
+
+      //! Return a particle's data as a tuple
+      py::tuple as_tuple()
+        {
+          // Create a tuple containing the member values
+          return py::make_tuple(r_, r0_, ur_, weight_, bitflags_, cell_index_, unique_ID_, crossings_);
+        }
+      // ENDDEF: py::tuple as_tuple()
+
+      //! Return a particle's data as a list
+      py::list as_list()
+        {
+          // Create a list containing the member values
+          auto l = py::list();
+          l.append(r_);
+          l.append(r0_);
+          l.append(ur_);
+          l.append(weight_);
+          l.append(bitflags_);
+          l.append(cell_index_);
+          l.append(unique_ID_);
+          l.append(crossings_);
+          
+          return l;
+        }
+      // ENDDEF: py::list as_list()
+
+      
+      //! Return a particle's data as a dictionary
+      py::dict as_dict()
+        {
+          using namespace pybind11::literals;
+          // Create a dictionary containing the member values
+          return py::dict("r"_a=r_, "r0"_a=r0_, "ur"_a=ur_, "weight"_a=weight_, "bitflags"_a=bitflags_, "cell_index"_a=cell_index_, "unique_ID"_a=unique_ID_, "crossings"_a=crossings_);
+        }
+      // ENDDEF: py::tuple as_dict()
+
+
+      // Declare the << operator for the Ptype::spherical_r data type.
+      friend std::ostream& operator<<(std::ostream& os, const Pstruct<Ptype::spherical_r>& p)
+      {
+        return os <<   "r=" << p.r_
+                  << ", r0=" << p.r0_
+                  << ", ur=" << p.ur_
+                  << ", weight=" << p.weight_
+                  << ", bitflags=" << p.bitflags_
+                  << ", cell_index=" << p.cell_index_
+                  << ", unique_ID=" << p.unique_ID_
+                  << ", crossings=" << p.crossings_;
+      }
+      // ENDDEF: operator<<()
+
+    };
+  // ENDCLASS: class Pstruct<Ptype::spherical_r>
+
+  
 // Declare the C++ function print_pstructarray(): it's templated on the type of the struct
 // that corresponds to the Numpy structured array. It takes the array of structs, writes
 // all the values into a string, and returns the string. This function is used later to

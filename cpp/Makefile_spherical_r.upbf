@@ -2,7 +2,7 @@
 
 # Specify the particle spatial coordinate system:
 
-coord_sys = cartesian_x
+coord_sys = spherical_r
 
 # Shouldn't need to modify anything below.
 
@@ -15,20 +15,18 @@ else ifeq ($(coord_sys), cartesian_xy)
 else ifeq ($(coord_sys), cartesian_x)
   THE_PARTICLE_TYPE = cartesian_x
   PDIM_FLAG = -DPDIM=1
+else ifeq ($(coord_sys), spherical_r)
+  THE_PARTICLE_TYPE = spherical_r
+  PDIM_FLAG = -DPDIM=1
 endif
 
-# or:
-# THE_PARTICLE_TYPE = cartesian_xy
-# or:
-# THE_PARTICLE_TYPE = cartesian_x
-
-THE_MODULE_PREFIX = user_particle_boundary_functions
+THE_MODULE_PREFIX = upbfs_spherical_r
 THE_MODULE_SOURCE = $(THE_MODULE_PREFIX)_solib.cpp
-THE_MODULE_NAME = $(THE_MODULE_PREFIX)_$(THE_PARTICLE_TYPE)_solib
+THE_MODULE_NAME = $(THE_MODULE_PREFIX)_solib
 
 DFLAGS = -DPARTICLE_TYPE=$(THE_PARTICLE_TYPE) -DMODULE_NAME=$(THE_MODULE_NAME) $(PDIM_FLAG)
 
-$(THE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: $(THE_MODULE_SOURCE) UserParticleBoundaryFunctions.h
+$(THE_MODULE_NAME).cpython-36m-x86_64-linux-gnu.so: $(THE_MODULE_SOURCE) UPBFs_spherical_r.h
 	c++ $(DFLAGS) -O3 -Wall -shared -std=c++11 -fPIC -fvisibility=hidden `python3 -m pybind11 --includes` $(THE_MODULE_SOURCE) -o $@
 
 clean:

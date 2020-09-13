@@ -1,19 +1,19 @@
-/*! \file user_particle_boundary_functions_solib.cpp
+/*! \file upbfs_spherical_solib.cpp
 
-  \brief This file creates a shared library containing the Python bindings for particle call-back functions in UserParticleBoundaryFunctions.h.
+  \brief This file creates a shared library containing the Python bindings for particle call-back functions in UPBFS_spherical_r.h.
 
   This file contains the Python-to-C++ bindings allowing Python to access the C++
-  call-back functions in UserParticleBoundaryFunctions.h. These functions are usually
+  call-back functions in UPBFS_spherical_r.h. These functions are usually
   called directly from C++, but they are referenced in a Python dictionary in a
   ParticleMeshBoundaryConditions_C instance, which associates boundaries with
   call-back functions.
 
   \namespace dnt
 
-  \sa particle.h ParticleMeshBoundaryConditions.h UserParticleBoundaryFunctions.h
+  \sa particle.h ParticleMeshBoundaryConditions.h UPBFS_spherical_r.h
 
 */
-#include "UserParticleBoundaryFunctions.h"
+#include "UPBFs_spherical_r.h"
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY(x)
@@ -25,7 +25,7 @@ namespace dnt {
   // Set the bit patterns for flags. These are static class members, so they're set
   // outside the ctor, in a C++ source file, so they're compiled only once. (If they're in
   // a header file that's included in more than one file, that generates an error)
-  // This variable is used in UserParticleBoundaryFunctions.h:
+  // This variable is used in UPBFS_spherical_r.h:
   int Pstruct<Ptype::PARTICLE_TYPE>::DELETE_FLAG = 0b1;  // the lowest bit is 1
   
   // The anonymous namespace limits the scope of the functions in it to this file.
@@ -45,7 +45,7 @@ namespace dnt {
 
       \return void
 
-      \sa UserParticleBoundaryFunctions.h, UserParticleBoundaryFunctions.cpp
+      \sa UPBFS_spherical_r.h, UPBFS_spherical_r.cpp
 
      */
     template <Ptype PT>
@@ -59,7 +59,7 @@ namespace dnt {
       // Don't need the PT_str in the name since the MODULE_NAME has it.
       std::string pyclass_name = std::string("UserParticleBoundaryFunctions");
       
-      // Create the Python binding for the UserParticleBoundaryFunctions class.
+      // Create the Python binding for this class
       // Use py:module_local() to make the class local to this module, i.e., a
       // UserParticleBoundaryFunctions object made by this module has a different
       // type than one made by a different module.

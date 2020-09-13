@@ -22,14 +22,18 @@ class TestSegmentedArrayPair(unittest.TestCase):
     """Test the C++ functions in segmented_array_pair_solib.so
 
        Functions tested:
+         Retrieving data from SAPs:
            py::tuple     get_as_tuple(py::ssize_t full_index)
            py::tuple     get_capacity()
            py::ssize_t   get_number_of_items()
            py::tuple     get_number_of_segments()
            py::tuple     get_segment_and_offset(py::ssize_t full_index)
 
+        Looping over particles:  
            py::tuple     init_inout_loop(bool return_data_ptrs = false)
+           py::tuple     get_next_segment(std::string in_out, bool return_data_ptr = false)
 
+        Adding data to SAPs:
            py::tuple     push_back(py::tuple item_input)
 
     """
@@ -123,7 +127,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
     def test_2_cpp_cartesian_xy(self):
         """Create a SegmentedArray for the "cartesian_xy" particle type.
 
-           Make a 3D particle tuple and put it into a SegmentedArrayPair object
+           Make a 2D particle tuple and put it into a SegmentedArrayPair object
            of type "cartesian_xy".
 
         """
@@ -324,8 +328,9 @@ class TestSegmentedArrayPair(unittest.TestCase):
         # 1. Retrieve pointers to the plain arrays in the Numpy array objects in the SAP
 
         # The returned psegIn, psegOut values are NOT references to Numpy
-        # arrays. They have type Pstruct<PT>*.  To get particle data, use one of the
-        # SAP access functions in segmented_array_pair_solib.cpp.
+        # arrays. They have type Pstruct<PT>*, and are not usable in Python!
+        # To get particle data in a form that Python can use, use one of the SAP
+        # access functions in segmented_array_pair_solib.cpp.
         (npSeg, psegIn, psegOut) = sap.init_inout_loop(return_data_ptrs=True)
         segmentCount = 1
 

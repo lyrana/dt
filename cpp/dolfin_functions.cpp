@@ -80,11 +80,11 @@ namespace dnt
     // Get attributes needed from Mesh_C arg
     auto mesh = mesh_M.attr("mesh").cast<dolfin::Mesh>();
 
-    // The facet-normals are in mesh_M.attr("mea_object"). The array
-    // containing them is templated on the number of facets in the cell, so they are
-    // accessed below, depending on the cell type. The vectors are laid out as n0,
-    // n1, ... to the number of facets, where the n's are the normals. The normals
-    // are 3-vectors, regardless of the geometric dimension.
+    // The facet-normals are in mesh_M.attr("mea_object"). The array containing them
+    // is templated on the number of facets in the cell, so they are accessed below,
+    // depending on the cell type. The vectors are laid out as n0, n1, ..., up to the
+    // number of facets, where the ni's are the normals. The normals are 3-vectors,
+    // regardless of the geometric dimension.
     size_t cellFNVdim = 3; // Number of doubles per facet-normal vector (FNV).
     
     auto NO_FACET = mesh_M.attr("NO_FACET").cast<int>(); // NO_FACET is a static class constant
@@ -293,7 +293,7 @@ namespace dnt
 //                print "f0 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
-                std::cout << "dolfin_functions.cpp::find_facet 0: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+                std::cout << "dolfin_functions.cpp::find_facet 4: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
               distanceToFacet = -distanceToFacet;
               }
             if (distanceToFacet < dxFraction*n0DotDx)
@@ -318,7 +318,7 @@ namespace dnt
 //                print "f1 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
-                std::cout << "dolfin_functions.cpp::find_facet 1: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+                std::cout << "dolfin_functions.cpp::find_facet 5: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
               distanceToFacet = -distanceToFacet;
               }
             if (distanceToFacet < dxFraction*n1DotDx)
@@ -343,7 +343,7 @@ namespace dnt
 //                print "f2 find_facet(): vecToFacet=", vecToFacet, "distanceToFacet=", distanceToFacet
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
-                std::cout << "dolfin_functions.cpp::find_facet 2: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+                std::cout << "dolfin_functions.cpp::find_facet 6: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
               distanceToFacet = -distanceToFacet;
               }
             if (distanceToFacet < dxFraction*n2DotDx)
@@ -400,7 +400,7 @@ namespace dnt
             //            std::cout << "f0 find_facet(): vecToFacet= " << vecToFacet[0] <<  " distanceToFacet= " << distanceToFacet << std::endl;
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
-                std::cout << "dolfin_functions.cpp::find_facet 0: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+                std::cout << "dolfin_functions.cpp::find_facet 7: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
               distanceToFacet = -distanceToFacet;
               }
             if (distanceToFacet < dxFraction*n0DotDx)
@@ -436,7 +436,7 @@ namespace dnt
             //            std::cout << "f1 find_facet(): vecToFacet= " << vecToFacet[0] << " distanceToFacet= " << distanceToFacet << std::endl;
             if (distanceToFacet < 0.0) // Assume this is due to round-off error and flip the sign
               {
-                std::cout << "dolfin_functions.cpp::find_facet 1: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
+                std::cout << "dolfin_functions.cpp::find_facet 8: !!! Bad value for distanceToFacet: " << distanceToFacet << ". Assuming it's a tiny number and flipping the sign to continue!!!" << std::endl;
               distanceToFacet = -distanceToFacet;
               }
             if (distanceToFacet < dxFraction*n1DotDx)
@@ -590,6 +590,7 @@ namespace dnt
       // use the name 'fieldValue' instead of 'fieldValues':
       auto fieldValue = dofMap->cell_dofs(cellIndex);
       // std::cout << "particle " << ip << " nComps= " << fieldValue.size() << std::endl;
+      // Copy the field value in this cell into field_at_points[ip].
       field->vector()->get_local(&fieldAtPointsProxy(ip, 0), fieldValue.size(), fieldValue.data());
       
       // Copy the field vector values to the field struct
@@ -749,6 +750,10 @@ template void dnt::interpolate_field_to_points<>(dolfin::Function*,
                                                  py::array_t<Pstruct<Ptype::cartesian_xy>, 0>,
                                                  py::ssize_t,
                                                  py::array_t<double>);
+template void dnt::interpolate_field_to_points<>(dolfin::Function*,
+                                                 py::array_t<Pstruct<Ptype::cartesian_x>, 0>,
+                                                 py::ssize_t,
+                                                 py::array_t<double>);
 
 // Use this one if given a pointer to the particle-struct array
 template void dnt::interpolate_field_to_points<>(dolfin::Function*,
@@ -757,5 +762,13 @@ template void dnt::interpolate_field_to_points<>(dolfin::Function*,
                                                  py::array_t<double>);
 template void dnt::interpolate_field_to_points<>(dolfin::Function*,
                                                  Pstruct<Ptype::cartesian_xy>* points,
+                                                 py::ssize_t,
+                                                 py::array_t<double>);
+template void dnt::interpolate_field_to_points<>(dolfin::Function*,
+                                                 Pstruct<Ptype::cartesian_x>* points,
+                                                 py::ssize_t,
+                                                 py::array_t<double>);
+template void dnt::interpolate_field_to_points<>(dolfin::Function*,
+                                                 Pstruct<Ptype::spherical_r>* points,
                                                  py::ssize_t,
                                                  py::array_t<double>);

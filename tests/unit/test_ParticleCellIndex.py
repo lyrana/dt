@@ -35,7 +35,6 @@ class TestParticleCellIndex(unittest.TestCase):
         pin.precision = np_m.float64
         pin.particle_integration_loop = 'loop-on-particles'
         pin.coordinate_system = 'cartesian_xyz'
-#        pin.position_coordinates = ['x', 'y', 'z'] # determines the particle-storage dimensions
         pin.force_components = ['x', 'y',]
         pin.force_precision = np_m.float64
         pin.use_cpp_integrators = False        

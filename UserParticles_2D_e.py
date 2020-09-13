@@ -53,7 +53,8 @@ class UserParticleDistributions_C(object):
 # 
     @staticmethod
     def trajelectrons(type):
-        """These electrons are specified as lists of coordinates and weights.
+        """Two electrons are specified as lists of coordinates and weights.
+
         """
         # Check that the caller knows this function returns 'listed' particles:
         if type != 'listed':
