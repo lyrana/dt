@@ -445,7 +445,7 @@ class Mesh_C(object):
 
         fncName = '('+__file__+') ' + self.__class__.__name__ + "." + sys._getframe().f_code.co_name + '():'
 
-        # Coordinate systems are the same for the mesh and the point
+        # This assumes that the coordinate systems are the same for the mesh and the point
         
         if self.gdim == 3:
             p = df_m.Point(point[0], point[1], point[2])

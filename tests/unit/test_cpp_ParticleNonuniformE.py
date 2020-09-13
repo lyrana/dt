@@ -157,10 +157,6 @@ class TestParticleNonuniformE(unittest.TestCase):
         # userPBndFnsClass = userParticlesModule.UserParticleBoundaryFunctions_C # Now need an instantiation, not just a class name:
         
         spNames = self.particle_P.species_names
-        # Import C++ particle module
-        # (This was already imported by Particle_Module)
-#        particleSOlibName = "particle_cartesian_xy_solib"
-#        particleSOlib = im_m.import_module(particleSOlibName)
         # Import C++ particle boundary-conditions
         userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_xy_solib"
         userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)

@@ -380,14 +380,14 @@ class Trajectory_C(object):
         # If the location of boundary-crossings is recorded, then you can run out of space
         self.npoints = int(ctrl.n_timesteps/self.skip + 1 + trajin.extra_points)
 
-        # Need these to get the right particle attributes for a trajectory variables
+        # Need these to get the right attributes for trajectory variables
         self.charged_species = charged_species
         #self.implicit_species = implicit_species
         self.neutral_species = neutral_species
 
-        # Need these to put particle attributes in trajectory output files.
         self.ctrl_title = ctrl.title
         self.ctrl_author = ctrl.author
+        # Need these to put particle attributes in trajectory output files.
         self.species_index = species_index
         self.species_mass = species_mass
         self.species_charge = species_charge
@@ -402,7 +402,6 @@ class Trajectory_C(object):
         self.data_list = {}
         self.trajectory_length = {}
 
-        #for sp in self.charged_species + self.implicit_species + self.neutral_species:
         for sn in self.charged_species + self.neutral_species:
             self.particle_index_list[sn] = []
             self.particle_unique_id_list[sn] = []
