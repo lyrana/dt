@@ -110,14 +110,11 @@ class SegmentedArrayPair_C(object):
             # segment.
             self.current_segment[outSA] += 1
             if self.current_segment[outSA] < self.nseg[outSA]:
-                #print("push_back: nseg=", self.nseg[outSA], "first_not_full_segment=", self.first_not_full_segment[outSA])
                 self.first_not_full_segment[outSA] += 1
-                #print("#1 self.first_not_full_segment[outSA]=", self.first_not_full_segment[outSA])
                 self.first_available_offset[outSA] = 0
             else:
                 # The following call increments firstNotFullSegment[] and nSeg[], and sets
                 # firstAvailableOffset[] = 0
-                # print("push_back: calling add_segment()")
                 self.add_segment(outSA)
             # These two counters should be the same:                
             assert (self.first_not_full_segment[outSA] == self.current_segment[outSA]), "first_not_full_segment = %d, current_segment = %d" % (self.first_not_full_segment[outSA], self.current_segment[outSA])
@@ -236,12 +233,8 @@ class SegmentedArrayPair_C(object):
         self.npmax[theSA] = self.nseg[theSA]*self.segment_length
 
         self.first_not_full_segment[theSA] += 1
-        # if self.first_not_full_segment[theSA] > 34:
-        #print("#2 self.first_not_full_segment[theSA]=", self.first_not_full_segment[theSA])
         self.first_available_offset[theSA] = 0
 
-        #print("add_segment(exit): nseg=", self.nseg[theSA], "first_not_full_segment=", self.first_not_full_segment[theSA])
-        
         return
     
 #class SegmentedArrayPair_C(object):
@@ -485,12 +478,8 @@ class SegmentedArrayPair_C(object):
         # Compute the segment and offset of the last item. The
         # zero-based index of the last item is n_items-1
         (seg, offset) = divmod(n_items-1, self.segment_length)
-        
-        # print("set_number_of_itemsA: first_not_full_segment=", self.first_not_full_segment[theSA])
+
         self.first_not_full_segment[theSA] = seg
-        # print("set_number_of_itemsB: first_not_full_segment=", self.first_not_full_segment[theSA])
-        # if self.first_not_full_segment[theSA] > 34:
-        #print("#4 self.first_not_full_segment[theSA]=", self.first_not_full_segment[theSA])
         self.first_available_offset[theSA] = offset+1
 
         return
