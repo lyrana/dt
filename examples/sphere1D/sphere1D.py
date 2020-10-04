@@ -197,7 +197,6 @@ from UserUnits_Module import MyPlasmaUnits_C
 from UserMesh_y_Fields_Spherical1D_Module import * # Provide input for mesh and fields
 
 # Provide the call-back functions for boundary-crossing particles:
-#from UserParticles_1D import *
 userParticlesModuleName = "UserParticles_1D"
 #infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
 #print(infoMsg)
