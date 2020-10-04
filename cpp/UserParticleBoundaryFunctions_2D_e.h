@@ -63,6 +63,10 @@ inline double vec_inner_product(double const *const a, double const *const b)
   /*! \class UserParticleBoundaryFunctions
     \brief This class defines callback functions that treat boundary-crossing particles.
 
+    It also puts the callback functions into a map of function-name to pointer-to-the
+    function, e.g., "default_bc_at_rmin" : *(default_bc_at_rmin()). This map is called
+    *bc_function_map*, and is a private member of this class.
+
     This is a C++ version of the Python class UserParticleBoundaryFunctions_C.
 
     See {Particle_Module}ParticleMeshBoundaryConditions_C for the naming scheme for
@@ -72,7 +76,7 @@ inline double vec_inner_product(double const *const a, double const *const b)
     pass a (reference to a) particle struct as a argument to its member functions.
 
     This class declares the ParticleMeshBoundaryConditions class to be a friend class, so
-    that it can access this class's bc_function_map member.
+    that it can access this class's *bc_function_map* member.
 
     \param PT is the type of particle struct that this class can operate on.
     \sa Ptype, Pstruct, ParticleMeshBoundaryConditions
@@ -81,8 +85,9 @@ inline double vec_inner_product(double const *const a, double const *const b)
   template<Ptype PT>
     class UserParticleBoundaryFunctions
     {
-      // This serves as a forward declaration of ParticleMeshBoundaryConditions as
-      // well as friending it. This provides access to the private bc_function_map.
+      // The following statement serves as a forward declaration of
+      // ParticleMeshBoundaryConditions as well as friending it. This provides access to the
+      // private bc_function_map below.
       template<Ptype PTX>
         friend class ParticleMeshBoundaryConditions;
       // This is an abbreviation for a type:
@@ -114,6 +119,7 @@ inline double vec_inner_product(double const *const a, double const *const b)
           std::string bcFunctionStr;
           CallbackFunctionPtr<PT> bcFunctionPtr;
 
+          // Abbreviations used for tabbing:
           std::string tab2{"\t\t"};
           std::string tab3{"\t\t\t"};
 

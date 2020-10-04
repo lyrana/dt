@@ -2,6 +2,7 @@
 
 # 1D spherically-symmetric expansion of ions and electrons
 # See sphere1D.ods for setting up parameters
+# This version uses C++ for the particle-advance.
 
 __version__ = 0.1
 __author__ = 'Copyright (C) 2017-2018 L. D. Hughes'
@@ -197,10 +198,10 @@ from UserUnits_Module import MyPlasmaUnits_C
 from UserMesh_y_Fields_Spherical1D_Module import * # Provide input for mesh and fields
 
 # Provide the call-back functions for boundary-crossing particles:
-userParticlesModuleName = "UserParticles_1D"
+userParticleBoundaryFunctionsSOlibName = "upbfs_spherical_r_solib"
 #infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
 #print(infoMsg)
-userParticlesModule = im_m.import_module(userParticlesModuleName)
+userParticleBoundaryFunctionsSOlib = im_m.import_module(userParticleBoundaryFunctionsSOlibName)
 
 
 fileName = __file__+':'
@@ -209,12 +210,12 @@ fileName = __file__+':'
 
 pauseAfterWarning = False # If False, don't pause after warning messages.
 
-emitInput = True # Write input values to standard output.
+emitInput = False # Write input values to standard output.
 emitInputOnly = False # Write input values to standard output and then quit.
-pauseAfterEmit = True # Wait for user input before continuing.  Can be changed to
+pauseAfterEmit = False # Wait for user input before continuing.  Can be changed to
                       # False by using ctrl.get_keyboard_input()
 
-pauseAfterTimestep = True # Wait for user input before continuing to the next
+pauseAfterTimestep = False # Wait for user input before continuing to the next
                           # timestep.  Can be changed to False by using
                           # ctrl.get_keyboard_input()
                       
@@ -355,7 +356,7 @@ ctrl.author = "tph"
 
 ##### CTRL.2. Timestepping
 
-ctrl.n_timesteps = 20 # 100 # 1000
+ctrl.n_timesteps = 100 # 1000
 
 ctrl.dt = 1.0e-6 # sec
 if ctrl.dt > scr.stable_dt_max:
@@ -492,7 +493,7 @@ pin.coordinate_system = 'spherical_r'
                                    # is doubled to get the phase-space coordinates
 pin.force_components = ['r',]
 pin.force_precision = np_m.float64
-pin.use_cpp_integrators = False
+pin.use_cpp_integrators =  True # Use C++ for particle-advance
 
 ############### PS.1. Define the species, set "apply-field" switches, and provide particle storage ###############
 
@@ -605,7 +606,7 @@ meshFile << mesh_M.mesh
 #     is the same object as the field mesh.
 # (b) Compute the cell-neighbors and facet-normals needed to track particles on the
 #     mesh.
-# (c) Attach the particle-advance functions.
+# (c) Attach the C++ particle-advance functions for the mesh type.
 if emitInput is True:
     print("")
     print("********** Initialize the particle mesh **********")
@@ -613,17 +614,18 @@ particle_P.initialize_particle_mesh(mesh_M)
 
 ##### PS.2.3. Connect the boundary-condition callback functions
 
-# See UserParticleBoundaryFunctions_C in userParticlesModule (defined above) for the
-# definitions of the facet-crossing callback functions.
+# See userParticleBoundaryFunctionsSOlibName (defined above) for the definitions
+# of the facet-crossing callback functions.
 
-# Call the constructor to make a UserParticleBoundaryFunctions_C object
-userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
+# Call the constructor to make a UserParticleBoundaryFunctions object
+userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(particle_P.position_coordinates)
 
 # Make the particle-mesh boundary-conditions object and add it to the particle
 # object.
 spNames = particle_P.species_names
 # Create the map from mesh facets to particle callback functions:
-pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, particle_P.pmesh_M, userPBndFns, print_flag=False)
+pmeshBCs = particle_P.particle_solib.ParticleMeshBoundaryConditions(spNames, particle_P.pmesh_M, userPBndFns, print_flag=False)
+
 particle_P.pmesh_bcs = pmeshBCs
 
 
@@ -1283,6 +1285,11 @@ for istep in range(ctrl.n_timesteps):
 #    particle_P.move_particles_in_electrostatic_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
     particle_P.advance_charged_particles_in_E_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)    
 
+#tph
+#    print("* There is now a total of %d particles *" % (particle_P.get_total_particle_count()))
+#    for s in particle_P.species_names:
+#        print("* There are now %d particles in species %s *" % (particle_P.get_species_particle_count(s), s))
+    
     ## Record trajectory data for all marked particles
     if particle_P.traj_T is not None:
         if (ctrl.timeloop_count % particle_P.traj_T.skip == 0):
@@ -1294,6 +1301,11 @@ for istep in range(ctrl.n_timesteps):
     if particle_P.particle_source_dict is not None:
         particle_P.add_more_particles(ctrl, neg_E_field=potentialsolve.neg_electric_field)
 
+#tph2
+#    print("*2 There is now a total of %d particles *2" % (particle_P.get_total_particle_count()))
+#    for s in particle_P.species_names:
+#        print("*2 There are now %d particles in species %s *2" % (particle_P.get_species_particle_count(s), s))
+              
     ########## RUN.3. Write a snapshot of the particles
     if ctrl.particle_output_interval is not None:
         if ctrl.timeloop_count % ctrl.particle_output_interval == 0:

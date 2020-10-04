@@ -197,6 +197,7 @@ from UserUnits_Module import MyPlasmaUnits_C
 from UserMesh_y_Fields_Spherical1D_Module import * # Provide input for mesh and fields
 
 # Provide the call-back functions for boundary-crossing particles:
+#from UserParticles_1D import *
 userParticlesModuleName = "UserParticles_1D"
 #infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
 #print(infoMsg)
@@ -209,12 +210,12 @@ fileName = __file__+':'
 
 pauseAfterWarning = False # If False, don't pause after warning messages.
 
-emitInput = True # Write input values to standard output.
+emitInput = False # Write input values to standard output.
 emitInputOnly = False # Write input values to standard output and then quit.
-pauseAfterEmit = True # Wait for user input before continuing.  Can be changed to
+pauseAfterEmit = False # Wait for user input before continuing.  Can be changed to
                       # False by using ctrl.get_keyboard_input()
 
-pauseAfterTimestep = True # Wait for user input before continuing to the next
+pauseAfterTimestep = False # Wait for user input before continuing to the next
                           # timestep.  Can be changed to False by using
                           # ctrl.get_keyboard_input()
                       
@@ -355,7 +356,7 @@ ctrl.author = "tph"
 
 ##### CTRL.2. Timestepping
 
-ctrl.n_timesteps = 20 # 100 # 1000
+ctrl.n_timesteps = 4 # 100 # 1000
 
 ctrl.dt = 1.0e-6 # sec
 if ctrl.dt > scr.stable_dt_max:
@@ -615,7 +616,6 @@ particle_P.initialize_particle_mesh(mesh_M)
 
 # See UserParticleBoundaryFunctions_C in userParticlesModule (defined above) for the
 # definitions of the facet-crossing callback functions.
-
 # Call the constructor to make a UserParticleBoundaryFunctions_C object
 userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
 
@@ -1283,6 +1283,11 @@ for istep in range(ctrl.n_timesteps):
 #    particle_P.move_particles_in_electrostatic_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
     particle_P.advance_charged_particles_in_E_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)    
 
+#tph
+    print("* There is now a total of %d particles *" % (particle_P.get_total_particle_count()))
+    for s in particle_P.species_names:
+        print("* There are now %d particles in species %s *" % (particle_P.get_species_particle_count(s), s))
+    
     ## Record trajectory data for all marked particles
     if particle_P.traj_T is not None:
         if (ctrl.timeloop_count % particle_P.traj_T.skip == 0):
@@ -1293,6 +1298,10 @@ for istep in range(ctrl.n_timesteps):
     # recorded inside the particle generator.
     if particle_P.particle_source_dict is not None:
         particle_P.add_more_particles(ctrl, neg_E_field=potentialsolve.neg_electric_field)
+#tph2
+    print("*2 There is now a total of %d particles *2" % (particle_P.get_total_particle_count()))
+    for s in particle_P.species_names:
+        print("*2 There are now %d particles in species %s *2" % (particle_P.get_species_particle_count(s), s))
 
     ########## RUN.3. Write a snapshot of the particles
     if ctrl.particle_output_interval is not None:

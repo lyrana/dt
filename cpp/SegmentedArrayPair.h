@@ -749,6 +749,7 @@ namespace dnt
             py::buffer_info segInfo = seg.request(); // request() returns metadata about the array (ptr, ndim, size, shape)
             const auto segData = static_cast<Pstruct<PT>*>(segInfo.ptr); // Pointer to the Pstruct array
             // return py::make_tuple(lastItem, segData); // Doesn't work: need a capsule for the pointer.
+            //std::cout << "get_next_segment() theSA is " << theSA << " segIndex is " << segIndex << " lastItem is " << lastItem << std::endl;
             return py::make_tuple(lastItem, py::capsule(segData));
           }
         else
