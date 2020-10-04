@@ -344,7 +344,7 @@ class TestSegmentedArrayPair(unittest.TestCase):
         
         # Note: since the "in" segment was not copied to the "out" segment since the last
         # call to init_inout_loop(), we need to uncomment the swapPair = !swapPair
-         # statement in SegmentedArrayPair.h:init_inout_loop(). Otherwise, we'll get the
+        # statement in SegmentedArrayPair.h:init_inout_loop(). Otherwise, we'll get the
         # empty member of the SAP.
         (npSeg, psegIn, psegOut) = sap.init_inout_loop()
         segmentCount = 1

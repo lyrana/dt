@@ -3039,7 +3039,7 @@ class Particle_C(object):
 
                 if bitflags & self.TRAJECTORY_FLAG != 0:
                     if self.traj_T is not None:
-                        print("A trajectory will be recorded for particle", fullIndex, "of species:", speciesName)
+                        print("A trajectory will be recorded for particle with uid", particle[3*pDim+3], "of species:", speciesName)
                         if self.charge[speciesName] != 0.0:
                             particleType = 'charged'                            
                         else:    

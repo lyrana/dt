@@ -475,7 +475,7 @@
         
         // Done with this "in" segment. Get the next one, if it exists.
         py::tuple segTuple = sap->get_next_segment("in", true);
-        auto npSeg = segTuple[0].cast<py::ssize_t>();
+        npSeg = segTuple[0].cast<py::ssize_t>();
         if (npSeg >  0)
           {
             psegIn = segTuple[1].cast<py::capsule>(); // This is a compressed expression: there's a cast performed to make psegIn, which has it's type from above (Pstruct<Ptype::cartesian_xy>* psegIn)

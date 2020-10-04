@@ -70,7 +70,7 @@ __all__ = ['Example_C',]
 #### Section Index
 
 ### To search for a section: type a space after the last period of the section
-### number below, e.g., PS.<space>, or PS.1.3.<space>
+### number below, e.g., PS.<space>, or PS.1.2.<space>
 
 ## IM. Imported Modules
 
@@ -95,7 +95,6 @@ __all__ = ['Example_C',]
 ## PS. Particle Species
 ##     PS.1. Define the species, set the "apply-field" switches, and provide storage.
 ##           PS.1.2. Allocate particle storage.
-##           PS.1.3. Specify the name of the UserParticlesModule (Deprecate; move to top?)
 ##     PS.2. Particle mesh and particle boundary conditions
 ##           PS.2.1. Mark boundaries to apply BCs on particles
 ##           PS.2.2. Make the particle mesh and initialize it for particles
@@ -199,7 +198,6 @@ from UserUnits_Module import MyPlasmaUnits_C
 from UserMesh_y_Fields_Spherical1D_Module import * # Provide input for mesh and fields
 
 # Provide the call-back functions for boundary-crossing particles:
-#userParticleBoundaryFunctionsSOlibName = "user_particle_boundary_functions_cartesian_x_solib"
 userParticleBoundaryFunctionsSOlibName = "upbfs_spherical_r_solib"
 #infoMsg = "%s\tImporting %s" % (fncName, userParticleBoundaryFunctionsSOlibName)
 #print(infoMsg)
@@ -358,7 +356,7 @@ ctrl.author = "tph"
 
 ##### CTRL.2. Timestepping
 
-ctrl.n_timesteps = 28 # 1000 # 100
+ctrl.n_timesteps = 20 # 1000 # 100
 
 ctrl.dt = 1.0e-6 # sec
 if ctrl.dt > scr.stable_dt_max:
@@ -421,8 +419,9 @@ ctrl.particle_output_interval = 1
 # Available attributes: 'species_index' and any particle-record name
 # e.g., 'weight', 'bit-flags', 'cell-index', 'unique_ID', 'crossings'
 ctrl.particle_output_attributes = ('species_index', 'r', 'ur', 'weight', 'unique_ID', 'crossings')
-### Set parameters for writing trajectory output to an h5part file
-# Not here: ctrl.trajectory_output_file = ctrl.title + "_traj_" + ".h5part"
+
+### Set parameters for writing trajectory output to h5part files
+ctrl.write_trajectory_files = True
 
 if emitInput is True:
     print("")
@@ -555,19 +554,6 @@ if emitInput is True:
 ##### PS.1.2. Make particle storage for the species defined above
 particle_P = Particle_C(pin, print_flag=True)
 
-##### PS.1.3. Name the particular "UserParticles" module to use
-# Give the name of the Python module file containing special particle
-# data (lists of particles, boundary conditions, source regions, etc.)
-#userParticlesModuleName = "UserParticles_1D"
-# See Imported Modules above
-
-# Import the module
-#userParticlesModule = im_m.import_module(userParticlesModuleName)
-
-# Add it to the particle object
-#?needed? particle_P.user_particles_module = userParticlesModuleName
-##particle_P.user_particles_class = userParticlesClass = userParticlesModule.UserParticleDistributions_C
-
 ############### PS.2. Particle mesh and boundary conditions ###############
 
 ##### PS.2.1. Mark boundaries to apply BCs on particles
@@ -628,18 +614,15 @@ particle_P.initialize_particle_mesh(mesh_M)
 
 ##### PS.2.3. Connect the boundary-condition callback functions
 
-# See UserParticleBoundaryFunctions_C in userParticlesModule (defined above) for the
-# definitions of the facet-crossing callback functions.
-#userPBndFns = userParticlesModule.UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
+# See userParticleBoundaryFunctionsSOlibName (defined above) for the definitions
+# of the facet-crossing callback functions.
 
 # Call the constructor to make a UserParticleBoundaryFunctions object
 userPBndFns = userParticleBoundaryFunctionsSOlib.UserParticleBoundaryFunctions(particle_P.position_coordinates)
-#userPBndFns = UserParticleBoundaryFunctions_C(particle_P.position_coordinates, particle_P.dx)
 
 # Make the particle-mesh boundary-conditions object and add it to the particle
 # object.
 spNames = particle_P.species_names
-#pmeshBCs = ParticleMeshBoundaryConditions_C(spNames, mesh_M, userPBndFns, print_flag=False)
 # Create the map from mesh facets to particle callback functions:
 pmeshBCs = particle_P.particle_solib.ParticleMeshBoundaryConditions(spNames, particle_P.pmesh_M, userPBndFns, print_flag=False)
 
@@ -1175,7 +1158,7 @@ if particleBoundaryDict is not None and particle_P.pmesh_M.particle_boundary_mar
 
 if plotInitialFields is True:
     print("")
-    print("********** Compute and plot initial fields without charge-density from particles **********")
+    print("********** Computing and plotting initial fields without charge-density from particles **********")
 plotTitle = fileName + " initial field (no particles)"
 potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
 
@@ -1245,7 +1228,7 @@ if particle_P.initial_particles_dict is not None:
 
     if plotInitialFields is True:
         print("")
-        print("********** Plot recomputed initial fields with charge-density from particles **********")
+        print("********** Plotting recomputed initial fields with charge-density from particles **********")
     plotTitleInitial = fileName + "Initial field (with particles)"
 #    potentialsolve.solve_for_phi(plot_flag=plotInitialFields, plot_title=plotTitle)
     potentialsolve.solve_for_phi(assembled_charge=assembledCharge_F, assembled_charge_factor=spacechargeFactor, plot_flag=plotInitialFields, plot_title=plotTitleInitial)
@@ -1287,7 +1270,7 @@ particle_P.initialize_particle_integration()
 
 if emitInput is True:
     print("")
-    print("********** Integrate for %d timesteps from step %d, time %.3g, starting with %d particles **********" % (ctrl.n_timesteps, ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count()))
+    print("********** Integrating for %d timesteps from step %d, time %.3g, starting with %d particles **********" % (ctrl.n_timesteps, ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count()))
     if pauseAfterEmit is True: pauseAfterEmit=ctrl.get_keyboard_input(fileName)
 
 for istep in range(ctrl.n_timesteps):
@@ -1298,7 +1281,7 @@ for istep in range(ctrl.n_timesteps):
 
     ########## RUN.1. Advance the particles one timestep
     print("")
-    print("***** Advance %d particles to step %d, time %.3g *****" % (particle_P.get_total_particle_count(), ctrl.timeloop_count, ctrl.time))
+    print("***** Advancing %d particles to step %d, time %.3g *****" % (particle_P.get_total_particle_count(), ctrl.timeloop_count, ctrl.time))
 #    particle_P.move_particles_in_electrostatic_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
     particle_P.advance_charged_particles_in_E_field(ctrl, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)    
 
@@ -1347,12 +1330,12 @@ for istep in range(ctrl.n_timesteps):
         plotFields = True
         plotTitle = os.path.basename(__file__) + ": n=%d " % (ctrl.timeloop_count)
         print("")
-        print("********** Plot field at timestep %d **********" % ctrl.timeloop_count)
+        print("********** Plotting field at timestep %d **********" % ctrl.timeloop_count)
     elif plotFinalFields is True and ctrl.timeloop_count == ctrl.n_timesteps:
         plotFields = True
         plotTitle = os.path.basename(__file__) + ": n=%d " % (ctrl.timeloop_count)
         print("")
-        print("********** Plot final field at timestep %d **********" % ctrl.timeloop_count)
+        print("********** Plotting final field at timestep %d **********" % ctrl.timeloop_count)
     else:
         plotFields = False
         plotTitle = None
@@ -1393,7 +1376,7 @@ for istep in range(ctrl.n_timesteps):
     # End of the timestep loop (istep)
 
 print("")
-print("********** Exited the time loop at step %d, time %.3g, with %d particles **********" % (ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count()))
+print("********** Exiting the time loop at step %d, time %.3g, with %d particles **********" % (ctrl.timeloop_count, ctrl.time, particle_P.get_total_particle_count()))
 #print ""
 
 #print fncName, "Exited the time loop", self.ctrl.timeloop_count, "to reach time", self.ctrl.time
@@ -1404,21 +1387,25 @@ print("********** Exited the time loop at step %d, time %.3g, with %d particles 
 ##### FIN.1. Write the last particle data and close the output file.
 if ctrl.particle_output_file is not None:
     print("")
-    print("********** Write final particle data to %s and close the file **********" % (ctrl.particle_output_file))
+    print("********** Writing the final particle data to %s and closing the file **********" % (ctrl.particle_output_file))
 #    print ""
     particle_P.write_particles_to_file(ctrl, close_flag=True)
 
-##### FIN.2. Record the LAST point on the particle trajectories.
+##### FIN.2. Record the LAST point on the particle trajectories and write the trajectory files.
 if particle_P.traj_T is not None:
     print("")
-    print("********** Record final particle trajectory data **********")
+    print("********** Recording the final particle trajectory data **********")
 #    print ""
     particle_P.record_trajectory_data(ctrl.timeloop_count, ctrl.time, neg_E_field=potentialsolve.neg_electric_field, external_E_field=randomExternalElectricField_F)
 
+    print("********** Writing the trajectory data **********")
+    if ctrl.write_trajectory_files is True:
+        particle_P.traj_T.write_trajectories_to_files()
+    
 ##### FIN.3. Plot the particle trajectories on the particle mesh.
 if os.environ.get('DISPLAY') is not None and plotTrajectoriesOnMesh is True:
     print("")
-    print("********** Plot trajectories on particle mesh at end of simulation **********")
+    print("********** Plotting trajectories on particle mesh at end of simulation **********")
     plotTitle = os.path.basename(__file__) + ": "
     mesh = particle_P.pmesh_M.mesh
     holdPlot = True # Set to True to stop the plot from disappearing.
@@ -1427,13 +1414,13 @@ if os.environ.get('DISPLAY') is not None and plotTrajectoriesOnMesh is True:
 ##### FIN.4. Plot the particle trajectories in phase-space.
 if os.environ.get('DISPLAY') is not None and plotTrajectoriesInPhaseSpace is True:
     print("")
-    print("********** Plot trajectories in phase-space at end of simulation **********")
+    print("********** Plotting trajectories in phase-space at end of simulation **********")
     particle_P.traj_T.plot()
 
 ##### FIN.5. Plot the recorded history data.
 if os.environ.get('DISPLAY') is not None and plotTimeHistories is True:
     print("")
-    print("********** Plot recorded history data at end of simulation **********")
+    print("********** Plotting recorded history data at end of simulation **********")
     if particle_P.histories is not None:
         particle_P.histories.plot()
 

@@ -119,6 +119,8 @@ class UserParticleBoundaryFunctions_C(object):
         
         """
 
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
+        
         # Make aliases for quantities contained in particle_P that are needed to
         # implement various boundary conditions.
         self.position_coordinates = position_coordinates
@@ -130,6 +132,10 @@ class UserParticleBoundaryFunctions_C(object):
         self.pcoord = np_m.empty(self.particle_dimension, dtype=precision)
         self.pvel = np_m.empty(self.particle_dimension, dtype=precision)
 
+        # Check these with the actual functions below
+        print(fncName, "\t\"default_bc() is absorbing\"")
+        print("\t\"default_bc_at_rmin() is reflecting\"")
+        
         return
 #    def __init__(self, particle_P):ENDDEF
 
@@ -142,9 +148,13 @@ class UserParticleBoundaryFunctions_C(object):
            :param speciesName: the species that particle p belongs to.
            :param facetIndex: the facet crossed by particle p.
         """
+
+        printInfoInvoked = False
+        
         fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
-        print("Called", fncName)
-        print("Particle is", p, "at facet", facetIndex)
+
+        if printInfoInvoked is True:
+            print(fncName, "Invoked by particle", p, "of species", speciesName, "at facet", facetIndex)
 
         # Set the delete flag
         p['bitflags'] = p['bitflags'] | Particle_C.DELETE_FLAG
@@ -169,7 +179,7 @@ class UserParticleBoundaryFunctions_C(object):
 
         printInfoInvoked = False
         
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         if printInfoInvoked is True:
             print(fncName, "invoked by particle", p, "of species", speciesName)
@@ -209,7 +219,7 @@ class UserParticleBoundaryFunctions_C(object):
 
         printInfoInvoked = False
         
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         if printInfoInvoked is True:        
             print(fncName, "invoked by particle", p, "of species", speciesName)
@@ -243,11 +253,12 @@ class UserParticleBoundaryFunctions_C(object):
         """
 
         printInfoInvoked = False
-        
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         if printInfoInvoked is True:
-            print("DnT INFO: %s Invoked by particle %s of species %s" % (fncName, p, speciesName))
+            print(fncName, "Invoked by particle", p, "of species", speciesName, "at facet", facetIndex)
+            
         pDim = self.particle_dimension
 
         # Scratch space
@@ -297,7 +308,7 @@ class UserParticleBoundaryFunctions_C(object):
            :param speciesName: the species that particle p belongs to.
            :param facetIndex: the facet crossed by particle p.
         """
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 #        print fncName, "invoked by particle", p, "of species", speciesName
 
         # Set the delete bit
@@ -339,7 +350,7 @@ class UserParticleBoundaryFunctions_C(object):
 
         printInfoInvoked = False
         
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
         if printInfoInvoked is True:                
             print(fncName, "invoked by particle", p, "of species", speciesName)
@@ -387,7 +398,7 @@ class UserParticleSourceFunctions_C(object):
            :param speciesName: the species that particle p belongs to.
            :param facetIndex: the facet crossed by particle p.
         """
-        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():'
+        fncName = '('+__file__+') ' + sys._getframe().f_code.co_name + '():\n'
 
 #class UserParticleSourceFunctions_C(object):ENDCLASS
 

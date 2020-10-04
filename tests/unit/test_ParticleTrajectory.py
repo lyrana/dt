@@ -658,9 +658,9 @@ class TestParticleTrajectory(unittest.TestCase):
         if p_P.traj_T is not None:
             p_P.record_trajectory_data(self.ctrl.timeloop_count, self.ctrl.time, neg_E_field=self.neg_electric_field)
 
-        # Write the particle trajectories to H5Part files
-        if self.ctrl.write_trajectory_files is True:
-            p_P.traj_T.write_trajectories_to_files()
+            # Write the particle trajectories to H5Part files
+            if self.ctrl.write_trajectory_files is True:
+                p_P.traj_T.write_trajectories_to_files()
             
         # Check the results
 

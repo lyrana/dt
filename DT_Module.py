@@ -78,7 +78,7 @@ class DTcontrol_C(object):
         self.particle_output_attributes = None
 #        self.particle_output_attribute_dtypes = None
 
-        self.trajectory_output_file = None
+        self.write_trajectory_files = None
 
         # Run information
 

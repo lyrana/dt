@@ -34,24 +34,31 @@
 namespace dnt
 {
   /*! \class ParticleMeshBoundaryConditions
-    \brief This class contains a map from mesh-facet tags to callback functions.
+
+    \brief This class contains a map from mesh-facet tags and species names to callback
+           functions.
+
+    The map from facet tags to boundary-condition callback functions is called
+    *bc_function_dict*. It's created by using the *bc_function_map* stored in a
+    UserParticleBoundaryFunctions object, which associates function-names with
+    functions. This object is passed in as an argument to the ctor.
 
     This is a C++ version of the Python class ParticleMeshBoundaryConditions_C.
   */
   template<Ptype PT>    
     class ParticleMeshBoundaryConditions
     {
+      // Make an abbreviation for the type "pointer to particle boundary-condition
+      // callback function":
       template <Ptype PTX>      
         using CallbackFunctionPtr =  void (dnt::UserParticleBoundaryFunctions<PTX>::*)(Pstruct<PTX>&, py::str&, const int, const double *dx, const double, py::array_t<double>&);        
 
-    private:
-      // This map (dictionary) contains a pointer to a boundary callback
-      // function for each [boundary tag][species] pair (i.e., the key is a 2D object).
-      // std::map<std::pair<int, std::string>, CallbackFunctionPtr<PT>> bc_function_dict;
-      
     public:
 
       UserParticleBoundaryFunctions<PT> user_particle_boundary_functions;
+      // The following map (dictionary) contains a pointer to a boundary callback
+      // function for each [boundary tag][species] pair (i.e., the key is a 2D object).
+      // std::map<std::pair<int, std::string>, CallbackFunctionPtr<PT>> bc_function_dict;
       std::map<std::pair<int, std::string>, CallbackFunctionPtr<PT>> bc_function_dict;
 
       //! The one and only user-defined ParticleMeshBoundaryConditions ctor.
@@ -67,7 +74,8 @@ namespace dnt
         the boundary 'name'.
         bc_at_name_for_species: The function called for 'species' crossing 'name'.
 
-        The most specific function found for a given boundary and species is used.
+        The most specific function found for a given boundary and species is used, and is
+        inserted into bc_function_dict.
 
         \param species_names: Species names in an std::vector<std::string>
 
@@ -85,6 +93,7 @@ namespace dnt
       {
 
         // Set local names from passed parameters
+        // pBDict maps boundary names to integers: e.g. 'xmin': 1
         auto pBDict = pmesh_M.attr("particle_boundary_dict").cast<std::map<std::string, int>>();
         /*
           We want to associate the names of the user-supplied boundary functions with

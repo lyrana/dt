@@ -242,7 +242,7 @@ class ParticleHistory_C(History_C):
         mplot_m.xlabel(x_label)
         mplot_m.ylabel(y_label)
         mplot_m.grid(True)
-        mplot_m.savefig(plot_title + ".png")
+        # mplot_m.savefig(plot_title + ".png")
         mplot_m.show()
         mplot_m.close(fig)
         
@@ -262,7 +262,7 @@ class ParticleHistory_C(History_C):
             mplot_m.xlabel(x_label)
             mplot_m.ylabel(y_label)
             mplot_m.grid(True)
-            mplot_m.savefig(plot_title + ".png")
+            # mplot_m.savefig(plot_title + ".png")
             mplot_m.show()
             mplot_m.close(fig)
 #        mplot_m.show()
@@ -484,7 +484,7 @@ class Trajectory_C(object):
                     plot_title = "%s:_Traj#_ %d_Particle_id_%d" % (sp, it, ip)
                 else:
                     ip = self.particle_unique_id_list[sp][it]
-                    plot_title = "%s:_Traj#_%d_Particle_uid_%d" % (sp, it, ip)
+                    plot_title = "traj-%s-uid%d" % (sp, ip)
                 data_arr = self.data_list[sp][it]
                 tvals = self.data_list[sp][it]['t']
                 nlength = self.trajectory_length[sp][it]
@@ -500,7 +500,7 @@ class Trajectory_C(object):
                     mplot_m.xlabel(x_label)
                     mplot_m.ylabel(comp)
                     mplot_m.grid(True)
-                    mplot_m.savefig(plot_title + ".png")
+                    # mplot_m.savefig(plot_title + ".png")
                     mplot_m.show()
                     mplot_m.close(fig)
                     # mplot_m.show()
@@ -519,7 +519,7 @@ class Trajectory_C(object):
                             mplot_m.xlabel('x')
                             mplot_m.ylabel('y')
                             mplot_m.grid(True)
-                            mplot_m.savefig(plot_title + ".png")
+                            # mplot_m.savefig(plot_title + ".png")
                             mplot_m.close(fig)
                             # mplot_m.show()
                         if 'ux' in comps:
@@ -529,7 +529,7 @@ class Trajectory_C(object):
                             mplot_m.xlabel('x')
                             mplot_m.ylabel('ux')
                             mplot_m.grid(True)
-                            mplot_m.savefig(plot_title + ".png")
+                            # mplot_m.savefig(plot_title + ".png")
                             mplot_m.close(fig)
                             # mplot_m.show()
                 
@@ -642,7 +642,7 @@ class Trajectory_C(object):
                 # Open a file for this trajectory                
                 # h5FileName = "traj_%s_%d.%d.h5part" % (sp, uid, it)
                 # h5FileName = "traj_%s.%d.h5part" % (sp, it)
-                h5FileName = "traj_%s.%d.h5part" % (sp, uid)
+                h5FileName = "traj-%s-uid%d.h5part" % (sp, uid)
                 h5FileHandle = h5py.File(h5FileName, "w")
 
                 # A file is also a Group: attach the following attributes

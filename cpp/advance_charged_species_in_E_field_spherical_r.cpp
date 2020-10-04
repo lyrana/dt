@@ -131,7 +131,8 @@
     auto qmdt = qom*dt;
 
     // Get the particles belonging to this species
-    
+
+    size_t segmentCounter = 0;
     const py::ssize_t segmentLength = sap->get_segment_length();
     // Start a loop over the sap segments. segTuple contains (npSeg, psegIn, psegOut)
     py::tuple segTuple = sap->init_inout_loop(true); // 'true' returns the data pointers for
@@ -175,6 +176,8 @@
                               // plots.
 
     //std::cout << "Hello from advance_charged_species_in_E_field_spherical_r@2" << std::endl;
+
+    // Loop over the particles in this species
     
     py::array_t<double>* EsegPtr = nullptr;
     while (psegIn != nullptr) // Keep looping until we run out of "in" segments.
@@ -182,6 +185,8 @@
         //std::cout << "Hello from advance_charged_species_in_E_field_spherical_r@3" << std::endl;
         // Compute the electric field at each particle
 
+        //std::cout << "@1 Species " << std::string(species_name) << " seg " << segmentCounter << " has " << npSeg << " particles" << std::endl;
+        
         // Eseg = None # This is for the case where no fields are to be applied to the particles,
         //        if (!neg_E_field.is_none())
         if (neg_E_field != nullptr)
@@ -522,12 +527,14 @@
           } // loop over particles in the "in" segment
         
         // Done with this "in" segment. Get the next one, if it exists.
-        // # std::cout << "segTuple = sap->" << std::endl;
+        // std::cout << "segTuple = sap->" << std::endl;
         py::tuple segTuple = sap->get_next_segment("in", true);
-        auto npSeg = segTuple[0].cast<py::ssize_t>();
+        npSeg = segTuple[0].cast<py::ssize_t>();
+        //std::cout << "@2 Species " << std::string(species_name) << " the npSeg in segTuple is " << npSeg << std::endl;
         if (npSeg >  0)
           {
             psegIn = segTuple[1].cast<py::capsule>(); // This is a compressed expression: there's a cast performed to make psegIn, which has it's type from above (Pstruct<Ptype::spherical_r>* psegIn)
+            segmentCounter += 1;
           }
         else
           {
