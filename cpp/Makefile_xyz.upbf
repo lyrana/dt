@@ -2,7 +2,7 @@
 
 # Specify the particle spatial coordinate system:
 
-coord_sys = cartesian_xy
+coord_sys = cartesian_xyz
 
 # Shouldn't need to modify anything below.
 
